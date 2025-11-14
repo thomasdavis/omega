@@ -1,9 +1,12 @@
 # Fly.io configuration for Discord AI Bot
 
-app = "discord-ai-bot"
+app = "omega-nrhptq"
 primary_region = "syd" # Sydney - change to your preferred region
 
 [build]
+  # Build from repository root for monorepo support
+  dockerfile = "apps/bot/Dockerfile"
+  buildpack_builder = ""
 
 [env]
   NODE_ENV = "production"
