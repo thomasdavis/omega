@@ -262,6 +262,38 @@ echo '<!DOCTYPE html><html><body><h1>API</h1></body></html>' > apps/bot/public/i
 
 ---
 
+### Issue: "Cannot use import statement outside a module" in deployed functions
+
+**Error:**
+```
+SyntaxError: Cannot use import statement outside a module
+Warning: Failed to load the ES module. Make sure to set "type": "module" in the nearest package.json
+```
+
+**Cause:** TypeScript `tsconfig.json` using `"moduleResolution": "bundler"` which is incompatible with Node.js runtime. Vercel's serverless functions run in Node.js, not a bundler environment, and the package.json with `"type": "module"` wasn't being recognized.
+
+**Fix:** Update `tsconfig.json` to use Node.js-compatible module resolution:
+```json
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    // ... rest of config
+  }
+}
+```
+
+**Important Note:** This is a **TypeScript project** - never take shortcuts with module configuration. Use proper TypeScript settings for the target runtime (Node.js for Vercel serverless functions).
+
+**Key Points:**
+- `"moduleResolution": "bundler"` → for Webpack/Vite/bundlers
+- `"moduleResolution": "NodeNext"` → for Node.js ES modules
+- Keep `"type": "module"` in package.json
+- Keep `.js` extensions in all import statements
+- Both settings must work together for proper ES module support
+
+---
+
 ## Deployment Workflow
 
 ### Initial Setup (One Time)
