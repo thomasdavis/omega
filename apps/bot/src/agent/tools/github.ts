@@ -23,6 +23,23 @@ export const githubCreateIssueTool = tool({
       };
     }
 
+    // Format issue body to include @claude mention and structured format
+    const formattedBody = `## Request
+${body}
+
+## Context
+Created from Discord #omega channel
+
+---
+
+@claude please implement this request following the project's coding standards.
+
+## Acceptance Criteria
+- [ ] Implementation matches the request
+- [ ] Code follows existing patterns in the codebase
+- [ ] No breaking changes
+- [ ] Ready for deployment`;
+
     try {
       const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
         method: 'POST',
@@ -34,7 +51,7 @@ export const githubCreateIssueTool = tool({
         },
         body: JSON.stringify({
           title,
-          body,
+          body: formattedBody,
           labels: labels || [],
         }),
       });
