@@ -79,26 +79,23 @@ jobs:
           ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
           ISSUE_TITLE="${{ steps.issue_details.outputs.issue_title }}"
 
-          # Create PR title from issue title
-          PR_TITLE="$ISSUE_TITLE"
-
-          # Create PR body
-          PR_BODY="## Summary
-Automated implementation by Claude Code for issue #$ISSUE_NUM.
+          # Create the PR with heredoc for body
+          gh pr create \
+            --title "$ISSUE_TITLE" \
+            --body "$(cat <<'EOF'
+## Summary
+Automated implementation by Claude Code for issue #${{ steps.extract_issue.outputs.issue_number }}.
 
 ## Changes
 See individual commits for details of changes made.
 
-Fixes #$ISSUE_NUM
+Fixes #${{ steps.extract_issue.outputs.issue_number }}
 
 ---
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)"
-
-          # Create the PR
-          gh pr create \
-            --title "$PR_TITLE" \
-            --body "$PR_BODY" \
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+EOF
+)" \
             --base main \
             --head "${{ steps.extract_issue.outputs.branch_name }}"
 
