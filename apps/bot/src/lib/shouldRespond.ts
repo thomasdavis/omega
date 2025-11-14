@@ -12,6 +12,13 @@ export async function shouldRespond(message: Message): Promise<boolean> {
     return true;
   }
 
+  // Only respond in #omega channel (or DMs)
+  const channelName = (message.channel as any).name;
+  if (channelName !== 'omega') {
+    console.log(`   ⏭️  Ignoring message from #${channelName} (only responding in #omega)`);
+    return false;
+  }
+
   // Check if bot was mentioned
   const botMentioned = message.mentions.users.has(message.client.user!.id);
   if (botMentioned) {
