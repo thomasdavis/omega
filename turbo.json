@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".vercel/**", ".next/**", "dist/**"]
+      "outputs": ["api/**"],
+      "env": ["OPENAI_API_KEY", "DISCORD_PUBLIC_KEY", "DISCORD_APP_ID", "DISCORD_BOT_TOKEN"]
     },
     "dev": {
       "cache": false,
