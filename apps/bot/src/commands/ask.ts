@@ -1,9 +1,9 @@
 import { streamText } from 'ai';
-import { getPersonality, getAIConfigForPersonality } from '../lib/ai';
-import { editResponse, getUserId } from '../lib/discord';
-import { truncateText } from '../utils/response';
-import { formatErrorMessage } from '../utils/errors';
-import type { DiscordInteraction } from '../types/discord';
+import { getPersonality, getAIConfigForPersonality } from '../lib/ai.js';
+import { editResponse, getUserId } from '../lib/discord.js';
+import { truncateText } from '../utils/response.js';
+import { formatErrorMessage } from '../utils/errors.js';
+import type { DiscordInteraction } from '../types/discord.js';
 
 /**
  * In-memory storage for user personalities

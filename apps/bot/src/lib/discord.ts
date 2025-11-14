@@ -1,9 +1,9 @@
-import { InteractionResponseType } from '../types/discord';
+import { InteractionResponseType } from '../types/discord.js';
 import type {
   DiscordInteractionResponseData,
   DiscordEmbed,
-} from '../types/discord';
-import { DiscordAPIError } from '../utils/errors';
+} from '../types/discord.js';
+import { DiscordAPIError } from '../utils/errors.js';
 
 /**
  * Discord API base URL
