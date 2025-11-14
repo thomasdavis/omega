@@ -95,3 +95,77 @@ Created from Discord #omega channel
     }
   },
 });
+
+export const githubUpdateIssueTool = tool({
+  description: 'Update an existing GitHub issue (title, body, labels, or state)',
+  parameters: z.object({
+    issueNumber: z.number().describe('The issue number to update'),
+    title: z.string().optional().describe('New title for the issue'),
+    body: z.string().optional().describe('New body/description for the issue'),
+    labels: z.array(z.string()).optional().describe('New labels to replace existing ones'),
+    state: z.enum(['open', 'closed']).optional().describe('New state for the issue'),
+  }),
+  execute: async ({ issueNumber, title, body, labels, state }) => {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega'; // owner/repo format
+
+    if (!GITHUB_TOKEN) {
+      return {
+        success: false,
+        error: 'GitHub token not configured',
+      };
+    }
+
+    // Validate at least one field is provided
+    if (!title && !body && !labels && !state) {
+      return {
+        success: false,
+        error: 'At least one field (title, body, labels, or state) must be provided',
+      };
+    }
+
+    try {
+      // Build the update payload
+      const updatePayload: any = {};
+      if (title) updatePayload.title = title;
+      if (body) updatePayload.body = body;
+      if (labels) updatePayload.labels = labels;
+      if (state) updatePayload.state = state;
+
+      // Update the issue
+      const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issueNumber}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify(updatePayload),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return {
+          success: false,
+          error: `GitHub API error: ${response.status} - ${error}`,
+        };
+      }
+
+      const issue: any = await response.json();
+
+      return {
+        success: true,
+        issueNumber: issue.number,
+        issueUrl: issue.html_url,
+        message: `Updated issue #${issue.number}`,
+        updatedFields: Object.keys(updatePayload),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error updating issue',
+      };
+    }
+  },
+});
