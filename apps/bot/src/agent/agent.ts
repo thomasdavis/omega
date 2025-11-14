@@ -10,6 +10,7 @@ import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool } from './tools/github.js';
+import { urlLookupTool } from './tools/url-lookup.js';
 
 const model = openai('gpt-4o');
 
@@ -84,6 +85,7 @@ export async function runAgent(
         calculator: calculatorTool,
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
+        urlLookup: urlLookupTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
