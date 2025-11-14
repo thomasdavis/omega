@@ -29,10 +29,29 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   try {
-    // Run the AI agent with tools
+    // Fetch recent message history for context (last 20 messages)
+    let messageHistory: Array<{ username: string; content: string }> = [];
+
+    if ('messages' in message.channel) {
+      try {
+        const messages = await message.channel.messages.fetch({ limit: 20, before: message.id });
+        messageHistory = messages
+          .reverse()
+          .map(msg => ({
+            username: msg.author.username,
+            content: msg.content,
+          }))
+          .filter(msg => msg.content.length > 0); // Filter out empty messages
+      } catch (error) {
+        console.log('   ⚠️ Could not fetch message history');
+      }
+    }
+
+    // Run the AI agent with tools and conversation history
     const result = await runAgent(message.content, {
       username: message.author.username,
       channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+      messageHistory,
     });
 
     // Send the response

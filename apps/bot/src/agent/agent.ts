@@ -15,6 +15,7 @@ const model = openai('gpt-4o');
 export interface AgentContext {
   username: string;
   channelName: string;
+  messageHistory?: Array<{ username: string; content: string }>;
 }
 
 export interface AgentResult {
@@ -60,10 +61,20 @@ export async function runAgent(
   console.log('🤖 Running AI agent with tools...');
 
   try {
+    // Build conversation history context
+    let historyContext = '';
+    if (context.messageHistory && context.messageHistory.length > 0) {
+      historyContext = '\n\nRecent conversation history:\n' +
+        context.messageHistory
+          .map(msg => `${msg.username}: ${msg.content}`)
+          .join('\n') +
+        '\n\n---\n';
+    }
+
     const result = await generateText({
       model,
       system: systemPrompt,
-      prompt: `[User: ${context.username} in #${context.channelName}]\n\n${userMessage}`,
+      prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
         search: searchTool,
         calculator: calculatorTool,
