@@ -23,16 +23,12 @@ export const githubCreateIssueTool = tool({
       };
     }
 
-    // Format issue body to include @claude mention and structured format
+    // Format issue body with structured format
     const formattedBody = `## Request
 ${body}
 
 ## Context
 Created from Discord #omega channel
-
----
-
-@claude please implement this request following the project's coding standards.
 
 ## Acceptance Criteria
 - [ ] Implementation matches the request
@@ -41,6 +37,7 @@ Created from Discord #omega channel
 - [ ] Ready for deployment`;
 
     try {
+      // Create the issue
       const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
         method: 'POST',
         headers: {
@@ -65,6 +62,24 @@ Created from Discord #omega channel
       }
 
       const issue: any = await response.json();
+
+      // Add a comment with @claude to trigger the workflow
+      const commentResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          body: '@claude please implement this request following the project\'s coding standards.',
+        }),
+      });
+
+      if (!commentResponse.ok) {
+        console.warn('Failed to add @claude comment, but issue was created successfully');
+      }
 
       return {
         success: true,
