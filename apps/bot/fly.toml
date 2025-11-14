@@ -1,0 +1,17 @@
+# Fly.io configuration for Discord AI Bot
+
+app = "discord-ai-bot"
+primary_region = "syd" # Sydney - change to your preferred region
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+# No HTTP service needed - this is a Discord bot, not a web server
+# It connects outbound to Discord Gateway
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
