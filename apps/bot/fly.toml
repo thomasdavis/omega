@@ -5,7 +5,7 @@ primary_region = "syd" # Sydney - change to your preferred region
 
 [build]
   # Build from repository root for monorepo support
-  dockerfile = "Dockerfile"
+  dockerfile = "../../Dockerfile"
   buildpack_builder = ""
 
 [env]
