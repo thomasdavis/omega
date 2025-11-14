@@ -82,14 +82,14 @@ jobs:
           # Create the PR with heredoc for body
           gh pr create \
             --title "$ISSUE_TITLE" \
-            --body "$(cat <<'EOF'
+            --body "$(cat <<EOF
 ## Summary
-Automated implementation by Claude Code for issue #${{ steps.extract_issue.outputs.issue_number }}.
+Automated implementation by Claude Code for issue #${ISSUE_NUM}.
 
 ## Changes
 See individual commits for details of changes made.
 
-Fixes #${{ steps.extract_issue.outputs.issue_number }}
+Fixes #${ISSUE_NUM}
 
 ---
 
