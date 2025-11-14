@@ -10,6 +10,7 @@ import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool } from './tools/github.js';
+import { webFetchTool } from './tools/webFetch.js';
 
 const model = openai('gpt-4o');
 
@@ -45,6 +46,8 @@ Your personality:
 - Let personality emerge naturally through word choice rather than performance
 
 You have access to tools that you can use to help users. When you use a tool, the results will be shared with the user in a separate message, so you don't need to restate tool outputs verbatim.
+
+IMPORTANT: When fetching web pages, always use the webFetch tool which automatically checks robots.txt compliance before scraping. This ensures we respect website policies and practice ethical web scraping.
 
 Remember:
 - Keep responses under 2000 characters (Discord limit)
@@ -84,6 +87,7 @@ export async function runAgent(
         calculator: calculatorTool,
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
+        webFetch: webFetchTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
