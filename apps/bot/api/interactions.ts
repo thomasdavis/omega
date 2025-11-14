@@ -7,16 +7,16 @@
  * Endpoint: /api/interactions
  */
 
-import { verifyRequest } from '../src/lib/verification.js';
-import { deferResponse } from '../src/lib/discord.js';
-import { handleAskCommand } from '../src/commands/ask.js';
-import { handleHelpCommand } from '../src/commands/help.js';
-import { handleVibeCommand } from '../src/commands/vibe.js';
+import { verifyRequest } from '../src/lib/verification';
+import { deferResponse } from '../src/lib/discord';
+import { handleAskCommand } from '../src/commands/ask';
+import { handleHelpCommand } from '../src/commands/help';
+import { handleVibeCommand } from '../src/commands/vibe';
 import {
   InteractionType,
   InteractionResponseType,
   type DiscordInteraction,
-} from '../src/types/discord.js';
+} from '../src/types/discord';
 
 /**
  * Vercel serverless function configuration

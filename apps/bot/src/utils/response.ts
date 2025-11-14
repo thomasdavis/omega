@@ -1,4 +1,4 @@
-import type { DiscordEmbed, DiscordInteractionResponseData } from '../types/discord.js';
+import type { DiscordEmbed, DiscordInteractionResponseData } from '../types/discord';
 
 /**
  * Utility functions for building Discord response data

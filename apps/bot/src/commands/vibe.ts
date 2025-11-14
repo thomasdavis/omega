@@ -1,8 +1,8 @@
-import { editResponse, getUserId } from '../lib/discord.js';
-import { setUserPersonality } from './ask.js';
-import type { DiscordInteraction } from '../types/discord.js';
-import { formatErrorMessage } from '../utils/errors.js';
-import { personalityPrompts } from '../lib/ai.js';
+import { editResponse, getUserId } from '../lib/discord';
+import { setUserPersonality } from './ask';
+import type { DiscordInteraction } from '../types/discord';
+import { formatErrorMessage } from '../utils/errors';
+import { personalityPrompts } from '../lib/ai';
 
 /**
  * Handle /vibe command

@@ -1,4 +1,4 @@
-import type { DiscordInteraction } from './discord.js';
+import type { DiscordInteraction } from './discord';
 
 export type CommandHandler = (interaction: DiscordInteraction) => Promise<void>;
 

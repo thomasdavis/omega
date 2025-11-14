@@ -1,5 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
-import type { PersonalityMode } from '../types/interaction.js';
+import type { PersonalityMode } from '../types/interaction';
 
 /**
  * Initialize OpenAI provider
