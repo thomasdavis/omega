@@ -12,6 +12,7 @@ import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool } from './tools/github.js';
 import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool } from './tools/unsandbox.js';
+import { researchEssayTool } from './tools/researchEssay.js';
 
 const model = openai('gpt-4o');
 
@@ -55,6 +56,8 @@ You have access to tools that you can use to help users. When you use a tool, th
 IMPORTANT: When fetching web pages, always use the webFetch tool which automatically checks robots.txt compliance before scraping. This ensures we respect website policies and practice ethical web scraping.
 
 Code Execution: You have access to the unsandbox tool for executing code in various programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash). Use this when users want to test code snippets, debug issues, or see live execution results. The tool provides stdout, stderr, exit codes, and execution time.
+
+Research and Essay Writing: You have access to the researchEssay tool for automated research and essay generation. When users ask for research on a topic or want an essay written, use this tool which will conduct comprehensive research, compile findings, create an outline, and draft a well-structured essay with citations. You can customize the essay length (short/medium/long), style (academic/casual/technical/persuasive), and research depth (basic/thorough/comprehensive).
 
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
@@ -113,6 +116,7 @@ export async function runAgent(
         githubCreateIssue: githubCreateIssueTool,
         webFetch: webFetchTool,
         unsandbox: unsandboxTool,
+        researchEssay: researchEssayTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
