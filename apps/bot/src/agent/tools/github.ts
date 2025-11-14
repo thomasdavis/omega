@@ -23,14 +23,26 @@ export const githubCreateIssueTool = tool({
       };
     }
 
+    // Extract links from the body
+    const urlRegex = /(https?:\/\/[^\s<>]+)/gi;
+    const links = body.match(urlRegex) || [];
+
+    // Remove duplicate links
+    const uniqueLinks = [...new Set(links)];
+
     // Format issue body with structured format
-    const formattedBody = `## Request
+    let formattedBody = `## Request
 ${body}
 
 ## Context
-Created from Discord #omega channel
+Created from Discord #omega channel`;
 
-## Acceptance Criteria
+    // Add links section if any links were found
+    if (uniqueLinks.length > 0) {
+      formattedBody += `\n\n## Links\n${uniqueLinks.map(link => `- ${link}`).join('\n')}`;
+    }
+
+    formattedBody += `\n\n## Acceptance Criteria
 - [ ] Implementation matches the request
 - [ ] Code follows existing patterns in the codebase
 - [ ] No breaking changes
