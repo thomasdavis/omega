@@ -1,4 +1,4 @@
-import type { DiscordEmbed, DiscordInteractionResponseData } from '../types/discord';
+import type { DiscordEmbed, DiscordInteractionResponseData } from '../types/discord.js';
 
 /**
  * Utility functions for building Discord response data
@@ -48,7 +48,7 @@ export function truncateText(text: string, maxLength: number = 2000): string {
   if (text.length <= maxLength) {
     return text;
   }
-  return text.substring(0, maxLength - 3) + '...';
+  return text.substring(0, maxLength - 3) + '....js';
 }
 
 /**

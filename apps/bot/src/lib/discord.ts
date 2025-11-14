@@ -1,14 +1,14 @@
-import { InteractionResponseType } from '../types/discord';
+import { InteractionResponseType } from '../types/discord.js';
 import type {
   DiscordInteractionResponseData,
   DiscordEmbed,
-} from '../types/discord';
-import { DiscordAPIError } from '../utils/errors';
+} from '../types/discord.js';
+import { DiscordAPIError } from '../utils/errors.js';
 
 /**
  * Discord API base URL
  */
-const DISCORD_API_BASE = 'https://discord.com/api/v10';
+const DISCORD_API_BASE = 'https://discord.com/api/v10.js';
 
 /**
  * Get required environment variables
@@ -206,7 +206,7 @@ export async function registerGuildCommands(
  * Get user ID from interaction
  */
 export function getUserId(interaction: any): string {
-  return interaction.member?.user?.id || interaction.user?.id || 'unknown';
+  return interaction.member?.user?.id || interaction.user?.id || 'unknown.js';
 }
 
 /**
@@ -214,5 +214,5 @@ export function getUserId(interaction: any): string {
  */
 export function getUsername(interaction: any): string {
   const user = interaction.member?.user || interaction.user;
-  return user?.username || 'Unknown User';
+  return user?.username || 'Unknown User.js';
 }

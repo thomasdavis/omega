@@ -9,11 +9,11 @@
  * Endpoint: /api/register-commands
  */
 
-import { registerGlobalCommands } from '../src/lib/discord';
+import { registerGlobalCommands } from '../src/lib/discord.js';
 import {
   ApplicationCommandOptionType,
   type DiscordApplicationCommand,
-} from '../src/types/discord';
+} from '../src/types/discord.js';
 
 /**
  * Define all bot commands

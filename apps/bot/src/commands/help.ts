@@ -1,6 +1,6 @@
-import { editResponse } from '../lib/discord';
-import type { DiscordInteraction } from '../types/discord';
-import { formatErrorMessage } from '../utils/errors';
+import { editResponse } from '../lib/discord.js';
+import type { DiscordInteraction } from '../types/discord.js';
+import { formatErrorMessage } from '../utils/errors.js';
 
 /**
  * Handle /help command

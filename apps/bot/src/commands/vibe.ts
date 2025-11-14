@@ -1,8 +1,8 @@
-import { editResponse, getUserId } from '../lib/discord';
-import { setUserPersonality } from './ask';
-import type { DiscordInteraction } from '../types/discord';
-import { formatErrorMessage } from '../utils/errors';
-import { personalityPrompts } from '../lib/ai';
+import { editResponse, getUserId } from '../lib/discord.js';
+import { setUserPersonality } from './ask.js';
+import type { DiscordInteraction } from '../types/discord.js';
+import { formatErrorMessage } from '../utils/errors.js';
+import { personalityPrompts } from '../lib/ai.js';
 
 /**
  * Handle /vibe command
@@ -42,16 +42,16 @@ export async function handleVibeCommand(
     console.log(`[VIBE] User ${userId} set personality to: ${mode}`);
 
     // Send confirmation with personality description
-    let description = '';
+    let description = '.js';
     switch (mode) {
       case 'professional':
-        description = 'Clear, concise, and formal. Perfect for serious questions!';
+        description = 'Clear, concise, and formal. Perfect for serious questions!.js';
         break;
       case 'chaotic':
-        description = 'Fun, creative, and unpredictable! Let\'s have some fun! 🎉';
+        description = 'Fun, creative, and unpredictable! Let\'s have some fun! 🎉.js';
         break;
       case 'zen':
-        description = 'Calm, mindful, and peaceful. Find your inner balance. 🧘';
+        description = 'Calm, mindful, and peaceful. Find your inner balance. 🧘.js';
         break;
     }
 
