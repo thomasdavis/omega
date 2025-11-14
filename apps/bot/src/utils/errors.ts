@@ -9,28 +9,28 @@ export class BotError extends Error {
     public userMessage?: string
   ) {
     super(message);
-    this.name = 'BotError.js';
+    this.name = 'BotError';
   }
 }
 
 export class DiscordAPIError extends BotError {
   constructor(message: string, statusCode: number = 500) {
     super(message, statusCode, 'Failed to communicate with Discord');
-    this.name = 'DiscordAPIError.js';
+    this.name = 'DiscordAPIError';
   }
 }
 
 export class OpenAIError extends BotError {
   constructor(message: string, statusCode: number = 500) {
     super(message, statusCode, 'AI service is temporarily unavailable');
-    this.name = 'OpenAIError.js';
+    this.name = 'OpenAIError';
   }
 }
 
 export class ValidationError extends BotError {
   constructor(message: string) {
     super(message, 400, 'Invalid request');
-    this.name = 'ValidationError.js';
+    this.name = 'ValidationError';
   }
 }
 
@@ -38,9 +38,9 @@ export class RateLimitError extends BotError {
   constructor(retryAfter?: number) {
     const message = retryAfter
       ? `Rate limited. Try again in ${retryAfter} seconds`
-      : 'Rate limited. Please try again later.js';
+      : 'Rate limited. Please try again later';
     super(message, 429, message);
-    this.name = 'RateLimitError.js';
+    this.name = 'RateLimitError';
   }
 }
 
@@ -55,8 +55,8 @@ export function formatErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     // Log full error for debugging
     console.error('Error:', error.message, error.stack);
-    return '❌ An error occurred while processing your request. Please try again later..js';
+    return '❌ An error occurred while processing your request. Please try again later.';
   }
 
-  return '❌ An unexpected error occurred..js';
+  return '❌ An unexpected error occurred.';
 }

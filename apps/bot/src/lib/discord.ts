@@ -8,7 +8,7 @@ import { DiscordAPIError } from '../utils/errors.js';
 /**
  * Discord API base URL
  */
-const DISCORD_API_BASE = 'https://discord.com/api/v10.js';
+const DISCORD_API_BASE = 'https://discord.com/api/v10';
 
 /**
  * Get required environment variables
@@ -206,7 +206,7 @@ export async function registerGuildCommands(
  * Get user ID from interaction
  */
 export function getUserId(interaction: any): string {
-  return interaction.member?.user?.id || interaction.user?.id || 'unknown.js';
+  return interaction.member?.user?.id || interaction.user?.id || 'unknown';
 }
 
 /**
@@ -214,5 +214,5 @@ export function getUserId(interaction: any): string {
  */
 export function getUsername(interaction: any): string {
   const user = interaction.member?.user || interaction.user;
-  return user?.username || 'Unknown User.js';
+  return user?.username || 'Unknown User';
 }

@@ -42,16 +42,16 @@ export async function handleVibeCommand(
     console.log(`[VIBE] User ${userId} set personality to: ${mode}`);
 
     // Send confirmation with personality description
-    let description = '.js';
+    let description = '';
     switch (mode) {
       case 'professional':
-        description = 'Clear, concise, and formal. Perfect for serious questions!.js';
+        description = 'Clear, concise, and formal. Perfect for serious questions!';
         break;
       case 'chaotic':
-        description = 'Fun, creative, and unpredictable! Let\'s have some fun! 🎉.js';
+        description = 'Fun, creative, and unpredictable! Let\'s have some fun! 🎉';
         break;
       case 'zen':
-        description = 'Calm, mindful, and peaceful. Find your inner balance. 🧘.js';
+        description = 'Calm, mindful, and peaceful. Find your inner balance. 🧘';
         break;
     }
 
