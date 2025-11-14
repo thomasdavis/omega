@@ -46,12 +46,6 @@ jobs:
           ISSUE_TITLE=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.title')
           echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
 
-          # Get issue body
-          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.body')
-          echo "issue_body<<EOF" >> $GITHUB_OUTPUT
-          echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Check if PR already exists
         id: check_pr
         env:
@@ -78,28 +72,29 @@ jobs:
         run: |
           ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
           ISSUE_TITLE="${{ steps.issue_details.outputs.issue_title }}"
+          BRANCH_NAME="${{ steps.extract_issue.outputs.branch_name }}"
 
-          # Create the PR with heredoc for body
+          # Create the PR body
+          PR_BODY="## Summary
+          Automated implementation by Claude Code for issue #${ISSUE_NUM}.
+
+          ## Changes
+          See individual commits for details of changes made.
+
+          Fixes #${ISSUE_NUM}
+
+          ---
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+          # Create the PR
           gh pr create \
             --title "$ISSUE_TITLE" \
-            --body "$(cat <<'EOF'
-## Summary
-Automated implementation by Claude Code for issue #${{ steps.extract_issue.outputs.issue_number }}.
-
-## Changes
-See individual commits for details of changes made.
-
-Fixes #${{ steps.extract_issue.outputs.issue_number }}
-
----
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)" \
+            --body "$PR_BODY" \
             --base main \
-            --head "${{ steps.extract_issue.outputs.branch_name }}"
+            --head "$BRANCH_NAME"
 
-          echo "✅ Created PR for branch ${{ steps.extract_issue.outputs.branch_name }}"
+          echo "✅ Created PR for branch $BRANCH_NAME"
 
       - name: Comment on existing PR
         if: steps.check_pr.outputs.pr_exists == 'true'
