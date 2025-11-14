@@ -147,19 +147,38 @@ jobs:
         run: |
           PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
 
-          # Enable auto-merge immediately
-          gh pr merge "$PR_NUMBER" \
-            --repo ${{ github.repository }} \
-            --auto \
-            --squash \
-            --delete-branch
+          # Wait for PR to be ready and enable auto-merge with retry
+          echo "⏳ Waiting for PR to be ready..."
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
 
-          echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT of $MAX_ATTEMPTS..."
 
-          # Add comment to PR
-          gh pr comment "$PR_NUMBER" \
-            --repo ${{ github.repository }} \
-            --body "🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass."
+            if gh pr merge "$PR_NUMBER" \
+              --repo ${{ github.repository }} \
+              --auto \
+              --squash \
+              --delete-branch 2>&1; then
+              echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+
+              # Add comment to PR
+              gh pr comment "$PR_NUMBER" \
+                --repo ${{ github.repository }} \
+                --body "🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass."
+
+              exit 0
+            fi
+
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "⏳ PR not ready yet, waiting 3 seconds..."
+              sleep 3
+            fi
+          done
+
+          echo "❌ Failed to enable auto-merge after $MAX_ATTEMPTS attempts"
+          exit 1
 
       - name: Comment on existing PR
         if: steps.check_pr.outputs.pr_exists == 'true'
