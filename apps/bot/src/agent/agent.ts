@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
+import { githubCreateIssueTool } from './tools/github.js';
 
 const model = openai('gpt-4o');
 
@@ -79,6 +80,7 @@ export async function runAgent(
         search: searchTool,
         calculator: calculatorTool,
         weather: weatherTool,
+        githubCreateIssue: githubCreateIssueTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
