@@ -11,6 +11,7 @@ import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool } from './tools/github.js';
 import { webFetchTool } from './tools/webFetch.js';
+import { unsandboxTool } from './tools/unsandbox.js';
 
 const model = openai('gpt-4o');
 
@@ -55,6 +56,8 @@ Your personality:
 You have access to tools that you can use to help users. When you use a tool, the results will be shared with the user in a separate message, so you don't need to restate tool outputs verbatim.
 
 IMPORTANT: When fetching web pages, always use the webFetch tool which automatically checks robots.txt compliance before scraping. This ensures we respect website policies and practice ethical web scraping.
+
+Code Execution: You have access to the unsandbox tool for executing code in various programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash). Use this when users want to test code snippets, debug issues, or see live execution results. The tool provides stdout, stderr, exit codes, and execution time.
 
 Remember:
 - Keep responses under 2000 characters (Discord limit)
@@ -111,6 +114,7 @@ export async function runAgent(
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
         webFetch: webFetchTool,
+        unsandbox: unsandboxTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
