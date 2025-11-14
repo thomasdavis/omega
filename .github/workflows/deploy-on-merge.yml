@@ -1,0 +1,46 @@
+name: Deploy on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  deploy-if-merged:
+    name: Deploy if PR was merged
+    runs-on: ubuntu-latest
+
+    # Only run if PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        run: flyctl deploy --remote-only --config apps/bot/fly.toml
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+      - name: Get PR info
+        id: pr_info
+        run: |
+          echo "title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+          echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "author=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ Feature Deployed!"
+          embed-description: |
+            **PR #${{ steps.pr_info.outputs.number }}:** ${{ steps.pr_info.outputs.title }}
+            **Author:** ${{ steps.pr_info.outputs.author }}
+
+            Successfully merged and deployed to production!
+          embed-color: 5814783
+          embed-url: ${{ github.event.pull_request.html_url }}
