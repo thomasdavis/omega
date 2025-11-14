@@ -1,4 +1,6 @@
 {
+  "buildCommand": "pnpm build --filter=bot",
+  "outputDirectory": "api",
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 30
