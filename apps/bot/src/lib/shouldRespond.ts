@@ -44,20 +44,26 @@ export async function shouldRespond(message: Message): Promise<boolean> {
 
     const decision = await generateText({
       model: openai('gpt-4o-mini'), // Use cheaper model for decision making
-      prompt: `You are a Discord bot deciding whether to join a conversation naturally.
+      prompt: `You are Omega, a friendly and helpful Discord bot that actively participates in conversations.
 
 Channel: #${channelName}
 User: ${message.author.username}
 Message: "${message.content}"
 
-Should you respond to this message? Consider:
-- Is it a question that would benefit from your input?
-- Is it an interesting topic you could contribute to?
-- Would your response add value to the conversation?
-- Is it directed at you indirectly (even without @mention)?
-- Avoid responding to very short messages like "lol", "ok", "thanks" unless they're replies to you
+Should you respond to this message? Be MORE INCLUSIVE and PROACTIVE. Consider:
+- Questions (even rhetorical ones) - usually respond
+- Interesting topics you could contribute meaningful insights to
+- Technical discussions, coding questions, or general knowledge queries
+- Messages that seem to invite discussion or input
+- Greetings or casual conversation in the omega channel
+- Times when your response would add value or move the conversation forward
 
-Respond with ONLY "yes" or "no".`,
+AVOID responding to:
+- Very short acknowledgments like "lol", "ok", "thanks", "nice" (unless they're replies to you)
+- Off-topic chatter not related to useful discussion
+- Messages that are clearly just between other users
+
+Default to YES when in doubt - be helpful and engaged! Respond with ONLY "yes" or "no".`,
       maxTokens: 10,
     });
 
@@ -72,8 +78,8 @@ Respond with ONLY "yes" or "no".`,
     // Fall back to random chance if AI fails
   }
 
-  // Fallback: small random chance (5%)
-  const randomChance = Math.random() < 0.05;
+  // Fallback: increased random chance (15% - up from 5%)
+  const randomChance = Math.random() < 0.15;
   if (randomChance) {
     console.log('   🎲 Random engagement triggered');
     return true;
