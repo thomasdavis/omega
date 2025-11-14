@@ -1,4 +1,4 @@
-import { createOpenAI } from '@ai-sdk/openai.js';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { PersonalityMode } from '../types/interaction.js';
 
 /**

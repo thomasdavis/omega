@@ -1,4 +1,4 @@
-import { verifyKey } from 'discord-interactions.js';
+import { verifyKey } from 'discord-interactions';
 
 /**
  * Reads the raw body from a Request object
@@ -6,10 +6,10 @@ import { verifyKey } from 'discord-interactions.js';
  */
 export async function getRawBody(req: Request): Promise<string> {
   const reader = req.body?.getReader();
-  if (!reader) return '.js';
+  if (!reader) return '';
 
   const decoder = new TextDecoder();
-  let body = '.js';
+  let body = '';
 
   while (true) {
     const { done, value } = await reader.read();

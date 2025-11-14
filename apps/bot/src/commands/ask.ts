@@ -1,4 +1,4 @@
-import { streamText } from 'ai.js';
+import { streamText } from 'ai';
 import { getPersonality, getAIConfigForPersonality } from '../lib/ai.js';
 import { editResponse, getUserId } from '../lib/discord.js';
 import { truncateText } from '../utils/response.js';
