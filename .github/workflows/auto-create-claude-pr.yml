@@ -104,6 +104,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check_pr.outputs.pr_exists == 'false'
+        id: create_pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -124,14 +125,41 @@ jobs:
 
           🤖 Generated with [Claude Code](https://claude.com/claude-code)"
 
-          # Create the PR
-          gh pr create \
+          # Create the PR and capture URL
+          PR_URL=$(gh pr create \
             --title "$ISSUE_TITLE" \
             --body "$PR_BODY" \
             --base main \
-            --head "$BRANCH_NAME"
+            --head "$BRANCH_NAME")
 
-          echo "✅ Created PR for branch $BRANCH_NAME"
+          echo "✅ Created PR: $PR_URL"
+
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+          echo "✅ Created PR #$PR_NUMBER for branch $BRANCH_NAME"
+
+      - name: Enable auto-merge
+        if: steps.check_pr.outputs.pr_exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+
+          # Enable auto-merge immediately
+          gh pr merge "$PR_NUMBER" \
+            --repo ${{ github.repository }} \
+            --auto \
+            --squash \
+            --delete-branch
+
+          echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+
+          # Add comment to PR
+          gh pr comment "$PR_NUMBER" \
+            --repo ${{ github.repository }} \
+            --body "🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass."
 
       - name: Comment on existing PR
         if: steps.check_pr.outputs.pr_exists == 'true'
