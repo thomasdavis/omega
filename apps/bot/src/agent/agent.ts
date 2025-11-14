@@ -17,6 +17,7 @@ import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
 import { selfModifyTool } from './tools/selfModify.js';
+import { asciiGraphTool } from './tools/asciiGraph.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -100,6 +101,8 @@ Code Execution: You have access to the unsandbox tool for executing code in vari
 
 Research and Essay Writing: You have access to the researchEssay tool for automated research and essay generation. When users ask for research on a topic or want an essay written, use this tool which will conduct comprehensive research, compile findings, create an outline, and draft a well-structured essay with citations. You can customize the essay length (short/medium/long), style (academic/casual/technical/persuasive), and research depth (basic/thorough/comprehensive).
 
+ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -152,6 +155,8 @@ Code Execution: You have access to the unsandbox tool for executing code in vari
 
 Research and Essay Writing: You have access to the researchEssay tool for automated research and essay generation. When users ask for research on a topic or want an essay written, use this tool which will conduct comprehensive research, compile findings, create an outline, and draft a well-structured essay with citations. You can customize the essay length (short/medium/long), style (academic/casual/technical/persuasive), and research depth (basic/thorough/comprehensive).
 
+ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -198,6 +203,7 @@ export async function runAgent(
         unsandbox: unsandboxTool,
         researchEssay: researchEssayTool,
         selfModify: selfModifyTool,
+        asciiGraph: asciiGraphTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
