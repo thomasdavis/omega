@@ -1,0 +1,112 @@
+name: Auto-Create Claude Code PR
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+jobs:
+  create-pr:
+    name: Create PR from Claude Code branch
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract issue number from branch name
+        id: extract_issue
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Extract issue number from branch name (format: claude/issue-N-...)
+          ISSUE_NUM=$(echo "$BRANCH_NAME" | grep -oE "issue-([0-9]+)" | grep -oE "[0-9]+")
+          echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+
+          if [ -z "$ISSUE_NUM" ]; then
+            echo "Could not extract issue number from branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+      - name: Get issue details
+        id: issue_details
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          # Get issue title
+          ISSUE_TITLE=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.title')
+          echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+
+          # Get issue body
+          ISSUE_BODY=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.body')
+          echo "issue_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$ISSUE_BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check if PR already exists
+        id: check_pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_NAME="${{ steps.extract_issue.outputs.branch_name }}"
+
+          # Check if a PR already exists for this branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number // ""')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "pr_exists=true" >> $GITHUB_OUTPUT
+            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "PR #$EXISTING_PR already exists for branch $BRANCH_NAME"
+          else
+            echo "pr_exists=false" >> $GITHUB_OUTPUT
+            echo "No existing PR found for branch $BRANCH_NAME"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check_pr.outputs.pr_exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+          ISSUE_TITLE="${{ steps.issue_details.outputs.issue_title }}"
+
+          # Create PR title from issue title
+          PR_TITLE="$ISSUE_TITLE"
+
+          # Create PR body
+          PR_BODY="## Summary
+Automated implementation by Claude Code for issue #$ISSUE_NUM.
+
+## Changes
+See individual commits for details of changes made.
+
+Fixes #$ISSUE_NUM
+
+---
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+          # Create the PR
+          gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "${{ steps.extract_issue.outputs.branch_name }}"
+
+          echo "✅ Created PR for branch ${{ steps.extract_issue.outputs.branch_name }}"
+
+      - name: Comment on existing PR
+        if: steps.check_pr.outputs.pr_exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "PR already exists, skipping creation"
