@@ -13,9 +13,17 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   // Check if we should respond to this message
-  const should = await shouldRespond(message);
+  const decision = await shouldRespond(message);
 
-  if (!should) {
+  // Post decision info to channel for debugging
+  if ('send' in message.channel) {
+    const emoji = decision.shouldRespond ? '✅' : '❌';
+    await message.channel.send(
+      `${emoji} **Decision:** ${decision.shouldRespond ? 'Respond' : 'Ignore'} | **Confidence:** ${decision.confidence}% | **Reason:** ${decision.reason}`
+    );
+  }
+
+  if (!decision.shouldRespond) {
     return;
   }
 

@@ -6,23 +6,29 @@ import { Message } from 'discord.js';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 
-export async function shouldRespond(message: Message): Promise<boolean> {
+export interface ShouldRespondResult {
+  shouldRespond: boolean;
+  confidence: number;
+  reason: string;
+}
+
+export async function shouldRespond(message: Message): Promise<ShouldRespondResult> {
   // Always respond to DMs
   if (message.channel.isDMBased()) {
-    return true;
+    return { shouldRespond: true, confidence: 100, reason: 'Direct message' };
   }
 
   // Only respond in #omega channel (or DMs)
   const channelName = (message.channel as any).name;
   if (channelName !== 'omega') {
     console.log(`   ⏭️  Ignoring message from #${channelName} (only responding in #omega)`);
-    return false;
+    return { shouldRespond: false, confidence: 100, reason: `Wrong channel (#${channelName})` };
   }
 
   // Check if bot was mentioned
   const botMentioned = message.mentions.users.has(message.client.user!.id);
   if (botMentioned) {
-    return true;
+    return { shouldRespond: true, confidence: 100, reason: 'Direct mention' };
   }
 
   // Check if message is a reply to the bot
@@ -30,7 +36,7 @@ export async function shouldRespond(message: Message): Promise<boolean> {
     try {
       const repliedTo = await message.fetchReference();
       if (repliedTo.author.id === message.client.user!.id) {
-        return true;
+        return { shouldRespond: true, confidence: 100, reason: 'Reply to my message' };
       }
     } catch {
       // Couldn't fetch reference, ignore
@@ -63,15 +69,27 @@ AVOID responding to:
 - Off-topic chatter not related to useful discussion
 - Messages that are clearly just between other users
 
-Default to YES when in doubt - be helpful and engaged! Respond with ONLY "yes" or "no".`,
-      maxTokens: 10,
+Default to YES when in doubt - be helpful and engaged!
+
+Respond in this exact JSON format:
+{
+  "decision": "yes" or "no",
+  "confidence": <number 0-100>,
+  "reason": "<brief explanation>"
+}`,
+      maxTokens: 100,
     });
 
-    const shouldRespond = decision.text.toLowerCase().trim().includes('yes');
+    const response = JSON.parse(decision.text.trim());
+    const shouldRespond = response.decision.toLowerCase() === 'yes';
+    const confidence = response.confidence;
+    const reason = response.reason;
 
     if (shouldRespond) {
-      console.log('   🤖 AI decided to respond to message');
-      return true;
+      console.log(`   🤖 AI decided to respond (${confidence}%): ${reason}`);
+      return { shouldRespond: true, confidence, reason: `AI: ${reason}` };
+    } else {
+      return { shouldRespond: false, confidence, reason: `AI: ${reason}` };
     }
   } catch (error) {
     console.error('Error in AI decision making:', error);
@@ -82,8 +100,8 @@ Default to YES when in doubt - be helpful and engaged! Respond with ONLY "yes" o
   const randomChance = Math.random() < 0.15;
   if (randomChance) {
     console.log('   🎲 Random engagement triggered');
-    return true;
+    return { shouldRespond: true, confidence: 15, reason: 'Random engagement (15% chance)' };
   }
 
-  return false;
+  return { shouldRespond: false, confidence: 95, reason: 'Not relevant enough' };
 }
