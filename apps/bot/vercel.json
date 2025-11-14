@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install --legacy-peer-deps",
   "functions": {
     "api/**/*.ts": {
       "maxDuration": 30
