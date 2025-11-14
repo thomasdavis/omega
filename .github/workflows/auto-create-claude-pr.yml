@@ -193,9 +193,9 @@ jobs:
           ELAPSED=0
 
           while [ $ELAPSED -lt $MAX_WAIT ]; do
-            PR_STATE=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json state,merged --jq '.merged')
+            PR_MERGED_AT=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json mergedAt --jq '.mergedAt')
 
-            if [ "$PR_STATE" = "true" ]; then
+            if [ "$PR_MERGED_AT" != "null" ] && [ -n "$PR_MERGED_AT" ]; then
               echo "✅ PR #$PR_NUMBER has been merged!"
 
               # Get PR details for notification
