@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
       issues: write
 
@@ -19,6 +19,43 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Auto-resolve merge conflicts with main
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch latest main
+          git fetch origin main
+
+          # Try to merge main into current branch
+          if ! git merge origin/main --no-edit; then
+            echo "⚠️ Merge conflicts detected, auto-resolving by preferring this branch's changes..."
+
+            # Get list of conflicted files
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+
+            # For each conflicted file, prefer our version (the Claude branch)
+            for file in $CONFLICTED_FILES; do
+              echo "Resolving conflict in $file by preferring Claude's changes"
+              git checkout --theirs "$file"
+              git add "$file"
+            done
+
+            # Commit the merge
+            git commit -m "Auto-resolve merge conflicts: prefer latest implementation from Claude Code"
+
+            # Push the resolved branch
+            git push origin "$BRANCH_NAME"
+
+            echo "✅ Conflicts resolved and pushed"
+          else
+            echo "✅ No conflicts, branch is up to date with main"
+          fi
 
       - name: Extract issue number from branch name
         id: extract_issue

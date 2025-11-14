@@ -9,8 +9,8 @@ jobs:
     name: Enable Auto-Merge for Claude PRs
     runs-on: ubuntu-latest
 
-    # Only run if PR was created by Claude Code GitHub App
-    if: github.event.pull_request.user.login == 'claude-code[bot]'
+    # Only run if PR is from a claude/** branch (auto-created by our workflow)
+    if: startsWith(github.event.pull_request.head.ref, 'claude/')
 
     permissions:
       contents: write
