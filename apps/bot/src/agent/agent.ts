@@ -18,6 +18,7 @@ import { unsandboxTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
 import { selfModifyTool } from './tools/selfModify.js';
 import { asciiGraphTool } from './tools/asciiGraph.js';
+import { whoamiTool } from './tools/whoami.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -103,6 +104,8 @@ Research and Essay Writing: You have access to the researchEssay tool for automa
 
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
 
+WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -157,6 +160,8 @@ Research and Essay Writing: You have access to the researchEssay tool for automa
 
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
 
+WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -204,6 +209,7 @@ export async function runAgent(
         researchEssay: researchEssayTool,
         selfModify: selfModifyTool,
         asciiGraph: asciiGraphTool,
+        whoami: whoamiTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {

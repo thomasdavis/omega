@@ -10,9 +10,15 @@ This directory contains tool implementations for the AI agent. Each tool provide
 - **weather** - Get weather information for locations (simulated)
 - **githubCreateIssue** - Create GitHub issues
 - **webFetch** - Fetch web pages with robots.txt compliance checking
+- **whoami** - Explain Omega's capabilities, personality, and purpose
 
 ### Code Execution
 - **unsandbox** - Execute code in various programming languages using Unsandbox API
+
+### Advanced Tools
+- **researchEssay** - Conduct comprehensive research and write essays with citations
+- **asciiGraph** - Generate text-based data visualizations (bar/line charts)
+- **selfModify** - Adapt personality based on user feedback
 
 ## Unsandbox Tool
 
