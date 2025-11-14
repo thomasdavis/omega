@@ -71,7 +71,12 @@ export const unsandboxTool = tool({
         };
       }
 
-      const result = await response.json();
+      const result = await response.json() as {
+        stdout?: string;
+        stderr?: string;
+        exitCode?: number;
+        executionTime?: number;
+      };
 
       return {
         success: true,
