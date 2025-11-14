@@ -234,8 +234,8 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Notify Discord
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+      - name: Notify Discord of successful deployment
+        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -246,6 +246,43 @@ jobs:
             Successfully merged and deployed to production!
           embed-color: 5814783
           embed-url: ${{ steps.wait_merge.outputs.pr_url }}
+
+      - name: Cleanup on deployment failure - Close PR
+        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          echo "Deployment failed, cleaning up PR #$PR_NUMBER"
+
+          # Close the PR
+          gh pr close "$PR_NUMBER" --repo ${{ github.repository }} --comment "Closing due to deployment failure. Please provide more details or fix the issues before trying again."
+
+      - name: Cleanup on deployment failure - Comment on issue
+        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          # Comment on the issue
+          gh issue comment "$ISSUE_NUM" --repo ${{ github.repository }} --body "⚠️ The implementation failed during deployment due to build errors. Please provide more specific requirements or details about what you'd like, and I'll try again!"
+
+      - name: Cleanup on deployment failure - Notify Discord
+        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "❌ Deployment Failed"
+          embed-description: |
+            **Issue #${{ steps.extract_issue.outputs.issue_number }}**
+
+            The implementation failed during deployment. Give me more information if you want this feature!
+
+            [View Issue](https://github.com/${{ github.repository }}/issues/${{ steps.extract_issue.outputs.issue_number }})
+          embed-color: 15158332
 
       - name: Comment on existing PR
         if: steps.check_pr.outputs.pr_exists == 'true'
