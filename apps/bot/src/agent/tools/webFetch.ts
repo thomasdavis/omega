@@ -9,11 +9,10 @@ import { robotsChecker } from '../../utils/robotsChecker.js';
 
 export const webFetchTool = tool({
   description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching. Use this to retrieve information from specific URLs.',
-  parameters: z.object({
+  inputSchema: z.object({
     url: z.string().url().describe('The URL to fetch content from'),
     userAgent: z.string().default('OmegaBot/1.0').describe('User agent string to use (default: OmegaBot/1.0)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ url, userAgent }) => {
     console.log(`🌐 Fetching URL: ${url}`);
 

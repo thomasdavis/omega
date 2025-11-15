@@ -186,7 +186,7 @@ export const jsonAgentGeneratorTool = tool({
   - validate: Validate an existing JSON Agent definition
   - convert: Convert between minimal and full agent formats`,
 
-  parameters: z.object({
+  inputSchema: z.object({
     operation: z.enum(['generate', 'validate', 'convert']).describe('Operation to perform'),
 
     // For generate operation
@@ -203,7 +203,6 @@ export const jsonAgentGeneratorTool = tool({
     targetFormat: z.enum(['minimal', 'full']).optional().describe('Target format for conversion (minimal or full)'),
   }),
 
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async (params) => {
     try {
       switch (params.operation) {

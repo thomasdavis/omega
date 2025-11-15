@@ -7,10 +7,9 @@ import { z } from 'zod';
 
 export const linuxAdvantagesTool = tool({
   description: 'Explain the advantages of Linux and open-source software over proprietary systems, focusing on transparency, security, and freedom',
-  parameters: z.object({
+  inputSchema: z.object({
     context: z.enum(['brief', 'detailed']).default('brief').describe('Level of detail to provide - brief for quick overview, detailed for comprehensive explanation'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ context }) => {
     console.log(`🐧 Linux Advantages tool called with context: ${context}`);
 

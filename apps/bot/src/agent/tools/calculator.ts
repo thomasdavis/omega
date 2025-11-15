@@ -7,10 +7,9 @@ import { z } from 'zod';
 
 export const calculatorTool = tool({
   description: 'Perform mathematical calculations. Supports basic arithmetic, exponents, and more.',
-  parameters: z.object({
+  inputSchema: z.object({
     expression: z.string().describe('The mathematical expression to evaluate, e.g., "2 + 2" or "sqrt(16)"'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ expression }) => {
     try {
       // Simple eval for math expressions (in production, use a safer math parser like mathjs)

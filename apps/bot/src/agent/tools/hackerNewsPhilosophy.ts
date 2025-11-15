@@ -30,11 +30,10 @@ interface PhilosophicalArticle {
 
 export const hackerNewsPhilosophyTool = tool({
   description: 'Fetch and rank the top 10 articles from Hacker News that would interest a philosophical mind. Analyzes articles based on their relevance to philosophy, ethics, technology\'s impact on society, consciousness, and existential questions.',
-  parameters: z.object({
+  inputSchema: z.object({
     limit: z.number().default(10).describe('Number of top philosophical articles to return (default 10)'),
     storyType: z.enum(['top', 'best', 'new']).default('top').describe('Type of HN stories to analyze (default: top)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ limit, storyType }) => {
     console.log(`🧠 Fetching philosophical articles from Hacker News (${storyType} stories)...`);
 

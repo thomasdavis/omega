@@ -131,7 +131,7 @@ function generateLineGraph(data: DataPoint[], options: { height?: number; width?
 
 export const asciiGraphTool = tool({
   description: 'Generate ASCII graphs (bar charts or line graphs) for data visualization in text format. Perfect for displaying data visually in Discord messages.',
-  parameters: z.object({
+  inputSchema: z.object({
     type: z.enum(['bar', 'line']).describe('The type of graph to generate: "bar" for bar chart, "line" for line graph'),
     data: z.array(
       z.object({
@@ -139,12 +139,11 @@ export const asciiGraphTool = tool({
         value: z.number().describe('The numeric value for this data point'),
       })
     ).describe('Array of data points to plot. Each point needs a label and a value.'),
-    maxWidth: z.number().optional().describe('Maximum width of the graph in characters (default: 50 for bar, 50 for line)'),
-    height: z.number().optional().describe('Height of the graph in rows (only for line graphs, default: 10)'),
+    maxWidth: z.number().int().min(10).max(100).optional().describe('Maximum width of the graph in characters (default: 50 for bar, 50 for line)'),
+    height: z.number().int().min(5).max(30).optional().describe('Height of the graph in rows (only for line graphs, default: 10)'),
     showValues: z.boolean().optional().describe('Show numeric values on bar chart (default: true)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
-  execute: async ({ type, data, maxWidth, height, showValues }) => {
+  execute: async ({ type, data, maxWidth, height, showValues }: { type: 'bar' | 'line'; data: DataPoint[]; maxWidth?: number; height?: number; showValues?: boolean }) => {
     try {
       let graph: string;
 

@@ -179,14 +179,13 @@ export const fileUploadTool = tool({
   - Unique filenames to prevent collisions
 
   Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}`,
-  parameters: z.object({
+  inputSchema: z.object({
     fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL)'),
     fileData: z.string().optional().describe('Base64-encoded file data (alternative to fileUrl)'),
     originalName: z.string().describe('Original filename with extension'),
     mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy }) => {
     try {
       // Validate that either fileUrl or fileData is provided

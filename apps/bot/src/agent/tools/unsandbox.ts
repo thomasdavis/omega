@@ -26,13 +26,12 @@ const NETWORK_MODES = ['full', 'limited', 'none'] as const;
 
 export const unsandboxTool = tool({
   description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters and network isolation.',
-  parameters: z.object({
+  inputSchema: z.object({
     language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute'),
     code: z.string().describe('The code to execute'),
-    timeout: z.number().optional().default(5000).describe('Execution timeout in milliseconds (default: 5000ms)'),
+    timeout: z.number().int().min(100).max(30000).optional().default(5000).describe('Execution timeout in milliseconds (default: 5000ms)'),
     networkMode: z.enum(NETWORK_MODES).optional().default('none').describe('Network isolation mode: full (internet access), limited (specific domains), none (no network)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ language, code, timeout, networkMode }) => {
     try {
       const apiKey = process.env.UNSANDBOX_API_KEY;

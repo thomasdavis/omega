@@ -171,7 +171,7 @@ function saveArtifact(
 export const artifactTool = tool({
   description: `Generate interactive artifacts (HTML pages, SVG graphics, diagrams, etc.) with shareable preview links.
   Perfect for creating visualizations, demos, interactive content, or any web-based artifacts that users can view in their browser.`,
-  parameters: z.object({
+  inputSchema: z.object({
     type: z.enum(['html', 'svg', 'markdown']).describe('Type of artifact to generate'),
     title: z.string().describe('Title of the artifact'),
     description: z.string().describe('Brief description of what the artifact shows or does'),
@@ -181,7 +181,6 @@ export const artifactTool = tool({
     width: z.number().optional().describe('Width for SVG artifacts (default: 800)'),
     height: z.number().optional().describe('Height for SVG artifacts (default: 600)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ type, title, description, content, css, js, width, height }) => {
     try {
       let artifactContent: string;

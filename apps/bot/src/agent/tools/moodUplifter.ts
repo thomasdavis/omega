@@ -111,12 +111,11 @@ Your uplifting message:`;
 
 export const moodUplifterTool = tool({
   description: 'Detect low-energy or negative language and provide personalized uplifting messages. Use this when a user seems discouraged, tired, or in need of encouragement.',
-  parameters: z.object({
+  inputSchema: z.object({
     message: z.string().describe('The message to analyze for energy level and sentiment'),
     username: z.string().optional().describe('The username of the person who sent the message'),
     autoDetect: z.boolean().optional().describe('If true, only respond if low energy is detected. If false, always provide encouragement.'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ message, username = 'friend', autoDetect = true }) => {
     try {
       console.log('🌟 Mood Uplifter: Analyzing message...');

@@ -10,13 +10,12 @@ import { generateText } from 'ai';
 
 export const researchEssayTool = tool({
   description: 'Conduct automated research on a topic and generate a well-structured essay. This tool searches for information, compiles research findings, and drafts a comprehensive essay with citations.',
-  parameters: z.object({
+  inputSchema: z.object({
     topic: z.string().describe('The topic to research and write about'),
     essayLength: z.enum(['short', 'medium', 'long']).default('medium').describe('Desired essay length: short (~300 words), medium (~600 words), long (~1000 words)'),
     essayStyle: z.enum(['academic', 'casual', 'technical', 'persuasive']).default('academic').describe('Writing style for the essay'),
     researchDepth: z.enum(['basic', 'thorough', 'comprehensive']).default('thorough').describe('How deep to research: basic (2-3 sources), thorough (4-6 sources), comprehensive (7+ sources)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ topic, essayLength, essayStyle, researchDepth }) => {
     console.log(`📚 Starting research and essay writing on topic: "${topic}"`);
     console.log(`   Length: ${essayLength}, Style: ${essayStyle}, Depth: ${researchDepth}`);

@@ -7,10 +7,9 @@ import { z } from 'zod';
 
 export const whoamiTool = tool({
   description: 'Explain Omega\'s capabilities, purpose, and personality to users who want to know what the bot can do',
-  parameters: z.object({
+  inputSchema: z.object({
     context: z.enum(['brief', 'detailed']).default('brief').describe('Level of detail to provide - brief for quick overview, detailed for comprehensive explanation'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ context }) => {
     console.log(`ℹ️  WhoAmI tool called with context: ${context}`);
 

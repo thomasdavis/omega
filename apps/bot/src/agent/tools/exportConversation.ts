@@ -35,13 +35,12 @@ export function clearExportMessageContext() {
 
 export const exportConversationTool = tool({
   description: 'Export Discord conversation history as Markdown. Captures messages with timestamps, usernames, and content. Supports filtering by date range or specific users. Use this when users want to download, archive, or save conversation history.',
-  parameters: z.object({
+  inputSchema: z.object({
     limit: z.number().min(1).max(100).default(50).describe('Number of messages to export (1-100, default: 50)'),
     username: z.string().optional().describe('Optional: Filter messages by specific username'),
     beforeDate: z.string().optional().describe('Optional: Only include messages before this date (ISO 8601 format)'),
     afterDate: z.string().optional().describe('Optional: Only include messages after this date (ISO 8601 format)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ limit, username, beforeDate, afterDate }) => {
     try {
       console.log(`📝 Exporting conversation history (limit: ${limit})`);

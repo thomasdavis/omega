@@ -7,12 +7,11 @@ import { z } from 'zod';
 
 export const githubCreateIssueTool = tool({
   description: 'Create a new issue in the GitHub repository for feature requests, bugs, or improvements',
-  parameters: z.object({
+  inputSchema: z.object({
     title: z.string().describe('The title of the issue'),
     body: z.string().describe('The detailed description of the issue, with context and requirements'),
     labels: z.array(z.string()).optional().describe('Labels to apply (e.g., ["enhancement", "bug", "documentation"])'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ title, body, labels }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega'; // owner/repo format
