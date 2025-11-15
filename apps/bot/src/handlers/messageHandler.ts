@@ -82,15 +82,7 @@ export async function handleMessage(message: Message): Promise<void> {
     // Clear message context after agent execution
     clearExportMessageContext();
 
-    // Send the response
-    if (result.response) {
-      await message.reply({
-        content: result.response,
-        allowedMentions: { repliedUser: false }, // Don't ping the user
-      });
-      console.log(`✅ Sent response (${result.response.length} chars)`);
-    }
-
+    // Send tool reports FIRST (in order of occurrence), then the final response
     // If tools were used, send separate messages for each tool
     // This handles many tool invocations better and avoids hitting Discord's 2000 char limit
     if (result.toolCalls && result.toolCalls.length > 0 && 'send' in message.channel) {
@@ -117,6 +109,15 @@ export async function handleMessage(message: Message): Promise<void> {
       }
 
       console.log(`✅ Sent ${result.toolCalls.length} tool usage reports`);
+    }
+
+    // Send the final response AFTER tool reports (in order of occurrence)
+    if (result.response) {
+      await message.reply({
+        content: result.response,
+        allowedMentions: { repliedUser: false }, // Don't ping the user
+      });
+      console.log(`✅ Sent response (${result.response.length} chars)`);
     }
   } catch (error) {
     console.error('Error generating response:', error);
