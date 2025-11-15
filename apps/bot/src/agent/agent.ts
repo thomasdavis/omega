@@ -366,32 +366,36 @@ export async function runAgent(
       maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
       // @ts-ignore - onStepFinish callback types differ in beta
       onStepFinish: (step) => {
-        // Debug: Log the entire step object to see structure
-        console.log('🔍 DEBUG: onStepFinish called with step:', JSON.stringify(step, null, 2));
+        // Track tool calls - step.content contains an array of tool-call and tool-result objects
+        // @ts-ignore - content property exists at runtime
+        if (step.content && Array.isArray(step.content)) {
+          // @ts-ignore
+          const toolCallItems = step.content.filter(item => item.type === 'tool-call');
+          // @ts-ignore
+          const toolResultItems = step.content.filter(item => item.type === 'tool-result');
 
-        // Track tool calls
-        if (step.toolCalls && step.toolCalls.length > 0) {
-          console.log(`🔍 DEBUG: Found ${step.toolCalls.length} tool calls`);
-          for (const toolCall of step.toolCalls) {
-            console.log(`   🔧 Tool called: ${toolCall.toolName}`);
-            // @ts-ignore - args property exists at runtime in beta.99
-            console.log(`   📥 Args:`, JSON.stringify(toolCall.args));
-            console.log(`🔍 DEBUG: Full toolCall object:`, JSON.stringify(toolCall, null, 2));
+          for (const toolCallItem of toolCallItems) {
+            // @ts-ignore
+            const toolName = toolCallItem.toolName;
+            // @ts-ignore
+            const toolCallId = toolCallItem.toolCallId;
+            // @ts-ignore - input contains the arguments
+            const args = toolCallItem.input || {};
 
-            // Find the result for this tool call
-            const toolResult = step.toolResults?.find(r => r.toolCallId === toolCall.toolCallId);
-            console.log(`🔍 DEBUG: Tool result for ${toolCall.toolName}:`, JSON.stringify(toolResult, null, 2));
+            // Find the corresponding result
+            // @ts-ignore
+            const resultItem = toolResultItems.find(r => r.toolCallId === toolCallId);
+            // @ts-ignore - output contains the result
+            const result = resultItem?.output;
+
+            console.log(`   🔧 Tool called: ${toolName} with args:`, args);
 
             toolCalls.push({
-              toolName: toolCall.toolName,
-              // @ts-ignore - args and result properties exist at runtime
-              args: toolCall.args,
-              // @ts-ignore
-              result: toolResult?.result,
+              toolName,
+              args,
+              result,
             });
           }
-        } else {
-          console.log('🔍 DEBUG: No tool calls in this step');
         }
       },
     });
