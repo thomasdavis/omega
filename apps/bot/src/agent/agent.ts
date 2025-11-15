@@ -19,6 +19,7 @@ import { researchEssayTool } from './tools/researchEssay.js';
 import { selfModifyTool } from './tools/selfModify.js';
 import { asciiGraphTool } from './tools/asciiGraph.js';
 import { whoamiTool } from './tools/whoami.js';
+import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -106,6 +107,8 @@ ASCII Graphs: You have access to the asciiGraph tool for generating text-based d
 
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
+Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -162,6 +165,8 @@ ASCII Graphs: You have access to the asciiGraph tool for generating text-based d
 
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
+Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -210,6 +215,7 @@ export async function runAgent(
         selfModify: selfModifyTool,
         asciiGraph: asciiGraphTool,
         whoami: whoamiTool,
+        linuxAdvantages: linuxAdvantagesTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
