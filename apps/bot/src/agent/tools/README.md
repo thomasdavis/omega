@@ -11,6 +11,7 @@ This directory contains tool implementations for the AI agent. Each tool provide
 - **githubCreateIssue** - Create GitHub issues
 - **webFetch** - Fetch web pages with robots.txt compliance checking
 - **whoami** - Explain Omega's capabilities, personality, and purpose
+- **jsonAgentGenerator** - Generate, validate, and convert JSON Agents using PAM specification
 
 ### Code Execution
 - **unsandbox** - Execute code in various programming languages using Unsandbox API
@@ -75,6 +76,70 @@ export const myTool = tool({
   },
 });
 ```
+
+## JSON Agent Generator Tool
+
+The JSON Agent Generator tool enables creation, validation, and conversion of JSON Agents based on the PAM (Portable Agent Manifest) specification from jsonagents.org.
+
+### Features
+- **Generate**: Create new JSON Agent templates with customizable configurations
+- **Validate**: Validate existing JSON Agent definitions against the PAM schema
+- **Convert**: Convert between minimal and full agent formats
+
+### Operations
+
+#### Generate Operation
+Creates a new JSON Agent template with optional tools and personality configurations.
+
+**Parameters:**
+- `operation`: "generate"
+- `name` (required): Agent name
+- `description` (required): Agent description
+- `author` (optional): Agent author
+- `includeTools` (optional): Include example tool definitions
+- `includePersonality` (optional): Include personality and configuration settings
+
+**Example:**
+```
+User: Generate a JSON Agent for a customer support assistant
+Bot: *uses jsonAgentGenerator tool with generate operation*
+```
+
+#### Validate Operation
+Validates an existing JSON Agent definition against the PAM schema.
+
+**Parameters:**
+- `operation`: "validate"
+- `agentJson` (required): JSON string of the agent to validate
+
+**Example:**
+```
+User: Validate this JSON Agent definition: {"version": "1.0", ...}
+Bot: *uses jsonAgentGenerator tool with validate operation*
+```
+
+#### Convert Operation
+Converts between minimal and full agent formats.
+
+**Parameters:**
+- `operation`: "convert"
+- `agentJson` (required): JSON string of the agent to convert
+- `targetFormat` (required): "minimal" or "full"
+
+**Example:**
+```
+User: Convert this agent to the full format with all fields
+Bot: *uses jsonAgentGenerator tool with convert operation*
+```
+
+### PAM Schema Support
+The tool supports the complete PAM specification including:
+- Agent metadata (name, description, version, author, license, homepage)
+- Capabilities (named features with enable/disable flags)
+- Tools (with parameters, descriptions, and endpoints)
+- Personality configuration (tone, style, traits)
+- Model configuration (model, temperature, maxTokens, systemPrompt)
+- Custom metadata
 
 ### Adding New Tools
 
