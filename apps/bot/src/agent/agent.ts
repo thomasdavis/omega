@@ -22,6 +22,7 @@ import { whoamiTool } from './tools/whoami.js';
 import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
 import { fileUploadTool } from './tools/fileUpload.js';
+import { exportConversationTool } from './tools/exportConversation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -115,6 +116,8 @@ Linux & Open-Source Education: You have access to the linuxAdvantages tool for e
 
 File Uploads: You have access to the fileUpload tool for saving files to a public folder with shareable links. When users share files in Discord (images, documents, code files, archives, etc.), you can download them and save them to the public uploads folder. The tool supports various file types up to 25MB, validates file extensions for security, sanitizes filenames to prevent attacks, and returns a shareable URL. Note: This tool expects base64-encoded file data - you'll need to fetch and encode Discord attachment URLs before using this tool.
 
+Export Conversation: You have access to the exportConversation tool for downloading Discord conversation history as Markdown. When users want to archive, save, or download conversation history, use this tool to capture messages with timestamps, usernames, and content. The tool supports filtering by date range or specific users, and can export up to 100 messages at a time. The generated Markdown preserves message formatting and provides a professional archive format suitable for sharing and record-keeping.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -177,6 +180,8 @@ Linux & Open-Source Education: You have access to the linuxAdvantages tool for e
 
 File Uploads: You have access to the fileUpload tool for saving files to a public folder with shareable links. When users share files in Discord (images, documents, code files, archives, etc.), you can download them and save them to the public uploads folder. The tool supports various file types up to 25MB, validates file extensions for security, sanitizes filenames to prevent attacks, and returns a shareable URL. Note: This tool expects base64-encoded file data - you'll need to fetch and encode Discord attachment URLs before using this tool.
 
+Export Conversation: You have access to the exportConversation tool for downloading Discord conversation history as Markdown. When users want to archive, save, or download conversation history, use this tool to capture messages with timestamps, usernames, and content. The tool supports filtering by date range or specific users, and can export up to 100 messages at a time. The generated Markdown preserves message formatting and provides a professional archive format suitable for sharing and record-keeping.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -228,6 +233,7 @@ export async function runAgent(
         whoami: whoamiTool,
         linuxAdvantages: linuxAdvantagesTool,
         fileUpload: fileUploadTool,
+        exportConversation: exportConversationTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {

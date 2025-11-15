@@ -5,6 +5,7 @@
 import { Message } from 'discord.js';
 import { runAgent } from '../agent/agent.js';
 import { shouldRespond } from '../lib/shouldRespond.js';
+import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -55,12 +56,18 @@ export async function handleMessage(message: Message): Promise<void> {
       }
     }
 
+    // Set message context for export tool
+    setExportMessageContext(message);
+
     // Run the AI agent with tools and conversation history
     const result = await runAgent(message.content, {
       username: message.author.username,
       channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
       messageHistory,
     });
+
+    // Clear message context after agent execution
+    clearExportMessageContext();
 
     // Send the response
     if (result.response) {
