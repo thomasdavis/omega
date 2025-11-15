@@ -32,9 +32,12 @@ const client = new Client({
 });
 
 // Start artifact preview server
-const artifactPort = process.env.ARTIFACT_SERVER_PORT
-  ? parseInt(process.env.ARTIFACT_SERVER_PORT, 10)
-  : 3001;
+// Railway requires listening on PORT env var for healthchecks
+const artifactPort = process.env.PORT
+  ? parseInt(process.env.PORT, 10)
+  : (process.env.ARTIFACT_SERVER_PORT
+      ? parseInt(process.env.ARTIFACT_SERVER_PORT, 10)
+      : 3001);
 startArtifactServer({ port: artifactPort });
 
 // Bot ready event
