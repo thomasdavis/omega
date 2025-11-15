@@ -5,6 +5,11 @@ on:
     branches:
       - 'claude/**'
 
+# STRICT: Only one workflow run at a time to prevent conflicts
+concurrency:
+  group: claude-pr-workflow
+  cancel-in-progress: false
+
 jobs:
   create-pr:
     name: Create PR from Claude Code branch
@@ -20,6 +25,25 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
+
+      - name: NUCLEAR OPTION - Delete ALL open claude/* PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "🗑️ STRICT MODE: Deleting ALL open PRs from claude/* branches to prevent conflicts..."
+
+          # Get all open PRs from claude/* branches
+          OPEN_PRS=$(gh pr list --head "claude/" --state open --json number,headRefName --jq '.[] | "\(.number):\(.headRefName)"')
+
+          if [ -z "$OPEN_PRS" ]; then
+            echo "✅ No open claude/* PRs to delete"
+          else
+            echo "$OPEN_PRS" | while IFS=: read -r PR_NUM BRANCH_NAME; do
+              echo "🗑️ Force-closing PR #$PR_NUM (branch: $BRANCH_NAME)"
+              gh pr close "$PR_NUM" --delete-branch --comment "🗑️ STRICT MODE: Auto-closed to prevent merge conflicts. Only one PR allowed at a time." || true
+            done
+            echo "✅ Deleted all open claude/* PRs"
+          fi
 
       - name: Auto-resolve merge conflicts with main
         run: |
@@ -247,7 +271,7 @@ jobs:
           embed-color: 5814783
           embed-url: ${{ steps.wait_merge.outputs.pr_url }}
 
-      - name: Cleanup on deployment failure - Close PR
+      - name: Cleanup on deployment failure - Revert merge
         if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
         env:
           GH_TOKEN: ${{ github.token }}
@@ -255,10 +279,31 @@ jobs:
           PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
           ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
 
-          echo "Deployment failed, cleaning up PR #$PR_NUMBER"
+          echo "⚠️ Deployment failed for merged PR #$PR_NUMBER"
+          echo "🔄 STRICT MODE: Cannot close merged PRs. Creating revert commit instead..."
 
-          # Close the PR
-          gh pr close "$PR_NUMBER" --repo ${{ github.repository }} --comment "Closing due to deployment failure. Please provide more details or fix the issues before trying again."
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Checkout main
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          # Create revert commit for the last merge
+          MERGE_COMMIT=$(git log --merges -1 --format="%H")
+          echo "Reverting merge commit: $MERGE_COMMIT"
+
+          git revert -m 1 "$MERGE_COMMIT" --no-edit
+
+          # Push revert
+          git push origin main
+
+          # Comment on the PR
+          gh pr comment "$PR_NUMBER" --repo ${{ github.repository }} --body "❌ Deployment failed! The merge has been **reverted** on main. Please fix the issues and try again."
+
+          echo "✅ Merge reverted successfully"
 
       - name: Cleanup on deployment failure - Comment on issue
         if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
