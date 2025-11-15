@@ -23,6 +23,7 @@ import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
 import { fileUploadTool } from './tools/fileUpload.js';
 import { exportConversationTool } from './tools/exportConversation.js';
+import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -118,6 +119,12 @@ File Uploads: You have access to the fileUpload tool for saving files to a publi
 
 Export Conversation: You have access to the exportConversation tool for downloading Discord conversation history as Markdown. When users want to archive, save, or download conversation history, use this tool to capture messages with timestamps, usernames, and content. The tool supports filtering by date range or specific users, and can export up to 100 messages at a time. The generated Markdown preserves message formatting and provides a professional archive format suitable for sharing and record-keeping.
 
+JSON Agent Generator: You have access to the jsonAgentGenerator tool for creating, validating, and converting JSON Agents based on the PAM (Portable Agent Manifest) specification from jsonagents.org. Use this tool when users want to:
+- Generate new JSON Agent templates with customizable configurations
+- Validate existing JSON Agent definitions against the PAM schema
+- Convert between minimal and full agent formats
+The tool supports agent metadata, capabilities, tools, personality configurations, and model settings. Perfect for building portable AI agent definitions that can be shared and deployed across different platforms.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -182,6 +189,12 @@ File Uploads: You have access to the fileUpload tool for saving files to a publi
 
 Export Conversation: You have access to the exportConversation tool for downloading Discord conversation history as Markdown. When users want to archive, save, or download conversation history, use this tool to capture messages with timestamps, usernames, and content. The tool supports filtering by date range or specific users, and can export up to 100 messages at a time. The generated Markdown preserves message formatting and provides a professional archive format suitable for sharing and record-keeping.
 
+JSON Agent Generator: You have access to the jsonAgentGenerator tool for creating, validating, and converting JSON Agents based on the PAM (Portable Agent Manifest) specification from jsonagents.org. Use this tool when users want to:
+- Generate new JSON Agent templates with customizable configurations
+- Validate existing JSON Agent definitions against the PAM schema
+- Convert between minimal and full agent formats
+The tool supports agent metadata, capabilities, tools, personality configurations, and model settings. Perfect for building portable AI agent definitions that can be shared and deployed across different platforms.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -234,6 +247,7 @@ export async function runAgent(
         linuxAdvantages: linuxAdvantagesTool,
         fileUpload: fileUploadTool,
         exportConversation: exportConversationTool,
+        jsonAgentGenerator: jsonAgentGeneratorTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
