@@ -366,26 +366,38 @@ export async function runAgent(
       maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
       // @ts-ignore - onStepFinish callback types differ in beta
       onStepFinish: (step) => {
+        // Debug: Log the entire step object to see structure
+        console.log('🔍 DEBUG: onStepFinish called with step:', JSON.stringify(step, null, 2));
+
         // Track tool calls
         if (step.toolCalls && step.toolCalls.length > 0) {
+          console.log(`🔍 DEBUG: Found ${step.toolCalls.length} tool calls`);
           for (const toolCall of step.toolCalls) {
             console.log(`   🔧 Tool called: ${toolCall.toolName}`);
             // @ts-ignore - args property exists at runtime in beta.99
             console.log(`   📥 Args:`, JSON.stringify(toolCall.args));
+            console.log(`🔍 DEBUG: Full toolCall object:`, JSON.stringify(toolCall, null, 2));
+
+            // Find the result for this tool call
+            const toolResult = step.toolResults?.find(r => r.toolCallId === toolCall.toolCallId);
+            console.log(`🔍 DEBUG: Tool result for ${toolCall.toolName}:`, JSON.stringify(toolResult, null, 2));
 
             toolCalls.push({
               toolName: toolCall.toolName,
               // @ts-ignore - args and result properties exist at runtime
               args: toolCall.args,
               // @ts-ignore
-              result: step.toolResults?.find(r => r.toolCallId === toolCall.toolCallId)?.result,
+              result: toolResult?.result,
             });
           }
+        } else {
+          console.log('🔍 DEBUG: No tool calls in this step');
         }
       },
     });
 
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
+    console.log(`🔍 DEBUG: Returning tool calls:`, JSON.stringify(toolCalls, null, 2));
 
     return {
       response: result.text,
