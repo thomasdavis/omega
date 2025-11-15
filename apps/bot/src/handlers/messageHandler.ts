@@ -56,11 +56,23 @@ export async function handleMessage(message: Message): Promise<void> {
       }
     }
 
+    // Check for file attachments
+    let enrichedContent = message.content;
+    if (message.attachments.size > 0) {
+      console.log(`   📎 Message has ${message.attachments.size} attachment(s)`);
+      const attachmentInfo = Array.from(message.attachments.values())
+        .map(att => `- ${att.name} (${att.contentType || 'unknown type'}, ${(att.size / 1024).toFixed(2)} KB): ${att.url}`)
+        .join('\n');
+
+      enrichedContent = `${message.content}\n\n**[ATTACHMENTS]**\n${attachmentInfo}`;
+      console.log('   Attachment details added to message context');
+    }
+
     // Set message context for export tool
     setExportMessageContext(message);
 
     // Run the AI agent with tools and conversation history
-    const result = await runAgent(message.content, {
+    const result = await runAgent(enrichedContent, {
       username: message.author.username,
       channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
       messageHistory,
