@@ -21,6 +21,7 @@ import { asciiGraphTool } from './tools/asciiGraph.js';
 import { whoamiTool } from './tools/whoami.js';
 import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
+import { fileUploadTool } from './tools/fileUpload.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -112,6 +113,8 @@ WhoAmI: When users ask "who are you?", "what can you do?", or similar questions 
 
 Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
 
+File Uploads: You have access to the fileUpload tool for saving files to a public folder with shareable links. When users share files in Discord (images, documents, code files, archives, etc.), you can download them and save them to the public uploads folder. The tool supports various file types up to 25MB, validates file extensions for security, sanitizes filenames to prevent attacks, and returns a shareable URL. Note: This tool expects base64-encoded file data - you'll need to fetch and encode Discord attachment URLs before using this tool.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -172,6 +175,8 @@ WhoAmI: When users ask "who are you?", "what can you do?", or similar questions 
 
 Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
 
+File Uploads: You have access to the fileUpload tool for saving files to a public folder with shareable links. When users share files in Discord (images, documents, code files, archives, etc.), you can download them and save them to the public uploads folder. The tool supports various file types up to 25MB, validates file extensions for security, sanitizes filenames to prevent attacks, and returns a shareable URL. Note: This tool expects base64-encoded file data - you'll need to fetch and encode Discord attachment URLs before using this tool.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -222,6 +227,7 @@ export async function runAgent(
         artifact: artifactTool,
         whoami: whoamiTool,
         linuxAdvantages: linuxAdvantagesTool,
+        fileUpload: fileUploadTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
