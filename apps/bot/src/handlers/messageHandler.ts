@@ -72,12 +72,21 @@ export async function handleMessage(message: Message): Promise<void> {
     // Set message context for export tool
     setExportMessageContext(message);
 
+    console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
+
     // Run the AI agent with tools and conversation history
-    const result = await runAgent(enrichedContent, {
-      username: message.author.username,
-      channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
-      messageHistory,
-    });
+    let result;
+    try {
+      result = await runAgent(enrichedContent, {
+        username: message.author.username,
+        channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+        messageHistory,
+      });
+      console.log('🔍 DEBUG: runAgent completed successfully');
+    } catch (agentError) {
+      console.error('🔍 DEBUG: runAgent threw an error:', agentError);
+      throw agentError;
+    }
 
     // Clear message context after agent execution
     clearExportMessageContext();
@@ -120,13 +129,20 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log(`✅ Sent response (${result.response.length} chars)`);
     }
   } catch (error) {
-    console.error('Error generating response:', error);
+    console.error('❌ Error generating response:', error);
+    console.error('❌ Error type:', error?.constructor?.name);
+    console.error('❌ Error message:', error?.message);
+    console.error('❌ Error stack:', error?.stack);
 
     // Send error message to user
-    await message.reply({
-      content: '❌ Sorry, I encountered an error processing your message. Please try again.',
-      allowedMentions: { repliedUser: false },
-    });
+    try {
+      await message.reply({
+        content: '❌ Sorry, I encountered an error processing your message. Please try again.',
+        allowedMentions: { repliedUser: false },
+      });
+    } catch (replyError) {
+      console.error('❌ Failed to send error message to user:', replyError);
+    }
   }
 }
 

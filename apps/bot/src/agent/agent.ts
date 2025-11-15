@@ -198,8 +198,10 @@ export async function runAgent(
         '\n\n---\n';
     }
 
+    console.log('🔍 DEBUG: Built history context, length =', historyContext.length);
     console.log('🔍 DEBUG: About to call streamText...');
-    console.log('🔍 DEBUG: stopWhen =', stepCountIs(10));
+    console.log('🔍 DEBUG: Model =', model);
+    console.log('🔍 DEBUG: stopWhen condition = stepCountIs(10)');
 
     const streamResult = streamText({
       model,
@@ -264,10 +266,19 @@ export async function runAgent(
       },
     });
 
-    console.log('🔍 DEBUG: streamText call completed, waiting for text...');
+    console.log('🔍 DEBUG: streamText call initiated successfully');
+    console.log('🔍 DEBUG: streamResult type =', typeof streamResult);
+    console.log('🔍 DEBUG: Now waiting for streamResult.text...');
 
     // Wait for the full stream to complete and get final text
-    const finalText = await streamResult.text;
+    let finalText;
+    try {
+      finalText = await streamResult.text;
+      console.log('🔍 DEBUG: Successfully got finalText from stream');
+    } catch (textError) {
+      console.error('🔍 DEBUG: Error getting text from stream:', textError);
+      throw textError;
+    }
 
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
     console.log(`🔍 DEBUG: Returning tool calls:`, JSON.stringify(toolCalls, null, 2));
@@ -281,7 +292,10 @@ export async function runAgent(
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   } catch (error) {
-    console.error('Error in AI agent:', error);
+    console.error('❌ Error in AI agent:', error);
+    console.error('❌ Error type:', error?.constructor?.name);
+    console.error('❌ Error message:', error?.message);
+    console.error('❌ Error stack:', error?.stack);
     throw error;
   }
 }
