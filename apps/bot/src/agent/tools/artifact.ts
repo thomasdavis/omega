@@ -14,7 +14,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Artifacts directory - store generated content
-const ARTIFACTS_DIR = join(__dirname, '../../../artifacts');
+// Use persistent Fly.io Volume if available, otherwise fall back to local artifacts folder
+const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/artifacts')
+  ? '/data/artifacts'
+  : join(__dirname, '../../../artifacts');
 
 // Ensure artifacts directory exists
 if (!existsSync(ARTIFACTS_DIR)) {
@@ -199,7 +202,9 @@ export const artifactTool = tool({
       const metadata = saveArtifact(artifactContent, type, title, description);
 
       // Get server URL from environment or use default
-      const serverUrl = process.env.ARTIFACT_SERVER_URL || 'http://localhost:3001';
+      // In production on Fly.io, use the app URL; locally use localhost
+      const serverUrl = process.env.ARTIFACT_SERVER_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://omega-nrhptq.fly.dev' : 'http://localhost:3001');
       const previewUrl = `${serverUrl}/artifacts/${metadata.id}`;
 
       return {

@@ -11,8 +11,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const ARTIFACTS_DIR = join(__dirname, '../../../artifacts');
-// Use persistent Fly.io Volume if available, otherwise fall back to local public folder
+// Use persistent Fly.io Volume if available, otherwise fall back to local folders
+const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/artifacts')
+  ? '/data/artifacts'
+  : join(__dirname, '../../../artifacts');
 const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/uploads')
   ? '/data/uploads'
   : join(__dirname, '../../../public/uploads');
