@@ -6,9 +6,9 @@ This directory contains files that are publicly accessible via the artifact prev
 
 - `/uploads/` - User-uploaded files via the fileUpload tool
 
-## File Upload Tool
+## File Upload System
 
-The fileUpload tool allows users to upload files via Discord and get shareable links.
+The file upload system allows users to upload files via Discord and get shareable public links. This feature is implemented in `src/agent/tools/fileUpload.ts` and integrated with Discord message handling.
 
 ### Features
 
@@ -16,7 +16,9 @@ The fileUpload tool allows users to upload files via Discord and get shareable l
 - **Size Limits**: Maximum 25MB (Discord's attachment limit)
 - **Security**: Filename sanitization to prevent directory traversal and other attacks
 - **Unique Filenames**: UUID-based naming to prevent collisions
-- **Metadata Storage**: JSON metadata files for each upload
+- **Metadata Storage**: JSON metadata files for each upload with tracking information
+- **Automatic Download**: Supports direct download from Discord attachment URLs
+- **Public URLs**: Each uploaded file gets a shareable public URL
 
 ### Supported File Types
 
@@ -28,27 +30,159 @@ The fileUpload tool allows users to upload files via Discord and get shareable l
 - **Media**: mp3, mp4, wav, ogg, webm
 - **Other**: log, sql, sh, bat
 
-### Access
+### How It Works
 
-Uploaded files are accessible at: `http://localhost:3001/uploads/:filename`
+#### 1. User Uploads File in Discord
+When a user shares a file attachment in Discord, the bot automatically:
+- Detects the attachment in the message
+- Extracts attachment metadata (filename, size, type, URL)
+- Enriches the message context with attachment information
 
-In production: `https://your-domain.com/uploads/:filename`
+#### 2. AI Agent Processes Upload
+The AI agent can use the `fileUpload` tool to:
+- Download the file from the Discord CDN URL
+- Validate file type and size
+- Sanitize the filename for security
+- Save the file to the public uploads directory
+- Generate a unique public URL
+
+#### 3. User Receives Shareable Link
+The bot responds with:
+- Confirmation of successful upload
+- Public URL for sharing
+- File metadata (size, type, upload time)
+
+### Usage Examples
+
+**Example 1: User uploads an image**
+```
+User: [Uploads image.png] Can you save this for me?
+Bot: File uploaded successfully! Access it at: http://localhost:3001/uploads/image_a1b2c3d4.png
+     Original name: image.png
+     Size: 245.67 KB
+     Type: image/png
+```
+
+**Example 2: User uploads a document**
+```
+User: [Uploads report.pdf] Please create a public link for this
+Bot: File uploaded successfully! Access it at: http://localhost:3001/uploads/report_e5f6g7h8.pdf
+     Original name: report.pdf
+     Size: 1.23 MB
+     Type: application/pdf
+```
+
+### Access URLs
+
+**Local Development:**
+- Uploaded files: `http://localhost:3001/uploads/:filename`
+- Artifact server: `http://localhost:3001/`
+
+**Production:**
+- Configure `ARTIFACT_SERVER_URL` environment variable
+- Example: `https://your-domain.com/uploads/:filename`
 
 ## Security Considerations
 
-1. **Whitelist Approach**: Only explicitly allowed file extensions are accepted
-2. **Filename Sanitization**: All special characters are replaced with underscores
-3. **Directory Traversal Prevention**: Path components are stripped from filenames
-4. **Size Limits**: Files exceeding 25MB are rejected
-5. **Metadata Validation**: File metadata is validated before storage
+### 1. File Type Whitelist
+Only explicitly allowed file extensions are accepted. Executable files and potentially dangerous formats are blocked by default.
 
-## Usage
+### 2. Filename Sanitization
+- All path components are stripped (prevents directory traversal)
+- Special characters are replaced with underscores
+- Original filename is preserved in metadata
 
-When a user shares a file in Discord, the bot can:
-1. Extract the attachment URL
-2. Download the file content
-3. Encode it to base64
-4. Use the fileUpload tool to save it
-5. Return a shareable URL to the user
+### 3. Size Limits
+Files exceeding 25MB are rejected before download/processing.
 
-Note: The tool requires base64-encoded file data, so Discord attachments must be downloaded and encoded first.
+### 4. Unique Filenames
+Each uploaded file gets a UUID suffix to:
+- Prevent filename collisions
+- Avoid overwriting existing files
+- Make URLs harder to guess
+
+### 5. Metadata Tracking
+Each upload creates a `.json` metadata file containing:
+- Upload timestamp
+- Original filename
+- File size and type
+- Uploader username
+- Unique file ID
+
+## API Reference
+
+### fileUpload Tool
+
+**Parameters:**
+- `fileUrl` (optional): Discord attachment URL to download from
+- `fileData` (optional): Base64-encoded file data (alternative to fileUrl)
+- `originalName` (required): Original filename with extension
+- `mimeType` (optional): MIME type of the file
+- `uploadedBy` (optional): Username of the uploader
+
+**Returns:**
+```typescript
+{
+  success: boolean;
+  filename?: string;        // Sanitized unique filename
+  originalName?: string;    // Original filename
+  size?: number;           // File size in bytes
+  sizeFormatted?: string;  // Human-readable size
+  extension?: string;      // File extension
+  mimeType?: string;       // MIME type
+  uploadedAt?: string;     // ISO timestamp
+  uploadedBy?: string;     // Username
+  publicUrl?: string;      // Shareable public URL
+  message?: string;        // Success message
+  error?: string;          // Error message if failed
+}
+```
+
+## Architecture
+
+```
+Discord Message → messageHandler.ts
+                    ↓
+                Detect attachments
+                    ↓
+                Enrich message context
+                    ↓
+                AI Agent (agent.ts)
+                    ↓
+                fileUpload tool
+                    ↓
+                Download from URL
+                    ↓
+                Validate & Sanitize
+                    ↓
+                Save to public/uploads/
+                    ↓
+                Generate public URL
+                    ↓
+                Artifact Server serves file
+```
+
+## Configuration
+
+### Environment Variables
+
+- `ARTIFACT_SERVER_URL`: Base URL for public file access (default: `http://localhost:3001`)
+- `ARTIFACT_SERVER_PORT`: Port for artifact server (default: `3001`)
+
+### File System
+
+- Upload directory: `apps/bot/public/uploads/`
+- Metadata files: `apps/bot/public/uploads/*.json`
+- Served by: `apps/bot/src/server/artifactServer.ts`
+
+## Future Enhancements
+
+Potential improvements to consider:
+- Upload gallery view (similar to artifacts gallery)
+- File expiration/cleanup policies
+- Upload statistics and analytics
+- User upload quotas
+- Virus scanning integration
+- Cloud storage backend (S3, Vercel Blob, etc.)
+- Thumbnail generation for images
+- File preview in Discord embeds

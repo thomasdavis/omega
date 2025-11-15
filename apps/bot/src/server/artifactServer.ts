@@ -115,6 +115,37 @@ function createApp(): express.Application {
     }
   });
 
+  // Uploads gallery - list all uploaded files
+  app.get('/uploads', (req: Request, res: Response) => {
+    try {
+      if (!existsSync(UPLOADS_DIR)) {
+        return res.send(generateUploadsGalleryHTML([]));
+      }
+
+      const files = readdirSync(UPLOADS_DIR);
+      const metadataFiles = files.filter(f => f.endsWith('.json'));
+
+      const uploads = metadataFiles.map(file => {
+        try {
+          const content = readFileSync(join(UPLOADS_DIR, file), 'utf-8');
+          return JSON.parse(content);
+        } catch {
+          return null;
+        }
+      }).filter(Boolean);
+
+      // Sort by upload date (newest first)
+      uploads.sort((a, b) =>
+        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      );
+
+      res.send(generateUploadsGalleryHTML(uploads));
+    } catch (error) {
+      console.error('Error generating uploads gallery:', error);
+      res.status(500).send('Error loading uploads gallery');
+    }
+  });
+
   // Gallery view - list all artifacts
   app.get('/', (req: Request, res: Response) => {
     try {
@@ -201,6 +232,23 @@ function generateGalleryHTML(artifacts: any[]): string {
       font-size: 3em;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
+    .nav-links {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      margin: 0 10px;
+      transition: background 0.2s;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.2);
+    }
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -276,6 +324,9 @@ function generateGalleryHTML(artifacts: any[]): string {
 <body>
   <div class="container">
     <h1>🎨 Artifact Gallery</h1>
+    <div class="nav-links">
+      <a href="/uploads">📁 Uploads Gallery →</a>
+    </div>
     <div class="stats">
       <strong>${artifacts.length}</strong> artifact${artifacts.length !== 1 ? 's' : ''} created
     </div>
@@ -285,6 +336,279 @@ function generateGalleryHTML(artifacts: any[]): string {
   </div>
 </body>
 </html>`;
+}
+
+/**
+ * Generate HTML for the uploads gallery page
+ */
+function generateUploadsGalleryHTML(uploads: any[]): string {
+  const uploadsList = uploads.length > 0
+    ? uploads.map(u => {
+        const isImage = u.extension && ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico'].includes(u.extension.toLowerCase());
+        const preview = isImage
+          ? `<div class="preview-image"><img src="/uploads/${u.filename}" alt="${escapeHtml(u.originalName)}" /></div>`
+          : `<div class="preview-icon">${getFileIcon(u.extension)}</div>`;
+
+        return `
+        <div class="upload-card">
+          ${preview}
+          <h3>${escapeHtml(u.originalName)}</h3>
+          <div class="meta">
+            <span class="type">${u.extension || 'unknown'}</span>
+            <span class="size">${formatFileSize(u.size)}</span>
+            ${u.uploadedBy ? `<span class="uploader">by ${escapeHtml(u.uploadedBy)}</span>` : ''}
+          </div>
+          <p class="date">${new Date(u.uploadedAt).toLocaleString()}</p>
+          <a href="/uploads/${u.filename}" class="view-link" target="_blank">Download →</a>
+        </div>
+      `;
+      }).join('\n')
+    : '<p class="empty">No uploads yet. Upload a file in Discord to get started!</p>';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uploads Gallery</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .upload-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .upload-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+    .preview-image {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .preview-image img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .preview-icon {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4em;
+    }
+    .upload-card h3 {
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 1.2em;
+      word-break: break-word;
+    }
+    .meta {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      font-size: 0.85em;
+    }
+    .type, .size, .uploader {
+      background: #43e97b;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 0.85em;
+    }
+    .size {
+      background: #38f9d7;
+    }
+    .uploader {
+      background: #667eea;
+    }
+    .date {
+      color: #999;
+      font-size: 0.85em;
+      margin-bottom: 12px;
+    }
+    .view-link {
+      display: inline-block;
+      color: #43e97b;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+      margin-top: auto;
+    }
+    .view-link:hover {
+      color: #38f9d7;
+    }
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: white;
+      font-size: 1.2em;
+      padding: 60px;
+    }
+    .stats {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .stat {
+      flex: 1;
+      min-width: 150px;
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      display: block;
+    }
+    .stat-label {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+    .nav-links {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      margin: 0 10px;
+      transition: background 0.2s;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📁 Uploads Gallery</h1>
+    <div class="nav-links">
+      <a href="/">← Artifacts Gallery</a>
+    </div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-value">${uploads.length}</span>
+        <span class="stat-label">Total Uploads</span>
+      </div>
+      <div class="stat">
+        <span class="stat-value">${formatFileSize(uploads.reduce((sum, u) => sum + (u.size || 0), 0))}</span>
+        <span class="stat-label">Total Size</span>
+      </div>
+    </div>
+    <div class="gallery">
+      ${uploadsList}
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Get file icon emoji based on extension
+ */
+function getFileIcon(extension: string | undefined): string {
+  if (!extension) return '📄';
+
+  const iconMap: Record<string, string> = {
+    '.pdf': '📕',
+    '.txt': '📝',
+    '.md': '📝',
+    '.doc': '📘',
+    '.docx': '📘',
+    '.json': '📋',
+    '.xml': '📋',
+    '.csv': '📊',
+    '.zip': '📦',
+    '.tar': '📦',
+    '.gz': '📦',
+    '.7z': '📦',
+    '.js': '📜',
+    '.ts': '📜',
+    '.py': '🐍',
+    '.java': '☕',
+    '.cpp': '⚙️',
+    '.c': '⚙️',
+    '.rs': '🦀',
+    '.go': '🐹',
+    '.rb': '💎',
+    '.php': '🐘',
+    '.html': '🌐',
+    '.css': '🎨',
+    '.mp3': '🎵',
+    '.mp4': '🎬',
+    '.wav': '🎵',
+    '.log': '📋',
+    '.sql': '🗄️',
+  };
+
+  return iconMap[extension.toLowerCase()] || '📄';
+}
+
+/**
+ * Format file size to human-readable string
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
 }
 
 /**

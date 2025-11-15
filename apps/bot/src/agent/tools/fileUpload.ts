@@ -140,32 +140,71 @@ function saveUploadedFile(
   return metadata;
 }
 
+/**
+ * Download file from URL
+ */
+async function downloadFile(url: string): Promise<Buffer> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download file: HTTP ${response.status}`);
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
 export const fileUploadTool = tool({
   description: `Upload files to a public folder and get shareable links.
   Supports various file types including images, documents, code files, and archives.
   Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB.
 
   IMPORTANT: This tool is designed to work with Discord attachments. When a user shares a file in Discord:
-  1. Extract the attachment URL from the message
-  2. Download the file content
-  3. Use this tool to save it to the public folder
+  1. The message will include attachment information in the format:
+     **[ATTACHMENTS]**
+     - filename.ext (mime/type, XX.XX KB): https://cdn.discordapp.com/...
+  2. Extract the attachment URL and filename from the message
+  3. Use this tool with the fileUrl parameter to download and save the file
   4. Return the shareable URL to the user
+
+  You can use this tool in two ways:
+  - With fileUrl: Provide a Discord attachment URL to download and save
+  - With fileData: Provide base64-encoded file data directly
 
   Security features:
   - File type validation (whitelist of allowed extensions)
-  - File size limits
+  - File size limits (${MAX_FILE_SIZE / 1024 / 1024}MB max)
   - Filename sanitization to prevent directory traversal
-  - Unique filenames to prevent collisions`,
+  - Unique filenames to prevent collisions
+
+  Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}`,
   parameters: z.object({
-    fileData: z.string().describe('Base64-encoded file data or raw file content'),
+    fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL)'),
+    fileData: z.string().optional().describe('Base64-encoded file data (alternative to fileUrl)'),
     originalName: z.string().describe('Original filename with extension'),
     mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
   }),
-  execute: async ({ fileData, originalName, mimeType, uploadedBy }) => {
+  execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy }) => {
     try {
+      // Validate that either fileUrl or fileData is provided
+      if (!fileUrl && !fileData) {
+        return {
+          success: false,
+          error: 'Either fileUrl or fileData must be provided',
+        };
+      }
+
+      // Download file if URL is provided
+      let dataBuffer: Buffer | string;
+      if (fileUrl) {
+        console.log(`📥 Downloading file from: ${fileUrl}`);
+        dataBuffer = await downloadFile(fileUrl);
+        console.log(`✅ Downloaded ${dataBuffer.length} bytes`);
+      } else {
+        dataBuffer = fileData!;
+      }
+
       const metadata = saveUploadedFile(
-        fileData,
+        dataBuffer,
         originalName,
         mimeType,
         uploadedBy
