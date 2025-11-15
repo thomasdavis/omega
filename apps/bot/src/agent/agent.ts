@@ -4,7 +4,7 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import { generateText, tool } from 'ai';
+import { streamText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
@@ -340,7 +340,7 @@ export async function runAgent(
         '\n\n---\n';
     }
 
-    const result = await generateText({
+    const streamResult = streamText({
       model,
       system: buildSystemPrompt(),
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
@@ -364,8 +364,9 @@ export async function runAgent(
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
       },
-      // @ts-ignore - maxSteps exists in beta.99 but types may not reflect it
-      maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
+      // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
+      // This allows the agent to continue after tool calls to generate text commentary
+      stopWhen: stepCountIs(10),
       // @ts-ignore - onStepFinish callback types differ in beta
       onStepFinish: (step) => {
         // Track tool calls - step.content contains an array of tool-call and tool-result objects
@@ -402,35 +403,18 @@ export async function runAgent(
       },
     });
 
+    // Wait for the full stream to complete and get final text
+    const finalText = await streamResult.text;
+
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
     console.log(`🔍 DEBUG: Returning tool calls:`, JSON.stringify(toolCalls, null, 2));
 
-    // Debug: Log the full result structure to understand what we're getting
-    console.log(`🔍 DEBUG: result.text =`, result.text);
-    console.log(`🔍 DEBUG: result.finishReason =`, result.finishReason);
-
-    // @ts-ignore - steps property exists at runtime
-    if (result.steps && Array.isArray(result.steps)) {
-      // @ts-ignore
-      console.log(`🔍 DEBUG: Total steps = ${result.steps.length}`);
-      // @ts-ignore
-      result.steps.forEach((step, index) => {
-        console.log(`🔍 DEBUG: Step ${index + 1}:`, JSON.stringify({
-          finishReason: step.finishReason,
-          // @ts-ignore
-          hasText: !!step.text,
-          // @ts-ignore
-          textLength: step.text?.length || 0,
-          // @ts-ignore
-          hasContent: !!step.content,
-          // @ts-ignore
-          contentLength: step.content?.length || 0,
-        }, null, 2));
-      });
-    }
+    // Debug: Log the final text
+    console.log(`🔍 DEBUG: finalText =`, finalText);
+    console.log(`🔍 DEBUG: finalText.length =`, finalText?.length || 0);
 
     return {
-      response: result.text,
+      response: finalText,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   } catch (error) {
