@@ -12,6 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const ARTIFACTS_DIR = join(__dirname, '../../../artifacts');
+const UPLOADS_DIR = join(__dirname, '../../../public/uploads');
 const DEFAULT_PORT = 3001;
 
 export interface ArtifactServerConfig {
@@ -67,6 +68,50 @@ function createApp(): express.Application {
     } catch (error) {
       console.error('Error serving artifact:', error);
       res.status(500).send('Error loading artifact');
+    }
+  });
+
+  // Serve uploaded files
+  app.get('/uploads/:filename', (req: Request, res: Response) => {
+    const { filename } = req.params;
+
+    // Validate filename to prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).send('Invalid filename');
+    }
+
+    try {
+      const filepath = join(UPLOADS_DIR, filename);
+
+      if (!existsSync(filepath)) {
+        return res.status(404).send('File not found');
+      }
+
+      // Try to load metadata if available
+      const metadataPath = join(UPLOADS_DIR, `${filename}.json`);
+      let contentType = 'application/octet-stream';
+
+      if (existsSync(metadataPath)) {
+        try {
+          const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+          if (metadata.mimeType) {
+            contentType = metadata.mimeType;
+          }
+        } catch (error) {
+          // Metadata read failed, use default content type
+        }
+      }
+
+      // Set appropriate content type
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+
+      // Send the file
+      const content = readFileSync(filepath);
+      res.send(content);
+    } catch (error) {
+      console.error('Error serving uploaded file:', error);
+      res.status(500).send('Error loading file');
     }
   });
 
@@ -267,5 +312,6 @@ export function startArtifactServer(config: ArtifactServerConfig = {}): void {
     console.log(`🎨 Artifact preview server running at http://${host}:${port}`);
     console.log(`   Gallery: http://${host}:${port}/`);
     console.log(`   Artifacts: http://${host}:${port}/artifacts/:id`);
+    console.log(`   Uploads: http://${host}:${port}/uploads/:filename`);
   });
 }
