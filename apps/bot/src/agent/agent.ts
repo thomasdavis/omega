@@ -49,7 +49,7 @@ const personalityConfig = loadPersonalityConfig();
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
-const model = openai.chat('gpt-4o-mini');
+const model = openai.chat('gpt-4.1-mini');
 
 export interface AgentContext {
   username: string;
