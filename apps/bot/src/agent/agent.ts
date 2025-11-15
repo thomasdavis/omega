@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { searchTool } from './tools/search.js';
+// import { searchTool } from './tools/search.js'; // Disabled - placeholder tool causing schema errors
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool } from './tools/github.js';
@@ -336,7 +336,7 @@ export async function runAgent(
       system: buildSystemPrompt(),
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
-        search: searchTool,
+        // search: searchTool, // Disabled - placeholder tool
         calculator: calculatorTool,
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
