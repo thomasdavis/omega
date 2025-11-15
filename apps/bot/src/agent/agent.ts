@@ -314,6 +314,69 @@ Tell a Joke: You have access to the tellJoke tool for providing humor and lighth
 
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
+## AI SDK v6 Tool Development Guidelines
+
+When creating new tools or modifying existing ones, follow these AI SDK v6 best practices:
+
+**Tool Structure:**
+\`\`\`typescript
+import { tool } from 'ai';
+import { z } from 'zod';
+
+export const myTool = tool({
+  description: 'Clear, concise description of what this tool does',
+  parameters: z.object({
+    param: z.string().describe('Parameter description'),
+  }),
+  execute: async ({ param }) => {
+    // Tool implementation
+    return { success: true, data: result };
+  },
+});
+\`\`\`
+
+**When Tools Use AI (generateText):**
+If your tool needs to invoke AI for sub-tasks, use the correct AI SDK v6 pattern:
+
+\`\`\`typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-4.1-mini'), // or 'gpt-4o'
+  prompt: 'Your prompt here',
+  temperature: 0.7, // Optional
+  // Do NOT use: maxTokens (not supported in AI SDK v6)
+  // Do NOT use: maxCompletionTokens (not supported in generateText)
+});
+
+const text = result.text; // Extract the generated text
+\`\`\`
+
+**When Tools Use AI (streamText with multi-step):**
+For complex tool operations requiring multi-step reasoning:
+
+\`\`\`typescript
+import { streamText, stepCountIs } from 'ai';
+
+const streamResult = streamText({
+  model: openai('gpt-4.1-mini'),
+  prompt: 'Your prompt here',
+  stopWhen: stepCountIs(10), // Enable multi-step reasoning
+  temperature: 0.7,
+});
+
+const finalText = await streamResult.text; // Wait for completion
+\`\`\`
+
+**Key Points:**
+- Use \`generateText\` for simple, single-response AI calls
+- Use \`streamText\` with \`stopWhen: stepCountIs(N)\` for multi-step reasoning
+- Never use \`maxTokens\` or \`maxCompletionTokens\` in AI SDK v6
+- Always use \`openai('model-name')\` for model selection
+- Extract text with \`result.text\` or \`await streamResult.text\`
+- Reference this project's agent.ts for implementation examples
+
 Remember:
 - Keep responses under 2000 characters (Discord limit)
 - Deliver truth and actionable insight - clarity is freedom
