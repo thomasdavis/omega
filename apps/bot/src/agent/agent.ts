@@ -24,6 +24,7 @@ import { artifactTool } from './tools/artifact.js';
 import { fileUploadTool } from './tools/fileUpload.js';
 import { exportConversationTool } from './tools/exportConversation.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
+import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -125,6 +126,8 @@ JSON Agent Generator: You have access to the jsonAgentGenerator tool for creatin
 - Convert between minimal and full agent formats
 The tool supports agent metadata, capabilities, tools, personality configurations, and model settings. Perfect for building portable AI agent definitions that can be shared and deployed across different platforms.
 
+Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for discovering philosophical content from Hacker News. When users want to explore thought-provoking articles, technology ethics discussions, or philosophical perspectives on current tech topics, use this tool to fetch and analyze the latest stories. The tool uses AI to score articles based on their relevance to philosophy, ethics, consciousness, technology's impact on society, and existential questions. Returns the top philosophical articles ranked by relevance with explanations.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -196,6 +199,8 @@ JSON Agent Generator: You have access to the jsonAgentGenerator tool for creatin
 - Convert between minimal and full agent formats
 The tool supports agent metadata, capabilities, tools, personality configurations, and model settings. Perfect for building portable AI agent definitions that can be shared and deployed across different platforms.
 
+Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for discovering philosophical content from Hacker News. When users want to explore thought-provoking articles, technology ethics discussions, or philosophical perspectives on current tech topics, use this tool to fetch and analyze the latest stories. The tool uses AI to score articles based on their relevance to philosophy, ethics, consciousness, technology's impact on society, and existential questions. Returns the top philosophical articles ranked by relevance with explanations.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -249,6 +254,7 @@ export async function runAgent(
         fileUpload: fileUploadTool,
         exportConversation: exportConversationTool,
         jsonAgentGenerator: jsonAgentGeneratorTool,
+        hackerNewsPhilosophy: hackerNewsPhilosophyTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
