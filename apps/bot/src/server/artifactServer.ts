@@ -151,6 +151,15 @@ function createApp(): express.Application {
     }
   });
 
+  // Health check endpoint
+  app.get('/health', (req: Request, res: Response) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'artifact-server',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // Gallery view - list all artifacts
   app.get('/', (req: Request, res: Response) => {
     try {
@@ -637,10 +646,31 @@ export function startArtifactServer(config: ArtifactServerConfig = {}): void {
   const { port = DEFAULT_PORT, host = '0.0.0.0' } = config;
   const app = createApp();
 
-  app.listen(port, host, () => {
+  const server = app.listen(port, host, () => {
     console.log(`🎨 Artifact preview server running at http://${host}:${port}`);
     console.log(`   Gallery: http://${host}:${port}/`);
     console.log(`   Artifacts: http://${host}:${port}/artifacts/:id`);
     console.log(`   Uploads: http://${host}:${port}/uploads/:filename`);
+    console.log(`   Health: http://${host}:${port}/health`);
+  });
+
+  // Error handling
+  server.on('error', (error: NodeJS.ErrnoException) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${port} is already in use`);
+    } else if (error.code === 'EACCES') {
+      console.error(`❌ Permission denied to bind to port ${port}`);
+    } else {
+      console.error(`❌ Server error:`, error);
+    }
+    process.exit(1);
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, closing artifact server...');
+    server.close(() => {
+      console.log('✅ Artifact server closed');
+    });
   });
 }

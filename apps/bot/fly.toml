@@ -13,22 +13,24 @@ primary_region = "syd" # Sydney - change to your preferred region
   ARTIFACT_SERVER_PORT = "3001"
 
 # HTTP service for artifact and file hosting
-[[services]]
+[http_service]
   internal_port = 3001
-  protocol = "tcp"
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
 
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 200
+    hard_limit = 250
 
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-  [services.concurrency]
-    type = "connections"
-    hard_limit = 25
-    soft_limit = 20
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
 
 # Persistent storage for file uploads and artifacts
 # Fly.io only supports 1 volume per machine, so we mount at /data and use subdirectories
