@@ -6,13 +6,14 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const githubCreateIssueTool = tool({
-  description: 'Create a new issue in the GitHub repository for feature requests, bugs, or improvements',
+  description: 'Create a new issue in the GitHub repository for feature requests, bugs, or improvements. IMPORTANT: When creating issues about API integrations or external services, include any relevant URLs, documentation links, API references, curl commands, or code examples from the conversation context to provide complete information for developers.',
   inputSchema: z.object({
     title: z.string().describe('The title of the issue'),
     body: z.string().describe('The detailed description of the issue, with context and requirements'),
     labels: z.array(z.string()).optional().describe('Labels to apply (e.g., ["enhancement", "bug", "documentation"])'),
+    conversationContext: z.string().optional().describe('Optional: Recent conversation messages that may contain relevant URLs, curl commands, or code snippets to include in the issue'),
   }),
-  execute: async ({ title, body, labels }) => {
+  execute: async ({ title, body, labels, conversationContext }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega'; // owner/repo format
 
@@ -23,12 +24,48 @@ export const githubCreateIssueTool = tool({
       };
     }
 
-    // Extract links from the body
-    const urlRegex = /(https?:\/\/[^\s<>]+)/gi;
-    const links = body.match(urlRegex) || [];
+    // Combine body and conversation context for extraction
+    const fullContext = conversationContext ? `${body}\n\n${conversationContext}` : body;
 
-    // Remove duplicate links
+    // Extract URLs from the full context
+    const urlRegex = /(https?:\/\/[^\s<>]+)/gi;
+    const links = fullContext.match(urlRegex) || [];
     const uniqueLinks = [...new Set(links)];
+
+    // Extract curl commands from the full context
+    // Match curl commands that span multiple lines (with \ continuation or in code blocks)
+    const curlRegex = /```(?:bash|sh|shell)?\s*(curl\s+[\s\S]*?)```|(?:^|\n)(curl\s+(?:[^\n\\]|\\[\s\S])*?)(?=\n|$)/gim;
+    const curlMatches = fullContext.matchAll(curlRegex);
+    const curlCommands: string[] = [];
+
+    for (const match of curlMatches) {
+      // match[1] is from code block, match[2] is from inline
+      const curlCmd = (match[1] || match[2] || '').trim();
+      if (curlCmd && curlCmd.startsWith('curl')) {
+        curlCommands.push(curlCmd);
+      }
+    }
+    const uniqueCurlCommands = [...new Set(curlCommands)];
+
+    // Extract code blocks (excluding curl commands already extracted)
+    const codeBlockRegex = /```(\w+)?\s*([\s\S]*?)```/g;
+    const codeMatches = fullContext.matchAll(codeBlockRegex);
+    const codeSnippets: Array<{ language: string; code: string }> = [];
+
+    for (const match of codeMatches) {
+      const language = match[1] || 'text';
+      const code = match[2].trim();
+
+      // Skip if this is a curl command we already extracted
+      if (code.startsWith('curl') && uniqueCurlCommands.some(cmd => cmd.includes(code.substring(0, 50)))) {
+        continue;
+      }
+
+      // Only include meaningful code snippets (not empty or too short)
+      if (code.length > 10) {
+        codeSnippets.push({ language, code });
+      }
+    }
 
     // Format issue body with structured format
     let formattedBody = `## Request
@@ -40,6 +77,22 @@ Created from Discord #omega channel`;
     // Add links section if any links were found
     if (uniqueLinks.length > 0) {
       formattedBody += `\n\n## Links\n${uniqueLinks.map(link => `- ${link}`).join('\n')}`;
+    }
+
+    // Add curl commands section if any were found
+    if (uniqueCurlCommands.length > 0) {
+      formattedBody += `\n\n## Example curl commands\n`;
+      uniqueCurlCommands.forEach((cmd, idx) => {
+        formattedBody += `\n### Example ${idx + 1}\n\`\`\`bash\n${cmd}\n\`\`\`\n`;
+      });
+    }
+
+    // Add code snippets section if any were found
+    if (codeSnippets.length > 0) {
+      formattedBody += `\n\n## Code Examples\n`;
+      codeSnippets.forEach((snippet, idx) => {
+        formattedBody += `\n### Example ${idx + 1} (${snippet.language})\n\`\`\`${snippet.language}\n${snippet.code}\n\`\`\`\n`;
+      });
     }
 
     formattedBody += `\n\n## Acceptance Criteria
