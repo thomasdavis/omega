@@ -34,7 +34,6 @@ primary_region = "syd" # Sydney - change to your preferred region
 [[mounts]]
   source = "omega_uploads"
   destination = "/data/uploads"
-  initial_size = "1gb"
 
 # Persistent storage for generated artifacts (HTML, SVG, etc.)
 [[mounts]]

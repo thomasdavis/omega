@@ -111,29 +111,83 @@ export async function handleMessage(message: Message): Promise<void> {
 }
 
 /**
+ * Suppress auto-embeds for URLs in Discord by wrapping them in <>
+ */
+function suppressEmbeds(text: string): string {
+  // Match URLs and wrap them in <> to prevent auto-embed
+  return text.replace(/(https?:\/\/[^\s<>]+)/g, '<$1>');
+}
+
+/**
  * Format tool usage into a nice Discord message
  */
 function formatToolReport(toolCalls: any[]): string {
-  const lines = ['**🔧 Tools Used:**\n'];
+  const lines = ['**🔧 Tools Used:**'];
+  lines.push(''); // Empty line for spacing
 
-  for (const call of toolCalls) {
-    lines.push(`• **${call.toolName}**`);
+  for (let i = 0; i < toolCalls.length; i++) {
+    const call = toolCalls[i];
 
+    // Tool name with number
+    lines.push(`**${i + 1}. ${call.toolName}**`);
+
+    // Arguments in code block if present
     if (call.args && Object.keys(call.args).length > 0) {
-      const argsStr = JSON.stringify(call.args, null, 2)
-        .split('\n')
-        .map(line => `  ${line}`)
-        .join('\n');
+      lines.push('**Arguments:**');
       lines.push('```json');
-      lines.push(argsStr);
+      lines.push(JSON.stringify(call.args, null, 2));
       lines.push('```');
     }
 
+    // Result in code block if present
     if (call.result) {
-      const resultPreview = typeof call.result === 'string'
-        ? call.result.slice(0, 200) + (call.result.length > 200 ? '...' : '')
-        : JSON.stringify(call.result).slice(0, 200);
-      lines.push(`  Result: ${resultPreview}\n`);
+      lines.push('**Result:**');
+
+      // Format result based on type
+      if (typeof call.result === 'string') {
+        // For string results, check if it looks like JSON
+        try {
+          const parsed = JSON.parse(call.result);
+          lines.push('```json');
+          lines.push(JSON.stringify(parsed, null, 2));
+          lines.push('```');
+        } catch {
+          // Not JSON, display as regular text (with URL suppression)
+          const suppressedResult = suppressEmbeds(call.result);
+          if (suppressedResult.length > 500) {
+            lines.push('```');
+            lines.push(suppressedResult.slice(0, 500) + '...\n(truncated)');
+            lines.push('```');
+          } else {
+            lines.push('```');
+            lines.push(suppressedResult);
+            lines.push('```');
+          }
+        }
+      } else if (typeof call.result === 'object') {
+        // For object results, format as JSON
+        const jsonStr = JSON.stringify(call.result, null, 2);
+        if (jsonStr.length > 1000) {
+          lines.push('```json');
+          lines.push(jsonStr.slice(0, 1000) + '\n...\n(truncated)');
+          lines.push('```');
+        } else {
+          lines.push('```json');
+          // Suppress embeds in URLs within JSON
+          lines.push(suppressEmbeds(jsonStr));
+          lines.push('```');
+        }
+      } else {
+        // For other types (number, boolean, etc.)
+        lines.push('```');
+        lines.push(String(call.result));
+        lines.push('```');
+      }
+    }
+
+    // Add separator between tools (except for last one)
+    if (i < toolCalls.length - 1) {
+      lines.push(''); // Empty line between tools
     }
   }
 
