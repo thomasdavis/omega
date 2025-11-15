@@ -8,7 +8,7 @@
 - OpenAI GPT-4o for AI processing
 - 18+ specialized AI tools for code execution, web scraping, artifact creation, and more
 - TypeScript + Node.js + Express
-- Fly.io for deployment with persistent storage
+- Render.com for deployment with persistent storage
 - Monorepo architecture (Turborepo + pnpm workspaces)
 
 ---
@@ -31,7 +31,7 @@ Unlike basic chatbots, Omega:
 - **Executes code** in 11 programming languages via Unsandbox
 - **Creates interactive web content** (HTML/SVG) with shareable preview links
 - **Respects ethical boundaries** (checks robots.txt before scraping, requires approval for self-modification)
-- **Hosts files permanently** on Fly.io persistent storage
+- **Hosts files permanently** on Render persistent storage
 - **Learns and adapts** through self-modification with git-tracked changes
 
 ---
@@ -91,7 +91,7 @@ Unlike basic chatbots, Omega:
 #### Content Creation
 6. **artifact** - Create interactive HTML/SVG/Markdown content with shareable links
    - Generates unique URLs for each artifact
-   - Persistent storage on Fly.io volume
+   - Persistent storage on Render persistent disk
    - Gallery view of all artifacts
 7. **asciiGraph** - Generate text-based data visualizations
    - Bar charts and line graphs in ASCII format
@@ -158,7 +158,7 @@ Hello, World!
 - Creates and serves HTML, SVG, and Markdown content
 - Each artifact gets a unique UUID-based URL
 - Gallery view at `/artifacts` showing all created artifacts
-- Persistent storage on Fly.io volume at `/data/artifacts`
+- Persistent storage on Render persistent disk at `/data/artifacts`
 
 **File Upload System:**
 - Downloads Discord attachments
@@ -198,7 +198,6 @@ omega/
 │       ├── dist/                     # Compiled JavaScript
 │       ├── artifacts/                # Generated artifacts (local dev)
 │       ├── public/uploads/           # Uploaded files (local dev)
-│       ├── fly.toml                  # Fly.io deployment config
 │       ├── Dockerfile                # Docker build config
 │       └── package.json
 ├── packages/
@@ -249,21 +248,21 @@ Discord (main reply + tool report)
 **Trade-off:**
 - Requires persistent connection (WebSocket)
 - Cannot use Vercel or similar serverless platforms
-- Must use long-running service (Fly.io, Railway, Render, etc.)
+- Must use long-running service (Render, Railway, Fly.io, etc.)
 
-### Deployment Architecture (Fly.io)
+### Deployment Architecture (Render)
 
-- **Platform**: Fly.io (supports long-running processes)
-- **App Name**: `omega-nrhptq`
-- **Region**: Sydney (syd)
-- **Memory**: 512MB
-- **CPU**: Shared
-- **Persistent Storage**: Fly.io Volume mounted at `/data`
+- **Platform**: Render.com (supports long-running processes)
+- **Service ID**: `srv-d4cark3ipnbc739blrm0`
+- **Service Name**: `omega`
+- **Region**: Oregon
+- **Plan**: Free tier
+- **Persistent Storage**: Render persistent disk mounted at `/data`
   - `/data/artifacts` - Generated artifacts (HTML, SVG, Markdown)
   - `/data/uploads` - User-uploaded files
 - **HTTP Server**: Express on port 3001 for artifact/upload serving
 - **Discord Connection**: WebSocket Gateway (always connected)
-- **Auto-deployment**: GitHub Actions workflow on push to main
+- **Auto-deployment**: GitHub Actions workflow on push to main + Render auto-deploy
 
 ---
 
@@ -330,7 +329,7 @@ OPENAI_API_KEY=xxx              # From OpenAI Platform
 ```bash
 # Artifact Server
 ARTIFACT_SERVER_PORT=3001       # HTTP server port (default: 3001)
-ARTIFACT_SERVER_URL=xxx         # Public URL for artifacts (auto-detected on Fly.io)
+ARTIFACT_SERVER_URL=xxx         # Public URL for artifacts (auto-detected on Render)
 
 # External Services
 UNSANDBOX_API_KEY=xxx          # For code execution tool
@@ -341,18 +340,22 @@ GIT_USER_NAME=xxx              # For self-modification commits
 GIT_USER_EMAIL=xxx             # For self-modification commits
 ```
 
-### Setting Secrets on Fly.io
+### Setting Secrets on Render
 
+Secrets are managed through the Render Dashboard:
+
+1. Go to your service: https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+2. Navigate to "Environment" tab
+3. Add or update environment variables
+4. Click "Save Changes" to trigger a redeploy
+
+You can also use the Render CLI:
 ```bash
-# List current secrets
-flyctl secrets list -a omega-nrhptq
+# View service info
+render services list
 
-# Set a secret
-flyctl secrets set DISCORD_BOT_TOKEN=xxx -a omega-nrhptq
-flyctl secrets set OPENAI_API_KEY=xxx -a omega-nrhptq
-
-# Remove a secret
-flyctl secrets unset SECRET_NAME -a omega-nrhptq
+# View environment variables (requires dashboard for actual values)
+render config show --service srv-d4cark3ipnbc739blrm0
 ```
 
 ---
@@ -454,30 +457,32 @@ pnpm type-check
 
 ---
 
-## Deployment to Fly.io
+## Deployment to Render
 
 ### Current Setup
 
-- **App Name:** `omega-nrhptq`
-- **Region:** Sydney (syd)
-- **Memory:** 512MB RAM
-- **Storage:** 1GB persistent volume at `/data`
-- **Auto-deploy:** GitHub Actions on push to main
+- **Service ID:** `srv-d4cark3ipnbc739blrm0`
+- **Service Name:** `omega`
+- **Region:** Oregon
+- **Plan:** Free tier
+- **Storage:** Persistent disk at `/data`
+- **Auto-deploy:** Render auto-deploy on push to main + GitHub Actions workflow
 
 ### Manual Deployment
 
+Deployments are triggered automatically when you push to the main branch, but you can also trigger manually:
+
 ```bash
-# Deploy from project root
-flyctl deploy -a omega-nrhptq -c apps/bot/fly.toml
+# Trigger deployment via Render API
+curl -X POST "https://api.render.com/v1/services/srv-d4cark3ipnbc739blrm0/deploys" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json"
 
 # View logs
-flyctl logs -a omega-nrhptq -f
+render logs --service srv-d4cark3ipnbc739blrm0 --tail
 
-# Check status
-flyctl status -a omega-nrhptq
-
-# SSH into container (debugging)
-flyctl ssh console -a omega-nrhptq
+# Check service status
+render services list
 ```
 
 ### GitHub Actions Auto-Deploy
@@ -487,7 +492,7 @@ The bot auto-deploys via GitHub Actions (`.github/workflows/auto-create-claude-p
 1. Push to `claude/**` branches
 2. GitHub Actions creates PR automatically
 3. PR auto-merges when checks pass
-4. Deployment to Fly.io triggered
+4. Deployment to Render triggered via API
 5. Discord notification on success/failure
 
 **To trigger deployment:**
@@ -497,33 +502,35 @@ git commit -m "Update bot"
 git push origin main
 ```
 
-### Volume Management
+**Required GitHub Secrets:**
+- `RENDER_SERVICE_ID`: `srv-d4cark3ipnbc739blrm0`
+- `RENDER_API_KEY`: Get from https://dashboard.render.com/u/settings/api-keys
+- `DISCORD_WEBHOOK_URL`: For deployment notifications
 
-```bash
-# List volumes
-flyctl volumes list -a omega-nrhptq
+### Persistent Disk Management
 
-# Create new volume (if needed)
-flyctl volumes create omega_uploads --region syd --size 1 -a omega-nrhptq
+Render provides persistent disk storage that survives across deploys:
 
-# Destroy volume (WARNING: deletes all data!)
-flyctl volumes destroy vol_xxx -a omega-nrhptq
-```
+- **Location:** `/data` (configured in render.yaml)
+- **Directories:**
+  - `/data/artifacts` - Generated artifacts
+  - `/data/uploads` - User uploaded files
+- **Management:** Access via Render Dashboard or Shell
 
 ### Monitoring
 
 ```bash
-# Live logs
-flyctl logs -a omega-nrhptq -f
+# View live logs
+render logs --service srv-d4cark3ipnbc739blrm0 --tail
 
-# Check machine status
-flyctl machine list -a omega-nrhptq
+# View recent logs
+render logs --service srv-d4cark3ipnbc739blrm0 --lines 100
 
-# View app configuration
-flyctl config show -a omega-nrhptq
+# Open Render Dashboard
+open https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
 
-# Scale memory (if needed)
-flyctl scale memory 1024 -a omega-nrhptq
+# Shell access (via Render Dashboard)
+# Go to Shell tab in the service dashboard
 ```
 
 ---
@@ -848,7 +855,7 @@ User: *uploads resume.pdf*
 
 Bot: "I can help you analyze that resume. Let me save it first."
      *uses fileUpload tool*
-     "Resume saved! Download it anytime: https://omega-nrhptq.fly.dev/uploads/resume_abc123.pdf"
+     "Resume saved! Download it anytime: https://omega-vu7a.onrender.com/uploads/resume_abc123.pdf"
 ```
 
 ---
@@ -878,32 +885,30 @@ pnpm lint:fix
 pnpm clean
 ```
 
-### Fly.io
+### Render
 
 ```bash
 # Deployment
-flyctl deploy -a omega-nrhptq -c apps/bot/fly.toml
+curl -X POST "https://api.render.com/v1/services/srv-d4cark3ipnbc739blrm0/deploys" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json"
 
 # Monitoring
-flyctl logs -a omega-nrhptq -f
-flyctl status -a omega-nrhptq
-flyctl machine list -a omega-nrhptq
+render logs --service srv-d4cark3ipnbc739blrm0 --tail
+render logs --service srv-d4cark3ipnbc739blrm0 --lines 100
+render services list
 
-# Configuration
-flyctl config show -a omega-nrhptq
-flyctl secrets list -a omega-nrhptq
-flyctl secrets set KEY=value -a omega-nrhptq
+# Configuration (via Render Dashboard)
+# Go to: https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+# Environment tab for secrets and environment variables
+# Settings tab for service configuration
 
-# Debugging
-flyctl ssh console -a omega-nrhptq
+# Debugging (via Render Dashboard Shell)
+# Go to Shell tab in service dashboard for interactive shell access
 
-# Scaling
-flyctl scale memory 1024 -a omega-nrhptq
-flyctl scale count 2 -a omega-nrhptq
-
-# Volumes
-flyctl volumes list -a omega-nrhptq
-flyctl volumes create omega_uploads --region syd --size 1 -a omega-nrhptq
+# Scaling (upgrade plan via Dashboard)
+# Free tier: Shared CPU, 512MB RAM
+# Upgrade to Starter or higher for more resources
 ```
 
 ### Testing in Discord
@@ -932,7 +937,7 @@ flyctl volumes create omega_uploads --region syd --size 1 -a omega-nrhptq
 - [Discord.js Documentation](https://discord.js.org/)
 - [AI SDK v6 Documentation](https://sdk.vercel.ai/docs)
 - [AI SDK v6 Blog Post](https://vercel.com/blog/ai-sdk-6)
-- [Fly.io Documentation](https://fly.io/docs/)
+- [Render Documentation](https://render.com/docs)
 - [Discord Developer Portal](https://discord.com/developers/applications)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
@@ -960,10 +965,10 @@ This is a personal project, but contributions are welcome:
 
 ---
 
-**Last Updated:** 2025-11-15
+**Last Updated:** 2025-11-16
 **Status:** ✅ Production Ready
 **Version:** AI SDK v6.0.0-beta.99
-**Deployment:** Fly.io (`omega-nrhptq`, Sydney region)
+**Deployment:** Render.com (`srv-d4cark3ipnbc739blrm0`, Oregon region)
 **AI Model:** OpenAI GPT-4o + GPT-4o-mini
 **Tools:** 18 specialized AI tools
 **Personality:** Philosophical AI assistant focused on truth and clarity

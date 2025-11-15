@@ -259,15 +259,12 @@ jobs:
         with:
           ref: main
 
-      - name: Setup Flyctl
+      - name: Deploy to Render
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy to Fly.io
-        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
-        run: flyctl deploy --remote-only --config apps/bot/fly.toml
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json"
 
       - name: Notify Discord of successful deployment
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()

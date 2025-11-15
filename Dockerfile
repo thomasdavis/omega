@@ -1,4 +1,4 @@
-# Dockerfile for Discord AI Bot on Fly.io
+# Dockerfile for Discord AI Bot on Render
 # Build from repository root context
 
 FROM node:20-alpine AS base
