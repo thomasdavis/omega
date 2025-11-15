@@ -75,6 +75,29 @@ Created from Discord #omega channel`;
 
       const issue: any = await response.json();
 
+      // Add a comment to tag @claude to start work
+      try {
+        const commentResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          body: JSON.stringify({
+            body: `@claude please implement this request following the project's coding standards.`,
+          }),
+        });
+
+        if (!commentResponse.ok) {
+          console.warn(`Failed to add comment to issue #${issue.number}: ${commentResponse.status}`);
+        }
+      } catch (commentError) {
+        console.warn(`Error adding comment to issue #${issue.number}:`, commentError);
+        // Don't fail the whole operation if comment fails
+      }
+
       return {
         success: true,
         issueNumber: issue.number,
