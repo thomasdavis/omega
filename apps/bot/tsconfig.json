@@ -15,6 +15,7 @@
     "forceConsistentCasingInFileNames": false,
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
+    "noEmitOnError": false,
     "types": ["node"]
   },
   "include": ["src/**/*.ts"],

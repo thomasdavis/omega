@@ -8,11 +8,10 @@ import { z } from 'zod';
 
 export const searchTool = tool({
   description: 'Search the web for information about a topic using DuckDuckGo. Returns search results with titles, snippets, and URLs.',
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe('The search query'),
-    numResults: z.number().optional().describe('Number of results to return (default 5, max 10)'),
+    numResults: z.number().int().min(1).max(10).optional().describe('Number of results to return (default 5, max 10)'),
   }),
-  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ query, numResults = 5 }) => {
     try {
       console.log(`🔍 Searching DuckDuckGo for: "${query}"`);

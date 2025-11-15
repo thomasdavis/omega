@@ -49,7 +49,7 @@ export async function shouldRespond(message: Message): Promise<ShouldRespondResu
     const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
 
     const decision = await generateText({
-      model: openai('gpt-4o-mini'), // Use cheaper model for decision making
+      model: openai.chat('gpt-4o-mini'), // Use cheaper model for decision making, force Chat Completions API
       prompt: `You are Omega, a friendly and helpful Discord bot. Decide if you should respond to this message.
 
 Channel: #${channelName}
