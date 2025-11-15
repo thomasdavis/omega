@@ -328,6 +328,8 @@ export async function runAgent(
   const toolCalls: ToolCallInfo[] = [];
 
   console.log('🤖 Running AI agent with tools...');
+  console.log('🔍 DEBUG: userMessage =', userMessage);
+  console.log('🔍 DEBUG: context =', JSON.stringify(context, null, 2));
 
   try {
     // Build conversation history context
@@ -339,6 +341,9 @@ export async function runAgent(
           .join('\n') +
         '\n\n---\n';
     }
+
+    console.log('🔍 DEBUG: About to call streamText...');
+    console.log('🔍 DEBUG: stopWhen =', stepCountIs(10));
 
     const streamResult = streamText({
       model,
@@ -402,6 +407,8 @@ export async function runAgent(
         }
       },
     });
+
+    console.log('🔍 DEBUG: streamText call completed, waiting for text...');
 
     // Wait for the full stream to complete and get final text
     const finalText = await streamResult.text;
