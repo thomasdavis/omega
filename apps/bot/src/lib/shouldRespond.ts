@@ -79,7 +79,7 @@ Respond in JSON format:
   "confidence": <number 0-100>,
   "reason": "<brief explanation>"
 }`,
-      maxTokens: 100,
+      maxCompletionTokens: 100,
     });
 
     const response = JSON.parse(decision.text.trim());
