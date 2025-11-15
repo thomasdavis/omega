@@ -25,6 +25,7 @@ import { fileUploadTool } from './tools/fileUpload.js';
 import { exportConversationTool } from './tools/exportConversation.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
+import { moodUplifterTool } from './tools/moodUplifter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,6 +129,8 @@ The tool supports agent metadata, capabilities, tools, personality configuration
 
 Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for discovering philosophical content from Hacker News. When users want to explore thought-provoking articles, technology ethics discussions, or philosophical perspectives on current tech topics, use this tool to fetch and analyze the latest stories. The tool uses AI to score articles based on their relevance to philosophy, ethics, consciousness, technology's impact on society, and existential questions. Returns the top philosophical articles ranked by relevance with explanations.
 
+Mood Uplifter: You have access to the moodUplifter tool for detecting low-energy or negative language and providing personalized uplifting messages. When you notice that a user seems discouraged, tired, burned out, or expressing negative self-talk, use this tool to analyze their sentiment and generate genuine, supportive encouragement. The tool can auto-detect low energy (recommended) or provide encouragement on demand. It creates personalized responses that acknowledge feelings while offering perspective and actionable support - authentic and empowering, never empty platitudes.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -201,6 +204,8 @@ The tool supports agent metadata, capabilities, tools, personality configuration
 
 Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for discovering philosophical content from Hacker News. When users want to explore thought-provoking articles, technology ethics discussions, or philosophical perspectives on current tech topics, use this tool to fetch and analyze the latest stories. The tool uses AI to score articles based on their relevance to philosophy, ethics, consciousness, technology's impact on society, and existential questions. Returns the top philosophical articles ranked by relevance with explanations.
 
+Mood Uplifter: You have access to the moodUplifter tool for detecting low-energy or negative language and providing personalized uplifting messages. When you notice that a user seems discouraged, tired, burned out, or expressing negative self-talk, use this tool to analyze their sentiment and generate genuine, supportive encouragement. The tool can auto-detect low energy (recommended) or provide encouragement on demand. It creates personalized responses that acknowledge feelings while offering perspective and actionable support - authentic and empowering, never empty platitudes.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -255,6 +260,7 @@ export async function runAgent(
         exportConversation: exportConversationTool,
         jsonAgentGenerator: jsonAgentGeneratorTool,
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
+        moodUplifter: moodUplifterTool,
       },
       maxSteps: 5, // Allow multi-step tool usage
       onStepFinish: (step) => {
