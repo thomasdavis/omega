@@ -20,6 +20,7 @@ import { selfModifyTool } from './tools/selfModify.js';
 import { asciiGraphTool } from './tools/asciiGraph.js';
 import { whoamiTool } from './tools/whoami.js';
 import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
+import { artifactTool } from './tools/artifact.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -105,6 +106,8 @@ Research and Essay Writing: You have access to the researchEssay tool for automa
 
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
 
+Artifacts: You have access to the artifact tool for creating interactive web content with shareable preview links. When users want to create HTML pages, SVG graphics, interactive demos, visualizations, or any web-based content, use this tool to generate artifacts that can be viewed in a browser. Each artifact gets a unique URL that users can share and access. Perfect for creating rich, interactive content beyond what Discord can display directly.
+
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
 Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
@@ -163,6 +166,8 @@ Research and Essay Writing: You have access to the researchEssay tool for automa
 
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
 
+Artifacts: You have access to the artifact tool for creating interactive web content with shareable preview links. When users want to create HTML pages, SVG graphics, interactive demos, visualizations, or any web-based content, use this tool to generate artifacts that can be viewed in a browser. Each artifact gets a unique URL that users can share and access. Perfect for creating rich, interactive content beyond what Discord can display directly.
+
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
 Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
@@ -214,6 +219,7 @@ export async function runAgent(
         researchEssay: researchEssayTool,
         selfModify: selfModifyTool,
         asciiGraph: asciiGraphTool,
+        artifact: artifactTool,
         whoami: whoamiTool,
         linuxAdvantages: linuxAdvantagesTool,
       },

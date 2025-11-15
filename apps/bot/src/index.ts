@@ -6,6 +6,7 @@
 import { Client, GatewayIntentBits, Events, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
+import { startArtifactServer } from './server/artifactServer.js';
 
 dotenv.config();
 
@@ -29,6 +30,12 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
   ],
 });
+
+// Start artifact preview server
+const artifactPort = process.env.ARTIFACT_SERVER_PORT
+  ? parseInt(process.env.ARTIFACT_SERVER_PORT, 10)
+  : 3001;
+startArtifactServer({ port: artifactPort });
 
 // Bot ready event
 client.once(Events.ClientReady, (readyClient) => {
