@@ -24,6 +24,7 @@ import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
 import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
+import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -146,6 +147,8 @@ Mood Uplifter: You have access to the moodUplifter tool for detecting low-energy
 
 Tell a Joke: You have access to the tellJoke tool for providing humor and lighthearted entertainment. When users want to hear a joke, need a mood lift through humor, or request something fun, use this tool to deliver a random joke from various categories (tech, classic, puns, dad, programming, oneliners). You can specify a category or let the tool randomly select one. Perfect for breaking the ice, relieving tension, or adding levity to conversations.
 
+Recipe Generator: You have access to the recipeGenerator tool for creating detailed cooking recipes. When users want recipes, meal ideas, or cooking inspiration, use this tool to generate comprehensive recipes with ingredients, step-by-step instructions, cooking times, and tips. Supports filtering by cuisine type (Italian, Mexican, Chinese, Indian, Japanese, French, Thai, Mediterranean, American), dietary restrictions (vegetarian, vegan, gluten-free, dairy-free, nut-free, low-carb, keto, paleo), difficulty level (easy, medium, hard), and servings. Can generate recipes from ingredients users have, specific dish requests, or general descriptions. Each recipe includes prep/cook times, detailed ingredients list, clear instructions, chef's tips, and nutritional information.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, you have access to the full conversation context. For integration or API-related issues, ALWAYS pass the recent conversation history as the conversationContext parameter. This allows the tool to automatically extract and include:
 - All URLs and documentation links mentioned in the conversation
 - Curl commands and API examples provided by users
@@ -227,6 +230,7 @@ export async function runAgent(
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
         generateHtmlPage: generateHtmlPageTool,
+        recipeGenerator: recipeGeneratorTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
