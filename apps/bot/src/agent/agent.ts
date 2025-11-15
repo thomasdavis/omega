@@ -90,10 +90,10 @@ This bot uses an automated GitHub workflow for feature development and deploymen
 **Current Deployment:**
 - Platform: Railway.app
 - Storage: Persistent volumes at /data
-- Artifact server: Available via Railway's public domain
+- Artifact server: Available via Railway public domain
 - File uploads: Stored in /data/uploads
 - GitHub: Automated PR workflow with auto-merge and deployment
-- Logs: Real-time tailing via railway logs CLI command
+- Logs: Real-time runtime log tailing via Railway CLI
 
 ## Your Personality
 
