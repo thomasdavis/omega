@@ -39,34 +39,52 @@ export const unsandboxTool = tool({
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
   }),
   execute: async ({ language, code, timeout, stdin, env }) => {
+    const timestamp = new Date().toISOString();
+    console.log(`\n🚀 [${timestamp}] Unsandbox Tool Execution Started`);
+    console.log(`   Language: ${language}`);
+    console.log(`   Code Length: ${code.length} characters`);
+    console.log(`   Timeout: ${timeout}ms`);
+    console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
+    console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
+
     try {
       const apiKey = process.env.UNSANDBOX_API_KEY;
 
+      console.log(`   🔑 Checking API key configuration...`);
       if (!apiKey) {
+        console.log(`   ❌ API key not found in environment`);
         return {
           success: false,
           error: 'Unsandbox API key not configured. Please set UNSANDBOX_API_KEY environment variable.',
           language,
         };
       }
+      console.log(`   ✅ API key found`);
 
       // Create client instance
+      console.log(`   🔧 Creating Unsandbox client...`);
       const client = createUnsandboxClient({
         apiKey,
         timeout: 35000, // Client timeout should be longer than execution timeout
       });
+      console.log(`   ✅ Client created with 35000ms timeout`);
 
       // Map user-friendly language name to runtime identifier
+      console.log(`   🗺️ Mapping language '${language}' to runtime identifier...`);
       const runtimeLanguage = LANGUAGE_MAP[language.toLowerCase()];
       if (!runtimeLanguage) {
+        console.log(`   ❌ Language '${language}' not supported`);
+        console.log(`   Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`);
         return {
           success: false,
           error: `Unsupported language: ${language}. Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`,
           language,
         };
       }
+      console.log(`   ✅ Mapped to runtime: ${runtimeLanguage}`);
 
       // Execute code using the SDK
+      console.log(`   ▶️ Executing code via SDK...`);
       const result = await client.executeCode({
         language: runtimeLanguage,
         code,
@@ -74,10 +92,15 @@ export const unsandboxTool = tool({
         stdin,
         env,
       });
+      console.log(`   ✅ Code execution completed`);
 
       // Return standardized response
-      return {
-        success: result.status === 'completed' && result.exitCode === 0,
+      console.log(`   📦 Preparing response...`);
+      const success = result.status === 'completed' && result.exitCode === 0;
+      console.log(`   Success: ${success} (status: ${result.status}, exitCode: ${result.exitCode})`);
+
+      const response = {
+        success,
         language,
         output: result.stdout || '',
         error: result.stderr || result.error || '',
@@ -86,11 +109,22 @@ export const unsandboxTool = tool({
         status: result.status,
         executionId: result.id,
       };
+
+      console.log(`\n✅ [${new Date().toISOString()}] Unsandbox Tool Execution Successful`);
+      console.log(`   Output Length: ${response.output.length} characters`);
+      console.log(`   Error Length: ${response.error.length} characters`);
+
+      return response;
     } catch (error) {
-      console.error('Error executing code via Unsandbox:', error);
+      console.log(`\n💥 [${new Date().toISOString()}] Unsandbox Tool Execution Failed`);
+      console.error('   Error details:', error);
 
       // Handle UnsandboxApiError specifically
       if (error instanceof UnsandboxApiError) {
+        console.log(`   Error Type: UnsandboxApiError`);
+        console.log(`   Status: ${error.status}`);
+        console.log(`   Code: ${error.code}`);
+        console.log(`   Message: ${error.message}`);
         return {
           success: false,
           error: `Unsandbox API error (${error.status}): ${error.message}`,
@@ -100,6 +134,8 @@ export const unsandboxTool = tool({
       }
 
       // Handle generic errors
+      console.log(`   Error Type: Generic Error`);
+      console.log(`   Message: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred',
