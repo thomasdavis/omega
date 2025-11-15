@@ -30,16 +30,11 @@ primary_region = "syd" # Sydney - change to your preferred region
     hard_limit = 25
     soft_limit = 20
 
-# Persistent storage for file uploads
+# Persistent storage for file uploads and artifacts
+# Fly.io only supports 1 volume per machine, so we mount at /data and use subdirectories
 [[mounts]]
   source = "omega_uploads"
-  destination = "/data/uploads"
-
-# Persistent storage for generated artifacts (HTML, SVG, etc.)
-[[mounts]]
-  source = "omega_artifacts"
-  destination = "/data/artifacts"
-  initial_size = "1gb"
+  destination = "/data"
 
 [[vm]]
   memory = '512mb'

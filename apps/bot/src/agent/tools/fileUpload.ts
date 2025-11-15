@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 
 // Public uploads directory
 // Use persistent Fly.io Volume if available, otherwise fall back to local public folder
-const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/uploads')
+const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
   ? '/data/uploads'
   : join(__dirname, '../../../public/uploads');
 
