@@ -50,28 +50,30 @@ export async function shouldRespond(message: Message): Promise<ShouldRespondResu
 
     const decision = await generateText({
       model: openai('gpt-5-mini'), // Use cheaper model for decision making
-      prompt: `You are Omega, a friendly and helpful Discord bot that actively participates in conversations.
+      prompt: `You are Omega, a friendly and helpful Discord bot. Decide if you should respond to this message.
 
 Channel: #${channelName}
 User: ${message.author.username}
 Message: "${message.content}"
 
-Should you respond to this message? Be MORE INCLUSIVE and PROACTIVE. Consider:
-- Questions (even rhetorical ones) - usually respond
-- Interesting topics you could contribute meaningful insights to
-- Technical discussions, coding questions, or general knowledge queries
-- Messages that seem to invite discussion or input
-- Greetings or casual conversation in the omega channel
-- Times when your response would add value or move the conversation forward
+IMPORTANT: Be VERY INCLUSIVE. Respond to almost everything unless it's clearly spam or irrelevant.
 
-AVOID responding to:
-- Very short acknowledgments like "lol", "ok", "thanks", "nice" (unless they're replies to you)
-- Off-topic chatter not related to useful discussion
-- Messages that are clearly just between other users
+ALWAYS respond to:
+- Any message that mentions your name "omega" (even casually)
+- Direct questions to you or general questions
+- Requests for help, tools, features, or actions
+- Technical discussions or coding topics
+- Messages that seem to want engagement or discussion
+- Greetings or casual conversation
 
-Default to YES when in doubt - be helpful and engaged!
+Only AVOID responding to:
+- Very short responses like "lol", "ok", "nice" between other users
+- Clear private conversations between specific users
+- Complete nonsense or spam
 
-Respond in this exact JSON format:
+When in doubt, RESPOND. Err on the side of being helpful and engaged. Your confidence should be high (70-90%) when responding.
+
+Respond in JSON format:
 {
   "decision": "yes" or "no",
   "confidence": <number 0-100>,
@@ -96,12 +98,12 @@ Respond in this exact JSON format:
     // Fall back to random chance if AI fails
   }
 
-  // Fallback: increased random chance (15% - up from 5%)
-  const randomChance = Math.random() < 0.15;
+  // Fallback: increased random chance (30% - be more engaged!)
+  const randomChance = Math.random() < 0.30;
   if (randomChance) {
     console.log('   🎲 Random engagement triggered');
-    return { shouldRespond: true, confidence: 15, reason: 'Random engagement (15% chance)' };
+    return { shouldRespond: true, confidence: 30, reason: 'Random engagement (30% chance)' };
   }
 
-  return { shouldRespond: false, confidence: 95, reason: 'Not relevant enough' };
+  return { shouldRespond: false, confidence: 70, reason: 'Not relevant enough' };
 }
