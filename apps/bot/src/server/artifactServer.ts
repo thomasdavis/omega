@@ -12,7 +12,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const ARTIFACTS_DIR = join(__dirname, '../../../artifacts');
-const UPLOADS_DIR = join(__dirname, '../../../public/uploads');
+// Use persistent Fly.io Volume if available, otherwise fall back to local public folder
+const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/uploads')
+  ? '/data/uploads'
+  : join(__dirname, '../../../public/uploads');
 const DEFAULT_PORT = 3001;
 
 export interface ArtifactServerConfig {

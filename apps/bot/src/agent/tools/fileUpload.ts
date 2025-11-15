@@ -14,7 +14,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Public uploads directory
-const UPLOADS_DIR = join(__dirname, '../../../public/uploads');
+// Use persistent Fly.io Volume if available, otherwise fall back to local public folder
+const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/uploads')
+  ? '/data/uploads'
+  : join(__dirname, '../../../public/uploads');
 
 // Ensure uploads directory exists
 if (!existsSync(UPLOADS_DIR)) {
@@ -211,7 +214,9 @@ export const fileUploadTool = tool({
       );
 
       // Get server URL from environment or use default
-      const serverUrl = process.env.ARTIFACT_SERVER_URL || 'http://localhost:3001';
+      // In production on Fly.io, use the app URL; locally use localhost
+      const serverUrl = process.env.ARTIFACT_SERVER_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://omega-nrhptq.fly.dev' : 'http://localhost:3001');
       const publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
 
       return {

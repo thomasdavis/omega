@@ -10,9 +10,31 @@ primary_region = "syd" # Sydney - change to your preferred region
 
 [env]
   NODE_ENV = "production"
+  ARTIFACT_SERVER_PORT = "3001"
 
-# No HTTP service needed - this is a Discord bot, not a web server
-# It connects outbound to Discord Gateway
+# HTTP service for artifact and file hosting
+[[services]]
+  internal_port = 3001
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+# Persistent storage for file uploads
+[mounts]
+  source = "omega_uploads"
+  destination = "/data/uploads"
+  initial_size = "1gb"
 
 [[vm]]
   memory = '512mb'
