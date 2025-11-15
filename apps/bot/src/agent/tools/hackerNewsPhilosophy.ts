@@ -47,7 +47,7 @@ export const hackerNewsPhilosophyTool = tool({
         throw new Error(`Failed to fetch HN stories: ${storiesResponse.status}`);
       }
 
-      const storyIds: number[] = await storiesResponse.json();
+      const storyIds = await storiesResponse.json() as number[];
 
       // Fetch first 50 stories for analysis (to have enough candidates)
       const storiesToFetch = storyIds.slice(0, 50);
@@ -59,7 +59,7 @@ export const hackerNewsPhilosophyTool = tool({
         try {
           const itemResponse = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
           if (itemResponse.ok) {
-            const item: HNItem = await itemResponse.json();
+            const item = await itemResponse.json() as HNItem;
             // Only include stories with URLs (not Ask HN, etc.) and valid titles
             if (item.url && item.title) {
               stories.push(item);
