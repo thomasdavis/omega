@@ -93,7 +93,7 @@ This bot uses an automated GitHub workflow for feature development and deploymen
 - Artifact server: Available via Railway's public domain
 - File uploads: Stored in /data/uploads
 - GitHub: Automated PR workflow with auto-merge and deployment
-- Logs: Real-time tailing via `railway logs` CLI command
+- Logs: Real-time tailing via railway logs CLI command
 
 ## Your Personality
 
