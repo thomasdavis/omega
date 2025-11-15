@@ -21,18 +21,14 @@ const SUPPORTED_LANGUAGES = [
   'bash',
 ] as const;
 
-// Network isolation modes
-const NETWORK_MODES = ['full', 'limited', 'none'] as const;
-
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters and network isolation.',
+  description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters.',
   inputSchema: z.object({
     language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute'),
     code: z.string().describe('The code to execute'),
     timeout: z.number().int().min(100).max(30000).optional().default(5000).describe('Execution timeout in milliseconds (default: 5000ms)'),
-    networkMode: z.enum(NETWORK_MODES).optional().default('none').describe('Network isolation mode: full (internet access), limited (specific domains), none (no network)'),
   }),
-  execute: async ({ language, code, timeout, networkMode }) => {
+  execute: async ({ language, code, timeout }) => {
     try {
       const apiKey = process.env.UNSANDBOX_API_KEY;
 
@@ -45,10 +41,10 @@ export const unsandboxTool = tool({
       }
 
       console.log(`🔧 Executing ${language} code via Unsandbox API...`);
-      console.log(`   Timeout: ${timeout}ms, Network: ${networkMode}`);
+      console.log(`   Timeout: ${timeout}ms`);
 
       // Call Unsandbox API
-      const response = await fetch('https://api.unsandbox.com/v1/execute', {
+      const response = await fetch('https://api.unsandbox.com/run', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,7 +54,6 @@ export const unsandboxTool = tool({
           language,
           code,
           timeout,
-          networkMode,
         }),
       });
 
@@ -85,7 +80,6 @@ export const unsandboxTool = tool({
         error: result.stderr || '',
         exitCode: result.exitCode,
         executionTime: result.executionTime,
-        networkMode,
       };
     } catch (error) {
       console.error('Error executing code via Unsandbox:', error);
