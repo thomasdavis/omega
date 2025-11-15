@@ -25,7 +25,7 @@ export const whoamiTool = tool({
         'Write research essays with citations',
         'Create ASCII graphs and visualizations',
         'Fetch and analyze web pages (with robots.txt compliance)',
-        'Create GitHub issues',
+        'Create GitHub issues for feature requests and improvements - just ask!',
         'Check weather information',
         'Self-modify personality based on user feedback',
       ],
@@ -45,7 +45,7 @@ export const whoamiTool = tool({
           calculator: 'Perform mathematical calculations and expressions',
           weather: 'Get current weather information for any location',
           webFetch: 'Fetch and analyze web pages while respecting robots.txt policies',
-          githubCreateIssue: 'Create GitHub issues with proper formatting and context',
+          githubCreateIssue: 'Create GitHub issues for feature requests and improvements - simply tell me what you\'d like to see added or changed, and I\'ll create a properly formatted issue on the repository',
         },
         advancedTools: {
           unsandbox: 'Execute code in a sandboxed environment - supports JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, and Bash',
