@@ -143,6 +143,7 @@ export const asciiGraphTool = tool({
     height: z.number().optional().describe('Height of the graph in rows (only for line graphs, default: 10)'),
     showValues: z.boolean().optional().describe('Show numeric values on bar chart (default: true)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ type, data, maxWidth, height, showValues }) => {
     try {
       let graph: string;

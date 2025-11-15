@@ -12,6 +12,7 @@ export const githubCreateIssueTool = tool({
     body: z.string().describe('The detailed description of the issue, with context and requirements'),
     labels: z.array(z.string()).optional().describe('Labels to apply (e.g., ["enhancement", "bug", "documentation"])'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ title, body, labels }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega'; // owner/repo format

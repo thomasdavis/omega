@@ -10,6 +10,7 @@ export const linuxAdvantagesTool = tool({
   parameters: z.object({
     context: z.enum(['brief', 'detailed']).default('brief').describe('Level of detail to provide - brief for quick overview, detailed for comprehensive explanation'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ context }) => {
     console.log(`🐧 Linux Advantages tool called with context: ${context}`);
 

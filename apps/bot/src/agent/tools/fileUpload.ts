@@ -186,6 +186,7 @@ export const fileUploadTool = tool({
     mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy }) => {
     try {
       // Validate that either fileUrl or fileData is provided

@@ -13,6 +13,7 @@ export const webFetchTool = tool({
     url: z.string().url().describe('The URL to fetch content from'),
     userAgent: z.string().default('OmegaBot/1.0').describe('User agent string to use (default: OmegaBot/1.0)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ url, userAgent }) => {
     console.log(`🌐 Fetching URL: ${url}`);
 

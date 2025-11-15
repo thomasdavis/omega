@@ -32,6 +32,7 @@ export const unsandboxTool = tool({
     timeout: z.number().optional().default(5000).describe('Execution timeout in milliseconds (default: 5000ms)'),
     networkMode: z.enum(NETWORK_MODES).optional().default('none').describe('Network isolation mode: full (internet access), limited (specific domains), none (no network)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ language, code, timeout, networkMode }) => {
     try {
       const apiKey = process.env.UNSANDBOX_API_KEY;

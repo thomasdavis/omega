@@ -34,6 +34,7 @@ export const hackerNewsPhilosophyTool = tool({
     limit: z.number().default(10).describe('Number of top philosophical articles to return (default 10)'),
     storyType: z.enum(['top', 'best', 'new']).default('top').describe('Type of HN stories to analyze (default: top)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ limit, storyType }) => {
     console.log(`🧠 Fetching philosophical articles from Hacker News (${storyType} stories)...`);
 

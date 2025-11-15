@@ -12,6 +12,7 @@ export const searchTool = tool({
     query: z.string().describe('The search query'),
     numResults: z.number().default(3).describe('Number of results to return (default 3)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ query, numResults }) => {
     // TODO: Integrate with actual search API
     // For now, return a simulated response

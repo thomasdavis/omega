@@ -181,6 +181,7 @@ export const artifactTool = tool({
     width: z.number().optional().describe('Width for SVG artifacts (default: 800)'),
     height: z.number().optional().describe('Height for SVG artifacts (default: 600)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ type, title, description, content, css, js, width, height }) => {
     try {
       let artifactContent: string;

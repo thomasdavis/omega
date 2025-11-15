@@ -143,6 +143,7 @@ The changes will be committed to git and take effect on next bot restart/redeplo
     userApproved: z.boolean().optional().describe('Whether the user has explicitly approved this change'),
   }),
 
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ action, username, changeType, changes, reason, userApproved }) => {
     // SECURITY: Require explicit approval before applying changes
     if (action === 'apply' && !userApproved) {

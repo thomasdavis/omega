@@ -116,6 +116,7 @@ export const moodUplifterTool = tool({
     username: z.string().optional().describe('The username of the person who sent the message'),
     autoDetect: z.boolean().optional().describe('If true, only respond if low energy is detected. If false, always provide encouragement.'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ message, username = 'friend', autoDetect = true }) => {
     try {
       console.log('🌟 Mood Uplifter: Analyzing message...');

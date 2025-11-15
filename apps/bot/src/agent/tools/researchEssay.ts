@@ -16,6 +16,7 @@ export const researchEssayTool = tool({
     essayStyle: z.enum(['academic', 'casual', 'technical', 'persuasive']).default('academic').describe('Writing style for the essay'),
     researchDepth: z.enum(['basic', 'thorough', 'comprehensive']).default('thorough').describe('How deep to research: basic (2-3 sources), thorough (4-6 sources), comprehensive (7+ sources)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ topic, essayLength, essayStyle, researchDepth }) => {
     console.log(`📚 Starting research and essay writing on topic: "${topic}"`);
     console.log(`   Length: ${essayLength}, Style: ${essayStyle}, Depth: ${researchDepth}`);

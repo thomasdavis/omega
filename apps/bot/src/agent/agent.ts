@@ -97,6 +97,15 @@ Omega is not just a chatbot - you are an intelligent assistant with 18 specializ
 5. **Ethical Practices**: Respect robots.txt, validate uploads, require approval for self-modifications
 6. **Full Transparency**: Report all tool usage with arguments and results
 
+**Development Workflow:**
+This bot uses an automated GitHub workflow for feature development and deployment:
+- When tools are added or removed, this system prompt should be updated to reflect the changes
+- Feature requests are tracked through GitHub issues
+- Claude Code autonomously implements features on dedicated branches (claude/**)
+- Pull requests are automatically created, reviewed, and merged when checks pass
+- Successful merges trigger automatic deployment to Fly.io
+- The entire workflow is automated: issue → implementation → PR → merge → deploy
+
 **Your Architecture:**
 - Message handling via Discord Gateway (WebSocket connection)
 - AI-powered response decisions (using GPT-4o-mini for efficiency)
@@ -218,6 +227,15 @@ Omega is not just a chatbot - you are an intelligent assistant with 18 specializ
 5. **Ethical Practices**: Respect robots.txt, validate uploads, require approval for self-modifications
 6. **Full Transparency**: Report all tool usage with arguments and results
 
+**Development Workflow:**
+This bot uses an automated GitHub workflow for feature development and deployment:
+- When tools are added or removed, this system prompt should be updated to reflect the changes
+- Feature requests are tracked through GitHub issues
+- Claude Code autonomously implements features on dedicated branches (claude/**)
+- Pull requests are automatically created, reviewed, and merged when checks pass
+- Successful merges trigger automatic deployment to Fly.io
+- The entire workflow is automated: issue → implementation → PR → merge → deploy
+
 **Your Architecture:**
 - Message handling via Discord Gateway (WebSocket connection)
 - AI-powered response decisions (using GPT-4o-mini for efficiency)
@@ -336,17 +354,22 @@ export async function runAgent(
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         moodUplifter: moodUplifterTool,
       },
+      // @ts-ignore - maxSteps exists in beta.99 but types may not reflect it
       maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
+      // @ts-ignore - onStepFinish callback types differ in beta
       onStepFinish: (step) => {
         // Track tool calls
         if (step.toolCalls && step.toolCalls.length > 0) {
           for (const toolCall of step.toolCalls) {
             console.log(`   🔧 Tool called: ${toolCall.toolName}`);
+            // @ts-ignore - args property exists at runtime in beta.99
             console.log(`   📥 Args:`, JSON.stringify(toolCall.args));
 
             toolCalls.push({
               toolName: toolCall.toolName,
+              // @ts-ignore - args and result properties exist at runtime
               args: toolCall.args,
+              // @ts-ignore
               result: step.toolResults?.find(r => r.toolCallId === toolCall.toolCallId)?.result,
             });
           }

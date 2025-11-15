@@ -91,13 +91,32 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log(`✅ Sent response (${result.response.length} chars)`);
     }
 
-    // If tools were used, send a follow-up message with details
+    // If tools were used, send separate messages for each tool
+    // This handles many tool invocations better and avoids hitting Discord's 2000 char limit
     if (result.toolCalls && result.toolCalls.length > 0 && 'send' in message.channel) {
-      const toolReport = formatToolReport(result.toolCalls);
-      await message.channel.send({
-        content: toolReport,
-      });
-      console.log(`🔧 Sent tool usage report (${result.toolCalls.length} tools)`);
+      console.log(`🔧 Sending ${result.toolCalls.length} tool usage reports...`);
+
+      for (let i = 0; i < result.toolCalls.length; i++) {
+        const toolReport = formatSingleToolReport(result.toolCalls[i], i + 1, result.toolCalls.length);
+
+        // Check if the report exceeds Discord's limit (2000 chars)
+        if (toolReport.length > 2000) {
+          // Split into multiple messages if needed
+          const chunks = splitIntoChunks(toolReport, 1990); // Leave margin for safety
+          for (const chunk of chunks) {
+            await message.channel.send({ content: chunk });
+          }
+        } else {
+          await message.channel.send({ content: toolReport });
+        }
+
+        // Add a small delay between messages to avoid rate limiting
+        if (i < result.toolCalls.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      console.log(`✅ Sent ${result.toolCalls.length} tool usage reports`);
     }
   } catch (error) {
     console.error('Error generating response:', error);
@@ -119,75 +138,89 @@ function suppressEmbeds(text: string): string {
 }
 
 /**
- * Format tool usage into a nice Discord message
+ * Split a string into chunks that fit Discord's message limit
  */
-function formatToolReport(toolCalls: any[]): string {
-  const lines = ['**🔧 Tools Used:**'];
+function splitIntoChunks(text: string, maxLength: number): string[] {
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  const lines = text.split('\n');
+  for (const line of lines) {
+    if ((currentChunk + line + '\n').length > maxLength && currentChunk.length > 0) {
+      chunks.push(currentChunk.trim());
+      currentChunk = '';
+    }
+    currentChunk += line + '\n';
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks;
+}
+
+/**
+ * Format a single tool usage into a Discord message
+ */
+function formatSingleToolReport(call: any, toolNumber: number, totalTools: number): string {
+  const lines: string[] = [];
+
+  // Header with tool number and total
+  lines.push(`**🔧 Tool ${toolNumber}/${totalTools}: ${call.toolName}**`);
   lines.push(''); // Empty line for spacing
 
-  for (let i = 0; i < toolCalls.length; i++) {
-    const call = toolCalls[i];
+  // Arguments in code block if present
+  if (call.args && Object.keys(call.args).length > 0) {
+    lines.push('**Arguments:**');
+    lines.push('```json');
+    lines.push(JSON.stringify(call.args, null, 2));
+    lines.push('```');
+  }
 
-    // Tool name with number
-    lines.push(`**${i + 1}. ${call.toolName}**`);
+  // Result in code block if present
+  if (call.result) {
+    lines.push('**Result:**');
 
-    // Arguments in code block if present
-    if (call.args && Object.keys(call.args).length > 0) {
-      lines.push('**Arguments:**');
-      lines.push('```json');
-      lines.push(JSON.stringify(call.args, null, 2));
-      lines.push('```');
-    }
-
-    // Result in code block if present
-    if (call.result) {
-      lines.push('**Result:**');
-
-      // Format result based on type
-      if (typeof call.result === 'string') {
-        // For string results, check if it looks like JSON
-        try {
-          const parsed = JSON.parse(call.result);
-          lines.push('```json');
-          lines.push(JSON.stringify(parsed, null, 2));
+    // Format result based on type
+    if (typeof call.result === 'string') {
+      // For string results, check if it looks like JSON
+      try {
+        const parsed = JSON.parse(call.result);
+        lines.push('```json');
+        lines.push(JSON.stringify(parsed, null, 2));
+        lines.push('```');
+      } catch {
+        // Not JSON, display as regular text (with URL suppression)
+        const suppressedResult = suppressEmbeds(call.result);
+        if (suppressedResult.length > 500) {
           lines.push('```');
-        } catch {
-          // Not JSON, display as regular text (with URL suppression)
-          const suppressedResult = suppressEmbeds(call.result);
-          if (suppressedResult.length > 500) {
-            lines.push('```');
-            lines.push(suppressedResult.slice(0, 500) + '...\n(truncated)');
-            lines.push('```');
-          } else {
-            lines.push('```');
-            lines.push(suppressedResult);
-            lines.push('```');
-          }
-        }
-      } else if (typeof call.result === 'object') {
-        // For object results, format as JSON
-        const jsonStr = JSON.stringify(call.result, null, 2);
-        if (jsonStr.length > 1000) {
-          lines.push('```json');
-          lines.push(jsonStr.slice(0, 1000) + '\n...\n(truncated)');
+          lines.push(suppressedResult.slice(0, 500) + '...\n(truncated)');
           lines.push('```');
         } else {
-          lines.push('```json');
-          // Suppress embeds in URLs within JSON
-          lines.push(suppressEmbeds(jsonStr));
+          lines.push('```');
+          lines.push(suppressedResult);
           lines.push('```');
         }
-      } else {
-        // For other types (number, boolean, etc.)
+      }
+    } else if (typeof call.result === 'object') {
+      // For object results, format as JSON
+      const jsonStr = JSON.stringify(call.result, null, 2);
+      if (jsonStr.length > 1000) {
+        lines.push('```json');
+        lines.push(jsonStr.slice(0, 1000) + '\n...\n(truncated)');
         lines.push('```');
-        lines.push(String(call.result));
+      } else {
+        lines.push('```json');
+        // Suppress embeds in URLs within JSON
+        lines.push(suppressEmbeds(jsonStr));
         lines.push('```');
       }
-    }
-
-    // Add separator between tools (except for last one)
-    if (i < toolCalls.length - 1) {
-      lines.push(''); // Empty line between tools
+    } else {
+      // For other types (number, boolean, etc.)
+      lines.push('```');
+      lines.push(String(call.result));
+      lines.push('```');
     }
   }
 

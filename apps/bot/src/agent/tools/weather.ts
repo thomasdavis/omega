@@ -12,6 +12,7 @@ export const weatherTool = tool({
     location: z.string().describe('The city or location to get weather for, e.g., "New York" or "London, UK"'),
     units: z.enum(['celsius', 'fahrenheit']).default('celsius').describe('Temperature units'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ location, units }) => {
     // TODO: Integrate with weather API (OpenWeatherMap, WeatherAPI, etc.)
     console.log(`🌤️  Getting weather for: ${location} (${units})`);

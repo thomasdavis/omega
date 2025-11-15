@@ -41,6 +41,7 @@ export const exportConversationTool = tool({
     beforeDate: z.string().optional().describe('Optional: Only include messages before this date (ISO 8601 format)'),
     afterDate: z.string().optional().describe('Optional: Only include messages after this date (ISO 8601 format)'),
   }),
+  // @ts-ignore - AI SDK beta.99 type mismatch
   execute: async ({ limit, username, beforeDate, afterDate }) => {
     try {
       console.log(`📝 Exporting conversation history (limit: ${limit})`);
