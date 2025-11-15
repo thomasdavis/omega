@@ -105,13 +105,22 @@ STYLE GUIDELINES:
 - Use flexbox or grid for layout
 - Ensure text is readable and well-formatted
 
+CODE QUALITY REQUIREMENTS:
+- Write clean, well-structured HTML5 that validates
+- Use proper HTML semantics (header, nav, main, section, article, footer, etc.)
+- Ensure all HTML tags are properly closed
+- Use meaningful class names and IDs
+- Include comments for complex sections
+- Test that all interactive features work (buttons, forms, etc.)
+- Make sure JavaScript has no syntax errors
+- Verify all CSS is valid and properly scoped
+
 OUTPUT ONLY THE HTML CODE - no explanations, no markdown code blocks, just the raw HTML starting with <!DOCTYPE html>.`;
 
   const result = await generateText({
     model,
     prompt,
     temperature: 0.7,
-    maxTokens: 4000,
   });
 
   return result.text.trim();
