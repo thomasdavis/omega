@@ -519,18 +519,24 @@ Render provides persistent disk storage that survives across deploys:
 
 ### Monitoring
 
+**IMPORTANT**: The Render CLI `render logs` command only shows build/deploy logs, NOT runtime application logs!
+
+To view runtime logs (console.log output from your bot):
+1. **Via Dashboard**: Go to https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+2. Click on the "Logs" tab
+3. You'll see real-time application logs including console.log output
+
 ```bash
-# View live logs
-render logs --service srv-d4cark3ipnbc739blrm0 --tail
+# These only show BUILD logs (not runtime logs):
+render logs -r srv-d4cark3ipnbc739blrm0 --tail
+render logs -r srv-d4cark3ipnbc739blrm0 --limit 100 -o text
 
-# View recent logs
-render logs --service srv-d4cark3ipnbc739blrm0 --lines 100
-
-# Open Render Dashboard
+# To see RUNTIME logs, use the Render Dashboard:
 open https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+# Then click "Logs" tab for real-time application output
 
 # Shell access (via Render Dashboard)
-# Go to Shell tab in the service dashboard
+# Go to Shell tab in the service dashboard for interactive shell access
 ```
 
 ---
