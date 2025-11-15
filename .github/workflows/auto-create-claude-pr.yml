@@ -81,6 +81,34 @@ jobs:
             echo "✅ No conflicts, branch is up to date with main"
           fi
 
+      - name: Fix pnpm lockfile if out of sync
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+          echo "🔧 Checking if pnpm lockfile is in sync..."
+
+          # Install pnpm
+          npm install -g pnpm@9.0.0
+
+          # Try to install - this will update the lockfile if needed
+          pnpm install --no-frozen-lockfile
+
+          # Check if lockfile changed
+          if ! git diff --quiet pnpm-lock.yaml; then
+            echo "📦 Lockfile was out of sync, committing update..."
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            git add pnpm-lock.yaml
+            git commit -m "chore: update pnpm lockfile to match package.json changes"
+            git push origin "$BRANCH_NAME"
+
+            echo "✅ Lockfile updated and pushed"
+          else
+            echo "✅ Lockfile is already in sync"
+          fi
+
       - name: Extract issue number from branch name
         id: extract_issue
         run: |
