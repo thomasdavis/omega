@@ -5,9 +5,9 @@ on:
     branches:
       - 'claude/**'
 
-# STRICT: Only one workflow run at a time to prevent conflicts
+# Allow concurrent runs for different branches
 concurrency:
-  group: claude-pr-workflow
+  group: claude-pr-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -26,26 +26,27 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
-      - name: NUCLEAR OPTION - Delete ALL open claude/* PRs
+      - name: Check for existing PR from this branch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          echo "🗑️ STRICT MODE: Deleting ALL open PRs from claude/* branches to prevent conflicts..."
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "🔍 Checking if PR already exists for branch: $BRANCH_NAME"
 
-          # Get all open PRs from claude/* branches
-          OPEN_PRS=$(gh pr list --head "claude/" --state open --json number,headRefName --jq '.[] | "\(.number):\(.headRefName)"')
+          # Check if a PR already exists for this specific branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number // ""')
 
-          if [ -z "$OPEN_PRS" ]; then
-            echo "✅ No open claude/* PRs to delete"
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR #$EXISTING_PR already exists for this branch, skipping creation"
+            echo "pr_exists=true" >> $GITHUB_ENV
+            echo "existing_pr_number=$EXISTING_PR" >> $GITHUB_ENV
           else
-            echo "$OPEN_PRS" | while IFS=: read -r PR_NUM BRANCH_NAME; do
-              echo "🗑️ Force-closing PR #$PR_NUM (branch: $BRANCH_NAME)"
-              gh pr close "$PR_NUM" --delete-branch --comment "🗑️ STRICT MODE: Auto-closed to prevent merge conflicts. Only one PR allowed at a time." || true
-            done
-            echo "✅ Deleted all open claude/* PRs"
+            echo "✅ No existing PR found, will create new one"
+            echo "pr_exists=false" >> $GITHUB_ENV
           fi
 
       - name: Auto-resolve merge conflicts with main
+        if: env.pr_exists == 'false'
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
 
@@ -82,6 +83,7 @@ jobs:
           fi
 
       - name: Fix pnpm lockfile if out of sync
+        if: env.pr_exists == 'false'
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
 
@@ -135,27 +137,8 @@ jobs:
           ISSUE_TITLE=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.title')
           echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
 
-      - name: Check if PR already exists
-        id: check_pr
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          BRANCH_NAME="${{ steps.extract_issue.outputs.branch_name }}"
-
-          # Check if a PR already exists for this branch
-          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number // ""')
-
-          if [ -n "$EXISTING_PR" ]; then
-            echo "pr_exists=true" >> $GITHUB_OUTPUT
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-            echo "PR #$EXISTING_PR already exists for branch $BRANCH_NAME"
-          else
-            echo "pr_exists=false" >> $GITHUB_OUTPUT
-            echo "No existing PR found for branch $BRANCH_NAME"
-          fi
-
       - name: Create Pull Request
-        if: steps.check_pr.outputs.pr_exists == 'false'
+        if: env.pr_exists == 'false'
         id: create_pr
         env:
           GH_TOKEN: ${{ github.token }}
@@ -193,7 +176,7 @@ jobs:
           echo "✅ Created PR #$PR_NUMBER for branch $BRANCH_NAME"
 
       - name: Enable auto-merge
-        if: steps.check_pr.outputs.pr_exists == 'false'
+        if: env.pr_exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -233,7 +216,7 @@ jobs:
           exit 1
 
       - name: Wait for PR to be merged
-        if: steps.check_pr.outputs.pr_exists == 'false'
+        if: env.pr_exists == 'false'
         id: wait_merge
         env:
           GH_TOKEN: ${{ github.token }}
@@ -271,23 +254,23 @@ jobs:
           exit 0
 
       - name: Checkout main branch
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         uses: actions/checkout@v4
         with:
           ref: main
 
       - name: Setup Flyctl
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy to Fly.io
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         run: flyctl deploy --remote-only --config apps/bot/fly.toml
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Notify Discord of successful deployment
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -300,7 +283,7 @@ jobs:
           embed-url: ${{ steps.wait_merge.outputs.pr_url }}
 
       - name: Cleanup on deployment failure - Revert merge
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -334,7 +317,7 @@ jobs:
           echo "✅ Merge reverted successfully"
 
       - name: Cleanup on deployment failure - Comment on issue
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -344,7 +327,7 @@ jobs:
           gh issue comment "$ISSUE_NUM" --repo ${{ github.repository }} --body "⚠️ The implementation failed during deployment due to build errors. Please provide more specific requirements or details about what you'd like, and I'll try again!"
 
       - name: Cleanup on deployment failure - Notify Discord
-        if: steps.check_pr.outputs.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
@@ -357,9 +340,7 @@ jobs:
             [View Issue](https://github.com/${{ github.repository }}/issues/${{ steps.extract_issue.outputs.issue_number }})
           embed-color: 15158332
 
-      - name: Comment on existing PR
-        if: steps.check_pr.outputs.pr_exists == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Skip - PR already exists
+        if: env.pr_exists == 'true'
         run: |
-          echo "PR already exists, skipping creation"
+          echo "✅ PR #${{ env.existing_pr_number }} already exists for this branch, skipping workflow"
