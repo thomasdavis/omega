@@ -12,8 +12,8 @@
     "lint:fix": "eslint src --ext .ts --fix"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^0.0.66",
-    "ai": "^3.4.7",
+    "@ai-sdk/openai": "^2.0.67",
+    "ai": "6.0.0-beta.99",
     "discord.js": "^14.24.2",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",

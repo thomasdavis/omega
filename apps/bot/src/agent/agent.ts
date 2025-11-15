@@ -262,7 +262,7 @@ export async function runAgent(
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         moodUplifter: moodUplifterTool,
       },
-      maxSteps: 5, // Allow multi-step tool usage
+      maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
       onStepFinish: (step) => {
         // Track tool calls
         if (step.toolCalls && step.toolCalls.length > 0) {
