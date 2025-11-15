@@ -31,9 +31,15 @@ primary_region = "syd" # Sydney - change to your preferred region
     soft_limit = 20
 
 # Persistent storage for file uploads
-[mounts]
+[[mounts]]
   source = "omega_uploads"
   destination = "/data/uploads"
+  initial_size = "1gb"
+
+# Persistent storage for generated artifacts (HTML, SVG, etc.)
+[[mounts]]
+  source = "omega_artifacts"
+  destination = "/data/artifacts"
   initial_size = "1gb"
 
 [[vm]]
