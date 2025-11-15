@@ -1,4 +1,4 @@
-name: Deploy to Fly.io
+name: Deploy to Railway
 
 on:
   push:
@@ -13,13 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Flyctl
-        uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy to Fly.io
-        run: flyctl deploy --remote-only --config apps/bot/fly.toml
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
       - name: Get commit info
         id: commit
@@ -28,16 +23,51 @@ jobs:
           echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
-      - name: Notify Discord
+      - name: Notify Discord - Deployment Starting
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "🚀 New Deployment"
+          embed-title: "🚀 Deploying to Railway..."
           embed-description: |
             **Commit:** ${{ steps.commit.outputs.message }}
             **Author:** ${{ steps.commit.outputs.author }}
             **SHA:** `${{ steps.commit.outputs.sha }}`
 
-            Deployment to Fly.io completed successfully!
-          embed-color: 3066993
+            Deployment to Railway started...
+          embed-color: 3447003
+          embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Notify Discord - Deployment Success
+        if: success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ Deployment Successful!"
+          embed-description: |
+            **Commit:** ${{ steps.commit.outputs.message }}
+            **Author:** ${{ steps.commit.outputs.author }}
+            **SHA:** `${{ steps.commit.outputs.sha }}`
+
+            Successfully deployed to Railway production!
+          embed-color: 5814783
+          embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+
+      - name: Notify Discord - Deployment Failed
+        if: failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "❌ Deployment Failed!"
+          embed-description: |
+            **Commit:** ${{ steps.commit.outputs.message }}
+            **Author:** ${{ steps.commit.outputs.author }}
+            **SHA:** `${{ steps.commit.outputs.sha }}`
+
+            Deployment to Railway failed. Check the logs for details.
+          embed-color: 15158332
           embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
