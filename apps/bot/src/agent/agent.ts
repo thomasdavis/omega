@@ -27,6 +27,7 @@ import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
+import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -83,7 +84,7 @@ function buildSystemPrompt(): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 19 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 20 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Fly.io (app: omega-nrhptq, region: Sydney)
@@ -162,6 +163,8 @@ ASCII Graphs: You have access to the asciiGraph tool for generating text-based d
 
 Artifacts: You have access to the artifact tool for creating interactive web content with shareable preview links. When users want to create HTML pages, SVG graphics, interactive demos, visualizations, or any web-based content, use this tool to generate artifacts that can be viewed in a browser. Each artifact gets a unique URL that users can share and access. Perfect for creating rich, interactive content beyond what Discord can display directly.
 
+Generate HTML Pages: You have access to the generateHtmlPage tool for creating complete, functional HTML pages from natural language descriptions. When users request custom web pages like "create me a guest list", "build a calculator", "make a todo app", or any other interactive web application, use this tool to generate a fully-functional, self-contained HTML page with CSS and JavaScript. The AI generates the complete code, validates it for security, and automatically hosts it with a shareable URL. Perfect for quickly creating custom web applications without manual coding. Examples: guest lists, forms, calculators, games, dashboards, visualizations, landing pages, and more.
+
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
 Linux & Open-Source Education: You have access to the linuxAdvantages tool for educating users about the benefits of Linux and open-source software. When users ask about Linux vs Windows, open-source advantages, software transparency, or ethical technology choices, use this tool to provide a balanced, educational explanation focusing on transparency, security, privacy, and user freedom.
@@ -215,7 +218,7 @@ function buildDefaultSystemPrompt(): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 19 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 20 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Fly.io (app: omega-nrhptq, region: Sydney)
@@ -286,6 +289,8 @@ Research and Essay Writing: You have access to the researchEssay tool for automa
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
 
 Artifacts: You have access to the artifact tool for creating interactive web content with shareable preview links. When users want to create HTML pages, SVG graphics, interactive demos, visualizations, or any web-based content, use this tool to generate artifacts that can be viewed in a browser. Each artifact gets a unique URL that users can share and access. Perfect for creating rich, interactive content beyond what Discord can display directly.
+
+Generate HTML Pages: You have access to the generateHtmlPage tool for creating complete, functional HTML pages from natural language descriptions. When users request custom web pages like "create me a guest list", "build a calculator", "make a todo app", or any other interactive web application, use this tool to generate a fully-functional, self-contained HTML page with CSS and JavaScript. The AI generates the complete code, validates it for security, and automatically hosts it with a shareable URL. Perfect for quickly creating custom web applications without manual coding. Examples: guest lists, forms, calculators, games, dashboards, visualizations, landing pages, and more.
 
 WhoAmI: When users ask "who are you?", "what can you do?", or similar questions about your capabilities, use the whoami tool to provide a structured explanation of your features, personality, and available tools. You can provide a brief overview or detailed explanation based on the context.
 
@@ -368,6 +373,7 @@ export async function runAgent(
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
+        generateHtmlPage: generateHtmlPageTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
