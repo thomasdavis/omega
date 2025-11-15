@@ -130,7 +130,7 @@ Format your response as JSON with this structure:
 }`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5-mini'),
     prompt: researchPrompt,
   });
 
@@ -181,7 +181,7 @@ Format as JSON:
 }`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5-mini'),
     prompt: outlinePrompt,
   });
 
@@ -246,7 +246,7 @@ Requirements:
 Write the complete essay now:`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-5-mini'),
     prompt: essayPrompt,
   });
 

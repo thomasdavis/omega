@@ -43,7 +43,7 @@ function loadPersonalityConfig() {
 
 const personalityConfig = loadPersonalityConfig();
 
-const model = openai('gpt-4o');
+const model = openai('gpt-5-mini');
 
 export interface AgentContext {
   username: string;
