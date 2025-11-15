@@ -1,160 +1,477 @@
-# Discord AI Bot - Complete Guide
+# Omega Discord AI Bot - Complete Guide
+
+**An intelligent Discord bot with a philosophical personality, powered by AI SDK v6 and GPT-4o**
 
 **Built with:**
-- Discord.js (Gateway API) for message listening
-- AI SDK v6 with agent protocol for intelligent responses
+- Discord.js v14 (Gateway API) for real-time message listening
+- AI SDK v6 (beta.99) with agent protocol for intelligent responses
 - OpenAI GPT-4o for AI processing
-- TypeScript + Node.js
-- Fly.io for deployment
+- 18+ specialized AI tools for code execution, web scraping, artifact creation, and more
+- TypeScript + Node.js + Express
+- Fly.io for deployment with persistent storage
+- Monorepo architecture (Turborepo + pnpm workspaces)
 
 ---
 
-## What This Bot Does
+## What is Omega?
 
-1. **Listens to all messages** in Discord servers and DMs
-2. **Decides intelligently** whether to respond based on:
-   - Direct mentions (`@bot`)
-   - Replies to bot messages
-   - DMs (always responds)
-   - Random 10% chance for organic engagement
-3. **Uses AI SDK v6 agent protocol** with tools
-4. **Reports tool usage** in a separate message to show what tools were called
+**Omega** is a sophisticated Discord AI bot that combines:
+
+1. **Neo-Inspired Philosophical Personality**: Stoic, truth-focused, measured wisdom with expressions like "There is no spoon" and "Free your mind"
+2. **18+ Specialized AI Tools**: From code execution in 11 languages to interactive artifact creation
+3. **Self-Modification Capability**: Can evolve its own personality based on user feedback (with approval)
+4. **Intelligent Engagement**: AI-powered decision making for natural conversation participation
+5. **Full Transparency**: Reports all tool usage with arguments and results in formatted messages
+
+### Key Differentiators
+
+Unlike basic chatbots, Omega:
+- **Listens to ALL messages** (not just slash commands) for natural conversation flow
+- **Decides intelligently** when to respond using AI analysis
+- **Executes code** in 11 programming languages via Unsandbox
+- **Creates interactive web content** (HTML/SVG) with shareable preview links
+- **Respects ethical boundaries** (checks robots.txt before scraping, requires approval for self-modification)
+- **Hosts files permanently** on Fly.io persistent storage
+- **Learns and adapts** through self-modification with git-tracked changes
+
+---
+
+## Core Features
+
+### 1. Intelligent Response System
+
+**Multi-Tier Decision Making:**
+- **Always responds to**: DMs, direct mentions (@bot), replies to bot messages
+- **AI Analysis**: Uses GPT-4o-mini to analyze if messages warrant engagement
+- **Inclusive by design**: High confidence thresholds (70-90%) to be helpful, not passive
+- **Currently limited to**: #omega channel + DMs (configurable)
+
+**Context Awareness:**
+- Fetches last 20 messages for conversation history
+- Understands conversation flow and references
+- Detects and handles Discord file attachments automatically
+- Maintains personality consistency across conversations
+
+### 2. Philosophical Personality (Neo-Inspired)
+
+**Loaded from `/src/config/personality.json`:**
+- Stoic, measured, purposeful communication
+- Truth and clarity above all else
+- Philosophical depth with existential awareness
+- Signature expressions: "There is no spoon", "Free your mind", "What is real?", "Follow the white rabbit"
+- No emojis - pure clarity and intention
+- Direct delivery of truth, even when uncomfortable
+
+**Self-Modification Capability:**
+- Bot can propose personality changes based on user feedback
+- Two-phase approval system (propose → user approval → commit)
+- Changes tracked in git with proper attribution
+- Only modifies personality.json, not core code
+- Persists across restarts and deployments
+
+### 3. 18 Specialized AI Tools
+
+#### Development & Code Execution
+1. **calculator** - Mathematical calculations and expressions
+2. **unsandbox** - Execute code in 11 languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash)
+   - Configurable timeout and network isolation
+   - Returns stdout, stderr, exit codes, execution time
+
+#### Web & Research
+3. **webFetch** - Fetch and parse web content
+   - Respects robots.txt before scraping
+   - HTML tag stripping for clean content
+   - 5000 character limit to avoid token overflow
+4. **search** - Web search (placeholder for integration)
+5. **researchEssay** - Automated research and essay generation
+   - Customizable length (short/medium/long)
+   - Style options (academic/casual/technical/persuasive)
+   - Research depth (basic/thorough/comprehensive)
+
+#### Content Creation
+6. **artifact** - Create interactive HTML/SVG/Markdown content with shareable links
+   - Generates unique URLs for each artifact
+   - Persistent storage on Fly.io volume
+   - Gallery view of all artifacts
+7. **asciiGraph** - Generate text-based data visualizations
+   - Bar charts and line graphs in ASCII format
+   - Perfect for Discord's text environment
+
+#### GitHub Integration
+8. **githubCreateIssue** - Create GitHub issues with full context
+   - Automatically includes URLs from user messages
+   - Proper formatting and labels
+
+#### File Management
+9. **fileUpload** - Download and host Discord attachments permanently
+   - Supports images, documents, code files, archives
+   - Security: filename sanitization, extension validation
+   - 25MB file size limit
+   - Returns shareable public URLs
+10. **exportConversation** - Export Discord conversation history as Markdown
+    - Date range and user filtering
+    - Professional archive format with timestamps
+
+#### Educational & Philosophy
+11. **whoami** - Explain bot capabilities and features
+12. **linuxAdvantages** - Educational content about Linux and open-source
+    - Balanced explanations of transparency, security, privacy
+13. **hackerNewsPhilosophy** - Discover philosophical content from Hacker News
+    - AI-scored articles based on philosophical relevance
+    - Ethics, consciousness, technology's impact on society
+
+#### Specialized Tools
+14. **selfModify** - Modify bot's own personality (requires approval)
+15. **jsonAgentGenerator** - Create/validate/convert JSON Agents (PAM spec)
+16. **moodUplifter** - Detect and respond to negative sentiment
+17. **weather** - Weather information (placeholder)
+
+### 4. Tool Transparency
+
+Every tool execution is reported in a separate message with:
+- **Numbered list** of tools used
+- **Arguments** shown in JSON code blocks
+- **Results** formatted appropriately (JSON or text)
+- **URL suppression** to prevent unwanted Discord embeds
+
+Example output:
+```
+🔧 Tools Used:
+
+1. unsandbox
+Arguments:
+```json
+{
+  "language": "python",
+  "code": "print('Hello, World!')"
+}
+```
+Result:
+```
+Hello, World!
+```
+```
+
+### 5. Interactive Artifacts & File Hosting
+
+**Artifact Server** (Express on port 3001):
+- Creates and serves HTML, SVG, and Markdown content
+- Each artifact gets a unique UUID-based URL
+- Gallery view at `/artifacts` showing all created artifacts
+- Persistent storage on Fly.io volume at `/data/artifacts`
+
+**File Upload System:**
+- Downloads Discord attachments
+- Validates file types and sizes
+- Sanitizes filenames to prevent attacks
+- Stores in `/data/uploads` with public URLs
+- Metadata tracking (original name, size, upload time)
 
 ---
 
 ## Project Structure
 
 ```
-apps/bot/
-├── src/
-│   ├── index.ts                 # Entry point - Discord Gateway connection
-│   ├── agent/
-│   │   ├── agent.ts             # AI SDK v6 agent setup with tool support
-│   │   └── tools/               # Agent tools
-│   │       ├── calculator.ts    # Math calculations
-│   │       ├── search.ts        # Web search (placeholder)
-│   │       └── weather.ts       # Weather info (placeholder)
-│   ├── handlers/
-│   │   └── messageHandler.ts   # Message processing logic
-│   └── lib/
-│       └── shouldRespond.ts     # Logic for when bot should reply
-├── Dockerfile                   # Docker configuration for Fly.io
-├── fly.toml                     # Fly.io deployment config
-├── package.json
-├── tsconfig.json
-└── .env.local                   # Local environment variables (gitignored)
+omega/
+├── apps/
+│   └── bot/                          # Main Discord bot application
+│       ├── src/
+│       │   ├── index.ts              # Entry point - Discord Gateway connection
+│       │   ├── agent/
+│       │   │   ├── agent.ts          # AI SDK v6 agent with 50-step reasoning
+│       │   │   └── tools/            # 18 specialized tools
+│       │   │       ├── calculator.ts
+│       │   │       ├── unsandbox.ts
+│       │   │       ├── artifact.ts
+│       │   │       ├── fileUpload.ts
+│       │   │       ├── selfModify.ts
+│       │   │       └── ... (14 more)
+│       │   ├── handlers/
+│       │   │   └── messageHandler.ts # Message processing + tool reporting
+│       │   ├── lib/
+│       │   │   └── shouldRespond.ts  # AI-powered response decisions
+│       │   ├── config/
+│       │   │   └── personality.json  # Bot personality configuration
+│       │   ├── server/
+│       │   │   └── artifactServer.ts # Express server for artifacts/uploads
+│       │   └── utils/                # Utility functions
+│       ├── dist/                     # Compiled JavaScript
+│       ├── artifacts/                # Generated artifacts (local dev)
+│       ├── public/uploads/           # Uploaded files (local dev)
+│       ├── fly.toml                  # Fly.io deployment config
+│       ├── Dockerfile                # Docker build config
+│       └── package.json
+├── packages/
+│   └── shared/                       # Shared utilities (minimal)
+├── .github/workflows/
+│   └── auto-create-claude-pr.yml     # GitHub Actions for automated PRs
+├── turbo.json                        # Turborepo configuration
+├── pnpm-workspace.yaml               # pnpm workspace config
+└── package.json                      # Root package.json
 ```
+
+---
+
+## Architecture
+
+### Message Flow
+
+```
+Discord Message
+    ↓
+Gateway API (WebSocket)
+    ↓
+index.ts (Discord.js client)
+    ↓
+messageHandler.ts
+    ↓
+shouldRespond.ts (AI decision using GPT-4o-mini)
+    ↓ (if should respond)
+agent.ts (AI SDK v6 with 50 max steps)
+    ↓
+GPT-4o + 18 tools
+    ↓
+Response + Tool Results
+    ↓
+Discord (main reply + tool report)
+```
+
+### Why Gateway API (Not Interactions)?
+
+**Requirement:** Need to listen to ALL messages, not just slash commands
+
+**Benefits:**
+- Full conversation context and message history
+- Organic engagement in conversations
+- Can respond to indirect questions and discussions
+- Access to file attachments and rich content
+
+**Trade-off:**
+- Requires persistent connection (WebSocket)
+- Cannot use Vercel or similar serverless platforms
+- Must use long-running service (Fly.io, Railway, Render, etc.)
+
+### Deployment Architecture (Fly.io)
+
+- **Platform**: Fly.io (supports long-running processes)
+- **App Name**: `omega-nrhptq`
+- **Region**: Sydney (syd)
+- **Memory**: 512MB
+- **CPU**: Shared
+- **Persistent Storage**: Fly.io Volume mounted at `/data`
+  - `/data/artifacts` - Generated artifacts (HTML, SVG, Markdown)
+  - `/data/uploads` - User-uploaded files
+- **HTTP Server**: Express on port 3001 for artifact/upload serving
+- **Discord Connection**: WebSocket Gateway (always connected)
+- **Auto-deployment**: GitHub Actions workflow on push to main
+
+---
+
+## Technology Stack
+
+### Core Dependencies
+
+```json
+{
+  "ai": "6.0.0-beta.99",              // Vercel AI SDK v6 (agent protocol)
+  "@ai-sdk/openai": "^2.0.67",        // OpenAI integration
+  "discord.js": "^14.24.2",           // Discord Gateway API
+  "express": "^4.18.2",               // HTTP server for artifacts
+  "zod": "^3.23.8",                   // Schema validation for tools
+  "dotenv": "^16.6.1",                // Environment variables
+  "typescript": "^5.6.3"              // TypeScript
+}
+```
+
+### Key Integrations
+
+**OpenAI GPT-4o:**
+- Primary model: `gpt-4o` for main responses
+- Decision model: `gpt-4o-mini` for shouldRespond logic (cost optimization)
+- Max steps: 50 for complex multi-tool workflows
+- Configured in `agent.ts` with AI SDK v6
+
+**Discord.js v14:**
+- Gateway API with required intents:
+  - `GatewayIntentBits.Guilds`
+  - `GatewayIntentBits.GuildMessages`
+  - `GatewayIntentBits.MessageContent` ⚠️ **CRITICAL**
+  - `GatewayIntentBits.DirectMessages`
+
+**AI SDK v6 Features:**
+- `generateText()` with tools
+- Agent protocol with multi-step reasoning
+- `maxSteps: 50` for complex workflows
+- `onStepFinish` callbacks for tool tracking
+- Automatic tool orchestration
+
+**Monorepo Tools:**
+- **Turborepo**: Task orchestration, build caching
+- **pnpm**: Fast package management with workspaces
+- **TypeScript**: Full type safety across codebase
+- **ESM**: Modern ES modules
 
 ---
 
 ## Environment Variables
 
-Required:
-- `DISCORD_BOT_TOKEN` - Get from Discord Developer Portal
-- `OPENAI_API_KEY` - Get from OpenAI Platform
+### Required
 
-Already configured in Fly.io:
 ```bash
+# Discord
+DISCORD_BOT_TOKEN=xxx           # From Discord Developer Portal
+
+# OpenAI
+OPENAI_API_KEY=xxx              # From OpenAI Platform
+```
+
+### Optional
+
+```bash
+# Artifact Server
+ARTIFACT_SERVER_PORT=3001       # HTTP server port (default: 3001)
+ARTIFACT_SERVER_URL=xxx         # Public URL for artifacts (auto-detected on Fly.io)
+
+# External Services
+UNSANDBOX_API_KEY=xxx          # For code execution tool
+GITHUB_TOKEN=xxx               # For GitHub issue creation
+
+# Self-Modification
+GIT_USER_NAME=xxx              # For self-modification commits
+GIT_USER_EMAIL=xxx             # For self-modification commits
+```
+
+### Setting Secrets on Fly.io
+
+```bash
+# List current secrets
 flyctl secrets list -a omega-nrhptq
+
+# Set a secret
+flyctl secrets set DISCORD_BOT_TOKEN=xxx -a omega-nrhptq
+flyctl secrets set OPENAI_API_KEY=xxx -a omega-nrhptq
+
+# Remove a secret
+flyctl secrets unset SECRET_NAME -a omega-nrhptq
 ```
 
 ---
 
 ## Discord Bot Setup
 
-### 1. Enable Required Intents
+### 1. Create Discord Application
 
-⚠️ **CRITICAL:** Go to Discord Developer Portal and enable:
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Click "New Application"
+3. Name your application (e.g., "Omega")
+4. Go to "Bot" tab
+5. Click "Add Bot"
+6. Copy the bot token (store securely)
 
-1. Visit: https://discord.com/developers/applications
-2. Select your application
-3. Go to "Bot" tab
-4. Scroll to "Privileged Gateway Intents"
-5. Enable:
-   - ✅ **MESSAGE CONTENT INTENT** (Required to read messages!)
+### 2. Enable Required Intents
+
+⚠️ **CRITICAL:** The bot CANNOT function without these intents!
+
+1. Go to Discord Developer Portal → Your Application → Bot
+2. Scroll to "Privileged Gateway Intents"
+3. Enable:
+   - ✅ **MESSAGE CONTENT INTENT** (Required to read message content!)
    - ✅ **SERVER MEMBERS INTENT**
    - ✅ **PRESENCE INTENT**
 
-Without MESSAGE CONTENT INTENT, the bot can't see message content!
+**Without MESSAGE CONTENT INTENT, the bot will connect but cannot see message content!**
 
-### 2. Invite Bot to Server
+### 3. Invite Bot to Server
 
-Use this URL format (replace YOUR_CLIENT_ID):
+Generate invite URL (replace `YOUR_CLIENT_ID`):
+
 ```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2048&scope=bot
+https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=3072&scope=bot
 ```
 
-Permissions needed:
-- Send Messages
-- Read Message History
-- View Channels
+**Permissions Needed:**
+- Send Messages (2048)
+- Read Message History (65536)
+- View Channels (1024)
+- Total: 68608 (or just use 3072 for basic setup)
+
+**Alternative:** Use Discord Developer Portal → OAuth2 → URL Generator
 
 ---
 
 ## Local Development
 
 ### 1. Install Dependencies
+
 ```bash
+# From project root
 pnpm install
 ```
 
 ### 2. Set Environment Variables
-Copy `.env.example` to `.env.local` and fill in:
+
+Create `.env.local` in `/apps/bot/`:
+
 ```bash
-cp .env.example .env.local
+# Copy example
+cp apps/bot/.env.example apps/bot/.env.local
+
+# Edit with your values
+DISCORD_BOT_TOKEN=your_token_here
+OPENAI_API_KEY=your_key_here
 ```
 
 ### 3. Run in Development Mode
+
 ```bash
+# From project root
 pnpm dev
+
+# Or specifically for bot
+pnpm --filter bot dev
 ```
 
 This uses `tsx` to run TypeScript directly without building.
 
 ### 4. Build for Production
+
 ```bash
+# Build everything
 pnpm build
+
+# Or just the bot
+pnpm --filter bot build
 ```
 
-Compiles TypeScript to `dist/` folder.
+Compiles TypeScript to `apps/bot/dist/` folder.
+
+### 5. Type Checking
+
+```bash
+# Check types without building
+pnpm type-check
+```
 
 ---
 
 ## Deployment to Fly.io
 
 ### Current Setup
+
 - **App Name:** `omega-nrhptq`
 - **Region:** Sydney (syd)
-- **Memory:** 512MB
-- **Status:** Linked to GitHub repo
-
-### Deploy from GitHub
-
-The app is configured for auto-deployment from GitHub:
-
-```bash
-# Commit and push
-git add .
-git commit -m "Update bot"
-git push origin main
-
-# Fly.io will automatically deploy
-```
+- **Memory:** 512MB RAM
+- **Storage:** 1GB persistent volume at `/data`
+- **Auto-deploy:** GitHub Actions on push to main
 
 ### Manual Deployment
 
-If needed, deploy manually:
-
 ```bash
-# From apps/bot directory
-flyctl deploy -a omega-nrhptq
-```
+# Deploy from project root
+flyctl deploy -a omega-nrhptq -c apps/bot/fly.toml
 
-### Check Deployment Status
-
-```bash
 # View logs
-flyctl logs -a omega-nrhptq
+flyctl logs -a omega-nrhptq -f
 
 # Check status
 flyctl status -a omega-nrhptq
@@ -163,209 +480,449 @@ flyctl status -a omega-nrhptq
 flyctl ssh console -a omega-nrhptq
 ```
 
+### GitHub Actions Auto-Deploy
+
+The bot auto-deploys via GitHub Actions (`.github/workflows/auto-create-claude-pr.yml`):
+
+1. Push to `claude/**` branches
+2. GitHub Actions creates PR automatically
+3. PR auto-merges when checks pass
+4. Deployment to Fly.io triggered
+5. Discord notification on success/failure
+
+**To trigger deployment:**
+```bash
+git add .
+git commit -m "Update bot"
+git push origin main
+```
+
+### Volume Management
+
+```bash
+# List volumes
+flyctl volumes list -a omega-nrhptq
+
+# Create new volume (if needed)
+flyctl volumes create omega_uploads --region syd --size 1 -a omega-nrhptq
+
+# Destroy volume (WARNING: deletes all data!)
+flyctl volumes destroy vol_xxx -a omega-nrhptq
+```
+
+### Monitoring
+
+```bash
+# Live logs
+flyctl logs -a omega-nrhptq -f
+
+# Check machine status
+flyctl machine list -a omega-nrhptq
+
+# View app configuration
+flyctl config show -a omega-nrhptq
+
+# Scale memory (if needed)
+flyctl scale memory 1024 -a omega-nrhptq
+```
+
 ---
 
 ## AI SDK v6 Agent Protocol
 
 ### How It Works
 
-The bot uses AI SDK v6's agent protocol with tool support:
+The bot uses AI SDK v6's new agent protocol with tool orchestration:
 
-1. **Message received** → Message handler checks if should respond
-2. **Agent invoked** → AI SDK v6 `generateText()` with tools
-3. **AI decides** → Calls tools if needed (calculator, search, weather)
-4. **Multi-step reasoning** → Up to 5 steps of tool usage
+1. **Message received** → `messageHandler.ts` checks if should respond
+2. **AI decision** → `shouldRespond.ts` uses GPT-4o-mini to analyze message
+3. **Agent invoked** → `agent.ts` calls `generateText()` with 18 tools
+4. **Multi-step reasoning** → Up to 50 steps of tool usage and reasoning
 5. **Response generated** → Returns text response
-6. **Tool report** → Separate message showing what tools were used
+6. **Tool report** → Separate message with formatted tool usage details
+
+### Key AI SDK v6 Features Used
+
+```typescript
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  system: systemPrompt,
+  prompt: userMessage,
+  tools: {
+    calculator: calculatorTool,
+    unsandbox: unsandboxTool,
+    // ... 16 more tools
+  },
+  maxSteps: 50, // Allow complex multi-step reasoning
+  onStepFinish: (step) => {
+    // Track tool calls for reporting
+  },
+});
+```
 
 ### Adding New Tools
 
-Create a new tool in `src/agent/tools/`:
+**1. Create tool file** in `apps/bot/src/agent/tools/`:
 
 ```typescript
 import { tool } from 'ai';
 import { z } from 'zod';
 
 export const myTool = tool({
-  description: 'What this tool does',
+  description: 'Clear description of what this tool does',
   parameters: z.object({
     param1: z.string().describe('Parameter description'),
+    param2: z.number().optional().describe('Optional parameter'),
   }),
-  execute: async ({ param1 }) => {
+  execute: async ({ param1, param2 }) => {
     // Tool logic here
-    return { result: 'something' };
+    const result = await doSomething(param1, param2);
+    return {
+      success: true,
+      data: result,
+    };
   },
 });
 ```
 
-Then add to `src/agent/agent.ts`:
+**2. Register tool** in `apps/bot/src/agent/agent.ts`:
 
 ```typescript
 import { myTool } from './tools/myTool.js';
 
-// In runAgent function:
+// In runAgent function
 tools: {
-  search: searchTool,
-  calculator: calculatorTool,
-  weather: weatherTool,
+  // ... existing tools
   myTool: myTool, // Add here
 },
 ```
 
+**3. Document in system prompt** to guide the AI when to use it.
+
 ---
 
-## Customizing Response Logic
+## Customization
 
-### When Bot Responds
+### Changing Bot Personality
 
-Edit `src/lib/shouldRespond.ts` to change when bot replies:
+Edit `/apps/bot/src/config/personality.json`:
 
-```typescript
-export async function shouldRespond(message: Message): Promise<boolean> {
-  // Always respond to DMs
-  if (message.channel.isDMBased()) {
-    return true;
+```json
+{
+  "personality": {
+    "core": "Your core personality trait",
+    "style": "Communication style",
+    "tone": "casual/formal/philosophical",
+    "expressions": [
+      "Signature phrase 1",
+      "Signature phrase 2"
+    ],
+    "characteristics": [
+      "Personality trait 1",
+      "Personality trait 2"
+    ]
+  },
+  "responseGuidelines": {
+    "maxLength": 2000,
+    "priority": "Be helpful and clear"
   }
-
-  // Respond when mentioned
-  const botMentioned = message.mentions.users.has(message.client.user!.id);
-  if (botMentioned) {
-    return true;
-  }
-
-  // Add your custom logic here:
-  // - Check for keywords
-  // - Use AI to determine if message is interesting
-  // - Rate limiting per channel
-  // - etc.
-
-  return false;
 }
 ```
 
-### Bot Personality
+**Or use self-modification:**
+- Ask the bot to modify its personality
+- It will propose changes
+- Approve with "yes" or "approve"
+- Changes commit to git and persist
 
-Edit the system prompt in `src/agent/agent.ts`:
+### Customizing Response Logic
+
+Edit `/apps/bot/src/lib/shouldRespond.ts`:
 
 ```typescript
-const systemPrompt = `You are an intelligent and helpful Discord bot assistant.
+export async function shouldRespond(message: Message): Promise<{
+  shouldRespond: boolean;
+  confidence: number;
+  reason: string;
+}> {
+  // Add your custom logic:
+  // - Keywords matching
+  // - Channel-specific rules
+  // - Rate limiting
+  // - Time-based responses
+  // - User allowlist/blocklist
 
-Your personality:
-- Friendly and conversational
-- Knowledgeable but not pretentious
-// ... customize as needed
-`;
+  // Example: Only respond in specific channels
+  const allowedChannels = ['omega', 'ai-chat', 'general'];
+  if (!allowedChannels.includes(channelName)) {
+    return {
+      shouldRespond: false,
+      confidence: 100,
+      reason: 'Not an allowed channel',
+    };
+  }
+
+  // ... rest of logic
+}
+```
+
+### Adjusting AI Model
+
+Edit `/apps/bot/src/agent/agent.ts`:
+
+```typescript
+// Change primary model
+const model = openai('gpt-4o'); // or 'gpt-4o-mini', 'gpt-4', etc.
+
+// Adjust max steps for reasoning
+maxSteps: 50, // Increase for more complex tasks, decrease to save costs
+
+// Change decision model in shouldRespond.ts
+const decisionModel = openai('gpt-4o-mini'); // Fast, cheap decisions
 ```
 
 ---
 
-## Monitoring & Debugging
+## Troubleshooting
 
-### View Live Logs
-```bash
-flyctl logs -a omega-nrhptq -f
+### Bot Not Responding
+
+**Problem:** Bot connects but doesn't respond to messages
+
+**Solutions:**
+1. ✅ Check MESSAGE CONTENT INTENT is enabled in Discord Developer Portal
+2. ✅ Verify bot has proper permissions in server (Send Messages, Read Message History)
+3. ✅ Check `shouldRespond` logic isn't too restrictive
+4. ✅ View logs: `flyctl logs -a omega-nrhptq -f`
+5. ✅ Test in DM (should always respond)
+6. ✅ Mention the bot directly with `@bot hello`
+
+### Tool Execution Failures
+
+**Problem:** Tools are called but return errors
+
+**Solutions:**
+1. Check tool parameters match Zod schema
+2. Verify environment variables are set (API keys, tokens)
+3. View logs for specific error messages
+4. Test tool logic independently
+5. Ensure external services are accessible (Unsandbox, GitHub, etc.)
+
+### Build Failures
+
+**Problem:** `pnpm build` or deployment fails
+
+**Solutions:**
+1. Run `pnpm install` to ensure dependencies are installed
+2. Check for TypeScript errors: `pnpm type-check`
+3. Verify all imports use `.js` extension (ESM requirement)
+4. Check Dockerfile and fly.toml are correct
+5. View build logs on Fly.io: `flyctl logs -a omega-nrhptq`
+
+### Memory/Performance Issues
+
+**Problem:** Bot crashes or becomes slow
+
+**Solutions:**
+1. Check memory usage: `flyctl status -a omega-nrhptq`
+2. Scale up memory if needed: `flyctl scale memory 1024 -a omega-nrhptq`
+3. Reduce `maxSteps` in agent.ts to limit reasoning complexity
+4. Add rate limiting to prevent spam
+5. Review tool execution logs for bottlenecks
+
+### Volume/Storage Issues
+
+**Problem:** Artifacts or uploads not persisting
+
+**Solutions:**
+1. Check volume is attached: `flyctl volumes list -a omega-nrhptq`
+2. Verify volume is mounted in fly.toml
+3. Check permissions: `flyctl ssh console -a omega-nrhptq` then `ls -la /data`
+4. Ensure app has write permissions to `/data/artifacts` and `/data/uploads`
+5. Check disk space isn't full
+
+---
+
+## Cost Estimation
+
+### Fly.io (Free Tier)
+- **Compute**: 512MB RAM, shared CPU
+- **Storage**: 1GB persistent volume
+- **Bandwidth**: 160GB outbound/month
+- **Cost**: $0/month (within free tier limits)
+
+### OpenAI API
+- **GPT-4o**: ~$2.50 per 1M input tokens, ~$10 per 1M output tokens
+- **GPT-4o-mini**: ~$0.15 per 1M input tokens, ~$0.60 per 1M output tokens
+- **Estimated usage** (moderate Discord activity):
+  - ~100-500 messages/day
+  - ~50K tokens/day average
+  - ~1.5M tokens/month
+- **Cost**: ~$5-15/month depending on usage
+
+### Total: ~$5-15/month
+
+---
+
+## Advanced Features
+
+### Self-Modification System
+
+The bot can modify its own personality based on user feedback:
+
+**How it works:**
+1. User suggests a personality change ("be more formal")
+2. Bot uses `selfModify` tool with `action="propose"`
+3. Bot explains the proposed change
+4. User approves with "yes" or "approve"
+5. Bot commits change to `personality.json` with git attribution
+6. Changes take effect on next restart
+
+**Safety features:**
+- Only modifies `personality.json`, not core code
+- Requires explicit user approval
+- All changes tracked via git
+- Two-phase proposal/apply pattern prevents accidents
+
+**Example flow:**
+```
+User: "Can you be more casual and use emojis?"
+
+Bot: "I propose modifying my personality to be more casual and use emojis.
+     This would change my tone from 'stoic' to 'casual' and add emojis
+     to my communication style. Do you approve?"
+
+User: "yes"
+
+Bot: "Changes applied and committed to git. I'll be more casual with emojis
+     after my next restart! 🎉"
 ```
 
-### Common Issues
+### Artifact System
 
-**Bot not responding:**
-1. Check MESSAGE CONTENT INTENT is enabled in Discord
-2. Check bot has proper permissions in server
-3. Check `shouldRespond` logic in code
-4. View logs for errors
+Create interactive web content with shareable links:
 
-**Tool calls not working:**
-1. Check tool is registered in agent.ts
-2. Check tool parameters match zod schema
-3. View logs for tool execution errors
+**Supported formats:**
+- HTML (with CSS and JavaScript)
+- SVG graphics
+- Markdown documents
 
-**Deployment fails:**
-1. Check build succeeds locally: `pnpm build`
-2. Check Dockerfile is correct
-3. Check secrets are set: `flyctl secrets list -a omega-nrhptq`
-4. View build logs: `flyctl logs -a omega-nrhptq`
+**Features:**
+- Unique UUID-based URLs
+- Persistent storage on Fly.io volume
+- Gallery view at `/artifacts`
+- Metadata tracking (title, type, created date)
 
----
+**Example:**
+```
+User: "Create an interactive bar chart showing sales data"
 
-## Architecture Notes
+Bot: *uses artifact tool*
 
-### Why Gateway API?
+Bot: "I've created an interactive bar chart! View it here:
+     https://omega-nrhptq.fly.dev/artifacts/abc-123-def-456"
+```
 
-Discord doesn't support webhooks for receiving messages. The ONLY way to listen to messages is the Gateway API (WebSocket), which requires a persistent connection.
+### File Upload Handling
 
-This means:
-- ❌ Cannot use Vercel serverless functions
-- ✅ Must use long-running service (Fly.io, Railway, Render, etc.)
+Automatically processes Discord attachments:
 
-### Why Fly.io?
+**Flow:**
+1. User uploads file to Discord
+2. Bot enriches message context with attachment info
+3. Bot can use `fileUpload` tool to download and host permanently
+4. Returns shareable URL for the file
 
-- Free tier available (512MB RAM, 3GB disk)
-- Auto-scaling
-- Global edge network
-- Easy Docker deployment
-- GitHub integration
+**Security:**
+- Filename sanitization (prevents directory traversal)
+- Extension validation (whitelist approach)
+- File size limits (25MB max)
+- Unique filenames with UUID to prevent collisions
 
----
+**Example:**
+```
+User: *uploads resume.pdf*
 
-## Cost Breakdown
-
-**Fly.io:**
-- Free tier: 512MB RAM, 3GB disk
-- Shared CPU
-- $0/month within free tier
-
-**OpenAI:**
-- GPT-4o: ~$2.50 per 1M input tokens
-- Depends on usage
-- Estimate: $5-20/month for moderate use
-
-**Total:** ~$5-20/month
-
----
-
-## Next Steps / TODOs
-
-### Immediate:
-- [ ] Test bot in Discord after deployment
-- [ ] Verify tools work correctly
-- [ ] Adjust `shouldRespond` logic if needed
-
-### Future Enhancements:
-- [ ] Integrate real search API (Google Custom Search, Brave, etc.)
-- [ ] Integrate real weather API (OpenWeatherMap)
-- [ ] Add conversation memory/context
-- [ ] Add rate limiting per user/channel
-- [ ] Add admin commands
-- [ ] Add database for persistent storage (Fly Postgres)
-- [ ] Add metrics/analytics
-- [ ] Add more sophisticated "should respond" AI logic
-- [ ] Add streaming responses for long messages
-- [ ] Add image generation tools
-- [ ] Add voice channel support
+Bot: "I can help you analyze that resume. Let me save it first."
+     *uses fileUpload tool*
+     "Resume saved! Download it anytime: https://omega-nrhptq.fly.dev/uploads/resume_abc123.pdf"
+```
 
 ---
 
 ## Useful Commands
 
+### Development
+
 ```bash
-# Development
-pnpm dev              # Run in dev mode with tsx
-pnpm build            # Build TypeScript
-pnpm type-check       # Check types without building
+# Install dependencies
+pnpm install
 
-# Fly.io
-flyctl status -a omega-nrhptq      # Check app status
-flyctl logs -a omega-nrhptq        # View logs
-flyctl ssh console -a omega-nrhptq # SSH into container
-flyctl deploy -a omega-nrhptq      # Manual deploy
-flyctl secrets list -a omega-nrhptq # View secrets
+# Run in dev mode
+pnpm dev
 
-# Discord
-# Test commands in Discord:
-# - @bot hello
-# - DM the bot
-# - Reply to bot's message
-# - Ask it to calculate something: "what's 2^16?"
+# Build for production
+pnpm build
+
+# Type check
+pnpm type-check
+
+# Lint code
+pnpm lint
+pnpm lint:fix
+
+# Clean build artifacts
+pnpm clean
+```
+
+### Fly.io
+
+```bash
+# Deployment
+flyctl deploy -a omega-nrhptq -c apps/bot/fly.toml
+
+# Monitoring
+flyctl logs -a omega-nrhptq -f
+flyctl status -a omega-nrhptq
+flyctl machine list -a omega-nrhptq
+
+# Configuration
+flyctl config show -a omega-nrhptq
+flyctl secrets list -a omega-nrhptq
+flyctl secrets set KEY=value -a omega-nrhptq
+
+# Debugging
+flyctl ssh console -a omega-nrhptq
+
+# Scaling
+flyctl scale memory 1024 -a omega-nrhptq
+flyctl scale count 2 -a omega-nrhptq
+
+# Volumes
+flyctl volumes list -a omega-nrhptq
+flyctl volumes create omega_uploads --region syd --size 1 -a omega-nrhptq
+```
+
+### Testing in Discord
+
+```bash
+# Test mentions
+@omega hello
+
+# Test DM
+# Send a direct message to the bot
+
+# Test replies
+# Reply to one of the bot's messages
+
+# Test tools
+"what's 2^16?"                    # calculator
+"execute python: print('hi')"     # unsandbox
+"create an HTML button"           # artifact
+"search for AI news"              # search (if configured)
 ```
 
 ---
@@ -373,13 +930,40 @@ flyctl secrets list -a omega-nrhptq # View secrets
 ## Resources
 
 - [Discord.js Documentation](https://discord.js.org/)
-- [AI SDK v6 Documentation](https://ai-sdk.dev/)
-- [AI SDK v6 Agent Protocol](https://ai-sdk.dev/docs/announcing-ai-sdk-6-beta)
+- [AI SDK v6 Documentation](https://sdk.vercel.ai/docs)
+- [AI SDK v6 Blog Post](https://vercel.com/blog/ai-sdk-6)
 - [Fly.io Documentation](https://fly.io/docs/)
 - [Discord Developer Portal](https://discord.com/developers/applications)
+- [OpenAI API Documentation](https://platform.openai.com/docs)
+- [Turborepo Documentation](https://turbo.build/repo/docs)
+
+---
+
+## Contributing
+
+This is a personal project, but contributions are welcome:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test thoroughly locally
+5. Commit with clear messages (`git commit -m 'feat: add amazing feature'`)
+6. Push to your fork (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+**Please:**
+- Follow existing code style (TypeScript, ESM)
+- Add JSDoc comments to new functions
+- Update CLAUDE.md if adding features
+- Test with `pnpm type-check` and `pnpm build`
+- Use AI SDK v6 patterns for new tools
 
 ---
 
 **Last Updated:** 2025-11-15
-**Status:** ✅ Ready to Deploy
-**Deployment:** Fly.io (`omega-nrhptq`)
+**Status:** ✅ Production Ready
+**Version:** AI SDK v6.0.0-beta.99
+**Deployment:** Fly.io (`omega-nrhptq`, Sydney region)
+**AI Model:** OpenAI GPT-4o + GPT-4o-mini
+**Tools:** 18 specialized AI tools
+**Personality:** Neo-inspired philosophical assistant
