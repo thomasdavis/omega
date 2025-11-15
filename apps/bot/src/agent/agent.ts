@@ -49,7 +49,7 @@ const personalityConfig = loadPersonalityConfig();
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
-const model = openai.chat('gpt-4o');
+const model = openai.chat('gpt-4o-mini');
 
 export interface AgentContext {
   username: string;
@@ -404,6 +404,30 @@ export async function runAgent(
 
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
     console.log(`🔍 DEBUG: Returning tool calls:`, JSON.stringify(toolCalls, null, 2));
+
+    // Debug: Log the full result structure to understand what we're getting
+    console.log(`🔍 DEBUG: result.text =`, result.text);
+    console.log(`🔍 DEBUG: result.finishReason =`, result.finishReason);
+
+    // @ts-ignore - steps property exists at runtime
+    if (result.steps && Array.isArray(result.steps)) {
+      // @ts-ignore
+      console.log(`🔍 DEBUG: Total steps = ${result.steps.length}`);
+      // @ts-ignore
+      result.steps.forEach((step, index) => {
+        console.log(`🔍 DEBUG: Step ${index + 1}:`, JSON.stringify({
+          finishReason: step.finishReason,
+          // @ts-ignore
+          hasText: !!step.text,
+          // @ts-ignore
+          textLength: step.text?.length || 0,
+          // @ts-ignore
+          hasContent: !!step.content,
+          // @ts-ignore
+          contentLength: step.content?.length || 0,
+        }, null, 2));
+      });
+    }
 
     return {
       response: result.text,
