@@ -259,12 +259,17 @@ jobs:
         with:
           ref: main
 
-      - name: Deploy to Render
+      - name: Install Railway CLI
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         run: |
-          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json"
+          npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Notify Discord of successful deployment
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()

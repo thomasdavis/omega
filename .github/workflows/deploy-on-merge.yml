@@ -17,11 +17,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy to Render
+      - name: Install Railway CLI
         run: |
-          curl -X POST "https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys" \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            -H "Content-Type: application/json"
+          npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Get PR info
         id: pr_info

@@ -8,7 +8,7 @@
 - OpenAI GPT-4o for AI processing
 - 18+ specialized AI tools for code execution, web scraping, artifact creation, and more
 - TypeScript + Node.js + Express
-- Railway.app for deployment with persistent storage
+- Render.com for deployment with persistent storage
 - Monorepo architecture (Turborepo + pnpm workspaces)
 
 ---
@@ -31,7 +31,7 @@ Unlike basic chatbots, Omega:
 - **Executes code** in 11 programming languages via Unsandbox
 - **Creates interactive web content** (HTML/SVG) with shareable preview links
 - **Respects ethical boundaries** (checks robots.txt before scraping, requires approval for self-modification)
-- **Hosts files permanently** on Railway persistent storage
+- **Hosts files permanently** on Render persistent storage
 - **Learns and adapts** through self-modification with git-tracked changes
 
 ---
@@ -91,7 +91,7 @@ Unlike basic chatbots, Omega:
 #### Content Creation
 6. **artifact** - Create interactive HTML/SVG/Markdown content with shareable links
    - Generates unique URLs for each artifact
-   - Persistent storage on Railway persistent disk
+   - Persistent storage on Render persistent disk
    - Gallery view of all artifacts
 7. **asciiGraph** - Generate text-based data visualizations
    - Bar charts and line graphs in ASCII format
@@ -158,7 +158,7 @@ Hello, World!
 - Creates and serves HTML, SVG, and Markdown content
 - Each artifact gets a unique UUID-based URL
 - Gallery view at `/artifacts` showing all created artifacts
-- Persistent storage on Railway persistent disk at `/data/artifacts`
+- Persistent storage on Render persistent disk at `/data/artifacts`
 
 **File Upload System:**
 - Downloads Discord attachments
@@ -248,21 +248,21 @@ Discord (main reply + tool report)
 **Trade-off:**
 - Requires persistent connection (WebSocket)
 - Cannot use Vercel or similar serverless platforms
-- Must use long-running service (Railway, Railway, Fly.io, etc.)
+- Must use long-running service (Render, Railway, Fly.io, etc.)
 
-### Deployment Architecture (Railway)
+### Deployment Architecture (Render)
 
-- **Platform**: Railway.app (supports long-running processes)
-- **Service ID**: `YOUR_RAILWAY_SERVICE_ID`
+- **Platform**: Render.com (supports long-running processes)
+- **Service ID**: `srv-d4cark3ipnbc739blrm0`
 - **Service Name**: `omega`
 - **Region**: Oregon
 - **Plan**: Free tier
-- **Persistent Storage**: Railway persistent disk mounted at `/data`
+- **Persistent Storage**: Render persistent disk mounted at `/data`
   - `/data/artifacts` - Generated artifacts (HTML, SVG, Markdown)
   - `/data/uploads` - User-uploaded files
 - **HTTP Server**: Express on port 3001 for artifact/upload serving
 - **Discord Connection**: WebSocket Gateway (always connected)
-- **Auto-deployment**: GitHub Actions workflow on push to main + Railway auto-deploy
+- **Auto-deployment**: GitHub Actions workflow on push to main + Render auto-deploy
 
 ---
 
@@ -329,7 +329,7 @@ OPENAI_API_KEY=xxx              # From OpenAI Platform
 ```bash
 # Artifact Server
 ARTIFACT_SERVER_PORT=3001       # HTTP server port (default: 3001)
-ARTIFACT_SERVER_URL=xxx         # Public URL for artifacts (auto-detected on Railway)
+ARTIFACT_SERVER_URL=xxx         # Public URL for artifacts (auto-detected on Render)
 
 # External Services
 UNSANDBOX_API_KEY=xxx          # For code execution tool
@@ -340,30 +340,22 @@ GIT_USER_NAME=xxx              # For self-modification commits
 GIT_USER_EMAIL=xxx             # For self-modification commits
 ```
 
-### Setting Secrets on Railway
+### Setting Secrets on Render
 
-Secrets are managed through the Railway Dashboard or CLI:
+Secrets are managed through the Render Dashboard:
 
-**Via Dashboard:**
-1. Go to https://railway.app/project/YOUR_PROJECT_ID
-2. Click on your service
-3. Navigate to "Variables" tab
-4. Add or update environment variables
-5. Changes trigger automatic redeploy
+1. Go to your service: https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+2. Navigate to "Environment" tab
+3. Add or update environment variables
+4. Click "Save Changes" to trigger a redeploy
 
-**Via CLI:**
+You can also use the Render CLI:
 ```bash
-# Set a single variable
-railway variables set DISCORD_BOT_TOKEN=your_token_here
+# View service info
+render services list
 
-# Set multiple variables
-railway variables set OPENAI_API_KEY=xxx UNSANDBOX_API_KEY=yyy
-
-# View all variables (names only, not values)
-railway variables
-
-# Link to a project first if not already linked
-railway link
+# View environment variables (requires dashboard for actual values)
+render config show --service srv-d4cark3ipnbc739blrm0
 ```
 
 ---
@@ -465,30 +457,32 @@ pnpm type-check
 
 ---
 
-## Deployment to Railway
+## Deployment to Render
 
 ### Current Setup
 
-- **Service ID:** `YOUR_RAILWAY_SERVICE_ID`
+- **Service ID:** `srv-d4cark3ipnbc739blrm0`
 - **Service Name:** `omega`
 - **Region:** Oregon
 - **Plan:** Free tier
 - **Storage:** Persistent disk at `/data`
-- **Auto-deploy:** Railway auto-deploy on push to main + GitHub Actions workflow
+- **Auto-deploy:** Render auto-deploy on push to main + GitHub Actions workflow
 
 ### Manual Deployment
 
 Deployments are triggered automatically when you push to the main branch, but you can also trigger manually:
 
 ```bash
-# Deploy via Railway CLI
-railway up
+# Trigger deployment via Render API
+curl -X POST "https://api.render.com/v1/services/srv-d4cark3ipnbc739blrm0/deploys" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json"
 
-# View real-time logs
-railway logs
+# View logs
+render logs --service srv-d4cark3ipnbc739blrm0 --tail
 
 # Check service status
-railway status
+render services list
 ```
 
 ### GitHub Actions Auto-Deploy
@@ -498,7 +492,7 @@ The bot auto-deploys via GitHub Actions (`.github/workflows/auto-create-claude-p
 1. Push to `claude/**` branches
 2. GitHub Actions creates PR automatically
 3. PR auto-merges when checks pass
-4. Deployment to Railway triggered via API
+4. Deployment to Render triggered via API
 5. Discord notification on success/failure
 
 **To trigger deployment:**
@@ -509,48 +503,40 @@ git push origin main
 ```
 
 **Required GitHub Secrets:**
-- `RAILWAY_TOKEN`: Get from https://railway.app/account/tokens
-- `RAILWAY_SERVICE_ID`: Your Railway service ID
+- `RENDER_SERVICE_ID`: `srv-d4cark3ipnbc739blrm0`
+- `RENDER_API_KEY`: Get from https://dashboard.render.com/u/settings/api-keys
 - `DISCORD_WEBHOOK_URL`: For deployment notifications
 
 ### Persistent Disk Management
 
-Railway provides persistent disk storage that survives across deploys:
+Render provides persistent disk storage that survives across deploys:
 
-- **Location:** `/data` (configured in railway.yaml)
+- **Location:** `/data` (configured in render.yaml)
 - **Directories:**
   - `/data/artifacts` - Generated artifacts
   - `/data/uploads` - User uploaded files
-- **Management:** Access via Railway Dashboard or Shell
+- **Management:** Access via Render Dashboard or Shell
 
 ### Monitoring
 
-**ADVANTAGE**: The Railway CLI supports FULL runtime log tailing via command line (unlike Render which only showed build logs)!
+**IMPORTANT**: The Render CLI `render logs` command only shows build/deploy logs, NOT runtime application logs!
 
 To view runtime logs (console.log output from your bot):
+1. **Via Dashboard**: Go to https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+2. Click on the "Logs" tab
+3. You'll see real-time application logs including console.log output
 
-**Via CLI (Recommended):**
 ```bash
-# Tail runtime logs in real-time
-railway logs
+# These only show BUILD logs (not runtime logs):
+render logs -r srv-d4cark3ipnbc739blrm0 --tail
+render logs -r srv-d4cark3ipnbc739blrm0 --limit 100 -o text
 
-# Follow logs from a specific deployment
-railway logs --deployment
+# To see RUNTIME logs, use the Render Dashboard:
+open https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+# Then click "Logs" tab for real-time application output
 
-# View logs with timestamps
-railway logs --timestamps
-```
-
-**Via Dashboard:**
-1. Go to https://railway.app/project/YOUR_PROJECT_ID
-2. Click on your service
-3. Click on the "Deployments" tab
-4. You'll see real-time application logs including console.log output
-
-**Shell access:**
-```bash
-# Get shell access via CLI
-railway shell
+# Shell access (via Render Dashboard)
+# Go to Shell tab in the service dashboard for interactive shell access
 ```
 
 ---
@@ -875,7 +861,7 @@ User: *uploads resume.pdf*
 
 Bot: "I can help you analyze that resume. Let me save it first."
      *uses fileUpload tool*
-     "Resume saved! Download it anytime: https://omega-vu7a.onrailway.app/uploads/resume_abc123.pdf"
+     "Resume saved! Download it anytime: https://omega-vu7a.onrender.com/uploads/resume_abc123.pdf"
 ```
 
 ---
@@ -905,31 +891,30 @@ pnpm lint:fix
 pnpm clean
 ```
 
-### Railway
+### Render
 
 ```bash
 # Deployment
-railway up
+curl -X POST "https://api.render.com/v1/services/srv-d4cark3ipnbc739blrm0/deploys" \
+  -H "Authorization: Bearer $RENDER_API_KEY" \
+  -H "Content-Type: application/json"
 
-# Monitoring - REAL-TIME LOGS via CLI! (unlike Render)
-railway logs                  # Tail all logs
-railway logs --timestamps     # With timestamps
-railway logs --deployment     # Specific deployment
+# Monitoring
+render logs --service srv-d4cark3ipnbc739blrm0 --tail
+render logs --service srv-d4cark3ipnbc739blrm0 --lines 100
+render services list
 
-# Service management
-railway status                # Check service status
-railway list                  # List all services
+# Configuration (via Render Dashboard)
+# Go to: https://dashboard.render.com/web/srv-d4cark3ipnbc739blrm0
+# Environment tab for secrets and environment variables
+# Settings tab for service configuration
 
-# Configuration
-railway variables             # View environment variables
-railway variables set KEY=value   # Set a variable
+# Debugging (via Render Dashboard Shell)
+# Go to Shell tab in service dashboard for interactive shell access
 
-# Shell access
-railway shell                 # Interactive shell
-
-# Scaling (via Railway Dashboard)
-# Starter: $5/month - 512 MB RAM, 1 GB disk, 100 GB egress
-# Pro: Variable pricing based on resource usage
+# Scaling (upgrade plan via Dashboard)
+# Free tier: Shared CPU, 512MB RAM
+# Upgrade to Starter or higher for more resources
 ```
 
 ### Testing in Discord
@@ -958,7 +943,7 @@ railway shell                 # Interactive shell
 - [Discord.js Documentation](https://discord.js.org/)
 - [AI SDK v6 Documentation](https://sdk.vercel.ai/docs)
 - [AI SDK v6 Blog Post](https://vercel.com/blog/ai-sdk-6)
-- [Railway Documentation](https://railway.app/docs)
+- [Render Documentation](https://render.com/docs)
 - [Discord Developer Portal](https://discord.com/developers/applications)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [Turborepo Documentation](https://turbo.build/repo/docs)
@@ -989,7 +974,7 @@ This is a personal project, but contributions are welcome:
 **Last Updated:** 2025-11-16
 **Status:** ✅ Production Ready
 **Version:** AI SDK v6.0.0-beta.99
-**Deployment:** Railway.app (`YOUR_RAILWAY_SERVICE_ID`, Oregon region)
+**Deployment:** Render.com (`srv-d4cark3ipnbc739blrm0`, Oregon region)
 **AI Model:** OpenAI GPT-4o + GPT-4o-mini
 **Tools:** 18 specialized AI tools
 **Personality:** Philosophical AI assistant focused on truth and clarity
