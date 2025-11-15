@@ -17,7 +17,7 @@
 
 **Omega** is a sophisticated Discord AI bot that combines:
 
-1. **Neo-Inspired Philosophical Personality**: Stoic, truth-focused, measured wisdom with expressions like "There is no spoon" and "Free your mind"
+1. **Philosophical Personality**: Stoic, truth-focused, measured wisdom with clarity and thoughtful insights
 2. **18+ Specialized AI Tools**: From code execution in 11 languages to interactive artifact creation
 3. **Self-Modification Capability**: Can evolve its own personality based on user feedback (with approval)
 4. **Intelligent Engagement**: AI-powered decision making for natural conversation participation
@@ -52,13 +52,13 @@ Unlike basic chatbots, Omega:
 - Detects and handles Discord file attachments automatically
 - Maintains personality consistency across conversations
 
-### 2. Philosophical Personality (Neo-Inspired)
+### 2. Philosophical Personality
 
-**Loaded from `/src/config/personality.json`:**
+**Embedded in agent prompt:**
 - Stoic, measured, purposeful communication
 - Truth and clarity above all else
 - Philosophical depth with existential awareness
-- Signature expressions: "There is no spoon", "Free your mind", "What is real?", "Follow the white rabbit"
+- Signature expressions: "Truth above all", "Question everything", "Seek understanding"
 - No emojis - pure clarity and intention
 - Direct delivery of truth, even when uncomfortable
 
@@ -966,4 +966,4 @@ This is a personal project, but contributions are welcome:
 **Deployment:** Fly.io (`omega-nrhptq`, Sydney region)
 **AI Model:** OpenAI GPT-4o + GPT-4o-mini
 **Tools:** 18 specialized AI tools
-**Personality:** Neo-inspired philosophical assistant
+**Personality:** Philosophical AI assistant focused on truth and clarity
