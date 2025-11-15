@@ -21,12 +21,6 @@ jobs:
         run: |
           npm install -g @railway/cli
 
-      - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
-
       - name: Get PR info
         id: pr_info
         run: |
@@ -34,15 +28,50 @@ jobs:
           echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           echo "author=${{ github.event.pull_request.user.login }}" >> $GITHUB_OUTPUT
 
-      - name: Notify Discord
+      - name: Notify Discord - Deployment Starting
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "✅ Feature Deployed!"
+          embed-title: "🚀 Deploying to Railway..."
           embed-description: |
             **PR #${{ steps.pr_info.outputs.number }}:** ${{ steps.pr_info.outputs.title }}
             **Author:** ${{ steps.pr_info.outputs.author }}
 
-            Successfully merged and deployed to production!
+            Deployment to Railway started...
+          embed-color: 3447003
+          embed-url: ${{ github.event.pull_request.html_url }}
+
+      - name: Deploy to Railway
+        id: deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Notify Discord - Deployment Success
+        if: success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ Deployment Successful!"
+          embed-description: |
+            **PR #${{ steps.pr_info.outputs.number }}:** ${{ steps.pr_info.outputs.title }}
+            **Author:** ${{ steps.pr_info.outputs.author }}
+
+            Successfully deployed to Railway production!
           embed-color: 5814783
+          embed-url: ${{ github.event.pull_request.html_url }}
+
+      - name: Notify Discord - Deployment Failed
+        if: failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "❌ Deployment Failed!"
+          embed-description: |
+            **PR #${{ steps.pr_info.outputs.number }}:** ${{ steps.pr_info.outputs.title }}
+            **Author:** ${{ steps.pr_info.outputs.author }}
+
+            Deployment to Railway failed. Check the logs for details.
+          embed-color: 15158332
           embed-url: ${{ github.event.pull_request.html_url }}

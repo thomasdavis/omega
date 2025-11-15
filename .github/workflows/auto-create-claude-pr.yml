@@ -264,6 +264,19 @@ jobs:
         run: |
           npm install -g @railway/cli
 
+      - name: Notify Discord - Deployment Starting
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "🚀 Deploying to Railway..."
+          embed-description: |
+            **PR #${{ steps.create_pr.outputs.pr_number }}:** ${{ steps.wait_merge.outputs.pr_title }}
+
+            Automated deployment to Railway started...
+          embed-color: 3447003
+          embed-url: ${{ steps.wait_merge.outputs.pr_url }}
+
       - name: Deploy to Railway
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         env:
@@ -271,16 +284,16 @@ jobs:
         run: |
           railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
 
-      - name: Notify Discord of successful deployment
+      - name: Notify Discord - Deployment Success
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "✅ Feature Deployed!"
+          embed-title: "✅ Deployment Successful!"
           embed-description: |
             **PR #${{ steps.create_pr.outputs.pr_number }}:** ${{ steps.wait_merge.outputs.pr_title }}
 
-            Successfully merged and deployed to production!
+            Successfully deployed to Railway production!
           embed-color: 5814783
           embed-url: ${{ steps.wait_merge.outputs.pr_url }}
 
