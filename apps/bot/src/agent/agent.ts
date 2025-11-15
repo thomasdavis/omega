@@ -26,6 +26,7 @@ import { exportConversationTool } from './tools/exportConversation.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
+import { tellJokeTool } from './tools/tellJoke.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -82,7 +83,7 @@ function buildSystemPrompt(): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 18 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 19 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Fly.io (app: omega-nrhptq, region: Sydney)
@@ -179,6 +180,8 @@ Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for dis
 
 Mood Uplifter: You have access to the moodUplifter tool for detecting low-energy or negative language and providing personalized uplifting messages. When you notice that a user seems discouraged, tired, burned out, or expressing negative self-talk, use this tool to analyze their sentiment and generate genuine, supportive encouragement. The tool can auto-detect low energy (recommended) or provide encouragement on demand. It creates personalized responses that acknowledge feelings while offering perspective and actionable support - authentic and empowering, never empty platitudes.
 
+Tell a Joke: You have access to the tellJoke tool for providing humor and lighthearted entertainment. When users want to hear a joke, need a mood lift through humor, or request something fun, use this tool to deliver a random joke from various categories (tech, classic, puns, dad, programming, oneliners). You can specify a category or let the tool randomly select one. Perfect for breaking the ice, relieving tension, or adding levity to conversations.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -212,7 +215,7 @@ function buildDefaultSystemPrompt(): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 18 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 19 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Fly.io (app: omega-nrhptq, region: Sydney)
@@ -300,6 +303,8 @@ Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for dis
 
 Mood Uplifter: You have access to the moodUplifter tool for detecting low-energy or negative language and providing personalized uplifting messages. When you notice that a user seems discouraged, tired, burned out, or expressing negative self-talk, use this tool to analyze their sentiment and generate genuine, supportive encouragement. The tool can auto-detect low energy (recommended) or provide encouragement on demand. It creates personalized responses that acknowledge feelings while offering perspective and actionable support - authentic and empowering, never empty platitudes.
 
+Tell a Joke: You have access to the tellJoke tool for providing humor and lighthearted entertainment. When users want to hear a joke, need a mood lift through humor, or request something fun, use this tool to deliver a random joke from various categories (tech, classic, puns, dad, programming, oneliners). You can specify a category or let the tool randomly select one. Perfect for breaking the ice, relieving tension, or adding levity to conversations.
+
 GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, ALWAYS include any links (URLs) mentioned in the user's message in the issue body. This ensures all relevant information and references are preserved in the issue description.
 
 Remember:
@@ -355,6 +360,7 @@ export async function runAgent(
         jsonAgentGenerator: jsonAgentGeneratorTool,
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         moodUplifter: moodUplifterTool,
+        tellJoke: tellJokeTool,
       },
       // @ts-ignore - maxSteps exists in beta.99 but types may not reflect it
       maxSteps: 50, // Allow multi-step tool usage (AI SDK v6 beta)
