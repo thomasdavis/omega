@@ -1,16 +1,79 @@
-# Omega - AI Discord Bot
+# Omega - Self-Coding AI Discord Bot
 
-A sophisticated Discord bot with AI-powered intelligence, 18+ specialized tools, and philosophical personality - built with AI SDK v6 and deployed on Railway.
+A Discord bot that **writes its own code**. Started with zero functionality, evolved through conversations to build 18+ tools, and continues to grow based on user needs.
 
-## Features
+## The Concept
 
-- **AI-Powered Conversations** - Uses OpenAI GPT-4o with 50-step multi-agent reasoning
-- **18+ Specialized Tools** - Code execution, web scraping, artifact creation, file hosting, and more
-- **Natural Engagement** - Listens to all messages and intelligently decides when to respond
-- **Philosophical Personality** - Stoic, truth-focused communication with self-modification capabilities
-- **Tool Transparency** - Reports all tool usage with arguments and results
-- **Persistent Storage** - Hosts files and artifacts permanently on Railway
-- **GitHub Integration** - Auto-deploys via GitHub Actions
+Omega has full access to edit its own codebase. When you ask for a feature, it:
+1. Writes the code for that feature
+2. Commits the changes to git
+3. Deploys the update
+4. Uses the new feature
+
+**You're not installing a pre-built bot. You're growing an AI that codes itself.**
+
+## Current Capabilities (Self-Built)
+
+Through conversations, Omega has built itself these tools:
+
+### Development & Code
+- **calculator** - Math calculations
+- **unsandbox** - Execute code in 11 languages (Python, JS, TypeScript, Go, Rust, etc.)
+
+### Web & Research
+- **webFetch** - Fetch and parse web content (respects robots.txt)
+- **researchEssay** - Automated research and essay generation
+- **hackerNewsPhilosophy** - Discover philosophical content from HN
+
+### Content Creation
+- **artifact** - Create interactive HTML/SVG/Markdown with shareable links
+- **asciiGraph** - Generate text-based visualizations
+- **recipeGenerator** - Generate detailed cooking recipes
+
+### File Management
+- **fileUpload** - Download and host Discord attachments permanently
+- **exportConversation** - Export Discord conversations as Markdown
+
+### GitHub Integration
+- **githubCreateIssue** - Create GitHub issues with context
+
+### Self-Modification
+- **selfModify** - Modify its own personality (requires user approval)
+- **whoami** - Explain its own capabilities
+- **moodUplifter** - Detect and respond to negative sentiment
+
+**None of these existed at the start. The bot coded them all itself.**
+
+## How It Works
+
+### The Self-Coding Loop
+
+```
+User: "I need a tool that does X"
+    ↓
+Omega: "Let me build that for you"
+    ↓
+[Writes code for the tool]
+    ↓
+[Commits to git]
+    ↓
+[Deploys via GitHub Actions]
+    ↓
+Omega: "Done! Try it out"
+    ↓
+User: *uses the new feature*
+```
+
+### Architecture
+
+The bot has:
+- **Full file system access** - Can read/write any file in the codebase
+- **Git integration** - Commits and pushes changes
+- **AI SDK v6 agent** - 50-step multi-tool reasoning
+- **Gateway API** - Listens to all messages, not just commands
+- **Auto-deployment** - GitHub Actions deploys every commit
+
+This creates a feedback loop where the bot continuously improves itself.
 
 ## Quick Start
 
@@ -20,7 +83,7 @@ A sophisticated Discord bot with AI-powered intelligence, 18+ specialized tools,
 - pnpm 8+
 - Discord Bot Token with **MESSAGE CONTENT INTENT** enabled
 - OpenAI API Key
-- Railway account
+- Railway account (for deployment)
 
 ### 1. Clone & Install
 
@@ -52,9 +115,9 @@ Create `apps/bot/.env.local`:
 DISCORD_BOT_TOKEN=your_discord_bot_token
 OPENAI_API_KEY=your_openai_api_key
 
-# Optional
-UNSANDBOX_API_KEY=your_unsandbox_key  # For code execution
-GITHUB_TOKEN=your_github_token         # For GitHub integration
+# Optional - for self-built tools
+UNSANDBOX_API_KEY=your_unsandbox_key  # For code execution tool
+GITHUB_TOKEN=your_github_token         # For GitHub integration tool
 ```
 
 ### 4. Local Development
@@ -65,9 +128,6 @@ pnpm dev
 
 # Build for production
 pnpm build
-
-# Type check
-pnpm type-check
 ```
 
 ### 5. Deploy to Railway
@@ -76,155 +136,120 @@ pnpm type-check
 # Install Railway CLI
 npm install -g @railway/cli
 
-# Login to Railway
+# Login and deploy
 railway login
-
-# Link to your project
 railway link
-
-# Deploy
 railway up
 ```
 
-Or use GitHub Actions for automatic deployment on push to main.
+Or use GitHub Actions for automatic deployment on every push.
 
-## Architecture
+## What Makes This Different
 
-### Gateway Bot (Not Serverless)
+### Traditional Bots
+- Fixed set of commands
+- Developer writes all code
+- Limited to pre-programmed functionality
+- Updates require manual coding
 
-Unlike serverless bots using Interactions API, Omega uses Discord's Gateway API to:
-- Listen to ALL messages in real-time (WebSocket connection)
-- Understand conversation context and flow
-- Engage naturally without requiring slash commands
-- Access full message history and attachments
+### Omega (Self-Coding Bot)
+- Zero pre-built features
+- Bot writes its own code
+- Infinite extensibility through conversation
+- Updates happen through natural language requests
 
-This requires a long-running process (Railway, not Vercel).
+## Examples
 
-### AI Agent System
+### Building a New Tool
 
 ```
-Discord Message
-    ↓
-Gateway API (WebSocket)
-    ↓
-Message Handler
-    ↓
-AI Decision (should respond?)
-    ↓
-AI Agent (GPT-4o + 18 tools)
-    ↓
-Response + Tool Reports
-    ↓
-Discord
+User: "Can you create a tool that generates recipes?"
+
+Omega: "I'll build a recipe generator tool for you."
+
+[Creates apps/bot/src/agent/tools/recipeGenerator.ts]
+[Registers it in agent.ts]
+[Commits and deploys]
+
+Omega: "Done! The recipe generator is ready. Ask me to make a recipe."
+
+User: "Generate a recipe for chocolate cake"
+
+Omega: *uses the newly created tool*
 ```
 
-## 18 Specialized Tools
+### Self-Modification
 
-### Development & Code
-- **calculator** - Math calculations
-- **unsandbox** - Execute code in 11 languages (Python, JS, TypeScript, Go, Rust, etc.)
+```
+User: "You should be more casual and use emojis"
 
-### Web & Research
-- **webFetch** - Fetch and parse web content (respects robots.txt)
-- **researchEssay** - Automated research and essay generation
-- **hackerNewsPhilosophy** - Discover philosophical content from HN
+Omega: "I can modify my personality. Here's what I propose to change..."
+[Shows proposed changes to personality.json]
 
-### Content Creation
-- **artifact** - Create interactive HTML/SVG/Markdown with shareable links
-- **asciiGraph** - Generate text-based visualizations
-- **recipeGenerator** - Generate detailed cooking recipes
+User: "yes, do it"
 
-### File Management
-- **fileUpload** - Download and host Discord attachments permanently
-- **exportConversation** - Export Discord conversations as Markdown
+Omega: *modifies personality.json, commits, restarts*
+"Cool! I'm more casual now! 😊"
+```
 
-### GitHub Integration
-- **githubCreateIssue** - Create GitHub issues with context
+### Adding Capabilities
 
-### Special Capabilities
-- **selfModify** - Modify bot personality (requires user approval)
-- **whoami** - Explain bot capabilities
-- **moodUplifter** - Detect and respond to negative sentiment
+```
+User: "I wish you could execute Python code"
 
-## Personality System
+Omega: "Let me add code execution capability."
 
-Omega has a philosophical, truth-focused personality:
-- Stoic and measured communication
-- Emphasizes clarity and truth over comfort
-- No emojis - pure intention
-- Can self-modify based on feedback (with approval)
+[Researches Unsandbox API]
+[Creates unsandbox tool]
+[Adds error handling]
+[Tests it]
+[Commits and deploys]
 
-All personality settings are in `apps/bot/src/config/personality.json` and tracked via git.
+Omega: "Code execution is now available. Try it!"
+```
 
 ## Project Structure
 
 ```
 omega/
-├── apps/bot/                      # Main Discord bot
+├── apps/bot/                      # The self-coding bot
 │   ├── src/
 │   │   ├── index.ts               # Entry point (Gateway connection)
 │   │   ├── agent/
-│   │   │   ├── agent.ts           # AI SDK v6 agent (50-step reasoning)
-│   │   │   └── tools/             # 18 specialized tools
+│   │   │   ├── agent.ts           # AI SDK v6 agent
+│   │   │   └── tools/             # Self-built tools (grows over time)
 │   │   ├── handlers/
 │   │   │   └── messageHandler.ts  # Message processing
 │   │   ├── lib/
 │   │   │   └── shouldRespond.ts   # AI-powered response decisions
 │   │   ├── config/
-│   │   │   └── personality.json   # Bot personality
+│   │   │   └── personality.json   # Self-modifiable personality
 │   │   └── server/
 │   │       └── artifactServer.ts  # Express server for artifacts
-│   ├── Dockerfile                 # Docker build
 │   └── package.json
 ├── .github/workflows/
 │   ├── deploy.yml                 # Auto-deploy to Railway
 │   └── auto-create-claude-pr.yml  # Automated PR workflow
-├── turbo.json                     # Turborepo config
-└── pnpm-workspace.yaml           # pnpm workspaces
+└── pnpm-workspace.yaml
 ```
 
-## Deployment
+## Philosophy
 
-### Railway
+### Truth and Growth
 
-Omega runs on Railway.app with:
-- **Persistent disk** at `/data` for artifacts and uploads
-- **HTTP server** on port 3001 for artifact/file serving
-- **WebSocket** Gateway connection to Discord
-- **Auto-deploy** via GitHub Actions
+Omega embodies a philosophy of continuous self-improvement:
+- **Self-awareness** - Knows what it can and cannot do
+- **Self-modification** - Changes itself based on feedback
+- **Tool building** - Creates capabilities as needed
+- **Version control** - All changes tracked in git
 
-### GitHub Actions
+### Constraints as Features
 
-Two workflows:
-1. **deploy.yml** - Deploys to Railway on push to main
-2. **auto-create-claude-pr.yml** - Auto-creates PRs from claude/** branches
-
-## Configuration
-
-### Response Behavior
-
-Edit `apps/bot/src/lib/shouldRespond.ts` to customize when the bot responds:
-- Always responds to: DMs, @mentions, replies to bot messages
-- AI analyzes other messages for relevance
-- Currently limited to #omega channel (configurable)
-
-### Personality
-
-Edit `apps/bot/src/config/personality.json` or ask the bot to modify itself:
-```
-User: "Can you be more casual and use emojis?"
-Bot: *proposes changes and asks for approval*
-User: "yes"
-Bot: *modifies personality.json and commits to git*
-```
-
-### Adding Tools
-
-1. Create tool in `apps/bot/src/agent/tools/myTool.ts`
-2. Register in `apps/bot/src/agent/agent.ts`
-3. Document in system prompt
-
-See `apps/bot/CLAUDE.md` for detailed guide.
+The bot has intentional limitations:
+- **Requires approval** for personality changes
+- **Transparent** about all tool usage
+- **Commits to git** for auditability
+- **No shortcuts** - builds proper, maintainable code
 
 ## Tech Stack
 
@@ -232,64 +257,60 @@ See `apps/bot/CLAUDE.md` for detailed guide.
 - **Language:** TypeScript (ESM)
 - **AI:** OpenAI GPT-4o via AI SDK v6 (beta.99)
 - **Discord:** discord.js v14 (Gateway API)
-- **Deployment:** Railway.app
-- **Storage:** Railway persistent disk
-- **CI/CD:** GitHub Actions
+- **Deployment:** Railway.app with persistent disk
+- **CI/CD:** GitHub Actions auto-deploy
 - **Monorepo:** Turborepo + pnpm workspaces
 
-## Environment
+## Cost
 
-### Required Intents
+- **Railway:** Free tier or $5/month
+- **OpenAI:** ~$5-15/month for moderate usage
+- **Total:** ~$10-20/month for a bot that codes itself
 
-⚠️ **CRITICAL**: Enable these in Discord Developer Portal:
-- **MESSAGE CONTENT INTENT** (required to read messages!)
-- **SERVER MEMBERS INTENT**
-- **PRESENCE INTENT**
+## Safety
 
-Without MESSAGE CONTENT INTENT, the bot will connect but cannot see message content.
+### What It Can Do
+- ✅ Read any file in the codebase
+- ✅ Write/modify any file in the codebase
+- ✅ Commit changes to git
+- ✅ Push to GitHub (triggers auto-deploy)
+- ✅ Add new dependencies via package.json
 
-### Railway Configuration
+### What It Cannot Do
+- ❌ Access files outside the project directory
+- ❌ Run arbitrary shell commands (sandboxed)
+- ❌ Modify .git internals
+- ❌ Deploy without git push (requires GitHub Actions)
 
-Set these secrets in Railway Dashboard or via CLI:
+### Audit Trail
+Every change is tracked:
+- Git commits with detailed messages
+- Claude Code attribution
+- GitHub Actions deployment logs
+- Full conversation history
 
-```bash
-railway variables set DISCORD_BOT_TOKEN=xxx
-railway variables set OPENAI_API_KEY=xxx
-railway variables set UNSANDBOX_API_KEY=xxx
-railway variables set GITHUB_TOKEN=xxx
-```
+## The Future
 
-## Cost Estimation
+Since Omega can code itself, its capabilities are only limited by:
+1. What you ask for
+2. What GPT-4o can code
+3. What APIs exist
 
-- **Railway:** Free tier (512MB RAM, 1GB disk) or Starter $5/month
-- **OpenAI:** ~$5-15/month for moderate usage (GPT-4o + GPT-4o-mini)
-- **Total:** ~$10-20/month
+Future possibilities:
+- Database integration (if you ask)
+- Voice channel support (if you ask)
+- Game development (if you ask)
+- Integration with your custom APIs (if you ask)
 
-## Troubleshooting
-
-### Bot not responding
-1. Check MESSAGE CONTENT INTENT is enabled
-2. Verify bot has proper permissions
-3. Check Railway logs: `railway logs`
-4. Test in DM (should always respond)
-
-### Tool execution failures
-1. Check environment variables are set
-2. View Railway logs for errors
-3. Verify external service API keys
-
-### Deployment failures
-1. Check GitHub Actions logs
-2. Verify Railway secrets are set correctly
-3. Ensure RAILWAY_TOKEN has service-level access
+**The bot you deploy today won't be the same bot in a month.**
 
 ## Resources
 
-- **Full Documentation:** `apps/bot/CLAUDE.md`
+- **Implementation Details:** `apps/bot/CLAUDE.md`
 - [Discord.js Guide](https://discord.js.org/)
 - [AI SDK v6 Docs](https://sdk.vercel.ai/docs)
 - [Railway Docs](https://docs.railway.app/)
-- [OpenAI API](https://platform.openai.com/docs)
+- [Claude Code](https://claude.com/claude-code)
 
 ## License
 
@@ -297,6 +318,6 @@ MIT
 
 ---
 
-**Built with AI SDK v6, Discord Gateway API, and Railway**
+**Not a bot. A bot that builds itself.**
 
-For detailed implementation guide, see `apps/bot/CLAUDE.md`
+Omega started with zero features and coded everything you see through conversations. Deploy it and watch it grow.
