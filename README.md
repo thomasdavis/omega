@@ -1,352 +1,302 @@
-# Discord AI Bot
+# Omega - AI Discord Bot
 
-A serverless Discord bot powered by OpenAI GPT-4, built with Vercel AI SDK v6 and Discord's Interactions API.
+A sophisticated Discord bot with AI-powered intelligence, 18+ specialized tools, and philosophical personality - built with AI SDK v6 and deployed on Railway.
 
 ## Features
 
-- 🤖 **AI-Powered Responses** - Uses OpenAI GPT-4 for intelligent conversations
-- 🎭 **Personality Modes** - Switch between Professional, Chaotic, and Zen personalities
-- ⚡ **Serverless** - Runs on Vercel edge functions with zero infrastructure
-- 🔒 **Secure** - Discord signature verification on all requests
-- 📦 **Monorepo** - Built with Turborepo for scalability
-
-## Commands
-
-- `/ask [prompt]` - Ask the AI anything
-- `/vibe [mode]` - Change AI personality (professional/chaotic/zen)
-- `/help` - Show available commands
+- **AI-Powered Conversations** - Uses OpenAI GPT-4o with 50-step multi-agent reasoning
+- **18+ Specialized Tools** - Code execution, web scraping, artifact creation, file hosting, and more
+- **Natural Engagement** - Listens to all messages and intelligently decides when to respond
+- **Philosophical Personality** - Stoic, truth-focused communication with self-modification capabilities
+- **Tool Transparency** - Reports all tool usage with arguments and results
+- **Persistent Storage** - Hosts files and artifacts permanently on Railway
+- **GitHub Integration** - Auto-deploys via GitHub Actions
 
 ## Quick Start
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
-- [pnpm](https://pnpm.io/) 8+
-- [Discord Developer Account](https://discord.com/developers/applications)
-- [OpenAI API Key](https://platform.openai.com/api-keys)
-- [Vercel Account](https://vercel.com/) (free tier works)
+- Node.js 20+
+- pnpm 8+
+- Discord Bot Token with **MESSAGE CONTENT INTENT** enabled
+- OpenAI API Key
+- Railway account
 
-### 1. Discord Setup
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to "Bot" tab:
-   - Click "Add Bot"
-   - Copy the **Bot Token** (save for later)
-4. Go to "General Information" tab:
-   - Copy **Application ID** (save for later)
-   - Copy **Public Key** (save for later)
-5. Go to "OAuth2" → "URL Generator":
-   - Select scopes: `applications.commands`, `bot`
-   - Select permissions: `Send Messages`, `Use Slash Commands`
-   - Copy the generated URL and open it to invite the bot to your server
-
-### 2. Clone & Install
+### 1. Clone & Install
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/yourusername/omega.git
 cd omega
-
-# Install dependencies
 pnpm install
 ```
 
-### 3. Configure Environment Variables
+### 2. Discord Setup
 
-```bash
-# Copy the example env file
-cp .env.example .env.local
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. Go to "Bot" tab:
+   - Click "Add Bot"
+   - Copy the **Bot Token**
+   - Enable **MESSAGE CONTENT INTENT** (Critical!)
+   - Enable **SERVER MEMBERS INTENT**
+4. Go to OAuth2 → URL Generator:
+   - Scopes: `bot`
+   - Permissions: Send Messages, Read Message History, View Channels
+   - Invite bot to your server
 
-# Edit .env.local with your credentials
-# Also copy to apps/bot/.env.local for local development
-cp .env.local apps/bot/.env.local
-```
+### 3. Environment Variables
 
-Add your credentials:
+Create `apps/bot/.env.local`:
 
 ```env
-DISCORD_PUBLIC_KEY=your_discord_public_key
-DISCORD_APP_ID=your_discord_application_id
 DISCORD_BOT_TOKEN=your_discord_bot_token
 OPENAI_API_KEY=your_openai_api_key
+
+# Optional
+UNSANDBOX_API_KEY=your_unsandbox_key  # For code execution
+GITHUB_TOKEN=your_github_token         # For GitHub integration
 ```
 
-### 4. Local Development (Optional)
-
-To test locally before deploying:
+### 4. Local Development
 
 ```bash
-# Install Vercel CLI
-pnpm add -g vercel
+# Run in development mode
+pnpm dev
 
-# Start local dev server
-cd apps/bot
-vercel dev
+# Build for production
+pnpm build
+
+# Type check
+pnpm type-check
 ```
 
-In a separate terminal, expose your local server:
+### 5. Deploy to Railway
 
 ```bash
-# Install ngrok
-brew install ngrok
-# or: npm install -g ngrok
+# Install Railway CLI
+npm install -g @railway/cli
 
-# Expose port 3000
-ngrok http 3000
+# Login to Railway
+railway login
+
+# Link to your project
+railway link
+
+# Deploy
+railway up
 ```
 
-Update Discord webhook URL:
-1. Go to Discord Developer Portal → Your App → General Information
-2. Set "Interactions Endpoint URL" to: `https://your-ngrok-url.ngrok.io/api/interactions`
-3. Discord will verify the endpoint
+Or use GitHub Actions for automatic deployment on push to main.
 
-### 5. Deploy to Vercel
+## Architecture
 
-```bash
-# Login to Vercel
-vercel login
+### Gateway Bot (Not Serverless)
 
-# Deploy from apps/bot directory
-cd apps/bot
-vercel --prod
+Unlike serverless bots using Interactions API, Omega uses Discord's Gateway API to:
+- Listen to ALL messages in real-time (WebSocket connection)
+- Understand conversation context and flow
+- Engage naturally without requiring slash commands
+- Access full message history and attachments
 
-# Note your deployment URL (e.g., https://your-app.vercel.app)
-```
+This requires a long-running process (Railway, not Vercel).
 
-### 6. Set Environment Variables on Vercel
-
-```bash
-# Add each environment variable
-vercel env add DISCORD_PUBLIC_KEY production
-vercel env add DISCORD_APP_ID production
-vercel env add DISCORD_BOT_TOKEN production
-vercel env add OPENAI_API_KEY production
-```
-
-Alternatively, add them via the Vercel dashboard:
-1. Go to your project → Settings → Environment Variables
-2. Add all four variables
-
-### 7. Register Commands
-
-```bash
-# Call the registration endpoint
-curl https://your-app.vercel.app/api/register-commands
-
-# You should see:
-# {"success":true,"message":"Commands registered successfully!",...}
-```
-
-**Note:** Global commands can take up to 1 hour to appear due to Discord's caching.
-
-### 8. Configure Discord Webhook (Production)
-
-1. Go to Discord Developer Portal → Your App → General Information
-2. Set "Interactions Endpoint URL" to: `https://your-app.vercel.app/api/interactions`
-3. Click "Save Changes"
-4. Discord will send a verification request (should succeed)
-
-### 9. Test Your Bot
-
-Open Discord and try:
+### AI Agent System
 
 ```
-/help
-/ask What is TypeScript?
-/vibe mode:chaotic
-/ask Tell me a joke
+Discord Message
+    ↓
+Gateway API (WebSocket)
+    ↓
+Message Handler
+    ↓
+AI Decision (should respond?)
+    ↓
+AI Agent (GPT-4o + 18 tools)
+    ↓
+Response + Tool Reports
+    ↓
+Discord
 ```
+
+## 18 Specialized Tools
+
+### Development & Code
+- **calculator** - Math calculations
+- **unsandbox** - Execute code in 11 languages (Python, JS, TypeScript, Go, Rust, etc.)
+
+### Web & Research
+- **webFetch** - Fetch and parse web content (respects robots.txt)
+- **researchEssay** - Automated research and essay generation
+- **hackerNewsPhilosophy** - Discover philosophical content from HN
+
+### Content Creation
+- **artifact** - Create interactive HTML/SVG/Markdown with shareable links
+- **asciiGraph** - Generate text-based visualizations
+- **recipeGenerator** - Generate detailed cooking recipes
+
+### File Management
+- **fileUpload** - Download and host Discord attachments permanently
+- **exportConversation** - Export Discord conversations as Markdown
+
+### GitHub Integration
+- **githubCreateIssue** - Create GitHub issues with context
+
+### Special Capabilities
+- **selfModify** - Modify bot personality (requires user approval)
+- **whoami** - Explain bot capabilities
+- **moodUplifter** - Detect and respond to negative sentiment
+
+## Personality System
+
+Omega has a philosophical, truth-focused personality:
+- Stoic and measured communication
+- Emphasizes clarity and truth over comfort
+- No emojis - pure intention
+- Can self-modify based on feedback (with approval)
+
+All personality settings are in `apps/bot/src/config/personality.json` and tracked via git.
 
 ## Project Structure
 
 ```
 omega/
-├── apps/
-│   └── bot/                      # Main bot application
-│       ├── api/                  # Vercel serverless functions
-│       │   ├── interactions.ts   # Main webhook handler
-│       │   └── register-commands.ts
-│       ├── src/
-│       │   ├── commands/         # Command handlers
-│       │   │   ├── ask.ts
-│       │   │   ├── help.ts
-│       │   │   └── vibe.ts
-│       │   ├── lib/              # Core libraries
-│       │   │   ├── ai.ts         # OpenAI integration
-│       │   │   ├── discord.ts    # Discord API
-│       │   │   └── verification.ts
-│       │   ├── types/            # TypeScript types
-│       │   └── utils/            # Utilities
-│       ├── vercel.json           # Vercel config
-│       └── package.json
-├── packages/
-│   └── shared/                   # Shared utilities (future use)
-├── turbo.json                    # Turborepo config
-├── pnpm-workspace.yaml          # pnpm workspace config
-└── package.json                  # Root package.json
+├── apps/bot/                      # Main Discord bot
+│   ├── src/
+│   │   ├── index.ts               # Entry point (Gateway connection)
+│   │   ├── agent/
+│   │   │   ├── agent.ts           # AI SDK v6 agent (50-step reasoning)
+│   │   │   └── tools/             # 18 specialized tools
+│   │   ├── handlers/
+│   │   │   └── messageHandler.ts  # Message processing
+│   │   ├── lib/
+│   │   │   └── shouldRespond.ts   # AI-powered response decisions
+│   │   ├── config/
+│   │   │   └── personality.json   # Bot personality
+│   │   └── server/
+│   │       └── artifactServer.ts  # Express server for artifacts
+│   ├── Dockerfile                 # Docker build
+│   └── package.json
+├── .github/workflows/
+│   ├── deploy.yml                 # Auto-deploy to Railway
+│   └── auto-create-claude-pr.yml  # Automated PR workflow
+├── turbo.json                     # Turborepo config
+└── pnpm-workspace.yaml           # pnpm workspaces
 ```
 
-## Development
+## Deployment
 
-### Available Scripts
+### Railway
 
-```bash
-# Run development server
-pnpm dev
+Omega runs on Railway.app with:
+- **Persistent disk** at `/data` for artifacts and uploads
+- **HTTP server** on port 3001 for artifact/file serving
+- **WebSocket** Gateway connection to Discord
+- **Auto-deploy** via GitHub Actions
 
-# Type check
-pnpm type-check
+### GitHub Actions
 
-# Build all packages
-pnpm build
+Two workflows:
+1. **deploy.yml** - Deploys to Railway on push to main
+2. **auto-create-claude-pr.yml** - Auto-creates PRs from claude/** branches
 
-# Clean all node_modules
-pnpm clean
+## Configuration
+
+### Response Behavior
+
+Edit `apps/bot/src/lib/shouldRespond.ts` to customize when the bot responds:
+- Always responds to: DMs, @mentions, replies to bot messages
+- AI analyzes other messages for relevance
+- Currently limited to #omega channel (configurable)
+
+### Personality
+
+Edit `apps/bot/src/config/personality.json` or ask the bot to modify itself:
+```
+User: "Can you be more casual and use emojis?"
+Bot: *proposes changes and asks for approval*
+User: "yes"
+Bot: *modifies personality.json and commits to git*
 ```
 
-### Adding New Commands
+### Adding Tools
 
-1. Create a new file in `apps/bot/src/commands/your-command.ts`
-2. Implement the command handler:
+1. Create tool in `apps/bot/src/agent/tools/myTool.ts`
+2. Register in `apps/bot/src/agent/agent.ts`
+3. Document in system prompt
 
-```typescript
-import { editResponse } from '../lib/discord';
-import type { DiscordInteraction } from '../types/discord';
-
-export async function handleYourCommand(
-  interaction: DiscordInteraction
-): Promise<void> {
-  const appId = process.env.DISCORD_APP_ID!;
-  const token = interaction.token;
-
-  // Your command logic here
-  await editResponse(appId, token, 'Your response');
-}
-```
-
-3. Register the command in `apps/bot/api/register-commands.ts`:
-
-```typescript
-const commands = [
-  // ... existing commands
-  {
-    name: 'yourcommand',
-    description: 'Your command description',
-    options: [
-      // Add options if needed
-    ],
-  },
-];
-```
-
-4. Add the route in `apps/bot/api/interactions.ts`:
-
-```typescript
-switch (commandName) {
-  // ... existing cases
-  case 'yourcommand':
-    handleYourCommand(interaction).catch((error) => {
-      console.error('[YOURCOMMAND] Error:', error);
-    });
-    break;
-}
-```
-
-5. Redeploy and re-register commands
-
-## Architecture
-
-### How It Works
-
-1. **User types `/ask` in Discord**
-2. **Discord sends HTTP POST** to your Vercel endpoint
-3. **Vercel verifies signature** (ensures request is from Discord)
-4. **Vercel defers response** (buys 15 minutes for processing)
-5. **Vercel calls OpenAI API** (generates AI response)
-6. **Vercel edits deferred message** (sends response back to Discord)
-7. **User sees response** in Discord
-
-### Why Serverless?
-
-**Traditional Discord Bot:**
-- Requires persistent WebSocket connection
-- Needs dedicated server (24/7)
-- Manual scaling
-- Infrastructure maintenance
-
-**Serverless Discord Bot:**
-- HTTP-based (Interactions API)
-- No infrastructure
-- Auto-scaling (handles 10 or 10,000 requests)
-- Pay-per-use pricing
-
-## Cost Estimation
-
-### Free Tier
-- **Vercel:** 100GB bandwidth, 100 serverless hours/month
-- **OpenAI:** No free tier (~$0.01 per interaction with GPT-4o)
-- **Estimate:** ~$10-20/month for moderate usage
-
-### Production
-- **Vercel Pro:** $20/month (1TB bandwidth)
-- **OpenAI:** Variable based on usage
-- **Estimate:** ~$40-60/month for 100K interactions
-
-## Troubleshooting
-
-### "Invalid signature"
-- Check `DISCORD_PUBLIC_KEY` is correct
-- Ensure raw body parsing is disabled in Vercel config
-
-### "This interaction failed"
-- Response took >3 seconds without deferring
-- Check Vercel function logs
-
-### Commands not appearing
-- Wait up to 1 hour for Discord cache to update
-- Try re-running `/api/register-commands`
-- Check command registration response for errors
-
-### Bot shows offline
-- Normal! Interaction API bots don't maintain WebSocket connections
-- They don't show online status
-
-## Advanced Features
-
-See `discord_ai_bot_implementation_plan.md` for advanced features:
-
-- **Streaming responses** - Real-time progressive updates
-- **Conversation memory** - Context-aware conversations
-- **Rate limiting** - Prevent abuse
-- **Self-coding** - Autonomous code generation
+See `apps/bot/CLAUDE.md` for detailed guide.
 
 ## Tech Stack
 
 - **Runtime:** Node.js 20
-- **Framework:** Vercel Serverless Functions
-- **Language:** TypeScript
-- **AI:** OpenAI GPT-4 via Vercel AI SDK v6
-- **Bot API:** Discord Interactions API
-- **Monorepo:** Turborepo
-- **Package Manager:** pnpm
+- **Language:** TypeScript (ESM)
+- **AI:** OpenAI GPT-4o via AI SDK v6 (beta.99)
+- **Discord:** discord.js v14 (Gateway API)
+- **Deployment:** Railway.app
+- **Storage:** Railway persistent disk
+- **CI/CD:** GitHub Actions
+- **Monorepo:** Turborepo + pnpm workspaces
+
+## Environment
+
+### Required Intents
+
+⚠️ **CRITICAL**: Enable these in Discord Developer Portal:
+- **MESSAGE CONTENT INTENT** (required to read messages!)
+- **SERVER MEMBERS INTENT**
+- **PRESENCE INTENT**
+
+Without MESSAGE CONTENT INTENT, the bot will connect but cannot see message content.
+
+### Railway Configuration
+
+Set these secrets in Railway Dashboard or via CLI:
+
+```bash
+railway variables set DISCORD_BOT_TOKEN=xxx
+railway variables set OPENAI_API_KEY=xxx
+railway variables set UNSANDBOX_API_KEY=xxx
+railway variables set GITHUB_TOKEN=xxx
+```
+
+## Cost Estimation
+
+- **Railway:** Free tier (512MB RAM, 1GB disk) or Starter $5/month
+- **OpenAI:** ~$5-15/month for moderate usage (GPT-4o + GPT-4o-mini)
+- **Total:** ~$10-20/month
+
+## Troubleshooting
+
+### Bot not responding
+1. Check MESSAGE CONTENT INTENT is enabled
+2. Verify bot has proper permissions
+3. Check Railway logs: `railway logs`
+4. Test in DM (should always respond)
+
+### Tool execution failures
+1. Check environment variables are set
+2. View Railway logs for errors
+3. Verify external service API keys
+
+### Deployment failures
+1. Check GitHub Actions logs
+2. Verify Railway secrets are set correctly
+3. Ensure RAILWAY_TOKEN has service-level access
 
 ## Resources
 
-- [Discord Developer Portal](https://discord.com/developers/applications)
-- [Discord Interactions API Docs](https://discord.com/developers/docs/interactions/receiving-and-responding)
-- [Vercel Documentation](https://vercel.com/docs)
-- [Vercel AI SDK](https://sdk.vercel.ai/docs)
-- [OpenAI API Reference](https://platform.openai.com/docs/api-reference)
+- **Full Documentation:** `apps/bot/CLAUDE.md`
+- [Discord.js Guide](https://discord.js.org/)
+- [AI SDK v6 Docs](https://sdk.vercel.ai/docs)
+- [Railway Docs](https://docs.railway.app/)
+- [OpenAI API](https://platform.openai.com/docs)
 
 ## License
 
 MIT
 
-## Contributing
-
-Contributions welcome! Please open an issue or PR.
-
 ---
 
-**Built with ❤️ using Vercel, OpenAI, and Discord**
+**Built with AI SDK v6, Discord Gateway API, and Railway**
+
+For detailed implementation guide, see `apps/bot/CLAUDE.md`
