@@ -37,10 +37,44 @@ jobs:
           embed-color: 3447003
           embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
 
+      - name: Debug Railway Configuration
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          echo "🔍 Debugging Railway configuration..."
+
+          # Check if token exists
+          if [ -n "$RAILWAY_TOKEN" ]; then
+            echo "✅ RAILWAY_TOKEN is set (length: ${#RAILWAY_TOKEN})"
+            echo "   First 10 chars: ${RAILWAY_TOKEN:0:10}..."
+          else
+            echo "❌ RAILWAY_TOKEN is NOT set"
+          fi
+
+          # Check if service ID exists
+          if [ -n "$RAILWAY_SERVICE_ID" ]; then
+            echo "✅ RAILWAY_SERVICE_ID is set: $RAILWAY_SERVICE_ID"
+          else
+            echo "❌ RAILWAY_SERVICE_ID is NOT set"
+          fi
+
+          # List available services
+          echo ""
+          echo "📋 Available Railway services:"
+          railway status || echo "Failed to get status"
+
+          # Show whoami info
+          echo ""
+          echo "👤 Railway account info:"
+          railway whoami || echo "Failed to get whoami"
+
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          echo "🚀 Deploying with service ID: ${{ secrets.RAILWAY_SERVICE_ID }}"
+          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
 
       - name: Notify Discord - Deployment Success
         if: success()
