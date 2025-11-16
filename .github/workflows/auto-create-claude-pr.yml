@@ -317,11 +317,16 @@ jobs:
           git checkout main
           git pull origin main
 
-          # Create revert commit for the last merge
-          MERGE_COMMIT=$(git log --merges -1 --format="%H")
-          echo "Reverting merge commit: $MERGE_COMMIT"
+          # Get the last commit (squash merge creates a single commit, not a merge commit)
+          LAST_COMMIT=$(git log -1 --format="%H")
+          echo "Reverting commit: $LAST_COMMIT"
 
-          git revert -m 1 "$MERGE_COMMIT" --no-edit
+          if [ -z "$LAST_COMMIT" ]; then
+            echo "❌ Could not find commit to revert"
+            exit 1
+          fi
+
+          git revert "$LAST_COMMIT" --no-edit
 
           # Push revert
           git push origin main
