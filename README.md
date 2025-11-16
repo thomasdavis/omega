@@ -37,8 +37,7 @@ Through conversations, Omega has built itself these tools:
 ### GitHub Integration
 - **githubCreateIssue** - Create GitHub issues with context
 
-### Self-Modification
-- **selfModify** - Modify its own personality (requires user approval)
+### Other
 - **whoami** - Explain its own capabilities
 - **moodUplifter** - Detect and respond to negative sentiment
 
@@ -178,20 +177,6 @@ User: "Generate a recipe for chocolate cake"
 Omega: *uses the newly created tool*
 ```
 
-### Self-Modification
-
-```
-User: "You should be more casual and use emojis"
-
-Omega: "I can modify my personality. Here's what I propose to change..."
-[Shows proposed changes to personality.json]
-
-User: "yes, do it"
-
-Omega: *modifies personality.json, commits, restarts*
-"Cool! I'm more casual now! 😊"
-```
-
 ### Adding Capabilities
 
 ```
@@ -239,17 +224,17 @@ omega/
 
 Omega embodies a philosophy of continuous self-improvement:
 - **Self-awareness** - Knows what it can and cannot do
-- **Self-modification** - Changes itself based on feedback
 - **Tool building** - Creates capabilities as needed
 - **Version control** - All changes tracked in git
+- **Transparency** - Shows all tool usage and reasoning
 
 ### Constraints as Features
 
 The bot has intentional limitations:
-- **Requires approval** for personality changes
 - **Transparent** about all tool usage
 - **Commits to git** for auditability
 - **No shortcuts** - builds proper, maintainable code
+- **Claude Code context** - runs in isolated Claude Code sessions
 
 ## Tech Stack
 
