@@ -253,19 +253,112 @@ jobs:
           echo "merged=false" >> $GITHUB_OUTPUT
           exit 0
 
-      - name: Notify Discord - PR Merged
+      - name: Checkout main branch
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Install Railway CLI
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        run: |
+          npm install -g @railway/cli
+
+      - name: Notify Discord - Deployment Starting
         if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
         uses: tsickert/discord-webhook@v6.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "✅ PR Merged Successfully!"
+          embed-title: "🚀 Deploying to Railway..."
           embed-description: |
             **PR #${{ steps.create_pr.outputs.pr_number }}:** ${{ steps.wait_merge.outputs.pr_title }}
 
-            PR has been merged to main! Railway will deploy automatically via GitHub integration.
-            Check deployment status at: https://railway.app/project/211e3c65-73ad-4e79-8b74-ff3762fcda73
+            Automated deployment to Railway started...
+          embed-color: 3447003
+          embed-url: ${{ steps.wait_merge.outputs.pr_url }}
+
+      - name: Deploy to Railway
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service=${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Notify Discord - Deployment Success
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ Deployment Successful!"
+          embed-description: |
+            **PR #${{ steps.create_pr.outputs.pr_number }}:** ${{ steps.wait_merge.outputs.pr_title }}
+
+            Successfully deployed to Railway production!
           embed-color: 5814783
           embed-url: ${{ steps.wait_merge.outputs.pr_url }}
+
+      - name: Cleanup on deployment failure - Revert merge
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          echo "⚠️ Deployment failed for merged PR #$PR_NUMBER"
+          echo "🔄 STRICT MODE: Cannot close merged PRs. Creating revert commit instead..."
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Checkout main
+          git fetch origin main
+          git checkout main
+          git pull origin main
+
+          # Get the last commit (squash merge creates a single commit, not a merge commit)
+          LAST_COMMIT=$(git log -1 --format="%H")
+          echo "Reverting commit: $LAST_COMMIT"
+
+          if [ -z "$LAST_COMMIT" ]; then
+            echo "❌ Could not find commit to revert"
+            exit 1
+          fi
+
+          git revert "$LAST_COMMIT" --no-edit
+
+          # Push revert
+          git push origin main
+
+          # Comment on the PR
+          gh pr comment "$PR_NUMBER" --repo ${{ github.repository }} --body "❌ Deployment failed! The merge has been **reverted** on main. Please fix the issues and try again."
+
+          echo "✅ Merge reverted successfully"
+
+      - name: Cleanup on deployment failure - Comment on issue
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          # Comment on the issue
+          gh issue comment "$ISSUE_NUM" --repo ${{ github.repository }} --body "⚠️ The implementation failed during deployment due to build errors. Please provide more specific requirements or details about what you'd like, and I'll try again!"
+
+      - name: Cleanup on deployment failure - Notify Discord
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true' && failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "❌ Deployment Failed"
+          embed-description: |
+            **Issue #${{ steps.extract_issue.outputs.issue_number }}**
+
+            The implementation failed during deployment. Give me more information if you want this feature!
+
+            [View Issue](https://github.com/${{ github.repository }}/issues/${{ steps.extract_issue.outputs.issue_number }})
+          embed-color: 15158332
 
       - name: Skip - PR already exists
         if: env.pr_exists == 'true'
