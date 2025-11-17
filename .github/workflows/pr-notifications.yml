@@ -1,0 +1,70 @@
+name: PR Notifications to Discord
+
+on:
+  pull_request:
+    types: [opened, closed]
+
+jobs:
+  notify-pr-created:
+    name: Notify Discord - PR Created
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened' && github.event.pull_request.user.login == 'claude-code[bot]'
+
+    steps:
+      - name: Extract issue number from PR body
+        id: extract_issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          ISSUE_NUM=$(echo "$PR_BODY" | grep -oiE "(fixes|closes|resolves) #([0-9]+)" | grep -oE "[0-9]+" | head -1)
+          echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+
+      - name: Send Discord notification
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "📝 Claude Code Created PR"
+          embed-description: |
+            **PR #${{ github.event.pull_request.number }}:** ${{ github.event.pull_request.title }}
+            **Issue:** #${{ steps.extract_issue.outputs.issue_number }}
+            **Branch:** `${{ github.event.pull_request.head.ref }}`
+
+            Claude Code has created a pull request to implement this feature.
+
+            [View PR](${{ github.event.pull_request.html_url }})
+          embed-color: 3447003
+          embed-url: ${{ github.event.pull_request.html_url }}
+
+  notify-pr-merged:
+    name: Notify Discord - PR Merged
+    runs-on: ubuntu-latest
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+
+    steps:
+      - name: Extract issue number from PR body
+        id: extract_issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          ISSUE_NUM=$(echo "$PR_BODY" | grep -oiE "(fixes|closes|resolves) #([0-9]+)" | grep -oE "[0-9]+" | head -1)
+          echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha=$(echo ${{ github.event.pull_request.merge_commit_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Send Discord notification
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ PR Merged Successfully"
+          embed-description: |
+            **PR #${{ github.event.pull_request.number }}:** ${{ github.event.pull_request.title }}
+            **Issue #${{ steps.extract_issue.outputs.issue_number }}** has been closed
+            **Merged by:** ${{ github.event.pull_request.merged_by.login }}
+            **Commit:** `${{ steps.commit.outputs.sha }}`
+
+            Changes are being deployed to Fly.io...
+
+            [View PR](${{ github.event.pull_request.html_url }})
+          embed-color: 3066993
+          embed-url: ${{ github.event.pull_request.html_url }}

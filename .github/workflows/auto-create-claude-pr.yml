@@ -1,0 +1,273 @@
+name: Auto-Create Claude Code PR
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+# Allow concurrent runs for different branches
+concurrency:
+  group: claude-pr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-pr:
+    name: Create PR from Claude Code branch
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Check for existing PR from this branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "🔍 Checking if PR already exists for branch: $BRANCH_NAME"
+
+          # Check if a PR already exists for this specific branch
+          EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number // ""')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "✅ PR #$EXISTING_PR already exists for this branch, skipping creation"
+            echo "pr_exists=true" >> $GITHUB_ENV
+            echo "existing_pr_number=$EXISTING_PR" >> $GITHUB_ENV
+          else
+            echo "✅ No existing PR found, will create new one"
+            echo "pr_exists=false" >> $GITHUB_ENV
+          fi
+
+      - name: Auto-resolve merge conflicts with main
+        if: env.pr_exists == 'false'
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch latest main
+          git fetch origin main
+
+          # Try to merge main into current branch
+          if ! git merge origin/main --no-edit; then
+            echo "⚠️ Merge conflicts detected, auto-resolving by preferring this branch's changes..."
+
+            # Get list of conflicted files
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+
+            # For each conflicted file, prefer our version (the Claude branch)
+            for file in $CONFLICTED_FILES; do
+              echo "Resolving conflict in $file by preferring Claude's changes"
+              git checkout --theirs "$file"
+              git add "$file"
+            done
+
+            # Commit the merge
+            git commit -m "Auto-resolve merge conflicts: prefer latest implementation from Claude Code"
+
+            # Push the resolved branch
+            git push origin "$BRANCH_NAME"
+
+            echo "✅ Conflicts resolved and pushed"
+          else
+            echo "✅ No conflicts, branch is up to date with main"
+          fi
+
+      - name: Fix pnpm lockfile if out of sync
+        if: env.pr_exists == 'false'
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+
+          echo "🔧 Checking if pnpm lockfile is in sync..."
+
+          # Install pnpm
+          npm install -g pnpm@9.0.0
+
+          # Try to install - this will update the lockfile if needed
+          pnpm install --no-frozen-lockfile
+
+          # Check if lockfile changed
+          if ! git diff --quiet pnpm-lock.yaml; then
+            echo "📦 Lockfile was out of sync, committing update..."
+
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            git add pnpm-lock.yaml
+            git commit -m "chore: update pnpm lockfile to match package.json changes"
+            git push origin "$BRANCH_NAME"
+
+            echo "✅ Lockfile updated and pushed"
+          else
+            echo "✅ Lockfile is already in sync"
+          fi
+
+      - name: Extract issue number from branch name
+        id: extract_issue
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Extract issue number from branch name (format: claude/issue-N-...)
+          ISSUE_NUM=$(echo "$BRANCH_NAME" | grep -oE "issue-([0-9]+)" | grep -oE "[0-9]+")
+          echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+
+          if [ -z "$ISSUE_NUM" ]; then
+            echo "Could not extract issue number from branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+      - name: Get issue details
+        id: issue_details
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+
+          # Get issue title
+          ISSUE_TITLE=$(gh api repos/${{ github.repository }}/issues/$ISSUE_NUM --jq '.title')
+          echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: env.pr_exists == 'false'
+        id: create_pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUM="${{ steps.extract_issue.outputs.issue_number }}"
+          ISSUE_TITLE="${{ steps.issue_details.outputs.issue_title }}"
+          BRANCH_NAME="${{ steps.extract_issue.outputs.branch_name }}"
+
+          # Create the PR body
+          PR_BODY="## Summary
+          Automated implementation by Claude Code for issue #${ISSUE_NUM}.
+
+          ## Changes
+          See individual commits for details of changes made.
+
+          Fixes #${ISSUE_NUM}
+
+          ---
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+          # Create the PR and capture URL
+          PR_URL=$(gh pr create \
+            --title "$ISSUE_TITLE" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$BRANCH_NAME")
+
+          echo "✅ Created PR: $PR_URL"
+
+          # Extract PR number from URL
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+          echo "✅ Created PR #$PR_NUMBER for branch $BRANCH_NAME"
+
+      - name: Enable auto-merge
+        if: env.pr_exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+
+          # Wait for PR to be ready and enable auto-merge with retry
+          echo "⏳ Waiting for PR to be ready..."
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT of $MAX_ATTEMPTS..."
+
+            if gh pr merge "$PR_NUMBER" \
+              --repo ${{ github.repository }} \
+              --auto \
+              --squash \
+              --delete-branch 2>&1; then
+              echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+
+              # Add comment to PR
+              gh pr comment "$PR_NUMBER" \
+                --repo ${{ github.repository }} \
+                --body "🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass."
+
+              exit 0
+            fi
+
+            if [ $ATTEMPT -lt $MAX_ATTEMPTS ]; then
+              echo "⏳ PR not ready yet, waiting 3 seconds..."
+              sleep 3
+            fi
+          done
+
+          echo "❌ Failed to enable auto-merge after $MAX_ATTEMPTS attempts"
+          exit 1
+
+      - name: Wait for PR to be merged
+        if: env.pr_exists == 'false'
+        id: wait_merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_NUMBER="${{ steps.create_pr.outputs.pr_number }}"
+
+          echo "⏳ Waiting for PR #$PR_NUMBER to be merged..."
+          MAX_WAIT=120  # Wait up to 2 minutes
+          ELAPSED=0
+
+          while [ $ELAPSED -lt $MAX_WAIT ]; do
+            PR_MERGED_AT=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json mergedAt --jq '.mergedAt')
+
+            if [ "$PR_MERGED_AT" != "null" ] && [ -n "$PR_MERGED_AT" ]; then
+              echo "✅ PR #$PR_NUMBER has been merged!"
+
+              # Get PR details for notification
+              PR_TITLE=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json title --jq '.title')
+              PR_URL=$(gh pr view "$PR_NUMBER" --repo ${{ github.repository }} --json url --jq '.url')
+
+              echo "pr_title=$PR_TITLE" >> $GITHUB_OUTPUT
+              echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+              echo "merged=true" >> $GITHUB_OUTPUT
+
+              exit 0
+            fi
+
+            sleep 5
+            ELAPSED=$((ELAPSED + 5))
+            echo "Still waiting... (${ELAPSED}s / ${MAX_WAIT}s)"
+          done
+
+          echo "⚠️ PR didn't merge within timeout, skipping deployment"
+          echo "merged=false" >> $GITHUB_OUTPUT
+          exit 0
+
+      - name: Notify Discord - PR Merged
+        if: env.pr_exists == 'false' && steps.wait_merge.outputs.merged == 'true'
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ PR Merged Successfully!"
+          embed-description: |
+            **PR #${{ steps.create_pr.outputs.pr_number }}:** ${{ steps.wait_merge.outputs.pr_title }}
+
+            PR has been merged to main! Railway will deploy automatically via GitHub integration.
+            Check deployment status at: https://railway.app/project/211e3c65-73ad-4e79-8b74-ff3762fcda73
+          embed-color: 5814783
+          embed-url: ${{ steps.wait_merge.outputs.pr_url }}
+
+      - name: Skip - PR already exists
+        if: env.pr_exists == 'true'
+        run: |
+          echo "✅ PR #${{ env.existing_pr_number }} already exists for this branch, skipping workflow"
