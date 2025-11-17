@@ -27,6 +27,7 @@ import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
+import { listArtifactsTool } from './tools/listArtifacts.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -239,6 +240,7 @@ export async function runAgent(
         generateHtmlPage: generateHtmlPageTool,
         recipeGenerator: recipeGeneratorTool,
         ooda: oodaTool,
+        listArtifacts: listArtifactsTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
