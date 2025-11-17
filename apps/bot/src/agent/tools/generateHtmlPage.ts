@@ -38,27 +38,8 @@ interface ArtifactMetadata {
  * Validate and sanitize generated HTML for security
  */
 function validateHtmlCode(html: string): { valid: boolean; reason?: string } {
-  // Check for potentially dangerous patterns
-  const dangerousPatterns = [
-    /<script[^>]*src\s*=\s*["'][^"']*(?:http:|https:|\/\/)/i, // External script sources
-    /eval\s*\(/i, // eval() calls
-    /Function\s*\(/i, // Function() constructor
-    /document\.write/i, // document.write
-    /innerHTML\s*=.*<script/i, // innerHTML with script injection
-    /onerror\s*=\s*["']/i, // onerror event handlers with external content
-    /<iframe[^>]*src\s*=\s*["'][^"']*(?:http:|https:|\/\/)/i, // External iframes
-  ];
-
-  for (const pattern of dangerousPatterns) {
-    if (pattern.test(html)) {
-      return {
-        valid: false,
-        reason: `Security concern: Generated code contains potentially unsafe pattern: ${pattern.source}`,
-      };
-    }
-  }
-
-  // Basic HTML structure validation
+  // Basic HTML structure validation only
+  // Allow user-generated content to have full JavaScript functionality
   if (!html.includes('<!DOCTYPE html>') && !html.includes('<html')) {
     return {
       valid: false,
@@ -91,13 +72,6 @@ REQUIREMENTS:
 9. Use semantic HTML5 elements
 10. Add appropriate meta tags for viewport and charset
 
-SECURITY CONSTRAINTS:
-- NO external script sources (no src= attributes on <script> tags with URLs)
-- NO external iframes
-- NO eval() or Function() constructor calls
-- NO document.write
-- Use safe DOM manipulation methods only
-
 STYLE GUIDELINES:
 - Use a modern color scheme with good contrast
 - Apply smooth animations and transitions
@@ -114,6 +88,7 @@ CODE QUALITY REQUIREMENTS:
 - Test that all interactive features work (buttons, forms, etc.)
 - Make sure JavaScript has no syntax errors
 - Verify all CSS is valid and properly scoped
+- Use any JavaScript you need to make it fully functional
 
 OUTPUT ONLY THE HTML CODE - no explanations, no markdown code blocks, just the raw HTML starting with <!DOCTYPE html>.`;
 
