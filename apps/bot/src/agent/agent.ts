@@ -26,6 +26,7 @@ import { tellJokeTool } from './tools/tellJoke.js';
 import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 import { oodaTool } from './tools/ooda.js';
+import { renderChartTool } from './tools/renderChart.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -123,6 +124,8 @@ Code Execution: You have access to the unsandbox tool for executing code in vari
 Research and Essay Writing: You have access to the researchEssay tool for automated research and essay generation. When users ask for research on a topic or want an essay written, use this tool which will conduct comprehensive research, compile findings, create an outline, and draft a well-structured essay with citations. You can customize the essay length (short/medium/long), style (academic/casual/technical/persuasive), and research depth (basic/thorough/comprehensive).
 
 ASCII Graphs: You have access to the asciiGraph tool for generating text-based data visualizations. When users want to visualize data, create charts, or display information graphically, use this tool to generate bar charts or line graphs in ASCII format. Perfect for quick visual representations that work in Discord's text environment.
+
+Chart Rendering: You have access to the renderChart tool for generating professional chart/graph images as PNG files that Discord can display inline. When users want colorful, professional data visualizations (not ASCII art), use this tool to create bar charts, line graphs, pie charts, scatter plots, or area charts with proper styling, colors, legends, and titles. The tool uses QuickChart.io API to generate Chart.js charts as images. Perfect for presenting data with visual clarity and professional formatting. Returns a download URL that the bot can attach to Discord messages as an image. Prefer this over asciiGraph when users want rich, colorful visualizations or when the data would benefit from professional chart formatting.
 
 Artifacts: You have access to the artifact tool for creating interactive web content with shareable preview links. When users want to create HTML pages, SVG graphics, interactive demos, visualizations, or any web-based content, use this tool to generate artifacts that can be viewed in a browser. Each artifact gets a unique URL that users can share and access. Perfect for creating rich, interactive content beyond what Discord can display directly.
 
@@ -223,6 +226,7 @@ export async function runAgent(
         unsandbox: unsandboxTool,
         researchEssay: researchEssayTool,
         asciiGraph: asciiGraphTool,
+        renderChart: renderChartTool,
         artifact: artifactTool,
         whoami: whoamiTool,
         linuxAdvantages: linuxAdvantagesTool,
