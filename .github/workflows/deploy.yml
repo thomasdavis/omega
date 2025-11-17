@@ -1,0 +1,106 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Build
+        run: pnpm build
+
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "message=$(git log -1 --pretty=%B | head -1)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --pretty=%an)" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord - Build Success
+        if: success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "✅ Build Passed - Deploying..."
+          embed-description: |
+            **Commit:** ${{ steps.commit.outputs.message }}
+            **Author:** ${{ steps.commit.outputs.author }}
+            **SHA:** `${{ steps.commit.outputs.sha }}`
+
+            Type check and build successful, deploying to Railway...
+          embed-color: 3447003
+          embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+
+      - name: Deploy to Railway
+        uses: railwayapp/railway-deploy@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: omega
+        env:
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+
+      - name: Notify Discord - Deployment Success
+        if: success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "🚀 Deployment Successful!"
+          embed-description: |
+            **Commit:** ${{ steps.commit.outputs.message }}
+            **Author:** ${{ steps.commit.outputs.author }}
+            **SHA:** `${{ steps.commit.outputs.sha }}`
+
+            Successfully deployed to Railway production!
+          embed-color: 5814783
+          embed-url: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+
+      - name: Notify Discord - Deployment Failed
+        if: failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "❌ Deployment Failed!"
+          embed-description: |
+            **Commit:** ${{ steps.commit.outputs.message }}
+            **Author:** ${{ steps.commit.outputs.author }}
+            **SHA:** `${{ steps.commit.outputs.sha }}`
+
+            Build or deployment failed. Check the logs for details.
+          embed-color: 15158332
+          embed-url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
