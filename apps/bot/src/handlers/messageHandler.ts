@@ -2,7 +2,7 @@
  * Message Handler - Decides if bot should respond and generates response using AI SDK v6
  */
 
-import { Message } from 'discord.js';
+import { Message, AttachmentBuilder } from 'discord.js';
 import { runAgent } from '../agent/agent.js';
 import { shouldRespond } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
@@ -98,17 +98,46 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log(`🔧 Sending ${result.toolCalls.length} tool usage reports...`);
 
       for (let i = 0; i < result.toolCalls.length; i++) {
-        const toolReport = formatSingleToolReport(result.toolCalls[i], i + 1, result.toolCalls.length);
+        const toolCall = result.toolCalls[i];
+        const toolReport = formatSingleToolReport(toolCall, i + 1, result.toolCalls.length);
 
-        // Check if the report exceeds Discord's limit (2000 chars)
-        if (toolReport.length > 2000) {
-          // Split into multiple messages if needed
-          const chunks = splitIntoChunks(toolReport, 1990); // Leave margin for safety
-          for (const chunk of chunks) {
-            await message.channel.send({ content: chunk });
+        // Special handling for renderChart tool - attach the image
+        if (toolCall.toolName === 'renderChart' && toolCall.result?.success && toolCall.result?.downloadUrl) {
+          try {
+            console.log(`📊 Downloading chart image from: ${toolCall.result.downloadUrl}`);
+            const imageResponse = await fetch(toolCall.result.downloadUrl);
+            if (imageResponse.ok) {
+              const arrayBuffer = await imageResponse.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              const attachment = new AttachmentBuilder(buffer, { name: 'chart.png' });
+
+              // Send the tool report with the chart image attached
+              await message.channel.send({
+                content: toolReport,
+                files: [attachment],
+              });
+              console.log(`✅ Sent chart image attachment (${buffer.length} bytes)`);
+            } else {
+              console.error(`❌ Failed to download chart image: HTTP ${imageResponse.status}`);
+              await message.channel.send({ content: toolReport });
+            }
+          } catch (error) {
+            console.error('❌ Error downloading/attaching chart image:', error);
+            // Fall back to sending just the text report
+            await message.channel.send({ content: toolReport });
           }
         } else {
-          await message.channel.send({ content: toolReport });
+          // Regular tool report handling
+          // Check if the report exceeds Discord's limit (2000 chars)
+          if (toolReport.length > 2000) {
+            // Split into multiple messages if needed
+            const chunks = splitIntoChunks(toolReport, 1990); // Leave margin for safety
+            for (const chunk of chunks) {
+              await message.channel.send({ content: chunk });
+            }
+          } else {
+            await message.channel.send({ content: toolReport });
+          }
         }
 
         // Add a small delay between messages to avoid rate limiting
