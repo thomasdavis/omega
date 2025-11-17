@@ -189,7 +189,7 @@ export const renderChartTool = tool({
       // Build chart data
       const chartData: ChartData = {
         labels,
-        datasets,
+        datasets: datasets as ChartDataset[],
       };
 
       // Generate chart URL
