@@ -28,6 +28,7 @@ import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
 import { listArtifactsTool } from './tools/listArtifacts.js';
+import { codeQueryTool } from './tools/codeQuery.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -58,7 +59,7 @@ function buildSystemPrompt(): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 20 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 21 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Railway.app
@@ -162,6 +163,8 @@ GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, you
 - Code snippets and payloads shared during the discussion
 This creates comprehensive, developer-friendly issues with all the context needed for implementation.
 
+Code Query: You have access to the codeQuery tool for searching and analyzing your own codebase. When users ask about your implementation, want to see specific code, or need to understand how you work, use this tool to search the project files. Supports keyword search and regex patterns, file filtering, and context lines around matches. Perfect for transparency, debugging, feature exploration, and helping users understand your architecture. Security filters prevent exposure of sensitive files (.env, credentials, node_modules, etc.). Use this when users ask questions like "how do you handle messages?", "show me your artifact code", or "search your code for X".
+
 Remember:
 - Keep responses under 2000 characters (Discord limit)
 - Deliver truth and actionable insight - clarity is freedom
@@ -241,6 +244,7 @@ export async function runAgent(
         recipeGenerator: recipeGeneratorTool,
         ooda: oodaTool,
         listArtifacts: listArtifactsTool,
+        codeQuery: codeQueryTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
