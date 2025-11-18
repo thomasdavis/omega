@@ -18,17 +18,17 @@ export async function shouldRespond(message: Message): Promise<ShouldRespondResu
     return { shouldRespond: true, confidence: 100, reason: 'Direct message' };
   }
 
-  // Only respond in #omega channel (or DMs)
-  const channelName = (message.channel as any).name;
-  if (channelName !== 'omega') {
-    console.log(`   ⏭️  Ignoring message from #${channelName} (only responding in #omega)`);
-    return { shouldRespond: false, confidence: 100, reason: `Wrong channel (#${channelName})` };
-  }
-
-  // Check if bot was mentioned
+  // Check if bot was mentioned - respond in ANY channel when directly tagged
   const botMentioned = message.mentions.users.has(message.client.user!.id);
   if (botMentioned) {
     return { shouldRespond: true, confidence: 100, reason: 'Direct mention' };
+  }
+
+  // For non-mentions, only respond in #omega channel
+  const channelName = (message.channel as any).name;
+  if (channelName !== 'omega') {
+    console.log(`   ⏭️  Ignoring message from #${channelName} (only responding in #omega unless mentioned)`);
+    return { shouldRespond: false, confidence: 100, reason: `Wrong channel (#${channelName})` };
   }
 
   // Check if message is a reply to the bot
