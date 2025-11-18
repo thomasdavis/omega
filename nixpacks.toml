@@ -1,0 +1,22 @@
+# Railway Nixpacks configuration for Discord AI Bot
+# Railway uses Nixpacks to build Docker images automatically
+
+[phases.setup]
+nixPkgs = ["nodejs-18_x", "pnpm"]
+
+[phases.install]
+cmds = [
+  "pnpm install --frozen-lockfile"
+]
+
+[phases.build]
+cmds = [
+  "pnpm --filter bot build"
+]
+
+[start]
+cmd = "node apps/bot/dist/index.js"
+
+[variables]
+NODE_ENV = "production"
+ARTIFACT_SERVER_PORT = "3001"

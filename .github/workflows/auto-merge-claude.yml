@@ -1,0 +1,52 @@
+name: Auto-Merge Claude PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-merge:
+    name: Enable Auto-Merge for Claude PRs
+    runs-on: ubuntu-latest
+
+    # Only run if PR is from a claude/** branch (auto-created by our workflow)
+    if: startsWith(github.event.pull_request.head.ref, 'claude/')
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Check if PR is linked to an issue
+        id: check_issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          if echo "$PR_BODY" | grep -qiE "(fixes|closes|resolves) #[0-9]+"; then
+            echo "linked=true" >> $GITHUB_OUTPUT
+          else
+            echo "linked=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge
+        if: steps.check_issue.outputs.linked == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --auto \
+            --squash \
+            --delete-branch
+          echo "✅ Auto-merge enabled for PR #${{ github.event.pull_request.number }}"
+
+      - name: Comment on PR
+        if: steps.check_issue.outputs.linked == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              issue_number: context.issue.number,
+              body: '🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass.'
+            });
