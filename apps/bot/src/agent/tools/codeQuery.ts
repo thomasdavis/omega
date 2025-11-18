@@ -210,7 +210,6 @@ async function analyzeCodeWithAI(
       model,
       system: systemPrompt,
       prompt: userPrompt,
-      maxTokens: 2000,
     });
 
     return result.text;
