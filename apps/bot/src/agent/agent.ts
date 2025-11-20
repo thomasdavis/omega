@@ -33,6 +33,8 @@ import { conversationToSlidevTool } from './tools/conversationToSlidev.js';
 import { getOmegaManifestTool } from './tools/getOmegaManifest.js';
 import { buildSlidevPresentationTool } from './tools/buildSlidevPresentation.js';
 import { createBlogPostTool } from './tools/createBlogPost.js';
+import { updateBlogPostTool } from './tools/updateBlogPost.js';
+import { listBlogPostsTool } from './tools/listBlogPosts.js';
 import { queryMessagesTool } from './tools/queryMessages.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
@@ -124,6 +126,8 @@ export async function runAgent(
         getOmegaManifest: getOmegaManifestTool,
         buildSlidevPresentation: buildSlidevPresentationTool,
         createBlogPost: createBlogPostTool,
+        updateBlogPost: updateBlogPostTool,
+        listBlogPosts: listBlogPostsTool,
         queryMessages: queryMessagesTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
