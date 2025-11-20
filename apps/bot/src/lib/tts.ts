@@ -147,6 +147,8 @@ export async function synthesizeSpeech(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // UncloseAI accepts any string as API key (no registration needed)
+        'Authorization': 'Bearer uncloseai-free-service',
       },
       body: JSON.stringify({
         input: sanitized,
