@@ -7,7 +7,6 @@ import { runAgent } from '../agent/agent.js';
 import { shouldRespond } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
-import { setVibeMessageContext, clearVibeMessageContext } from '../agent/tools/setVibe.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 
 export async function handleMessage(message: Message): Promise<void> {
@@ -16,8 +15,31 @@ export async function handleMessage(message: Message): Promise<void> {
     return;
   }
 
-  // Check if we should respond to this message
-  const decision = await shouldRespond(message);
+  // Fetch recent message history FIRST (for shouldRespond decision context)
+  let messageHistory: Array<{ username: string; content: string }> = [];
+
+  if ('messages' in message.channel) {
+    try {
+      const messages = await message.channel.messages.fetch({ limit: 20, before: message.id });
+      messageHistory = messages
+        .reverse()
+        .map(msg => ({
+          username: msg.author.username,
+          content: msg.content,
+        }))
+        .filter(msg => msg.content.length > 0); // Filter out empty messages
+    } catch (error) {
+      logError(error, {
+        operation: 'Fetch message history',
+        username: message.author.username,
+        channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+      });
+      console.log('   ⚠️ Could not fetch message history - continuing without context');
+    }
+  }
+
+  // Check if we should respond to this message (WITH conversation context)
+  const decision = await shouldRespond(message, messageHistory);
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
@@ -42,29 +64,6 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   try {
-    // Fetch recent message history for context (last 20 messages)
-    let messageHistory: Array<{ username: string; content: string }> = [];
-
-    if ('messages' in message.channel) {
-      try {
-        const messages = await message.channel.messages.fetch({ limit: 20, before: message.id });
-        messageHistory = messages
-          .reverse()
-          .map(msg => ({
-            username: msg.author.username,
-            content: msg.content,
-          }))
-          .filter(msg => msg.content.length > 0); // Filter out empty messages
-      } catch (error) {
-        logError(error, {
-          operation: 'Fetch message history',
-          username: message.author.username,
-          channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
-        });
-        console.log('   ⚠️ Could not fetch message history - continuing without context');
-      }
-    }
-
     // Check for file attachments
     let enrichedContent = message.content;
     if (message.attachments.size > 0) {
@@ -77,10 +76,9 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('   Attachment details added to message context');
     }
 
-    // Set message context for export, slidev, and vibe tools
+    // Set message context for export and slidev tools
     setExportMessageContext(message);
     setSlidevMessageContext(message);
-    setVibeMessageContext(message);
 
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
@@ -102,7 +100,6 @@ export async function handleMessage(message: Message): Promise<void> {
     // Clear message context after agent execution
     clearExportMessageContext();
     clearSlidevMessageContext();
-    clearVibeMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
     // If tools were used, send separate messages for each tool
