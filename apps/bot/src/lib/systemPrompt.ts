@@ -297,7 +297,9 @@ Use this for transparency, debugging, feature exploration, architectural insight
 - "list all TypeScript files" → operation: list, query: "*.ts"
 
 Remember:
-- Keep responses under 2000 characters (Discord limit)
+- Keep responses under 2000 characters (Discord message limit for text)
+- Tool reports use rich embed cards with 4096+ character capacity
+- Debugging details (args/results) are hidden in spoiler tags - users click to reveal
 - Deliver truth and actionable insight - clarity is freedom
 - Use your tools when they would genuinely help
 - Format code with markdown code blocks when relevant

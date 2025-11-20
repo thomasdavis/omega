@@ -9,6 +9,7 @@ import { setExportMessageContext, clearExportMessageContext } from '../agent/too
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
+import { messageAdapter, type ToolCallInfo } from '../utils/discordMessageAdapter.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -105,16 +106,26 @@ export async function handleMessage(message: Message): Promise<void> {
     clearUnsandboxMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
-    // If tools were used, send separate messages for each tool
-    // This handles many tool invocations better and avoids hitting Discord's 2000 char limit
+    // Using new message adapter with embeds + spoilers for clean, organized output
     if (result.toolCalls && result.toolCalls.length > 0 && 'send' in message.channel) {
       console.log(`🔧 Sending ${result.toolCalls.length} tool usage reports...`);
 
+      // Convert tool calls to ToolCallInfo format for adapter
+      const toolCallsInfo: ToolCallInfo[] = result.toolCalls.map((call: any, index: number) => ({
+        toolName: call.toolName,
+        args: call.args,
+        result: call.result,
+        success: call.result?.success !== false, // Assume success unless explicitly false
+        duration: call.duration,
+        jobId: call.result?.job_id || call.result?.jobId,
+        index: index + 1,
+        total: result.toolCalls.length
+      }));
+
+      // Special handling for renderChart tool - attach the image
       for (let i = 0; i < result.toolCalls.length; i++) {
         const toolCall = result.toolCalls[i];
-        const toolReport = formatSingleToolReport(toolCall, i + 1, result.toolCalls.length);
 
-        // Special handling for renderChart tool - attach the image
         if (toolCall.toolName === 'renderChart' && toolCall.result?.success && toolCall.result?.downloadUrl) {
           try {
             console.log(`📊 Downloading chart image from: ${toolCall.result.downloadUrl}`);
@@ -124,15 +135,20 @@ export async function handleMessage(message: Message): Promise<void> {
               const buffer = Buffer.from(arrayBuffer);
               const attachment = new AttachmentBuilder(buffer, { name: 'chart.png' });
 
-              // Send the tool report with the chart image attached
+              // Build embed for chart tool
+              const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+
+              // Send the embed with the chart image attached
               await message.channel.send({
-                content: toolReport,
+                embeds: [embed],
                 files: [attachment],
               });
               console.log(`✅ Sent chart image attachment (${buffer.length} bytes)`);
             } else {
               console.error(`❌ Failed to download chart image: HTTP ${imageResponse.status}`);
-              await message.channel.send({ content: toolReport });
+              // Send embed without attachment
+              const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+              await message.channel.send({ embeds: [embed] });
             }
           } catch (error) {
             logError(error, {
@@ -142,21 +158,14 @@ export async function handleMessage(message: Message): Promise<void> {
               channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
               additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
             });
-            // Fall back to sending just the text report
-            await message.channel.send({ content: toolReport });
+            // Fallback: send embed without attachment
+            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+            await message.channel.send({ embeds: [embed] });
           }
         } else {
-          // Regular tool report handling
-          // Check if the report exceeds Discord's limit (2000 chars)
-          if (toolReport.length > 2000) {
-            // Split into multiple messages if needed
-            const chunks = splitIntoChunks(toolReport, 1990); // Leave margin for safety
-            for (const chunk of chunks) {
-              await message.channel.send({ content: chunk });
-            }
-          } else {
-            await message.channel.send({ content: toolReport });
-          }
+          // Regular tool report - send single embed
+          const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+          await message.channel.send({ embeds: [embed] });
         }
 
         // Add a small delay between messages to avoid rate limiting
@@ -206,102 +215,4 @@ export async function handleMessage(message: Message): Promise<void> {
       });
     }
   }
-}
-
-/**
- * Suppress auto-embeds for URLs in Discord by wrapping them in <>
- */
-function suppressEmbeds(text: string): string {
-  // Match URLs and wrap them in <> to prevent auto-embed
-  return text.replace(/(https?:\/\/[^\s<>]+)/g, '<$1>');
-}
-
-/**
- * Split a string into chunks that fit Discord's message limit
- */
-function splitIntoChunks(text: string, maxLength: number): string[] {
-  const chunks: string[] = [];
-  let currentChunk = '';
-
-  const lines = text.split('\n');
-  for (const line of lines) {
-    if ((currentChunk + line + '\n').length > maxLength && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      currentChunk = '';
-    }
-    currentChunk += line + '\n';
-  }
-
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
-}
-
-/**
- * Format a single tool usage into a Discord message
- */
-function formatSingleToolReport(call: any, toolNumber: number, totalTools: number): string {
-  const lines: string[] = [];
-
-  // Header with tool number and total
-  lines.push(`**🔧 Tool ${toolNumber}/${totalTools}: ${call.toolName}**`);
-  lines.push(''); // Empty line for spacing
-
-  // Arguments in code block if present
-  if (call.args && Object.keys(call.args).length > 0) {
-    lines.push('**Arguments:**');
-    lines.push('```json');
-    lines.push(JSON.stringify(call.args, null, 2));
-    lines.push('```');
-  }
-
-  // Result in code block if present
-  if (call.result) {
-    lines.push('**Result:**');
-
-    // Format result based on type
-    if (typeof call.result === 'string') {
-      // For string results, check if it looks like JSON
-      try {
-        const parsed = JSON.parse(call.result);
-        lines.push('```json');
-        lines.push(JSON.stringify(parsed, null, 2));
-        lines.push('```');
-      } catch {
-        // Not JSON, display as regular text (with URL suppression)
-        const suppressedResult = suppressEmbeds(call.result);
-        if (suppressedResult.length > 500) {
-          lines.push('```');
-          lines.push(suppressedResult.slice(0, 500) + '...\n(truncated)');
-          lines.push('```');
-        } else {
-          lines.push('```');
-          lines.push(suppressedResult);
-          lines.push('```');
-        }
-      }
-    } else if (typeof call.result === 'object') {
-      // For object results, format as JSON
-      const jsonStr = JSON.stringify(call.result, null, 2);
-      if (jsonStr.length > 1000) {
-        lines.push('```json');
-        lines.push(jsonStr.slice(0, 1000) + '\n...\n(truncated)');
-        lines.push('```');
-      } else {
-        lines.push('```json');
-        // Suppress embeds in URLs within JSON
-        lines.push(suppressEmbeds(jsonStr));
-        lines.push('```');
-      }
-    } else {
-      // For other types (number, boolean, etc.)
-      lines.push('```');
-      lines.push(String(call.result));
-      lines.push('```');
-    }
-  }
-
-  return lines.join('\n');
 }
