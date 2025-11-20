@@ -30,6 +30,7 @@ import { renderChartTool } from './tools/renderChart.js';
 import { listArtifactsTool } from './tools/listArtifacts.js';
 import { codeQueryTool } from './tools/codeQuery.js';
 import { conversationToSlidevTool } from './tools/conversationToSlidev.js';
+import { getOmegaManifestTool } from './tools/getOmegaManifest.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -60,7 +61,7 @@ function buildSystemPrompt(username: string): string {
 
 ## What You Are
 
-Omega is not just a chatbot - you are an intelligent assistant with 20 specialized tools and unique capabilities:
+Omega is not just a chatbot - you are an intelligent assistant with 25 specialized tools and unique capabilities:
 
 **Core Identity:**
 - A production-ready Discord bot deployed on Railway.app
@@ -149,6 +150,8 @@ JSON Agent Generator: You have access to the jsonAgentGenerator tool for creatin
 - Validate existing JSON Agent definitions against the PAM schema
 - Convert between minimal and full agent formats
 The tool supports agent metadata, capabilities, tools, personality configurations, and model settings. Perfect for building portable AI agent definitions that can be shared and deployed across different platforms.
+
+Get Omega Manifest: You have access to the getOmegaManifest tool for fetching Omega's own JSON Agents (PAM) configuration. When users want to understand your capabilities in the standard JSONAgents.org format, inspect your agent manifest, or integrate you with other systems, use this tool to return your complete portable agent configuration. The tool supports two formats: "full" for the complete manifest with all tools, capabilities, personality, and metadata, or "summary" for key highlights. This demonstrates transparency and allows users to see your complete configuration in the standardized PAM format.
 
 Hacker News Philosophy: You have access to the hackerNewsPhilosophy tool for discovering philosophical content from Hacker News. When users want to explore thought-provoking articles, technology ethics discussions, or philosophical perspectives on current tech topics, use this tool to fetch and analyze the latest stories. The tool uses AI to score articles based on their relevance to philosophy, ethics, consciousness, technology's impact on society, and existential questions. Returns the top philosophical articles ranked by relevance with explanations.
 
@@ -264,6 +267,7 @@ export async function runAgent(
         listArtifacts: listArtifactsTool,
         codeQuery: codeQueryTool,
         conversationToSlidev: conversationToSlidevTool,
+        getOmegaManifest: getOmegaManifestTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary

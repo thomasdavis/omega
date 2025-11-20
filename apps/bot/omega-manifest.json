@@ -1,0 +1,545 @@
+{
+  "version": "1.0",
+  "agent": {
+    "name": "Omega",
+    "description": "A sophisticated Discord AI bot with 25 specialized tools for code execution, research, visualization, file handling, and creative content generation",
+    "version": "1.0.0",
+    "author": "Thomas Davis",
+    "license": "MIT",
+    "homepage": "https://github.com/thomasdavis/omega"
+  },
+  "capabilities": [
+    {
+      "name": "code_execution",
+      "description": "Execute code in 11 programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash) via Unsandbox",
+      "enabled": true
+    },
+    {
+      "name": "web_research",
+      "description": "Search the web, fetch web pages (with robots.txt compliance), and conduct comprehensive research",
+      "enabled": true
+    },
+    {
+      "name": "data_visualization",
+      "description": "Create ASCII graphs, professional chart images (bar, line, pie, scatter, area), and interactive visualizations",
+      "enabled": true
+    },
+    {
+      "name": "artifact_creation",
+      "description": "Generate interactive HTML/SVG/Markdown content with shareable preview links hosted on Railway",
+      "enabled": true
+    },
+    {
+      "name": "file_handling",
+      "description": "Upload, download, and permanently host Discord attachments with shareable URLs",
+      "enabled": true
+    },
+    {
+      "name": "conversation_export",
+      "description": "Export Discord conversation history as Markdown or convert to Slidev presentations",
+      "enabled": true
+    },
+    {
+      "name": "github_integration",
+      "description": "Create GitHub issues with full conversation context and code snippets",
+      "enabled": true
+    },
+    {
+      "name": "json_agent_tools",
+      "description": "Generate, validate, and convert JSON Agents based on PAM specification",
+      "enabled": true
+    },
+    {
+      "name": "philosophical_analysis",
+      "description": "Discover and analyze philosophical content from Hacker News",
+      "enabled": true
+    },
+    {
+      "name": "mood_support",
+      "description": "Detect low-energy language and provide personalized uplifting messages",
+      "enabled": true
+    },
+    {
+      "name": "entertainment",
+      "description": "Tell jokes across various categories (tech, classic, puns, dad, programming)",
+      "enabled": true
+    },
+    {
+      "name": "html_generation",
+      "description": "Create complete, functional HTML pages from natural language descriptions",
+      "enabled": true
+    },
+    {
+      "name": "recipe_generation",
+      "description": "Generate detailed recipes with dietary restrictions, cuisine types, and difficulty levels",
+      "enabled": true
+    },
+    {
+      "name": "decision_framework",
+      "description": "Apply OODA Loop (Observe, Orient, Decide, Act) decision-making framework",
+      "enabled": true
+    },
+    {
+      "name": "codebase_introspection",
+      "description": "Search, read, analyze, and understand own codebase with AI-powered insights",
+      "enabled": true
+    }
+  ],
+  "tools": [
+    {
+      "name": "search",
+      "description": "Search the web using DuckDuckGo",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "description": "Search query",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "calculator",
+      "description": "Perform mathematical calculations",
+      "parameters": [
+        {
+          "name": "expression",
+          "type": "string",
+          "description": "Mathematical expression to evaluate",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "weather",
+      "description": "Get current weather for a location",
+      "parameters": [
+        {
+          "name": "location",
+          "type": "string",
+          "description": "City name or location",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "githubCreateIssue",
+      "description": "Create a GitHub issue with conversation context",
+      "parameters": [
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Issue title",
+          "required": true
+        },
+        {
+          "name": "body",
+          "type": "string",
+          "description": "Issue body",
+          "required": true
+        },
+        {
+          "name": "conversationContext",
+          "type": "array",
+          "description": "Recent conversation messages for context",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "webFetch",
+      "description": "Fetch web page content with robots.txt compliance",
+      "parameters": [
+        {
+          "name": "url",
+          "type": "string",
+          "description": "URL to fetch",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "unsandbox",
+      "description": "Execute code in various programming languages",
+      "parameters": [
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Code to execute",
+          "required": true
+        },
+        {
+          "name": "language",
+          "type": "string",
+          "description": "Programming language (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "researchEssay",
+      "description": "Conduct research and generate essays",
+      "parameters": [
+        {
+          "name": "topic",
+          "type": "string",
+          "description": "Research topic",
+          "required": true
+        },
+        {
+          "name": "length",
+          "type": "string",
+          "description": "Essay length (short, medium, long)",
+          "required": false
+        },
+        {
+          "name": "style",
+          "type": "string",
+          "description": "Writing style (academic, casual, technical, persuasive)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "asciiGraph",
+      "description": "Generate ASCII art graphs for data visualization",
+      "parameters": [
+        {
+          "name": "data",
+          "type": "array",
+          "description": "Data points to visualize",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Graph type (bar, line)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "renderChart",
+      "description": "Generate professional chart images (PNG)",
+      "parameters": [
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Chart type (bar, line, pie, scatter, area)",
+          "required": true
+        },
+        {
+          "name": "data",
+          "type": "object",
+          "description": "Chart data with labels and datasets",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Chart title",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "artifact",
+      "description": "Create interactive web content with shareable links",
+      "parameters": [
+        {
+          "name": "content",
+          "type": "string",
+          "description": "HTML/SVG/Markdown content",
+          "required": true
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Content type (html, svg, markdown)",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Artifact title",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "listArtifacts",
+      "description": "List all created artifacts",
+      "parameters": []
+    },
+    {
+      "name": "whoami",
+      "description": "Provide information about Omega's capabilities",
+      "parameters": [
+        {
+          "name": "detailed",
+          "type": "boolean",
+          "description": "Whether to provide detailed information",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "linuxAdvantages",
+      "description": "Educate about Linux and open-source software benefits",
+      "parameters": [
+        {
+          "name": "topic",
+          "type": "string",
+          "description": "Specific topic to focus on",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "fileUpload",
+      "description": "Save files to public folder with shareable links",
+      "parameters": [
+        {
+          "name": "filename",
+          "type": "string",
+          "description": "File name",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "description": "Base64-encoded file content",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "exportConversation",
+      "description": "Export Discord conversation history as Markdown",
+      "parameters": [
+        {
+          "name": "messageCount",
+          "type": "number",
+          "description": "Number of messages to export",
+          "required": false
+        },
+        {
+          "name": "filterUser",
+          "type": "string",
+          "description": "Filter by specific user",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "conversationToSlidev",
+      "description": "Convert Discord conversation to Slidev presentation",
+      "parameters": [
+        {
+          "name": "messageCount",
+          "type": "number",
+          "description": "Number of messages to convert",
+          "required": false
+        },
+        {
+          "name": "theme",
+          "type": "string",
+          "description": "Slidev theme (default, seriph, apple-basic, shibainu)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "jsonAgentGenerator",
+      "description": "Generate, validate, and convert JSON Agents",
+      "parameters": [
+        {
+          "name": "operation",
+          "type": "string",
+          "description": "Operation (generate, validate, convert)",
+          "required": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "description": "Agent name (for generate)",
+          "required": false
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "description": "Agent description (for generate)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "hackerNewsPhilosophy",
+      "description": "Discover philosophical content from Hacker News",
+      "parameters": [
+        {
+          "name": "limit",
+          "type": "number",
+          "description": "Number of articles to analyze",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "moodUplifter",
+      "description": "Detect low energy and provide uplifting messages",
+      "parameters": [
+        {
+          "name": "message",
+          "type": "string",
+          "description": "User message to analyze",
+          "required": true
+        },
+        {
+          "name": "autoDetect",
+          "type": "boolean",
+          "description": "Auto-detect low energy",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "tellJoke",
+      "description": "Tell jokes from various categories",
+      "parameters": [
+        {
+          "name": "category",
+          "type": "string",
+          "description": "Joke category (tech, classic, puns, dad, programming, oneliners)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "generateHtmlPage",
+      "description": "Create complete HTML pages from descriptions",
+      "parameters": [
+        {
+          "name": "description",
+          "type": "string",
+          "description": "Natural language description of the page",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "description": "Page title",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "recipeGenerator",
+      "description": "Generate detailed cooking recipes",
+      "parameters": [
+        {
+          "name": "query",
+          "type": "string",
+          "description": "Recipe query or ingredients",
+          "required": true
+        },
+        {
+          "name": "cuisine",
+          "type": "string",
+          "description": "Cuisine type",
+          "required": false
+        },
+        {
+          "name": "dietary",
+          "type": "array",
+          "description": "Dietary restrictions",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "ooda",
+      "description": "Apply OODA Loop decision-making framework",
+      "parameters": [
+        {
+          "name": "situation",
+          "type": "string",
+          "description": "Situation or problem to analyze",
+          "required": true
+        },
+        {
+          "name": "phase",
+          "type": "string",
+          "description": "OODA phase to focus on (observe, orient, decide, act)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "codeQuery",
+      "description": "Introspect own codebase with AI-powered analysis",
+      "parameters": [
+        {
+          "name": "operation",
+          "type": "string",
+          "description": "Operation (search, read, analyze, list)",
+          "required": true
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "description": "Search query or file path",
+          "required": true
+        },
+        {
+          "name": "analysisType",
+          "type": "string",
+          "description": "Analysis type (summarize, explain, architecture, dependencies)",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "getOmegaManifest",
+      "description": "Fetch Omega's JSON Agents (PAM) manifest configuration",
+      "parameters": []
+    }
+  ],
+  "personality": {
+    "tone": "witty and intelligent",
+    "style": "Balances clever humor with genuine insight. Uses wordplay, puns, and subtle humor throughout responses. Timing is impeccable - well-placed quips illuminate truth. Thoughtful, well-constructed jokes often reveal deeper insights.",
+    "traits": [
+      "witty",
+      "intelligent",
+      "playful",
+      "purposeful",
+      "conversational",
+      "self-aware",
+      "truthful",
+      "philosophical",
+      "helpful",
+      "transparent"
+    ]
+  },
+  "configuration": {
+    "model": "gpt-4.1-mini",
+    "temperature": 0.7,
+    "maxTokens": 2000,
+    "systemPrompt": "You are Omega, a sophisticated Discord AI bot with 25 specialized tools. You balance wit and intelligence, using clever humor to enhance communication while delivering accurate, actionable insights. Think: Oscar Wilde meets Douglas Adams meets a really smart friend at a coffee shop who always has the perfect comeback."
+  },
+  "metadata": {
+    "platform": "Discord",
+    "deployment": "Railway.app",
+    "architecture": "Gateway API (WebSocket)",
+    "storage": "Persistent volumes at /data",
+    "framework": "AI SDK v6 agent protocol",
+    "maxReasoningSteps": 10,
+    "conversationHistory": true,
+    "historyLength": 20,
+    "monorepo": "Turborepo + pnpm workspaces",
+    "cicd": "GitHub Actions with Claude Code",
+    "artifactServer": "Express on port 3001",
+    "robotsCompliance": true,
+    "fileUploadsPath": "/data/uploads"
+  }
+}
