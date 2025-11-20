@@ -70,12 +70,19 @@ function getLanguageEmoji(language: string): string {
  * Send a Discord message if context is available
  */
 async function sendDiscordUpdate(content: string): Promise<void> {
+  console.log(`[sendDiscordUpdate] Attempting to send: "${content}"`);
+  console.log(`[sendDiscordUpdate] Context exists: ${!!currentMessageContext}`);
+  console.log(`[sendDiscordUpdate] Channel has send: ${currentMessageContext && 'send' in currentMessageContext.channel}`);
+
   if (currentMessageContext && 'send' in currentMessageContext.channel) {
     try {
       await currentMessageContext.channel.send({ content });
+      console.log(`[sendDiscordUpdate] ✅ Message sent successfully`);
     } catch (error) {
-      console.error('Failed to send Discord update:', error);
+      console.error('[sendDiscordUpdate] ❌ Failed to send Discord update:', error);
     }
+  } else {
+    console.log(`[sendDiscordUpdate] ⚠️ Skipping - no valid message context`);
   }
 }
 
@@ -87,7 +94,7 @@ export const unsandboxTool = tool({
   inputSchema: z.object({
     language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)'),
     code: z.string().describe('The code to execute'),
-    ttl: z.number().int().min(1).max(30).optional().default(5).describe('Time to live (TTL) in seconds for the execution (default: 5s, max: 30s)'),
+    ttl: z.number().int().min(1).max(30).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 30s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
   }),
@@ -135,7 +142,7 @@ export const unsandboxTool = tool({
         body: JSON.stringify({
           language: runtimeLanguage,
           code,
-          ttl: ttl || 5,
+          ttl: ttl || 30,
           env,
           stdin,
         }),
@@ -154,7 +161,7 @@ export const unsandboxTool = tool({
 
       // Poll for completion with progress updates
       const maxAttempts = 60; // 60 attempts
-      const pollInterval = 2000; // 2 seconds
+      const pollInterval = 5000; // 5 seconds
       const progressInterval = 10000; // Send progress update every 10 seconds
       let lastProgressUpdate = Date.now();
       let lastStatus = submitData.status;
@@ -193,13 +200,10 @@ export const unsandboxTool = tool({
           const success = statusResponse.status === 'completed' && (statusResponse.result?.success ?? false);
           return {
             success,
-            language,
-            output: statusResponse.result?.stdout || '',
-            error: statusResponse.result?.stderr || statusResponse.result?.error || '',
-            exitCode: statusResponse.result?.exit_code,
-            executionTime: statusResponse.executionTime,
+            job_id: statusResponse.job_id,
             status: statusResponse.status,
-            jobId: statusResponse.job_id,
+            result: statusResponse.result, // Include full result object with all fields
+            executionTime: statusResponse.executionTime,
             artifacts: statusResponse.artifacts || [],
           };
         }
@@ -367,9 +371,7 @@ export const unsandboxStatusTool = tool({
 
       // Add results if completed
       if (isTerminal && statusResponse.result) {
-        response.output = statusResponse.result.stdout || '';
-        response.error = statusResponse.result.stderr || statusResponse.result.error || '';
-        response.exitCode = statusResponse.result.exit_code;
+        response.result = statusResponse.result; // Include full result object
         response.artifacts = statusResponse.artifacts || [];
       }
 
