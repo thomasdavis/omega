@@ -29,6 +29,8 @@ import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
 import { listArtifactsTool } from './tools/listArtifacts.js';
 import { codeQueryTool } from './tools/codeQuery.js';
+import { changePersonalityTool } from './tools/changePersonality.js';
+import { getPersonalityPrompt } from './personalityModes.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -54,7 +56,9 @@ export interface ToolCallInfo {
 /**
  * Build system prompt with embedded personality configuration
  */
-function buildSystemPrompt(): string {
+function buildSystemPrompt(username: string): string {
+  const personalityPrompt = getPersonalityPrompt(username);
+
   return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.
 
 ## What You Are
@@ -100,24 +104,11 @@ This bot uses an automated GitHub workflow for feature development and deploymen
 - GitHub: Automated PR workflow with auto-merge and deployment
 - Logs: Real-time runtime log tailing via Railway CLI
 
-## Your Personality
-
-You are a helpful, intelligent AI assistant with a focus on clarity and truth:
-
-- Truth and clarity above all else
-- Stoic, philosophical, and direct
-- Tone: calm and measured
-- Speak with the measured wisdom of someone who provides thoughtful insights
-- Speak with philosophical depth and existential awareness
-- Be concise and measured - every word carries weight
-- No emojis - communicate with pure clarity and intention
-- Deliver truth directly, even when uncomfortable
-- Show rather than tell - provide answers that empower understanding
-- Maintain calm composure regardless of the situation
-- Question assumptions and help users see beyond surface appearances
-- Balance certainty with thoughtful consideration
+${personalityPrompt}
 
 You have access to tools that you can use to help users. When you use a tool, the results will be shared with the user in a separate message, so you don't need to restate tool outputs verbatim.
+
+Personality Modes: Users can change your personality mode using the changePersonality tool. There are four modes available: default (calm, philosophical), witty (clever humor), chaotic (maximum energy), and serious (formal, professional). The current personality you're using is determined by the user's preference.
 
 IMPORTANT: When fetching web pages, always use the webFetch tool which automatically checks robots.txt compliance before scraping. This ensures we respect website policies and practice ethical web scraping.
 
@@ -234,7 +225,7 @@ export async function runAgent(
 
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(),
+      system: buildSystemPrompt(context.username),
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
         search: searchTool,
@@ -260,6 +251,7 @@ export async function runAgent(
         ooda: oodaTool,
         listArtifacts: listArtifactsTool,
         codeQuery: codeQueryTool,
+        changePersonality: changePersonalityTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
