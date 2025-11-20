@@ -1,0 +1,215 @@
+/**
+ * Create Blog Post Tool - Create TTS-enabled blog posts in the correct folder format
+ * Allows users to create structured blog posts with YAML frontmatter including TTS metadata
+ */
+
+import { tool } from 'ai';
+import { z } from 'zod';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+// Blog content directory - at the repository root
+const BLOG_DIR = join(process.cwd(), 'content/blog');
+
+// Available TTS voices (examples - expand as needed)
+const TTS_VOICES = [
+  'bm_fable',
+  'bm_alloy',
+  'bm_echo',
+  'bm_onyx',
+  'bm_nova',
+  'bm_shimmer',
+] as const;
+
+interface BlogPostMetadata {
+  title: string;
+  date: string;
+  tts: boolean;
+  ttsVoice: string;
+}
+
+/**
+ * Generate a URL-friendly slug from a title
+ */
+function generateSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
+/**
+ * Format date as YYYY-MM-DD
+ */
+function formatDate(date?: string): string {
+  if (date) {
+    // Validate and return provided date
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (dateRegex.test(date)) {
+      return date;
+    }
+    // Try to parse and format
+    const parsed = new Date(date);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+  }
+  // Default to today
+  return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Create YAML frontmatter
+ */
+function createFrontmatter(metadata: BlogPostMetadata): string {
+  return `---
+title: "${metadata.title}"
+date: "${metadata.date}"
+tts: ${metadata.tts}
+ttsVoice: "${metadata.ttsVoice}"
+---`;
+}
+
+/**
+ * Save blog post to the blog directory
+ */
+function saveBlogPost(
+  title: string,
+  content: string,
+  date: string,
+  tts: boolean,
+  ttsVoice: string
+): { filename: string; filepath: string } {
+  // Ensure blog directory exists
+  if (!existsSync(BLOG_DIR)) {
+    mkdirSync(BLOG_DIR, { recursive: true });
+  }
+
+  // Generate filename from title and date
+  const slug = generateSlug(title);
+  const formattedDate = formatDate(date);
+  const filename = `${formattedDate}-${slug}.md`;
+  const filepath = join(BLOG_DIR, filename);
+
+  // Create frontmatter
+  const metadata: BlogPostMetadata = {
+    title,
+    date: formattedDate,
+    tts,
+    ttsVoice,
+  };
+  const frontmatter = createFrontmatter(metadata);
+
+  // Combine frontmatter and content
+  const fullContent = `${frontmatter}
+
+${content}`;
+
+  // Write file
+  writeFileSync(filepath, fullContent, 'utf-8');
+
+  return { filename, filepath };
+}
+
+/**
+ * Validate markdown content
+ */
+function validateMarkdownContent(content: string): { valid: boolean; reason?: string } {
+  // Basic validation
+  if (!content || content.trim().length === 0) {
+    return {
+      valid: false,
+      reason: 'Content cannot be empty',
+    };
+  }
+
+  // Check for reasonable length
+  if (content.length < 10) {
+    return {
+      valid: false,
+      reason: 'Content is too short (minimum 10 characters)',
+    };
+  }
+
+  return { valid: true };
+}
+
+export const createBlogPostTool = tool({
+  description: `Create a TTS-enabled blog post in the correct blog folder format.
+
+  This tool creates structured blog posts with YAML frontmatter that includes:
+  - title: The blog post title
+  - date: Publication date (YYYY-MM-DD format)
+  - tts: Enable/disable text-to-speech (true/false)
+  - ttsVoice: Voice to use for TTS playback
+
+  The blog post is automatically saved to the content/blog directory with a filename
+  generated from the date and title (e.g., 2025-11-20-my-blog-post.md).
+
+  The blog renderer will automatically pick up new posts from this directory.
+
+  Content should be in Markdown format and can include:
+  - Headings (# ## ###)
+  - Images with alt text ![alt text](url)
+  - Image captions in italics (*caption text*)
+  - Lists, links, code blocks, etc.
+
+  Available TTS voices: ${TTS_VOICES.join(', ')}
+
+  Example usage:
+  - "Create a blog post about TypeScript best practices"
+  - "Write a TTS-enabled post about web accessibility"
+  - "Generate a blog post with voice bm_fable about React hooks"`,
+
+  inputSchema: z.object({
+    title: z.string().describe('The title of the blog post'),
+    content: z.string().describe('The markdown content of the blog post (without frontmatter - that will be added automatically)'),
+    date: z.string().optional().describe('Publication date in YYYY-MM-DD format (defaults to today)'),
+    tts: z.boolean().default(true).describe('Enable text-to-speech for this post (default: true)'),
+    ttsVoice: z.enum(TTS_VOICES).default('bm_fable').describe('Voice to use for TTS playback (default: bm_fable)'),
+  }),
+
+  execute: async ({ title, content, date, tts, ttsVoice }) => {
+    try {
+      console.log('📝 Creating blog post:', title);
+
+      // Validate content
+      const validation = validateMarkdownContent(content);
+      if (!validation.valid) {
+        console.error('❌ Content validation failed:', validation.reason);
+        return {
+          success: false,
+          error: `Content validation failed: ${validation.reason}`,
+        };
+      }
+
+      // Save the blog post
+      const { filename, filepath } = saveBlogPost(
+        title,
+        content,
+        date || new Date().toISOString().split('T')[0],
+        tts,
+        ttsVoice
+      );
+
+      console.log('✅ Blog post created:', filename);
+
+      return {
+        success: true,
+        title,
+        filename,
+        filepath,
+        tts,
+        ttsVoice,
+        date: formatDate(date),
+        message: `✨ Blog post created successfully!\n\nFile: ${filename}\nPath: ${filepath}\nTTS: ${tts ? 'enabled' : 'disabled'}\nVoice: ${ttsVoice}\n\nThe blog renderer will automatically pick up this new post.`,
+      };
+    } catch (error) {
+      console.error('Error creating blog post:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create blog post',
+      };
+    }
+  },
+});

@@ -32,6 +32,7 @@ import { codeQueryTool } from './tools/codeQuery.js';
 import { conversationToSlidevTool } from './tools/conversationToSlidev.js';
 import { getOmegaManifestTool } from './tools/getOmegaManifest.js';
 import { buildSlidevPresentationTool } from './tools/buildSlidevPresentation.js';
+import { createBlogPostTool } from './tools/createBlogPost.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -121,6 +122,7 @@ export async function runAgent(
         conversationToSlidev: conversationToSlidevTool,
         getOmegaManifest: getOmegaManifestTool,
         buildSlidevPresentation: buildSlidevPresentationTool,
+        createBlogPost: createBlogPostTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
