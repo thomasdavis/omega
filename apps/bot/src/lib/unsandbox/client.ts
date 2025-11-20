@@ -230,8 +230,9 @@ export class UnsandboxClient {
    *   code: 'print("Hello, World!")',
    *   ttl: 5
    * });
-   * console.log(result.stdout); // "Hello, World!\n"
-   * console.log(result.exitCode); // 0
+   * console.log(result.result?.stdout); // "Hello, World!\n"
+   * console.log(result.result?.exit_code); // 0
+   * console.log(result.result?.success); // true
    * ```
    */
   async executeCode(request: ExecuteCodeRequest): Promise<JobStatusResponse> {
@@ -258,29 +259,30 @@ export class UnsandboxClient {
     });
 
     console.log(`\n✅ [${new Date().toISOString()}] Job submitted successfully`);
-    console.log(`   Job ID: ${executeResponse.jobId}`);
+    console.log(`   Job ID: ${executeResponse.job_id}`);
     console.log(`   Initial Status: ${executeResponse.status}`);
 
     // Step 2: Poll for job completion
     console.log(`\n🔄 [${new Date().toISOString()}] Polling for job completion...`);
-    const result = await this.pollJobStatus(executeResponse.jobId);
+    const result = await this.pollJobStatus(executeResponse.job_id);
 
     console.log(`\n✅ [${new Date().toISOString()}] Code Execution Completed`);
-    console.log(`   Job ID: ${result.jobId}`);
+    console.log(`   Job ID: ${result.job_id}`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Exit Code: ${result.exitCode ?? 'N/A'}`);
+    console.log(`   Exit Code: ${result.result?.exit_code ?? 'N/A'}`);
+    console.log(`   Success: ${result.result?.success ?? 'N/A'}`);
     console.log(`   Execution Time: ${result.executionTime ?? 'N/A'}ms`);
-    console.log(`   Stdout Length: ${result.stdout?.length ?? 0} characters`);
-    console.log(`   Stderr Length: ${result.stderr?.length ?? 0} characters`);
+    console.log(`   Stdout Length: ${result.result?.stdout?.length ?? 0} characters`);
+    console.log(`   Stderr Length: ${result.result?.stderr?.length ?? 0} characters`);
     console.log(`   Artifacts: ${result.artifacts?.length ?? 0}`);
-    if (result.stdout) {
-      console.log(`   Stdout Preview: ${result.stdout.substring(0, 200)}${result.stdout.length > 200 ? '...' : ''}`);
+    if (result.result?.stdout) {
+      console.log(`   Stdout Preview: ${result.result.stdout.substring(0, 200)}${result.result.stdout.length > 200 ? '...' : ''}`);
     }
-    if (result.stderr) {
-      console.log(`   Stderr: ${result.stderr}`);
+    if (result.result?.stderr) {
+      console.log(`   Stderr: ${result.result.stderr}`);
     }
-    if (result.error) {
-      console.log(`   Error: ${result.error}`);
+    if (result.result?.error) {
+      console.log(`   Error: ${result.result.error}`);
     }
 
     return result;
@@ -342,11 +344,21 @@ export class UnsandboxClient {
    *
    * @param jobId - The job ID
    * @returns Current job status
+   * @throws UnsandboxApiError with status 404 if job not found (already completed or never existed)
    */
   private async getJobStatus(jobId: string): Promise<JobStatusResponse> {
-    return await this.request<JobStatusResponse>(`/jobs/${jobId}`, {
-      method: 'GET',
-    });
+    try {
+      return await this.request<JobStatusResponse>(`/jobs/${jobId}`, {
+        method: 'GET',
+      });
+    } catch (error) {
+      // Handle 404 errors for completed/expired jobs
+      if (error instanceof UnsandboxApiError && error.status === 404) {
+        console.log(`   ⚠️ Job not found (already completed or never existed)`);
+        throw error;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -358,9 +370,10 @@ export class UnsandboxClient {
    *
    * @example
    * ```typescript
-   * const status = await client.getExecutionStatus({ jobId: 'job_123' });
+   * const status = await client.getExecutionStatus({ job_id: 'job_123' });
    * if (status.status === 'completed') {
-   *   console.log(status.stdout);
+   *   console.log(status.result?.stdout);
+   *   console.log(status.result?.success);
    * }
    * ```
    */
@@ -368,13 +381,14 @@ export class UnsandboxClient {
     request: GetExecutionStatusRequest
   ): Promise<GetExecutionStatusResponse> {
     console.log(`\n🔍 [${new Date().toISOString()}] Getting Execution Status`);
-    console.log(`   Job ID: ${request.jobId}`);
+    console.log(`   Job ID: ${request.job_id}`);
 
-    const result = await this.getJobStatus(request.jobId);
+    const result = await this.getJobStatus(request.job_id);
 
     console.log(`\n📊 [${new Date().toISOString()}] Execution Status Retrieved`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Exit Code: ${result.exitCode ?? 'N/A'}`);
+    console.log(`   Success: ${result.result?.success ?? 'N/A'}`);
+    console.log(`   Exit Code: ${result.result?.exit_code ?? 'N/A'}`);
     console.log(`   Execution Time: ${result.executionTime ?? 'N/A'}ms`);
     console.log(`   Started At: ${result.startedAt ?? 'N/A'}`);
     console.log(`   Completed At: ${result.completedAt ?? 'N/A'}`);
@@ -440,7 +454,7 @@ export class UnsandboxClient {
 
     console.log(`\n✋ [${new Date().toISOString()}] Execution Cancelled`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Job ID: ${result.jobId}`);
+    console.log(`   Job ID: ${result.job_id}`);
 
     return result;
   }
