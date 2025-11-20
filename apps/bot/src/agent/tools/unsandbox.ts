@@ -137,7 +137,6 @@ Provide a concise 2-3 sentence summary that:
 3. Any notable outputs or errors
 
 Keep it technical but clear for debugging purposes.`,
-          temperature: 0.3,
         });
 
         const aiSummary = summaryResult.text.trim();
@@ -187,7 +186,6 @@ Provide a concise 2-3 sentence explanation of:
 3. Any important context about the error
 
 Keep it technical and actionable for debugging.`,
-            temperature: 0.3,
           });
 
           const aiSummary = errorSummaryResult.text.trim();
@@ -237,7 +235,6 @@ Provide a concise 2-3 sentence explanation of:
 3. Any important debugging tips
 
 Keep it technical and actionable.`,
-          temperature: 0.3,
         });
 
         const aiSummary = errorSummaryResult.text.trim();
