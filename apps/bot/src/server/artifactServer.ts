@@ -9,6 +9,8 @@ import { join } from 'path';
 import { getArtifactsDir, getUploadsDir, getPublicDir } from '../utils/storage.js';
 import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js';
 import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
+import { queryMessages, getMessageCount } from '../database/messageService.js';
+import { getRecentQueries, getQueryCount } from '../database/queryService.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -358,6 +360,84 @@ function createApp(): express.Application {
     }
   });
 
+  // Messages browser
+  app.get('/messages', async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = 50;
+      const offset = (page - 1) * limit;
+      const searchText = req.query.search as string;
+      const userId = req.query.userId as string;
+      const channelId = req.query.channelId as string;
+      const senderType = req.query.senderType as string;
+
+      const messages = await queryMessages({
+        limit,
+        offset,
+        searchText,
+        userId,
+        channelId,
+        senderType: senderType as any,
+      });
+
+      const totalCount = await getMessageCount({
+        userId,
+        channelId,
+        senderType: senderType as any,
+      });
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      const html = generateMessagesHTML(messages, {
+        page,
+        totalPages,
+        totalCount,
+        searchText,
+        userId,
+        channelId,
+        senderType,
+      });
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error loading messages:', error);
+      res.status(500).send('Error loading messages');
+    }
+  });
+
+  // Queries browser
+  app.get('/queries', async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = 50;
+      const offset = (page - 1) * limit;
+      const userId = req.query.userId as string;
+
+      const queries = await getRecentQueries({
+        userId,
+        limit,
+        offset,
+      });
+
+      const totalCount = await getQueryCount({ userId });
+      const totalPages = Math.ceil(totalCount / limit);
+
+      const html = generateQueriesHTML(queries, {
+        page,
+        totalPages,
+        totalCount,
+        userId,
+      });
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error loading queries:', error);
+      res.status(500).send('Error loading queries');
+    }
+  });
+
   // Serve static TTS player assets
   app.get('/tts-player.js', (req: Request, res: Response) => {
     try {
@@ -588,7 +668,9 @@ function generateGalleryHTML(artifacts: any[]): string {
     <h1>🎨 Artifact Gallery</h1>
     <div class="nav-links">
       <a href="/blog">📝 Blog →</a>
-      <a href="/uploads">📁 Uploads Gallery →</a>
+      <a href="/uploads">📁 Uploads →</a>
+      <a href="/messages">💬 Messages →</a>
+      <a href="/queries">🔍 Queries →</a>
     </div>
     <div class="stats">
       <strong>${artifacts.length}</strong> artifact${artifacts.length !== 1 ? 's' : ''} created
@@ -886,6 +968,475 @@ function escapeHtml(text: string): string {
     "'": '&#039;',
   };
   return text.replace(/[&<>"']/g, char => map[char]);
+}
+
+/**
+ * Generate HTML for the messages browser
+ */
+function generateMessagesHTML(messages: any[], options: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  searchText?: string;
+  userId?: string;
+  channelId?: string;
+  senderType?: string;
+}): string {
+  const messagesList = messages.length > 0
+    ? messages.map(msg => {
+        const timestamp = new Date(msg.timestamp).toLocaleString();
+        const senderBadge = msg.sender_type === 'human' ? '👤' : msg.sender_type === 'ai' ? '🤖' : '🔧';
+
+        let contentPreview = escapeHtml(msg.message_content);
+        if (contentPreview.length > 200) {
+          contentPreview = contentPreview.substring(0, 200) + '...';
+        }
+
+        return `
+        <div class="message-card ${msg.sender_type}">
+          <div class="message-header">
+            <span class="sender-badge">${senderBadge} ${msg.sender_type}</span>
+            <span class="username">${escapeHtml(msg.username || 'Unknown')}</span>
+            <span class="timestamp">${timestamp}</span>
+          </div>
+          ${msg.tool_name ? `<div class="tool-name">Tool: ${escapeHtml(msg.tool_name)}</div>` : ''}
+          <div class="message-content">${contentPreview}</div>
+          <div class="message-meta">
+            ${msg.channel_name ? `<span>📍 ${escapeHtml(msg.channel_name)}</span>` : ''}
+            ${msg.user_id ? `<span>🆔 ${escapeHtml(msg.user_id)}</span>` : ''}
+          </div>
+        </div>
+      `;
+      }).join('\n')
+    : '<p class="empty">No messages found.</p>';
+
+  const pagination = options.totalPages > 1
+    ? `
+      <div class="pagination">
+        ${options.page > 1 ? `<a href="?page=${options.page - 1}${options.searchText ? '&search=' + encodeURIComponent(options.searchText) : ''}${options.userId ? '&userId=' + encodeURIComponent(options.userId) : ''}">← Previous</a>` : ''}
+        <span>Page ${options.page} of ${options.totalPages}</span>
+        ${options.page < options.totalPages ? `<a href="?page=${options.page + 1}${options.searchText ? '&search=' + encodeURIComponent(options.searchText) : ''}${options.userId ? '&userId=' + encodeURIComponent(options.userId) : ''}">Next →</a>` : ''}
+      </div>
+    `
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages Browser</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .nav-links {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      margin: 0 10px;
+      transition: background 0.2s;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .search-bar {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    .search-bar input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .stats {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .message-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 4px solid #667eea;
+    }
+    .message-card.human {
+      border-left-color: #43e97b;
+    }
+    .message-card.ai {
+      border-left-color: #667eea;
+    }
+    .message-card.tool {
+      border-left-color: #f093fb;
+    }
+    .message-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .sender-badge {
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+      font-weight: 600;
+      font-size: 0.85em;
+    }
+    .username {
+      font-weight: 600;
+      color: #333;
+    }
+    .timestamp {
+      color: #999;
+      font-size: 0.9em;
+      margin-left: auto;
+    }
+    .tool-name {
+      background: #f093fb;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 12px;
+      font-size: 0.9em;
+    }
+    .message-content {
+      color: #333;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+    }
+    .message-meta {
+      display: flex;
+      gap: 16px;
+      font-size: 0.85em;
+      color: #666;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-top: 30px;
+      color: white;
+    }
+    .pagination a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .pagination a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .empty {
+      text-align: center;
+      color: white;
+      font-size: 1.2em;
+      padding: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💬 Messages Browser</h1>
+    <div class="nav-links">
+      <a href="/">← Home</a>
+      <a href="/queries">🔍 Queries →</a>
+    </div>
+    <div class="search-bar">
+      <form method="GET">
+        <input type="text" name="search" placeholder="Search messages..." value="${escapeHtml(options.searchText || '')}" />
+      </form>
+    </div>
+    <div class="stats">
+      <strong>${options.totalCount}</strong> message${options.totalCount !== 1 ? 's' : ''} found
+    </div>
+    ${messagesList}
+    ${pagination}
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Generate HTML for the queries browser
+ */
+function generateQueriesHTML(queries: any[], options: {
+  page: number;
+  totalPages: number;
+  totalCount: number;
+  userId?: string;
+}): string {
+  const queriesList = queries.length > 0
+    ? queries.map(q => {
+        const timestamp = new Date(q.timestamp).toLocaleString();
+        const statusIcon = q.error ? '❌' : '✅';
+
+        return `
+        <div class="query-card ${q.error ? 'error' : 'success'}">
+          <div class="query-header">
+            <span class="status-badge">${statusIcon}</span>
+            <span class="username">${escapeHtml(q.username)}</span>
+            <span class="timestamp">${timestamp}</span>
+          </div>
+          <div class="query-text">${escapeHtml(q.query_text)}</div>
+          ${q.ai_summary ? `<div class="ai-summary">${escapeHtml(q.ai_summary)}</div>` : ''}
+          ${q.result_count !== null && q.result_count !== undefined ? `<div class="result-count">📊 ${q.result_count} result${q.result_count !== 1 ? 's' : ''}</div>` : ''}
+          ${q.execution_time_ms ? `<div class="execution-time">⚡ ${q.execution_time_ms}ms</div>` : ''}
+          ${q.error ? `<div class="error-message">❌ ${escapeHtml(q.error)}</div>` : ''}
+          ${q.translated_sql ? `<details class="sql-details"><summary>View SQL</summary><pre>${escapeHtml(q.translated_sql)}</pre></details>` : ''}
+        </div>
+      `;
+      }).join('\n')
+    : '<p class="empty">No queries found.</p>';
+
+  const pagination = options.totalPages > 1
+    ? `
+      <div class="pagination">
+        ${options.page > 1 ? `<a href="?page=${options.page - 1}${options.userId ? '&userId=' + encodeURIComponent(options.userId) : ''}">← Previous</a>` : ''}
+        <span>Page ${options.page} of ${options.totalPages}</span>
+        ${options.page < options.totalPages ? `<a href="?page=${options.page + 1}${options.userId ? '&userId=' + encodeURIComponent(options.userId) : ''}">Next →</a>` : ''}
+      </div>
+    `
+    : '';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Queries Browser</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .nav-links {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      margin: 0 10px;
+      transition: background 0.2s;
+    }
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .stats {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .query-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      border-left: 4px solid #43e97b;
+    }
+    .query-card.error {
+      border-left-color: #f5576c;
+    }
+    .query-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+    .query-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .status-badge {
+      font-size: 1.2em;
+    }
+    .username {
+      font-weight: 600;
+      color: #333;
+    }
+    .timestamp {
+      color: #999;
+      font-size: 0.9em;
+      margin-left: auto;
+    }
+    .query-text {
+      color: #333;
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    .ai-summary {
+      background: #f0f9ff;
+      border-left: 3px solid #667eea;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .result-count, .execution-time {
+      display: inline-block;
+      background: #43e97b;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+    }
+    .execution-time {
+      background: #667eea;
+    }
+    .error-message {
+      background: #fff0f0;
+      border-left: 3px solid #f5576c;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 12px;
+      color: #c53030;
+      line-height: 1.6;
+    }
+    .sql-details {
+      margin-top: 12px;
+    }
+    .sql-details summary {
+      cursor: pointer;
+      color: #667eea;
+      font-weight: 600;
+      user-select: none;
+    }
+    .sql-details pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      overflow-x: auto;
+      font-size: 0.9em;
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-top: 30px;
+      color: white;
+    }
+    .pagination a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      transition: background 0.2s;
+    }
+    .pagination a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .empty {
+      text-align: center;
+      color: white;
+      font-size: 1.2em;
+      padding: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Queries Browser</h1>
+    <div class="nav-links">
+      <a href="/">← Home</a>
+      <a href="/messages">💬 Messages →</a>
+    </div>
+    <div class="stats">
+      <strong>${options.totalCount}</strong> quer${options.totalCount !== 1 ? 'ies' : 'y'} executed
+    </div>
+    ${queriesList}
+    ${pagination}
+  </div>
+</body>
+</html>`;
 }
 
 /**

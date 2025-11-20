@@ -8,11 +8,23 @@ import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
 import { startArtifactServer } from './server/artifactServer.js';
 import { initializeStorage } from './utils/storage.js';
+import { initializeDatabase, closeDatabase } from './database/client.js';
+import { initializeSchema } from './database/schema.js';
 
 dotenv.config();
 
 // Initialize persistent storage directories
 initializeStorage();
+
+// Initialize database
+try {
+  initializeDatabase();
+  await initializeSchema();
+  console.log('✅ Database initialized and ready');
+} catch (error) {
+  console.error('❌ Failed to initialize database:', error);
+  process.exit(1);
+}
 
 // Validate environment variables
 if (!process.env.DISCORD_BOT_TOKEN) {
@@ -71,15 +83,17 @@ process.on('unhandledRejection', (error) => {
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   client.destroy();
+  await closeDatabase();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down...');
   client.destroy();
+  await closeDatabase();
   process.exit(0);
 });
 
