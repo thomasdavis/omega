@@ -34,6 +34,7 @@ import { getOmegaManifestTool } from './tools/getOmegaManifest.js';
 import { buildSlidevPresentationTool } from './tools/buildSlidevPresentation.js';
 import { setVibeTool } from './tools/setVibe.js';
 import { getUserVibeMode, type VibeMode } from '../utils/userPreferences.js';
+import { logError } from '../utils/errorLogger.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -449,10 +450,17 @@ export async function runAgent(
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   } catch (error) {
-    console.error('❌ Error in AI agent:', error);
-    console.error('❌ Error type:', error?.constructor?.name);
-    console.error('❌ Error message:', error?.message);
-    console.error('❌ Error stack:', error?.stack);
+    // Log the error with context
+    logError(error, {
+      operation: 'AI Agent execution',
+      username: context.username,
+      channelName: context.channelName,
+      messageContent: userMessage,
+      additionalInfo: {
+        vibeMode: getUserVibeMode(context.userId, context.username),
+        toolCallsCount: toolCalls.length,
+      },
+    });
     throw error;
   }
 }
