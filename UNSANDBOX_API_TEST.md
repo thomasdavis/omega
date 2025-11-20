@@ -31,13 +31,13 @@ Expected output: `[0, 1, 1, 2, 3, 5, 8, 13, 21, 34]`
 
 ### Test 1: Direct curl request
 ```bash
-curl -X POST https://unsandbox.com/v1/run \
+curl -X POST https://api.unsandbox.com/v1/execute \
   -H "Authorization: Bearer omega-paid-the-cost" \
   -H "Content-Type: application/json" \
   -d '{
     "language": "python",
     "code": "def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    fib = [0, 1]\n    while len(fib) < n:\n        fib.append(fib[-1] + fib[-2])\n    return fib\n\nresult = fibonacci(10)\nprint(result)",
-    "timeout": 5000
+    "ttl": 5
   }'
 ```
 
@@ -48,13 +48,13 @@ curl -X POST https://unsandbox.com/v1/run \
 
 ### Test 2: curl with JSON parsing
 ```bash
-curl -s -X POST https://unsandbox.com/v1/run \
+curl -s -X POST https://api.unsandbox.com/v1/execute \
   -H "Authorization: Bearer omega-paid-the-cost" \
   -H "Content-Type: application/json" \
   -d '{
     "language": "python",
     "code": "def fibonacci(n):\n    if n <= 0:\n        return []\n    elif n == 1:\n        return [0]\n    fib = [0, 1]\n    while len(fib) < n:\n        fib.append(fib[-1] + fib[-2])\n    return fib\n\nresult = fibonacci(10)\nprint(result)",
-    "timeout": 5000
+    "ttl": 5
   }' | jq .
 ```
 
@@ -62,7 +62,7 @@ curl -s -X POST https://unsandbox.com/v1/run \
 
 ## Analysis
 
-1. **API Endpoint**: The endpoint `https://unsandbox.com/v1/run` is reachable
+1. **API Endpoint**: The endpoint `https://api.unsandbox.com/v1/execute` is reachable
 2. **Authentication**: The API key format is accepted (no 401/403 error)
 3. **Response**: Empty body suggests either:
    - Invalid/expired API key (though server accepts the format)
@@ -107,13 +107,13 @@ UNSANDBOX_API_KEY="your-valid-api-key"
 # Replace YOUR_API_KEY with actual key
 export UNSANDBOX_API_KEY="YOUR_API_KEY"
 
-curl -X POST https://unsandbox.com/v1/run \
+curl -X POST https://api.unsandbox.com/v1/execute \
   -H "Authorization: Bearer $UNSANDBOX_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "language": "python",
     "code": "print(\"Hello from Unsandbox!\")",
-    "timeout": 5000
+    "ttl": 5
   }'
 ```
 

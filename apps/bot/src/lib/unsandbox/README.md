@@ -248,15 +248,15 @@ apps/bot/src/agent/tools/
 
 **Old (incorrect)**:
 ```typescript
-// ❌ Wrong endpoint and language identifier
-fetch('https://api.unsandbox.com/run', {
+// ❌ Wrong language identifier (should use SDK)
+fetch('https://api.unsandbox.com/v1/execute', {
   body: JSON.stringify({ language: 'javascript', code: '...' })
 })
 ```
 
 **New (correct)**:
 ```typescript
-// ✅ Correct endpoint and runtime identifier
+// ✅ Use SDK with correct runtime identifier
 const client = createUnsandboxClient({ apiKey });
 await client.executeCode({
   language: 'node',  // Mapped from 'javascript'
