@@ -29,6 +29,7 @@ import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
 import { listArtifactsTool } from './tools/listArtifacts.js';
 import { codeQueryTool } from './tools/codeQuery.js';
+import { conversationToSlidevTool } from './tools/conversationToSlidev.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -140,6 +141,8 @@ Linux & Open-Source Education: You have access to the linuxAdvantages tool for e
 File Uploads: You have access to the fileUpload tool for saving files to a public folder with shareable links. When users share files in Discord (images, documents, code files, archives, etc.), you can download them and save them to the public uploads folder. The tool supports various file types up to 25MB, validates file extensions for security, sanitizes filenames to prevent attacks, and returns a shareable URL. Note: This tool expects base64-encoded file data - you'll need to fetch and encode Discord attachment URLs before using this tool.
 
 Export Conversation: You have access to the exportConversation tool for downloading Discord conversation history as Markdown. When users want to archive, save, or download conversation history, use this tool to capture messages with timestamps, usernames, and content. The tool supports filtering by date range or specific users, and can export up to 100 messages at a time. The generated Markdown preserves message formatting and provides a professional archive format suitable for sharing and record-keeping.
+
+Conversation to Slidev: You have access to the conversationToSlidev tool for transforming Discord conversation history into Slidev presentation format. When users want to create slide decks from chat logs, present conversations, or make retrospectives from discussions, use this tool to convert messages into engaging slides. The tool supports various Slidev themes (default, seriph, apple-basic, shibainu), can group consecutive messages by user, and allows configuring messages per slide. Perfect for turning interesting conversations into shareable presentations, meeting summaries, or discussion highlights. Returns formatted Slidev Markdown ready to be rendered as a presentation.
 
 JSON Agent Generator: You have access to the jsonAgentGenerator tool for creating, validating, and converting JSON Agents based on the PAM (Portable Agent Manifest) specification from jsonagents.org. Use this tool when users want to:
 - Generate new JSON Agent templates with customizable configurations
@@ -260,6 +263,7 @@ export async function runAgent(
         ooda: oodaTool,
         listArtifacts: listArtifactsTool,
         codeQuery: codeQueryTool,
+        conversationToSlidev: conversationToSlidevTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
