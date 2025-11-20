@@ -12,14 +12,14 @@ import { getBlogDir } from '../../utils/storage.js';
 // Blog content directory - uses persistent storage in production
 const BLOG_DIR = getBlogDir();
 
-// Available TTS voices (examples - expand as needed)
+// Available TTS voices from UncloseAI
 const TTS_VOICES = [
-  'bm_fable',
-  'bm_alloy',
-  'bm_echo',
-  'bm_onyx',
-  'bm_nova',
-  'bm_shimmer',
+  'alloy',
+  'echo',
+  'fable',
+  'onyx',
+  'nova',
+  'shimmer',
 ] as const;
 
 interface BlogPostMetadata {
@@ -153,13 +153,13 @@ export const createBlogPostTool = tool({
   Example usage:
   - "Create a blog post about TypeScript best practices"
   - "Write a TTS-enabled post about web accessibility"
-  - "Generate a blog post with voice bm_fable about React hooks"`,
+  - "Generate a blog post with voice alloy about React hooks"`,
 
   inputSchema: z.object({
     title: z.string().describe('The title of the blog post'),
     content: z.string().describe('The markdown content of the blog post (without frontmatter - that will be added automatically)'),
     tts: z.boolean().default(true).describe('Enable text-to-speech for this post (default: true)'),
-    ttsVoice: z.enum(TTS_VOICES).default('bm_fable').describe('Voice to use for TTS playback (default: bm_fable)'),
+    ttsVoice: z.enum(TTS_VOICES).default('alloy').describe('Voice to use for TTS playback (default: alloy)'),
   }),
 
   execute: async ({ title, content, tts, ttsVoice }) => {

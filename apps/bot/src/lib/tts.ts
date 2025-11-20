@@ -23,12 +23,12 @@ export interface TTSResponse {
 
 /**
  * Available TTS voices from UncloseAI
- * bm_fable is the recommended default
+ * alloy is the recommended default (compatible with all TTS engines)
  */
 export const TTS_VOICES = [
-  'bm_fable',
   'alloy',
   'echo',
+  'fable',
   'shimmer',
   'onyx',
   'nova',
@@ -37,7 +37,7 @@ export const TTS_VOICES = [
 
 export type TTSVoice = typeof TTS_VOICES[number];
 
-const DEFAULT_VOICE: TTSVoice = 'bm_fable';
+const DEFAULT_VOICE: TTSVoice = 'alloy';
 const MAX_TEXT_LENGTH = 4096; // Maximum characters for TTS
 const TTS_API_ENDPOINT = 'https://speech.ai.unturf.com/v1/audio/speech';
 
