@@ -1,213 +1,94 @@
 /**
- * Tell a Joke Tool - Provides random jokes from various categories
+ * Tell a Joke Tool - Generates jokes dynamically using AI
  *
  * Features:
- * - Diverse joke pool with multiple categories (tech, classic, puns, dad jokes, programming)
- * - Category-specific or random joke selection
- * - Easy to extend with more jokes
+ * - AI-generated jokes tailored to various categories
+ * - Context-aware and original humor
+ * - Fresh, varied jokes every time
+ * - Supports multiple joke styles (tech, classic, puns, dad jokes, programming, one-liners)
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
-// Joke database organized by category
-const jokes = {
-  tech: [
-    {
-      setup: "Why do programmers prefer dark mode?",
-      punchline: "Because light attracts bugs!"
-    },
-    {
-      setup: "What's a programmer's favorite hangout place?",
-      punchline: "The Foo Bar!"
-    },
-    {
-      setup: "Why did the developer go broke?",
-      punchline: "Because they used up all their cache!"
-    },
-    {
-      setup: "How many programmers does it take to change a light bulb?",
-      punchline: "None. It's a hardware problem!"
-    },
-    {
-      setup: "Why do Java developers wear glasses?",
-      punchline: "Because they don't C#!"
-    },
-    {
-      setup: "What's the object-oriented way to become wealthy?",
-      punchline: "Inheritance!"
-    },
-    {
-      setup: "Why did the computer show up at work late?",
-      punchline: "It had a hard drive!"
-    },
-    {
-      setup: "What do you call 8 hobbits?",
-      punchline: "A hobbyte!"
-    }
-  ],
-  classic: [
-    {
-      setup: "Why don't scientists trust atoms?",
-      punchline: "Because they make up everything!"
-    },
-    {
-      setup: "What do you call a bear with no teeth?",
-      punchline: "A gummy bear!"
-    },
-    {
-      setup: "Why couldn't the bicycle stand up by itself?",
-      punchline: "It was two tired!"
-    },
-    {
-      setup: "What do you call a fake noodle?",
-      punchline: "An impasta!"
-    },
-    {
-      setup: "Why did the scarecrow win an award?",
-      punchline: "Because he was outstanding in his field!"
-    },
-    {
-      setup: "What do you call cheese that isn't yours?",
-      punchline: "Nacho cheese!"
-    }
-  ],
-  puns: [
-    {
-      setup: "I used to hate facial hair...",
-      punchline: "But then it grew on me!"
-    },
-    {
-      setup: "What do you call a pile of cats?",
-      punchline: "A meowtain!"
-    },
-    {
-      setup: "I'm reading a book about anti-gravity.",
-      punchline: "It's impossible to put down!"
-    },
-    {
-      setup: "Did you hear about the claustrophobic astronaut?",
-      punchline: "He just needed a little space!"
-    },
-    {
-      setup: "I told my wife she was drawing her eyebrows too high.",
-      punchline: "She looked surprised!"
-    },
-    {
-      setup: "What do you call a dinosaur with an extensive vocabulary?",
-      punchline: "A thesaurus!"
-    }
-  ],
-  dad: [
-    {
-      setup: "I'm afraid for the calendar.",
-      punchline: "Its days are numbered!"
-    },
-    {
-      setup: "Why don't eggs tell jokes?",
-      punchline: "They'd crack each other up!"
-    },
-    {
-      setup: "What did the ocean say to the beach?",
-      punchline: "Nothing, it just waved!"
-    },
-    {
-      setup: "How do you organize a space party?",
-      punchline: "You planet!"
-    },
-    {
-      setup: "What's brown and sticky?",
-      punchline: "A stick!"
-    },
-    {
-      setup: "Why did the math book look so sad?",
-      punchline: "Because it had too many problems!"
-    }
-  ],
-  programming: [
-    {
-      setup: "There are 10 types of people in the world.",
-      punchline: "Those who understand binary and those who don't!"
-    },
-    {
-      setup: "A SQL query walks into a bar, walks up to two tables and asks...",
-      punchline: "Can I join you?"
-    },
-    {
-      setup: "What's the best thing about a Boolean?",
-      punchline: "Even if you're wrong, you're only off by a bit!"
-    },
-    {
-      setup: "Why do programmers always mix up Halloween and Christmas?",
-      punchline: "Because Oct 31 == Dec 25!"
-    },
-    {
-      setup: "How do you comfort a JavaScript bug?",
-      punchline: "You console it!"
-    },
-    {
-      setup: "Why was the JavaScript developer sad?",
-      punchline: "Because they didn't Node how to Express themselves!"
-    },
-    {
-      setup: "What's a pirate's favorite programming language?",
-      punchline: "You might think it's R, but their first love is the C!"
-    }
-  ],
-  oneliners: [
-    {
-      setup: "I would tell you a UDP joke, but you might not get it.",
-      punchline: ""
-    },
-    {
-      setup: "Debugging: Being the detective in a crime movie where you're also the murderer.",
-      punchline: ""
-    },
-    {
-      setup: "In theory, there's no difference between theory and practice. But in practice, there is.",
-      punchline: ""
-    },
-    {
-      setup: "Algorithm: A word used by programmers when they don't want to explain what they did.",
-      punchline: ""
-    },
-    {
-      setup: "There's no place like 127.0.0.1!",
-      punchline: ""
-    }
-  ]
-};
+// Available joke categories
+const JOKE_CATEGORIES = [
+  'tech',
+  'classic',
+  'puns',
+  'dad',
+  'programming',
+  'oneliners',
+] as const;
 
-type JokeCategory = keyof typeof jokes;
+type JokeCategory = typeof JOKE_CATEGORIES[number];
 
 /**
- * Get a random joke from a specific category or all categories
+ * Generate a joke using AI based on category
  */
-function getRandomJoke(category?: string): {
-  joke: { setup: string; punchline: string };
+async function generateJoke(category?: string): Promise<{
+  setup: string;
+  punchline: string;
   category: string;
-} {
-  const categories = Object.keys(jokes) as JokeCategory[];
+}> {
+  // Select category
+  const selectedCategory =
+    category && JOKE_CATEGORIES.includes(category as JokeCategory)
+      ? category
+      : JOKE_CATEGORIES[Math.floor(Math.random() * JOKE_CATEGORIES.length)];
 
-  // If category is specified and valid, use it
-  if (category && categories.includes(category as JokeCategory)) {
-    const categoryJokes = jokes[category as JokeCategory];
-    const randomIndex = Math.floor(Math.random() * categoryJokes.length);
+  // Build category-specific guidance
+  const categoryGuidance: Record<string, string> = {
+    tech: 'Create a joke about technology, computers, software, hardware, or tech culture. Keep it clever and relevant to modern tech.',
+    classic: 'Create a classic-style joke with universal appeal. Think timeless, family-friendly humor with a clear setup and punchline.',
+    puns: 'Create a pun-based joke. Use wordplay, double meanings, or clever linguistic twists. Make it groan-worthy in the best way.',
+    dad: 'Create a dad joke - wholesome, punny, and delightfully corny. The kind that makes people roll their eyes while smiling.',
+    programming: 'Create a programming joke. Reference coding concepts, languages, algorithms, or developer culture. Make it clever for programmers.',
+    oneliners: 'Create a witty one-liner or observational joke. No setup needed - just a clever, punchy statement. Can be tech-related.',
+  };
+
+  const prompt = `Generate a ${selectedCategory} joke following these guidelines:
+
+${categoryGuidance[selectedCategory]}
+
+Requirements:
+- Be original and creative (avoid overused jokes)
+- Keep it appropriate and inclusive
+- Make it genuinely funny, not forced
+- For setup-punchline jokes: create clear separation
+- For one-liners: make it punchy and self-contained
+- Length: setup should be 5-20 words, punchline 5-15 words (or empty for one-liners)
+
+Respond in JSON format:
+{
+  "setup": "The joke setup or the complete one-liner",
+  "punchline": "The punchline, or empty string for one-liners"
+}`;
+
+  try {
+    const result = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+    });
+
+    const parsed = JSON.parse(result.text.trim());
+
     return {
-      joke: categoryJokes[randomIndex],
-      category
+      setup: parsed.setup,
+      punchline: parsed.punchline || '',
+      category: selectedCategory,
+    };
+  } catch (error) {
+    console.error('Error generating joke:', error);
+    // Fallback joke in case of error
+    return {
+      setup: "Why did the AI refuse to tell a joke?",
+      punchline: "It was afraid of getting a bad response!",
+      category: selectedCategory,
     };
   }
-
-  // Otherwise, pick a random category
-  const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-  const categoryJokes = jokes[randomCategory];
-  const randomIndex = Math.floor(Math.random() * categoryJokes.length);
-
-  return {
-    joke: categoryJokes[randomIndex],
-    category: randomCategory
-  };
 }
 
 /**
@@ -222,31 +103,32 @@ function formatJoke(setup: string, punchline: string): string {
 }
 
 export const tellJokeTool = tool({
-  description: 'Tell a random joke from various categories (tech, classic, puns, dad, programming, oneliners). Use this when users want to hear a joke or need some lighthearted fun.',
+  description: 'Generate and tell an AI-powered joke from various categories (tech, classic, puns, dad, programming, oneliners). Each joke is uniquely generated for fresh, original humor. Use this when users want to hear a joke or need some lighthearted fun.',
   inputSchema: z.object({
     category: z.string().optional().describe('Optional category: tech, classic, puns, dad, programming, or oneliners. If not specified, a random category will be chosen.'),
   }),
   execute: async ({ category }) => {
     try {
-      console.log('😄 Tell Joke: Selecting a joke...');
+      console.log('😄 Tell Joke: Generating an AI-powered joke...');
 
-      const { joke, category: selectedCategory } = getRandomJoke(category);
-      const formattedJoke = formatJoke(joke.setup, joke.punchline);
+      const jokeData = await generateJoke(category);
+      const formattedJoke = formatJoke(jokeData.setup, jokeData.punchline);
 
-      console.log(`   📂 Category: ${selectedCategory}`);
+      console.log(`   📂 Category: ${jokeData.category}`);
+      console.log(`   ✨ Generated: ${jokeData.setup}`);
 
       return {
         joke: formattedJoke,
-        category: selectedCategory,
-        setup: joke.setup,
-        punchline: joke.punchline || null,
-        availableCategories: Object.keys(jokes),
+        category: jokeData.category,
+        setup: jokeData.setup,
+        punchline: jokeData.punchline || null,
+        availableCategories: Array.from(JOKE_CATEGORIES),
         success: true,
       };
     } catch (error) {
-      console.error('Error telling joke:', error);
+      console.error('Error generating joke:', error);
       return {
-        error: error instanceof Error ? error.message : 'Failed to tell joke',
+        error: error instanceof Error ? error.message : 'Failed to generate joke',
         success: false,
       };
     }
