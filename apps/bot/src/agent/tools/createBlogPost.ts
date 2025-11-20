@@ -139,6 +139,9 @@ export const createBlogPostTool = tool({
 
   The blog renderer will automatically pick up new posts from this directory.
 
+  After creation, this tool returns the full absolute URL to the blog post
+  (e.g., https://omegaai.dev/blog/2025-11-20-my-blog-post) for easy sharing.
+
   Content should be in Markdown format and can include:
   - Headings (# ## ###)
   - Images with alt text ![alt text](url)
@@ -183,15 +186,26 @@ export const createBlogPostTool = tool({
 
       console.log('✅ Blog post created:', filename);
 
+      // Generate the blog post slug (filename without extension)
+      const slug = filename.replace(/\.md$/, '');
+
+      // Get server URL from environment or use default
+      // Use ARTIFACT_SERVER_URL for consistency with other tools
+      const serverUrl = process.env.ARTIFACT_SERVER_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+      const blogUrl = `${serverUrl}/blog/${slug}`;
+
       return {
         success: true,
         title,
         filename,
         filepath,
+        slug,
+        url: blogUrl,
         tts,
         ttsVoice,
         date,
-        message: `✨ Blog post created successfully!\n\nFile: ${filename}\nPath: ${filepath}\nDate: ${date} (current system time)\nTTS: ${tts ? 'enabled' : 'disabled'}\nVoice: ${ttsVoice}\n\nThe blog renderer will automatically pick up this new post.`,
+        message: `✨ Blog post created successfully!\n\nTitle: ${title}\nURL: ${blogUrl}\nFile: ${filename}\nPath: ${filepath}\nDate: ${date} (current system time)\nTTS: ${tts ? 'enabled' : 'disabled'}\nVoice: ${ttsVoice}\n\nThe blog renderer will automatically pick up this new post.`,
       };
     } catch (error) {
       console.error('Error creating blog post:', error);
