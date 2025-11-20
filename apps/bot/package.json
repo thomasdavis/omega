@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc && npm run copy-public",
-    "copy-public": "mkdir -p dist/public && cp -r public/* dist/public/",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "mkdir -p dist/public && cp -r public/* dist/public/ && cp omega-manifest.json dist/",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
