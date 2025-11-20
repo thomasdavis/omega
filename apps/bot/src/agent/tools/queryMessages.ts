@@ -29,7 +29,7 @@ export const queryMessagesTool = tool({
   3. Return the results with a summary
   4. Store the query and results for future reference`,
 
-  parameters: z.object({
+  inputSchema: z.object({
     query: z.string().describe('Natural language query to search the message database'),
     userId: z.string().optional().describe('User ID making the query (for tracking)'),
     username: z.string().optional().describe('Username making the query (for tracking)'),
@@ -43,7 +43,7 @@ export const queryMessagesTool = tool({
 
       // Use AI to translate natural language to SQL
       const sqlTranslation = await generateText({
-        model: openai.chat(OMEGA_MODEL),
+        model: openai(OMEGA_MODEL),
         prompt: `You are a SQL expert. Convert the following natural language query into a safe SQL query for a SQLite database.
 
 Database Schema:
@@ -133,7 +133,7 @@ Provide a natural language summary that:
 Summary:`;
 
       const summaryResponse = await generateText({
-        model: openai.chat(OMEGA_MODEL),
+        model: openai(OMEGA_MODEL),
         prompt: summaryPrompt,
       });
 
