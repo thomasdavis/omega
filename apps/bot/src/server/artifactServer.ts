@@ -56,25 +56,18 @@ function createApp(): express.Application {
         return res.status(404).send('Artifact file not found');
       }
 
-      // Set appropriate content type and read mode
-      let contentType: string;
-      let content: Buffer | string;
+      const content = readFileSync(artifactPath, 'utf-8');
 
-      if (metadata.type === 'pptx') {
-        contentType = 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
-        content = readFileSync(artifactPath); // Binary read for PPTX
-        res.setHeader('Content-Disposition', `attachment; filename="${metadata.title.replace(/[^a-z0-9]/gi, '_')}.pptx"`);
-      } else if (metadata.type === 'svg') {
+      // Set appropriate content type
+      let contentType: string;
+      if (metadata.type === 'svg') {
         contentType = 'image/svg+xml';
-        content = readFileSync(artifactPath, 'utf-8');
       } else if (metadata.type === 'slidev' || metadata.type === 'markdown') {
         contentType = 'text/markdown';
-        content = readFileSync(artifactPath, 'utf-8');
         // Set appropriate headers for markdown downloads
         res.setHeader('Content-Disposition', `attachment; filename="${metadata.title.replace(/[^a-z0-9]/gi, '_')}.md"`);
       } else {
         contentType = 'text/html';
-        content = readFileSync(artifactPath, 'utf-8');
       }
       res.setHeader('Content-Type', contentType);
 

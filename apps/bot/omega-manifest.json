@@ -36,7 +36,7 @@
     },
     {
       "name": "conversation_export",
-      "description": "Export Discord conversation history as Markdown or convert to Slidev presentations with PowerPoint (.pptx) export",
+      "description": "Export Discord conversation history as Markdown or convert to Slidev presentations",
       "enabled": true
     },
     {
@@ -333,7 +333,7 @@
     },
     {
       "name": "conversationToSlidev",
-      "description": "Convert Discord conversation to Slidev presentation with PowerPoint (.pptx) export",
+      "description": "Convert Discord conversation to Slidev presentation",
       "parameters": [
         {
           "name": "messageCount",
@@ -345,12 +345,6 @@
           "name": "theme",
           "type": "string",
           "description": "Slidev theme (default, seriph, apple-basic, shibainu)",
-          "required": false
-        },
-        {
-          "name": "exportToPptx",
-          "type": "boolean",
-          "description": "Also export as PowerPoint (.pptx) format",
           "required": false
         }
       ]
