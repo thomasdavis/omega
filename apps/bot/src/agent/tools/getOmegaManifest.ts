@@ -21,10 +21,21 @@ const __dirname = dirname(__filename);
 async function loadOmegaManifest() {
   try {
     // Path to manifest file relative to this tool file
-    // tools/ -> agent/ -> src/ -> apps/bot/ -> omega-manifest.json
-    const manifestPath = join(__dirname, '..', '..', '..', 'omega-manifest.json');
-    const manifestContent = await readFile(manifestPath, 'utf-8');
-    return JSON.parse(manifestContent);
+    // In development: tools/ -> agent/ -> src/ -> apps/bot/ -> omega-manifest.json
+    // In production (dist): tools/ -> agent/ -> dist/ -> omega-manifest.json
+    // We try the production path first (dist root), then fall back to dev path
+    const distPath = join(__dirname, '..', '..', 'omega-manifest.json');
+    const devPath = join(__dirname, '..', '..', '..', 'omega-manifest.json');
+
+    // Try production path first (when running from dist/)
+    try {
+      const manifestContent = await readFile(distPath, 'utf-8');
+      return JSON.parse(manifestContent);
+    } catch (distError) {
+      // Fall back to development path (when running from src/ with tsx)
+      const manifestContent = await readFile(devPath, 'utf-8');
+      return JSON.parse(manifestContent);
+    }
   } catch (error) {
     throw new Error(`Failed to load Omega manifest: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
