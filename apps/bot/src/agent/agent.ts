@@ -36,7 +36,7 @@ import { logError } from '../utils/errorLogger.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
-const model = openai.chat('gpt-4.1-mini');
+const model = openai.chat('gpt-4o-mini');
 
 export interface AgentContext {
   username: string;
