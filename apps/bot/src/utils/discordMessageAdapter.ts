@@ -285,7 +285,7 @@ export class DiscordMessageAdapter {
       total
     } = toolCall;
 
-    const { useSpoilers = true, color } = options;
+    const { useSpoilers = false, color } = options;
 
     // Determine color
     let embedColor: ColorResolvable = Colors.Blue;
@@ -449,7 +449,7 @@ export class DiscordMessageAdapter {
    */
   private formatToolReportAsText(toolCall: ToolCallInfo, options: SendOptions = {}): string {
     const { toolName, args, result, success, duration, jobId, index, total } = toolCall;
-    const { useSpoilers = true } = options;
+    const { useSpoilers = false } = options;
 
     let content = '';
 
