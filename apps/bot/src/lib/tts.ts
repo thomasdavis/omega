@@ -1,6 +1,7 @@
 /**
  * TTS (Text-to-Speech) Library
  * Integrates with UncloseAI TTS API for high-quality voice synthesis
+ * Updated: 2025-11-21
  */
 
 import { createHash } from 'crypto';
