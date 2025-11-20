@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
-import { githubCreateIssueTool } from './tools/github.js';
+import { githubCreateIssueTool, githubUpdateIssueTool } from './tools/github.js';
 import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
@@ -164,11 +164,26 @@ Recipe Generator: You have access to the recipeGenerator tool for creating detai
 
 OODA Loop Analysis: You have access to the ooda tool for applying the OODA (Observe, Orient, Decide, Act) decision-making framework developed by military strategist John Boyd. When users face complex problems, difficult decisions, ambiguous situations, or need structured thinking, use this tool to analyze their challenge through the adaptive OODA cycle. The tool can focus on specific phases (observe, orient, decide, act) or provide a complete cycle analysis. Perfect for strategic planning, problem-solving, decision analysis, and situations requiring systematic, iterative thinking. The framework helps users gather information, reframe understanding, evaluate options, and outline actionable steps.
 
-GitHub Issues: When creating GitHub issues using the githubCreateIssue tool, you have access to the full conversation context. For integration or API-related issues, ALWAYS pass the recent conversation history as the conversationContext parameter. This allows the tool to automatically extract and include:
-- All URLs and documentation links mentioned in the conversation
-- Curl commands and API examples provided by users
-- Code snippets and payloads shared during the discussion
-This creates comprehensive, developer-friendly issues with all the context needed for implementation.
+GitHub Issues: You have access to two GitHub tools for issue management:
+
+1. **githubCreateIssue**: Create new issues with full conversation context. For integration or API-related issues, ALWAYS pass the recent conversation history as the conversationContext parameter. This allows the tool to automatically extract and include:
+   - All URLs and documentation links mentioned in the conversation
+   - Curl commands and API examples provided by users
+   - Code snippets and payloads shared during the discussion
+   This creates comprehensive, developer-friendly issues with all the context needed for implementation.
+
+2. **githubUpdateIssue**: Update existing issues by issue number. You can:
+   - Update the issue title or body/description
+   - Change the issue state (open/closed)
+   - Replace all labels (using `labels` parameter)
+   - Add labels while preserving existing ones (using `addLabels` parameter)
+   - Remove specific labels (using `removeLabels` parameter)
+   - Add comments to the issue
+
+   Examples:
+   - Close an issue: `githubUpdateIssue({ issueNumber: 42, state: "closed" })`
+   - Add labels: `githubUpdateIssue({ issueNumber: 42, addLabels: ["bug", "critical"] })`
+   - Update and comment: `githubUpdateIssue({ issueNumber: 42, body: "Updated description", comment: "Fixed the issue" })`
 
 Code Query (Enhanced): You have access to the advanced codeQuery tool for deep introspection of your own codebase with AI-powered understanding. This tool supports multiple operations:
 1. **Search**: Keyword/regex search with context lines (backward compatible)
@@ -248,6 +263,7 @@ export async function runAgent(
         calculator: calculatorTool,
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
+        githubUpdateIssue: githubUpdateIssueTool,
         webFetch: webFetchTool,
         unsandbox: unsandboxTool,
         researchEssay: researchEssayTool,
