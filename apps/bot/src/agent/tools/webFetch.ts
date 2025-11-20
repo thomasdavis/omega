@@ -6,6 +6,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { robotsChecker } from '../../utils/robotsChecker.js';
+import { extractHtmlMetadata, truncateMetadata } from '../../utils/htmlMetadata.js';
 
 export const webFetchTool = tool({
   description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching. Use this to retrieve information from specific URLs.',
@@ -27,6 +28,17 @@ export const webFetchTool = tool({
           success: false,
           error: 'robots_txt_disallowed',
           message: `This URL is disallowed by the website's robots.txt file. Respecting the website's policy and not fetching.`,
+          metadata: {
+            requestedUrl: url,
+            httpStatus: null,
+          },
+          robotsTxt: {
+            allowed: false,
+            rulesMatched: robotsCheck.matchedRules || [],
+            crawlDelay: robotsCheck.crawlDelay,
+            note: 'This fetch respects robots.txt and the resource was blocked according to the site\'s robots.txt rules.',
+          },
+          // Backward compatibility fields
           url,
           robotsUrl: robotsCheck.robotsUrl,
           reason: robotsCheck.reason,
@@ -42,6 +54,7 @@ export const webFetchTool = tool({
           'User-Agent': userAgent,
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         },
+        redirect: 'follow',
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 
@@ -50,6 +63,20 @@ export const webFetchTool = tool({
           success: false,
           error: 'fetch_failed',
           message: `Failed to fetch URL: ${response.status} ${response.statusText}`,
+          metadata: {
+            requestedUrl: url,
+            finalUrl: response.url,
+            httpStatus: response.status,
+            contentType: response.headers.get('content-type') || undefined,
+            contentLength: parseInt(response.headers.get('content-length') || '0') || undefined,
+          },
+          robotsTxt: {
+            allowed: true,
+            rulesMatched: robotsCheck.matchedRules || [],
+            crawlDelay: robotsCheck.crawlDelay,
+            note: 'This fetch respects robots.txt. The resource was allowed but the HTTP request failed.',
+          },
+          // Backward compatibility fields
           url,
           statusCode: response.status,
         };
@@ -57,8 +84,20 @@ export const webFetchTool = tool({
 
       // Get the content
       const contentType = response.headers.get('content-type') || '';
+      const contentLength = parseInt(response.headers.get('content-length') || '0') || undefined;
       const isHtml = contentType.includes('text/html');
       const content = await response.text();
+
+      // Extract metadata if HTML
+      let htmlMetadata: any = {};
+      if (isHtml) {
+        const rawMetadata = extractHtmlMetadata(content);
+        htmlMetadata = truncateMetadata(rawMetadata);
+      }
+
+      // Extract charset from content-type header
+      const charsetMatch = contentType.match(/charset=([^;]+)/i);
+      const charset = charsetMatch ? charsetMatch[1].trim() : (htmlMetadata.charset || undefined);
 
       // Basic content extraction (strip HTML tags for now)
       let extractedContent = content;
@@ -80,8 +119,37 @@ export const webFetchTool = tool({
 
       console.log(`✅ Successfully fetched ${extractedContent.length} characters from ${url}`);
 
+      // Build metadata object
+      const metadata = {
+        requestedUrl: url,
+        finalUrl: response.url,
+        httpStatus: response.status,
+        contentType,
+        contentLength,
+        charset,
+        ...htmlMetadata,
+        responseHeaders: {
+          'content-type': response.headers.get('content-type'),
+          'content-length': response.headers.get('content-length'),
+          'cache-control': response.headers.get('cache-control'),
+          'last-modified': response.headers.get('last-modified'),
+        },
+      };
+
+      // Build robots.txt summary
+      const robotsTxt = {
+        allowed: true,
+        rulesMatched: robotsCheck.matchedRules || [],
+        crawlDelay: robotsCheck.crawlDelay,
+        note: 'This fetch respects robots.txt. Some resources may be omitted if disallowed by the site\'s robots.txt rules.',
+      };
+
       return {
         success: true,
+        metadata,
+        robotsTxt,
+        body: extractedContent,
+        // Backward compatibility fields
         url,
         content: extractedContent,
         contentType,
@@ -95,6 +163,10 @@ export const webFetchTool = tool({
         success: false,
         error: 'exception',
         message: `Error fetching URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        metadata: {
+          requestedUrl: url,
+        },
+        // Backward compatibility field
         url,
       };
     }

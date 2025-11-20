@@ -7,6 +7,8 @@ export interface RobotsCheckResult {
   allowed: boolean;
   reason?: string;
   robotsUrl?: string;
+  crawlDelay?: number;
+  matchedRules?: string[];
 }
 
 /**
@@ -30,7 +32,7 @@ export class RobotsChecker {
 
       // Check if the path is allowed
       const path = urlObj.pathname + urlObj.search;
-      const allowed = this.isPathAllowed(path, rules);
+      const { allowed, matchedRules } = this.isPathAllowed(path, rules);
 
       return {
         allowed,
@@ -38,6 +40,8 @@ export class RobotsChecker {
           ? 'URL is allowed by robots.txt'
           : 'URL is disallowed by robots.txt rules',
         robotsUrl,
+        crawlDelay: rules.crawlDelay,
+        matchedRules,
       };
     } catch (error) {
       // If robots.txt cannot be fetched, assume allowed (fail open)
@@ -129,6 +133,15 @@ export class RobotsChecker {
             rules.allowedPaths.push(path);
           }
         }
+
+        // Crawl-delay directive
+        if (trimmed.toLowerCase().startsWith('crawl-delay:')) {
+          const delay = trimmed.substring(12).trim();
+          const delayNum = parseFloat(delay);
+          if (!isNaN(delayNum)) {
+            rules.crawlDelay = delayNum;
+          }
+        }
       }
     }
 
@@ -139,23 +152,27 @@ export class RobotsChecker {
    * Check if a path is allowed based on robots.txt rules
    * Allow rules take precedence over Disallow rules
    */
-  private isPathAllowed(path: string, rules: RobotsRules): boolean {
+  private isPathAllowed(path: string, rules: RobotsRules): { allowed: boolean; matchedRules: string[] } {
+    const matchedRules: string[] = [];
+
     // Check if explicitly allowed first (Allow takes precedence)
     for (const allowedPath of rules.allowedPaths) {
       if (this.pathMatches(path, allowedPath)) {
-        return true;
+        matchedRules.push(`Allow: ${allowedPath}`);
+        return { allowed: true, matchedRules };
       }
     }
 
     // Check if disallowed
     for (const disallowedPath of rules.disallowedPaths) {
       if (this.pathMatches(path, disallowedPath)) {
-        return false;
+        matchedRules.push(`Disallow: ${disallowedPath}`);
+        return { allowed: false, matchedRules };
       }
     }
 
     // If no rules match, allow by default
-    return true;
+    return { allowed: true, matchedRules: ['Default: Allow (no matching rules)'] };
   }
 
   /**
@@ -198,6 +215,7 @@ export class RobotsChecker {
 interface RobotsRules {
   disallowedPaths: string[];
   allowedPaths: string[];
+  crawlDelay?: number;
 }
 
 // Export a singleton instance
