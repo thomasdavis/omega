@@ -9,6 +9,7 @@ import { setExportMessageContext, clearExportMessageContext } from '../agent/too
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandboxContext.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
+import { sendMessage } from '../lib/discordMessageAdapter.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -46,7 +47,8 @@ export async function handleMessage(message: Message): Promise<void> {
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
   if ('send' in message.channel && channelName === 'omega') {
     const emoji = decision.shouldRespond ? '✅' : '❌';
-    await message.channel.send(
+    await sendMessage(
+      message.channel,
       `${emoji} **Decision:** ${decision.shouldRespond ? 'Respond' : 'Ignore'} | **Confidence:** ${decision.confidence}% | **Reason:** ${decision.reason}`
     );
   }
@@ -132,7 +134,7 @@ export async function handleMessage(message: Message): Promise<void> {
               console.log(`✅ Sent chart image attachment (${buffer.length} bytes)`);
             } else {
               console.error(`❌ Failed to download chart image: HTTP ${imageResponse.status}`);
-              await message.channel.send({ content: toolReport });
+              await sendMessage(message.channel, toolReport);
             }
           } catch (error) {
             logError(error, {
@@ -143,20 +145,11 @@ export async function handleMessage(message: Message): Promise<void> {
               additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
             });
             // Fall back to sending just the text report
-            await message.channel.send({ content: toolReport });
+            await sendMessage(message.channel, toolReport);
           }
         } else {
-          // Regular tool report handling
-          // Check if the report exceeds Discord's limit (2000 chars)
-          if (toolReport.length > 2000) {
-            // Split into multiple messages if needed
-            const chunks = splitIntoChunks(toolReport, 1990); // Leave margin for safety
-            for (const chunk of chunks) {
-              await message.channel.send({ content: chunk });
-            }
-          } else {
-            await message.channel.send({ content: toolReport });
-          }
+          // Regular tool report handling - use the adapter to handle long messages
+          await sendMessage(message.channel, toolReport);
         }
 
         // Add a small delay between messages to avoid rate limiting
@@ -214,29 +207,6 @@ export async function handleMessage(message: Message): Promise<void> {
 function suppressEmbeds(text: string): string {
   // Match URLs and wrap them in <> to prevent auto-embed
   return text.replace(/(https?:\/\/[^\s<>]+)/g, '<$1>');
-}
-
-/**
- * Split a string into chunks that fit Discord's message limit
- */
-function splitIntoChunks(text: string, maxLength: number): string[] {
-  const chunks: string[] = [];
-  let currentChunk = '';
-
-  const lines = text.split('\n');
-  for (const line of lines) {
-    if ((currentChunk + line + '\n').length > maxLength && currentChunk.length > 0) {
-      chunks.push(currentChunk.trim());
-      currentChunk = '';
-    }
-    currentChunk += line + '\n';
-  }
-
-  if (currentChunk.length > 0) {
-    chunks.push(currentChunk.trim());
-  }
-
-  return chunks;
 }
 
 /**
