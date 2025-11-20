@@ -32,7 +32,7 @@ function createApp(): express.Application {
     next();
   });
 
-  // Serve individual artifacts
+  // Serve individual artifacts (both files and folders)
   app.get('/artifacts/:id', (req: Request, res: Response) => {
     const { id } = req.params;
 
@@ -50,31 +50,128 @@ function createApp(): express.Application {
       }
 
       const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
-      const artifactPath = join(ARTIFACTS_DIR, metadata.filename);
 
-      if (!existsSync(artifactPath)) {
-        return res.status(404).send('Artifact file not found');
-      }
+      // Check if this is a folder artifact
+      if (metadata.artifactType === 'folder') {
+        // Serve the index.html from the folder
+        const folderPath = join(ARTIFACTS_DIR, metadata.folderPath || id);
+        const indexPath = join(folderPath, 'index.html');
 
-      const content = readFileSync(artifactPath, 'utf-8');
+        if (!existsSync(indexPath)) {
+          return res.status(404).send('Artifact index.html not found');
+        }
 
-      // Set appropriate content type
-      let contentType: string;
-      if (metadata.type === 'svg') {
-        contentType = 'image/svg+xml';
-      } else if (metadata.type === 'slidev' || metadata.type === 'markdown') {
-        contentType = 'text/markdown';
-        // Set appropriate headers for markdown downloads
-        res.setHeader('Content-Disposition', `attachment; filename="${metadata.title.replace(/[^a-z0-9]/gi, '_')}.md"`);
+        const content = readFileSync(indexPath, 'utf-8');
+        res.setHeader('Content-Type', 'text/html');
+        res.send(content);
       } else {
-        contentType = 'text/html';
-      }
-      res.setHeader('Content-Type', contentType);
+        // Original file-based artifact handling
+        const artifactPath = join(ARTIFACTS_DIR, metadata.filename);
 
-      res.send(content);
+        if (!existsSync(artifactPath)) {
+          return res.status(404).send('Artifact file not found');
+        }
+
+        const content = readFileSync(artifactPath, 'utf-8');
+
+        // Set appropriate content type
+        let contentType: string;
+        if (metadata.type === 'svg') {
+          contentType = 'image/svg+xml';
+        } else if (metadata.type === 'slidev' || metadata.type === 'markdown') {
+          contentType = 'text/markdown';
+          // Set appropriate headers for markdown downloads
+          res.setHeader('Content-Disposition', `attachment; filename="${metadata.title.replace(/[^a-z0-9]/gi, '_')}.md"`);
+        } else {
+          contentType = 'text/html';
+        }
+        res.setHeader('Content-Type', contentType);
+
+        res.send(content);
+      }
     } catch (error) {
       console.error('Error serving artifact:', error);
       res.status(500).send('Error loading artifact');
+    }
+  });
+
+  // Serve static assets from folder artifacts (CSS, JS, images, etc.)
+  app.get('/artifacts/:id/*', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const assetPath = req.params[0]; // Everything after /artifacts/:id/
+
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).send('Invalid artifact ID');
+    }
+
+    // Prevent directory traversal
+    if (assetPath.includes('..') || assetPath.includes('\\')) {
+      return res.status(400).send('Invalid asset path');
+    }
+
+    try {
+      // Load metadata
+      const metadataPath = join(ARTIFACTS_DIR, `${id}.json`);
+
+      if (!existsSync(metadataPath)) {
+        return res.status(404).send('Artifact not found');
+      }
+
+      const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
+
+      // Only serve assets for folder artifacts
+      if (metadata.artifactType !== 'folder') {
+        return res.status(404).send('Not a folder artifact');
+      }
+
+      // Construct full asset path
+      const folderPath = join(ARTIFACTS_DIR, metadata.folderPath || id);
+      const fullAssetPath = join(folderPath, assetPath);
+
+      if (!existsSync(fullAssetPath)) {
+        return res.status(404).send('Asset not found');
+      }
+
+      // Determine content type from extension
+      const ext = assetPath.split('.').pop()?.toLowerCase();
+      const contentTypeMap: Record<string, string> = {
+        'html': 'text/html',
+        'css': 'text/css',
+        'js': 'application/javascript',
+        'json': 'application/json',
+        'png': 'image/png',
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif': 'image/gif',
+        'svg': 'image/svg+xml',
+        'webp': 'image/webp',
+        'ico': 'image/x-icon',
+        'woff': 'font/woff',
+        'woff2': 'font/woff2',
+        'ttf': 'font/ttf',
+        'eot': 'application/vnd.ms-fontobject',
+        'mp4': 'video/mp4',
+        'webm': 'video/webm',
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+      };
+
+      const contentType = contentTypeMap[ext || ''] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+
+      // For text-based files, read as string
+      if (contentType.startsWith('text/') || contentType.includes('javascript') || contentType.includes('json')) {
+        const content = readFileSync(fullAssetPath, 'utf-8');
+        res.send(content);
+      } else {
+        // For binary files, send as buffer
+        const content = readFileSync(fullAssetPath);
+        res.send(content);
+      }
+    } catch (error) {
+      console.error('Error serving asset:', error);
+      res.status(500).send('Error loading asset');
     }
   });
 

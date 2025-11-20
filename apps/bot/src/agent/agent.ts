@@ -31,6 +31,7 @@ import { listArtifactsTool } from './tools/listArtifacts.js';
 import { codeQueryTool } from './tools/codeQuery.js';
 import { conversationToSlidevTool } from './tools/conversationToSlidev.js';
 import { getOmegaManifestTool } from './tools/getOmegaManifest.js';
+import { buildSlidevPresentationTool } from './tools/buildSlidevPresentation.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -268,6 +269,7 @@ export async function runAgent(
         codeQuery: codeQueryTool,
         conversationToSlidev: conversationToSlidevTool,
         getOmegaManifest: getOmegaManifestTool,
+        buildSlidevPresentation: buildSlidevPresentationTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
