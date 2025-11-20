@@ -8,6 +8,8 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from '../../lib/unsandbox/index.js';
 
 // Map user-friendly language names to Unsandbox runtime identifiers
@@ -102,7 +104,54 @@ export const unsandboxTool = tool({
       console.log(`   Error Length: ${response.error.length} characters`);
       console.log(`   Artifacts: ${response.artifacts.length}`);
 
-      return response;
+      // Generate AI summary of execution results for better debugging
+      console.log(`   🤖 Generating AI summary of execution results...`);
+      try {
+        const summaryResult = await generateText({
+          model: openai.chat('gpt-5-mini'),
+          prompt: `Analyze this code execution result and provide a brief, helpful summary for debugging purposes.
+
+Language: ${language}
+Code executed:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Execution Results:
+- Status: ${result.status}
+- Success: ${success}
+- Exit Code: ${result.result?.exit_code ?? 'N/A'}
+- Execution Time: ${result.executionTime}ms
+
+Standard Output:
+${response.output || '(empty)'}
+
+Standard Error:
+${response.error || '(empty)'}
+
+Artifacts: ${response.artifacts.length > 0 ? response.artifacts.map(a => a.name).join(', ') : 'none'}
+
+Provide a concise 2-3 sentence summary that:
+1. States what the code did
+2. Whether it succeeded or failed and why
+3. Any notable outputs or errors
+
+Keep it technical but clear for debugging purposes.`,
+          temperature: 0.3,
+        });
+
+        const aiSummary = summaryResult.text.trim();
+        console.log(`   ✅ AI summary generated: ${aiSummary}`);
+
+        return {
+          ...response,
+          aiSummary,
+        };
+      } catch (summaryError) {
+        console.log(`   ⚠️ Failed to generate AI summary:`, summaryError);
+        // Return response without summary if AI call fails
+        return response;
+      }
     } catch (error) {
       console.log(`\n💥 [${new Date().toISOString()}] Unsandbox Tool Execution Failed`);
       console.error('   Error details:', error);
@@ -113,22 +162,101 @@ export const unsandboxTool = tool({
         console.log(`   Status: ${error.status}`);
         console.log(`   Code: ${error.code}`);
         console.log(`   Message: ${error.message}`);
-        return {
-          success: false,
-          error: `Unsandbox API error (${error.status}): ${error.message}`,
-          language,
-          errorCode: error.code,
-        };
+
+        // Generate AI summary for API errors
+        try {
+          console.log(`   🤖 Generating AI summary of API error...`);
+          const errorSummaryResult = await generateText({
+            model: openai.chat('gpt-5-mini'),
+            prompt: `Analyze this Unsandbox API error and provide a brief debugging summary.
+
+Language: ${language}
+Code attempted:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Error Details:
+- HTTP Status: ${error.status}
+- Error Code: ${error.code}
+- Message: ${error.message}
+
+Provide a concise 2-3 sentence explanation of:
+1. What likely caused this error
+2. How to fix it
+3. Any important context about the error
+
+Keep it technical and actionable for debugging.`,
+            temperature: 0.3,
+          });
+
+          const aiSummary = errorSummaryResult.text.trim();
+          console.log(`   ✅ AI error summary generated`);
+
+          return {
+            success: false,
+            error: `Unsandbox API error (${error.status}): ${error.message}`,
+            language,
+            errorCode: error.code,
+            aiSummary,
+          };
+        } catch (summaryError) {
+          console.log(`   ⚠️ Failed to generate AI error summary:`, summaryError);
+          return {
+            success: false,
+            error: `Unsandbox API error (${error.status}): ${error.message}`,
+            language,
+            errorCode: error.code,
+          };
+        }
       }
 
       // Handle generic errors
       console.log(`   Error Type: Generic Error`);
       console.log(`   Message: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
-        language,
-      };
+
+      // Generate AI summary for generic errors
+      try {
+        console.log(`   🤖 Generating AI summary of generic error...`);
+        const errorSummaryResult = await generateText({
+          model: openai.chat('gpt-5-mini'),
+          prompt: `Analyze this code execution error and provide a brief debugging summary.
+
+Language: ${language}
+Code attempted:
+\`\`\`${language}
+${code}
+\`\`\`
+
+Error:
+${error instanceof Error ? error.message : 'Unknown error occurred'}
+
+Provide a concise 2-3 sentence explanation of:
+1. What likely caused this error
+2. How to fix it
+3. Any important debugging tips
+
+Keep it technical and actionable.`,
+          temperature: 0.3,
+        });
+
+        const aiSummary = errorSummaryResult.text.trim();
+        console.log(`   ✅ AI error summary generated`);
+
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+          language,
+          aiSummary,
+        };
+      } catch (summaryError) {
+        console.log(`   ⚠️ Failed to generate AI error summary:`, summaryError);
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error occurred',
+          language,
+        };
+      }
     }
   },
 });
