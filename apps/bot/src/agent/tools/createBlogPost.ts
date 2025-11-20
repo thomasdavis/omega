@@ -7,9 +7,10 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { getBlogDir } from '../../utils/storage.js';
 
-// Blog content directory - at the repository root
-const BLOG_DIR = join(process.cwd(), 'content/blog');
+// Blog content directory - uses persistent storage in production
+const BLOG_DIR = getBlogDir();
 
 // Available TTS voices (examples - expand as needed)
 const TTS_VOICES = [

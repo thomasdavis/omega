@@ -1,10 +1,11 @@
 /**
  * Blog Renderer
- * Reads markdown files from /content/blog and renders them with TTS support
+ * Reads markdown files from persistent blog storage and renders them with TTS support
  */
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { getBlogDir } from '../utils/storage.js';
 
 export interface BlogPost {
   slug: string;
@@ -165,10 +166,10 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
 }
 
 /**
- * Get all blog posts from /content/blog
+ * Get all blog posts from persistent blog storage
  */
 export function getBlogPosts(contentDir?: string): BlogPost[] {
-  const blogDir = contentDir || join(process.cwd(), 'content/blog');
+  const blogDir = contentDir || getBlogDir();
 
   if (!existsSync(blogDir)) {
     console.warn(`Blog directory not found: ${blogDir}`);
@@ -210,7 +211,7 @@ export function getBlogPosts(contentDir?: string): BlogPost[] {
  * Get a single blog post by slug
  */
 export function getBlogPost(slug: string, contentDir?: string): BlogPost | null {
-  const blogDir = contentDir || join(process.cwd(), 'content/blog');
+  const blogDir = contentDir || getBlogDir();
   const filepath = join(blogDir, `${slug}.md`);
 
   if (!existsSync(filepath)) {

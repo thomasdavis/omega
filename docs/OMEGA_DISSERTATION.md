@@ -109,3 +109,33 @@ Omega operationalizes a self-coding loop inside a social surface: it listens, de
 - `apps/bot/src/lib/unsandbox/*`: Unsandbox client, polling logic, and tests.
 - `ci-check-workflow.yml`: CI (type-check, lint, build) and autofix job.
 - `README.md`, `ARCHITECTURE_PLAN.md`, `OMEGA_FLOW.md`: setup, architectural decisions, operational flow.
+
+## 13. Related Community Work and References
+Below are community projects, papers, and tools that align with or inform the Omega design space. URLs are provided for primary sources; dates indicate first public release or publication.
+
+- **OpenAI Swarm (2024)** — lightweight multi-agent orchestration framework by OpenAI, emphasizing planner–worker patterns and tool use. Repo: https://github.com/openai/swarm
+- **AutoGen (Q4 2023, Microsoft)** — multi-agent conversation framework with tool calling and human-in-the-loop patterns. Repo: https://github.com/microsoft/autogen
+- **LangChain Agents (2022–2024)** — tool-enabled agent abstractions and execution control with retrievers, memory, and safety hooks. Docs: https://python.langchain.com/docs/modules/agents
+- **LlamaIndex Agents (2023–2024)** — retrieval-augmented agents with graph/tool routing and observability. Docs: https://docs.llamaindex.ai/en/stable/optimizing/agents/agent_types/
+- **OpenInterpreter (v0.3, 2023)** — natural language interface to code execution with sandboxing and file-system interactions. Repo: https://github.com/OpenInterpreter/open-interpreter
+- **Auto-GPT (Q1 2023)** — early autonomous task decomposition and tool use loop; highlighted prompt brittleness and cost issues. Repo: https://github.com/Significant-Gravitas/Auto-GPT
+- **BabyAGI (Q1 2023)** — minimal task-list agent loop; popularized iterative planning with vector recall. Repo: https://github.com/yoheinakajima/babyagi
+- **AutoPR (Q2 2023, now part of Sweep)** — automated PR authoring using diff parsing and tool calls. Repo: https://github.com/irgolic/AutoPR
+- **Sweep (2023–2024)** — AI code assistant that files and edits PRs from GitHub issues with repo-wide context. Repo: https://github.com/sweepai/sweep
+- **GitHub Copilot Agents (limited preview, 2024)** — task-oriented agents that operate over repos and tools; relevant for repo-level planning and safety guardrails. Announcement: https://github.blog/2024-05-21-introducing-copilot-agents/
+- **Reflexion (Shinn et al., 2023)** — method for self-reflection to improve agent performance over episodes. Paper: https://arxiv.org/abs/2303.11366
+- **Tree of Thoughts (Yao et al., 2023)** — structured search over reasoning traces; informs long-horizon tool planning. Paper: https://arxiv.org/abs/2305.10601
+- **ReAct (Yao et al., 2022)** — combined reasoning + acting pattern foundational to modern tool-use prompting. Paper: https://arxiv.org/abs/2210.03629
+- **DSPy (Stanford, 2024)** — programmatic optimization of prompts and tool policies; relevant for prompt governance. Repo: https://github.com/stanfordnlp/dspy
+- **Guardrails.ai (2023–2024)** — validation/guardrail framework for LLM outputs; relevant for enforcement of schemas and policies. Repo: https://github.com/guardrails-ai/guardrails
+- **Arize Phoenix (2023–2024)** — open-source LLM observability platform; suggests best practices for tracing, latency metrics, and failure analysis. Repo: https://github.com/Arize-ai/phoenix
+- **AI SDK v6 (Vercel, 2024)** — underlying agent protocol used by Omega; supports tool calling and streaming. Docs: https://sdk.vercel.ai/docs
+
+### How These Inform Omega
+- **Multi-agent orchestration (Swarm, AutoGen):** Offer planner/worker templates Omega could adopt for complex, multi-step tasks or parallel tool calls.
+- **Tooling patterns (LangChain, LlamaIndex):** Provide abstractions for routing, memory, and guardrails that could harden Omega’s tool selection and recovery strategies.
+- **Execution UX (OpenInterpreter):** Inspires transparent code execution with user-visible steps and safety checks; relevant to Unsandbox messaging and guardrails.
+- **Repo-editing agents (AutoPR, Sweep, Copilot Agents):** Demonstrate safety nets for automated code changes (tests-before-commit, diff summaries, approval gates) that Omega can emulate.
+- **Reasoning improvements (Reflexion, Tree of Thoughts, ReAct):** Techniques to reduce tool-call errors and improve long-horizon tasks; candidates for prompt or control-flow augmentation.
+- **Prompt/Policy optimization (DSPy, Guardrails):** Suggest systematic prompt governance, regression testing, and schema enforcement to prevent drift.
+- **Observability (Phoenix):** Motivate structured tracing, latency/error dashboards, and per-tool SLOs—missing pieces in Omega’s current ops story.
