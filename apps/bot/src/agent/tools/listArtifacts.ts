@@ -7,15 +7,11 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
+import { getArtifactsDir, getUploadsDir } from '../../utils/storage.js';
 
-// Determine artifact and upload directories based on environment
-const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
-  ? '/data/artifacts'
-  : join(process.cwd(), 'apps/bot/artifacts');
-
-const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
-  ? '/data/uploads'
-  : join(process.cwd(), 'apps/bot/public/uploads');
+// Use centralized storage utility for consistent paths
+const ARTIFACTS_DIR = getArtifactsDir();
+const UPLOADS_DIR = getUploadsDir();
 
 interface FileInfo {
   name: string;

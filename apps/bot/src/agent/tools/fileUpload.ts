@@ -5,24 +5,13 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { writeFileSync, mkdirSync, existsSync, statSync } from 'fs';
-import { join, dirname, extname } from 'path';
-import { fileURLToPath } from 'url';
+import { writeFileSync, statSync } from 'fs';
+import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
+import { getUploadsDir } from '../../utils/storage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Public uploads directory
-// Use persistent Fly.io Volume if available, otherwise fall back to local public folder
-const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
-  ? '/data/uploads'
-  : join(__dirname, '../../../public/uploads');
-
-// Ensure uploads directory exists
-if (!existsSync(UPLOADS_DIR)) {
-  mkdirSync(UPLOADS_DIR, { recursive: true });
-}
+// Public uploads directory - use centralized storage utility
+const UPLOADS_DIR = getUploadsDir();
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB (Discord's attachment limit)
