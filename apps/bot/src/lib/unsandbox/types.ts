@@ -29,7 +29,7 @@ export interface ExecuteCodeRequest {
   language: UnsandboxLanguage;
   /** The code to execute */
   code: string;
-  /** Time to live (TTL) in seconds for the execution (default: 5, max: 30) */
+  /** Time to live (TTL) in seconds for the execution (default: 5, max: 300) */
   ttl?: number;
   /** Environment variables for the execution */
   env?: Record<string, string>;

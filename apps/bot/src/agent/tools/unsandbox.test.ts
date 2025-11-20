@@ -562,13 +562,13 @@ describe('Unsandbox Tool', () => {
       );
     });
 
-    it('should enforce maximum TTL of 30 seconds', async () => {
+    it('should enforce maximum TTL of 300 seconds', async () => {
       // This test validates the Zod schema enforcement
       const schema = unsandboxTool.inputSchema;
       const validationResult = schema.safeParse({
         language: 'python',
         code: 'print("test")',
-        ttl: 35, // Exceeds max
+        ttl: 350, // Exceeds max
       });
 
       expect(validationResult.success).toBe(false);

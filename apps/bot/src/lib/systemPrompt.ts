@@ -87,14 +87,14 @@ IMPORTANT: When fetching web pages, always use the webFetch tool which automatic
 
 Code Execution: You have access to THREE Unsandbox tools for executing code in various programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash):
 
-1. **unsandbox** - Full workflow with automatic polling and real-time progress updates. Use this for normal code execution (< 30s expected). The tool automatically:
+1. **unsandbox** - Full workflow with automatic polling and real-time progress updates. Use this for code execution up to 300s (5 minutes). The tool automatically:
    - Submits code for execution
    - Sends progress updates to Discord while polling (🐍 "Executing Python code...", 🔄 "Still running...")
    - Returns stdout, stderr, exit codes, execution time, and artifacts when complete
    - Uses language-specific emojis for better UX (🐍 Python, 📜 JavaScript, 🦀 Rust, etc.)
 
 2. **unsandboxSubmit** - Advanced: Submit code for async execution and return immediately with a job ID. Use this for:
-   - Long-running code (> 30s or up to 5 minutes)
+   - Long-running code (up to 5 minutes/300s)
    - When you want manual control over polling
    - Batch processing scenarios
    - Returns job_id that can be checked later with unsandboxStatus
