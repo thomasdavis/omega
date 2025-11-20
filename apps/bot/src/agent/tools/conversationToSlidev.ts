@@ -10,6 +10,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getArtifactsDir } from '../../utils/storage.js';
+import { generatePptxBuffer } from '../../utils/pptxGenerator.js';
 
 // Artifacts directory - use centralized storage utility
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -82,15 +83,16 @@ export function clearSlidevMessageContext() {
 }
 
 export const conversationToSlidevTool = tool({
-  description: 'Convert Discord conversation history to Slidev presentation format. Creates engaging slide decks from chat logs with timestamps and usernames. Perfect for retrospectives, meeting summaries, or presenting conversation highlights. Automatically saves the presentation as an artifact and returns a shareable link along with the formatted Slidev Markdown.',
+  description: 'Convert Discord conversation history to Slidev presentation format. Creates engaging slide decks from chat logs with timestamps and usernames. Perfect for retrospectives, meeting summaries, or presenting conversation highlights. Automatically saves the presentation as an artifact and returns a shareable link. Can export as Slidev Markdown (.md) or PowerPoint (.pptx) format.',
   inputSchema: z.object({
     limit: z.number().min(1).max(100).default(20).describe('Number of messages to include (1-100, default: 20)'),
     theme: z.enum(['default', 'seriph', 'apple-basic', 'shibainu']).default('default').describe('Slidev theme to use'),
     title: z.string().default('Discord Conversation').describe('Presentation title'),
     groupByUser: z.boolean().default(false).describe('Group consecutive messages from the same user into single slides'),
     messagesPerSlide: z.number().min(1).max(10).default(1).describe('Number of messages per slide (1-10, default: 1)'),
+    exportToPptx: z.boolean().default(true).describe('Also export as PowerPoint (.pptx) format alongside Slidev markdown'),
   }),
-  execute: async ({ limit, theme, title, groupByUser, messagesPerSlide }) => {
+  execute: async ({ limit, theme, title, groupByUser, messagesPerSlide, exportToPptx }) => {
     try {
       console.log(`🎨 Converting conversation to Slidev format (limit: ${limit})`);
 
@@ -153,9 +155,50 @@ export const conversationToSlidevTool = tool({
 
       console.log(`📦 Saved artifact: ${artifactUrl}`);
 
+      // Generate PPTX if requested
+      let pptxMetadata: ArtifactMetadata | undefined;
+      let pptxUrl: string | undefined;
+
+      if (exportToPptx) {
+        try {
+          console.log('📊 Generating PowerPoint presentation...');
+          const pptxBuffer = await generatePptxBuffer(slidevMarkdown, {
+            title,
+            author: 'Omega Discord Bot',
+            subject: `Discord conversation from #${channelName}`,
+          });
+
+          // Save PPTX file
+          const pptxId = randomUUID();
+          const pptxFilename = `${pptxId}.pptx`;
+          const pptxFilepath = join(ARTIFACTS_DIR, pptxFilename);
+
+          writeFileSync(pptxFilepath, pptxBuffer);
+
+          // Save PPTX metadata
+          pptxMetadata = {
+            id: pptxId,
+            type: 'pptx',
+            title: `${title} (PowerPoint)`,
+            description: `PowerPoint export of ${description}`,
+            createdAt: new Date().toISOString(),
+            filename: pptxFilename,
+          };
+
+          const pptxMetadataPath = join(ARTIFACTS_DIR, `${pptxId}.json`);
+          writeFileSync(pptxMetadataPath, JSON.stringify(pptxMetadata, null, 2), 'utf-8');
+
+          pptxUrl = `${serverUrl}/artifacts/${pptxId}`;
+          console.log(`✅ PowerPoint saved: ${pptxUrl}`);
+        } catch (pptxError) {
+          console.error('⚠️ Failed to generate PPTX:', pptxError);
+          // Continue execution - PPTX is optional
+        }
+      }
+
       return {
         success: true,
-        message: `Successfully converted ${messages.length} messages to Slidev presentation format and saved as artifact.`,
+        message: `Successfully converted ${messages.length} messages to Slidev presentation format and saved as artifact.${exportToPptx && pptxUrl ? ' PowerPoint (.pptx) version also available.' : ''}`,
         slidevMarkdown,
         messageCount: messages.length,
         slideCount: countSlides(slidevMarkdown),
@@ -164,6 +207,10 @@ export const conversationToSlidevTool = tool({
         artifactId: metadata.id,
         artifactUrl,
         downloadUrl: `${serverUrl}/artifacts/${metadata.id}`,
+        pptxAvailable: !!pptxUrl,
+        pptxArtifactId: pptxMetadata?.id,
+        pptxUrl,
+        pptxDownloadUrl: pptxUrl,
       };
     } catch (error) {
       console.error('❌ Error converting to Slidev:', error);
