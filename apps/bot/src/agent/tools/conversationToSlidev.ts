@@ -6,6 +6,23 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import type { Message } from 'discord.js';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Artifacts directory - use the same pattern as artifact.ts
+const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/artifacts')
+  ? '/data/artifacts'
+  : join(__dirname, '../../../artifacts');
+
+// Ensure artifacts directory exists
+if (!existsSync(ARTIFACTS_DIR)) {
+  mkdirSync(ARTIFACTS_DIR, { recursive: true });
+}
 
 // Extended message type with timestamp
 interface SlidevMessage {
@@ -13,6 +30,47 @@ interface SlidevMessage {
   content: string;
   timestamp: string;
   id: string;
+}
+
+// Artifact metadata interface
+interface ArtifactMetadata {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  filename: string;
+}
+
+/**
+ * Save Slidev artifact to filesystem and return metadata
+ */
+function saveSlidevArtifact(
+  content: string,
+  title: string,
+  description: string
+): ArtifactMetadata {
+  const id = randomUUID();
+  const filename = `${id}.md`;
+  const filepath = join(ARTIFACTS_DIR, filename);
+
+  // Save the Slidev markdown file
+  writeFileSync(filepath, content, 'utf-8');
+
+  // Save metadata
+  const metadata: ArtifactMetadata = {
+    id,
+    type: 'slidev',
+    title,
+    description,
+    createdAt: new Date().toISOString(),
+    filename,
+  };
+
+  const metadataPath = join(ARTIFACTS_DIR, `${id}.json`);
+  writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+
+  return metadata;
 }
 
 // Store the current Discord message context (set by messageHandler)
@@ -34,7 +92,7 @@ export function clearSlidevMessageContext() {
 }
 
 export const conversationToSlidevTool = tool({
-  description: 'Convert Discord conversation history to Slidev presentation format. Creates engaging slide decks from chat logs with timestamps and usernames. Perfect for retrospectives, meeting summaries, or presenting conversation highlights. Returns formatted Slidev Markdown ready for presentation.',
+  description: 'Convert Discord conversation history to Slidev presentation format. Creates engaging slide decks from chat logs with timestamps and usernames. Perfect for retrospectives, meeting summaries, or presenting conversation highlights. Automatically saves the presentation as an artifact and returns a shareable link along with the formatted Slidev Markdown.',
   inputSchema: z.object({
     limit: z.number().min(1).max(100).default(20).describe('Number of messages to include (1-100, default: 20)'),
     theme: z.enum(['default', 'seriph', 'apple-basic', 'shibainu']).default('default').describe('Slidev theme to use'),
@@ -93,14 +151,29 @@ export const conversationToSlidevTool = tool({
 
       console.log(`✅ Converted ${messages.length} messages to Slidev format`);
 
+      // Save as artifact and generate shareable link
+      const channelName = channel.isDMBased() ? 'Direct Message' : (channel as any).name;
+      const description = `Slidev presentation with ${messages.length} messages from #${channelName}`;
+      const metadata = saveSlidevArtifact(slidevMarkdown, title, description);
+
+      // Get server URL from environment or use default
+      const serverUrl = process.env.ARTIFACT_SERVER_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+      const artifactUrl = `${serverUrl}/artifacts/${metadata.id}`;
+
+      console.log(`📦 Saved artifact: ${artifactUrl}`);
+
       return {
         success: true,
-        message: `Successfully converted ${messages.length} messages to Slidev presentation format.`,
+        message: `Successfully converted ${messages.length} messages to Slidev presentation format and saved as artifact.`,
         slidevMarkdown,
         messageCount: messages.length,
         slideCount: countSlides(slidevMarkdown),
         theme,
         exportDate: new Date().toISOString(),
+        artifactId: metadata.id,
+        artifactUrl,
+        downloadUrl: `${serverUrl}/artifacts/${metadata.id}`,
       };
     } catch (error) {
       console.error('❌ Error converting to Slidev:', error);

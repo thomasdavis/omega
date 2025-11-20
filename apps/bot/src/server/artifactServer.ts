@@ -66,7 +66,16 @@ function createApp(): express.Application {
       const content = readFileSync(artifactPath, 'utf-8');
 
       // Set appropriate content type
-      const contentType = metadata.type === 'svg' ? 'image/svg+xml' : 'text/html';
+      let contentType: string;
+      if (metadata.type === 'svg') {
+        contentType = 'image/svg+xml';
+      } else if (metadata.type === 'slidev' || metadata.type === 'markdown') {
+        contentType = 'text/markdown';
+        // Set appropriate headers for markdown downloads
+        res.setHeader('Content-Disposition', `attachment; filename="${metadata.title.replace(/[^a-z0-9]/gi, '_')}.md"`);
+      } else {
+        contentType = 'text/html';
+      }
       res.setHeader('Content-Type', contentType);
 
       res.send(content);
