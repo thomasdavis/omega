@@ -11,7 +11,7 @@ import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
 import { githubCreateIssueTool, githubUpdateIssueTool } from './tools/github.js';
 import { webFetchTool } from './tools/webFetch.js';
-import { unsandboxTool } from './tools/unsandbox.js';
+import { unsandboxTool, unsandboxSubmitTool, unsandboxStatusTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
 import { asciiGraphTool } from './tools/asciiGraph.js';
 import { whoamiTool } from './tools/whoami.js';
@@ -98,6 +98,8 @@ export async function runAgent(
         githubUpdateIssue: githubUpdateIssueTool,
         webFetch: webFetchTool,
         unsandbox: unsandboxTool,
+        unsandboxSubmit: unsandboxSubmitTool,
+        unsandboxStatus: unsandboxStatusTool,
         researchEssay: researchEssayTool,
         asciiGraph: asciiGraphTool,
         renderChart: renderChartTool,
