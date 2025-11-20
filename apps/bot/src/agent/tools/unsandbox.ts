@@ -72,11 +72,11 @@ async function sendDiscordUpdate(content: string): Promise<void> {
  * Main unsandbox tool - Full workflow with automatic polling and progress updates
  */
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for normal code execution (< 30s expected). Accepts any language string - the API will report errors for unsupported languages.',
+  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for code execution up to 300s (5 minutes). Accepts any language string - the API will report errors for unsupported languages.',
   inputSchema: z.object({
     language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
-    ttl: z.number().int().min(1).max(30).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 30s)'),
+    ttl: z.number().int().min(1).max(300).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 300s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
   }),

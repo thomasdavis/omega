@@ -223,11 +223,11 @@ interface JobStatusResponse {
 
 ## Best Practices
 
-1. **Set Appropriate Timeouts**: Default is 5000ms, max is 30000ms
+1. **Set Appropriate Timeouts**: Default TTL is 30s, max is 300s (5 minutes)
 2. **Handle Errors**: Always wrap calls in try-catch blocks
 3. **Check Success**: Use `result.result?.success` and `result.result?.exit_code === 0` to verify success
 4. **Use Language Mapping**: The tool handles mapping user-friendly names to runtime identifiers
-5. **Monitor Long Executions**: Use `getExecutionStatus()` for executions > 5 seconds
+5. **Monitor Long Executions**: Use `getExecutionStatus()` or the `unsandboxSubmit` + `unsandboxStatus` tools for long-running code
 6. **Validate Input**: Sanitize user-provided code before execution
 7. **Handle 404s**: Jobs may return 404 after completion if they've been cleaned up from the server
 
