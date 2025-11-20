@@ -7,6 +7,7 @@ import { runAgent } from '../agent/agent.js';
 import { shouldRespond } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
+import { setVibeMessageContext, clearVibeMessageContext } from '../agent/tools/setVibe.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -70,9 +71,10 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('   Attachment details added to message context');
     }
 
-    // Set message context for export and slidev tools
+    // Set message context for export, slidev, and vibe tools
     setExportMessageContext(message);
     setSlidevMessageContext(message);
+    setVibeMessageContext(message);
 
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
@@ -81,6 +83,7 @@ export async function handleMessage(message: Message): Promise<void> {
     try {
       result = await runAgent(enrichedContent, {
         username: message.author.username,
+        userId: message.author.id,
         channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
         messageHistory,
       });
@@ -93,6 +96,7 @@ export async function handleMessage(message: Message): Promise<void> {
     // Clear message context after agent execution
     clearExportMessageContext();
     clearSlidevMessageContext();
+    clearVibeMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
     // If tools were used, send separate messages for each tool
