@@ -39,22 +39,10 @@ function generateSlug(title: string): string {
 }
 
 /**
- * Format date as YYYY-MM-DD
+ * Format current system date as YYYY-MM-DD
+ * Always uses server's current time to ensure accurate timestamps
  */
-function formatDate(date?: string): string {
-  if (date) {
-    // Validate and return provided date
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (dateRegex.test(date)) {
-      return date;
-    }
-    // Try to parse and format
-    const parsed = new Date(date);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split('T')[0];
-    }
-  }
-  // Default to today
+function getCurrentDate(): string {
   return new Date().toISOString().split('T')[0];
 }
 
@@ -72,29 +60,29 @@ ttsVoice: "${metadata.ttsVoice}"
 
 /**
  * Save blog post to the blog directory
+ * Always uses current system time for the date
  */
 function saveBlogPost(
   title: string,
   content: string,
-  date: string,
   tts: boolean,
   ttsVoice: string
-): { filename: string; filepath: string } {
+): { filename: string; filepath: string; date: string } {
   // Ensure blog directory exists
   if (!existsSync(BLOG_DIR)) {
     mkdirSync(BLOG_DIR, { recursive: true });
   }
 
-  // Generate filename from title and date
+  // Generate filename from title and current date
   const slug = generateSlug(title);
-  const formattedDate = formatDate(date);
-  const filename = `${formattedDate}-${slug}.md`;
+  const currentDate = getCurrentDate();
+  const filename = `${currentDate}-${slug}.md`;
   const filepath = join(BLOG_DIR, filename);
 
   // Create frontmatter
   const metadata: BlogPostMetadata = {
     title,
-    date: formattedDate,
+    date: currentDate,
     tts,
     ttsVoice,
   };
@@ -108,7 +96,7 @@ ${content}`;
   // Write file
   writeFileSync(filepath, fullContent, 'utf-8');
 
-  return { filename, filepath };
+  return { filename, filepath, date: currentDate };
 }
 
 /**
@@ -139,12 +127,14 @@ export const createBlogPostTool = tool({
 
   This tool creates structured blog posts with YAML frontmatter that includes:
   - title: The blog post title
-  - date: Publication date (YYYY-MM-DD format)
+  - date: Publication date (YYYY-MM-DD format, automatically set to current system time)
   - tts: Enable/disable text-to-speech (true/false)
   - ttsVoice: Voice to use for TTS playback
 
   The blog post is automatically saved to the content/blog directory with a filename
-  generated from the date and title (e.g., 2025-11-20-my-blog-post.md).
+  generated from the current date and title (e.g., 2025-11-20-my-blog-post.md).
+
+  IMPORTANT: The date is ALWAYS set to the server's current system time to ensure accurate timestamps.
 
   The blog renderer will automatically pick up new posts from this directory.
 
@@ -164,12 +154,11 @@ export const createBlogPostTool = tool({
   inputSchema: z.object({
     title: z.string().describe('The title of the blog post'),
     content: z.string().describe('The markdown content of the blog post (without frontmatter - that will be added automatically)'),
-    date: z.string().optional().describe('Publication date in YYYY-MM-DD format (defaults to today)'),
     tts: z.boolean().default(true).describe('Enable text-to-speech for this post (default: true)'),
     ttsVoice: z.enum(TTS_VOICES).default('bm_fable').describe('Voice to use for TTS playback (default: bm_fable)'),
   }),
 
-  execute: async ({ title, content, date, tts, ttsVoice }) => {
+  execute: async ({ title, content, tts, ttsVoice }) => {
     try {
       console.log('📝 Creating blog post:', title);
 
@@ -183,11 +172,10 @@ export const createBlogPostTool = tool({
         };
       }
 
-      // Save the blog post
-      const { filename, filepath } = saveBlogPost(
+      // Save the blog post (date is automatically set to current system time)
+      const { filename, filepath, date } = saveBlogPost(
         title,
         content,
-        date || new Date().toISOString().split('T')[0],
         tts,
         ttsVoice
       );
@@ -201,8 +189,8 @@ export const createBlogPostTool = tool({
         filepath,
         tts,
         ttsVoice,
-        date: formatDate(date),
-        message: `✨ Blog post created successfully!\n\nFile: ${filename}\nPath: ${filepath}\nTTS: ${tts ? 'enabled' : 'disabled'}\nVoice: ${ttsVoice}\n\nThe blog renderer will automatically pick up this new post.`,
+        date,
+        message: `✨ Blog post created successfully!\n\nFile: ${filename}\nPath: ${filepath}\nDate: ${date} (current system time)\nTTS: ${tts ? 'enabled' : 'disabled'}\nVoice: ${ttsVoice}\n\nThe blog renderer will automatically pick up this new post.`,
       };
     } catch (error) {
       console.error('Error creating blog post:', error);
