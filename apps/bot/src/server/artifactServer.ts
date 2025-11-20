@@ -7,6 +7,8 @@ import express, { Request, Response } from 'express';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getArtifactsDir, getUploadsDir } from '../utils/storage.js';
+import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js';
+import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -18,6 +20,11 @@ export interface ArtifactServerConfig {
   host?: string;
 }
 
+// Simple in-memory rate limiter for TTS
+const ttsRateLimiter = new Map<string, { count: number; resetAt: number }>();
+const TTS_RATE_LIMIT = 20; // requests per window
+const TTS_RATE_WINDOW = 60 * 1000; // 1 minute
+
 /**
  * Create and configure the Express app
  */
@@ -27,8 +34,14 @@ function createApp(): express.Application {
   // Enable CORS for embedding
   app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
+    }
+
     next();
   });
 
@@ -250,6 +263,129 @@ function createApp(): express.Application {
     }
   });
 
+  // TTS API endpoint - POST /api/tts
+  app.post('/api/tts', express.json(), async (req: Request, res: Response) => {
+    try {
+      const clientIP = req.ip || req.socket.remoteAddress || 'unknown';
+
+      // Rate limiting
+      const now = Date.now();
+      const rateLimitData = ttsRateLimiter.get(clientIP);
+
+      if (rateLimitData) {
+        if (now < rateLimitData.resetAt) {
+          if (rateLimitData.count >= TTS_RATE_LIMIT) {
+            return res.status(429).json({
+              error: 'Rate limit exceeded',
+              message: `Maximum ${TTS_RATE_LIMIT} requests per minute`,
+              retryAfter: Math.ceil((rateLimitData.resetAt - now) / 1000),
+            });
+          }
+          rateLimitData.count++;
+        } else {
+          // Reset window
+          ttsRateLimiter.set(clientIP, { count: 1, resetAt: now + TTS_RATE_WINDOW });
+        }
+      } else {
+        ttsRateLimiter.set(clientIP, { count: 1, resetAt: now + TTS_RATE_WINDOW });
+      }
+
+      const ttsRequest: TTSRequest = req.body;
+
+      // Validate request
+      const validation = validateTTSRequest(ttsRequest);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: 'Invalid request',
+          message: validation.error,
+        });
+      }
+
+      // Generate TTS
+      console.log(`🎤 TTS request from ${clientIP}: "${ttsRequest.text.substring(0, 50)}..."`);
+      const result = await generateTTS(ttsRequest);
+
+      // Set headers
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      res.setHeader('X-TTS-Cached', result.cached ? 'true' : 'false');
+      res.setHeader('X-TTS-Hash', result.hash);
+
+      // Send audio buffer
+      res.send(result.audioBuffer);
+
+      console.log(`✅ TTS served: ${result.hash} (cached: ${result.cached})`);
+    } catch (error) {
+      console.error('Error processing TTS request:', error);
+      res.status(500).json({
+        error: 'TTS generation failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Blog routes
+  // Blog index
+  app.get('/blog', (req: Request, res: Response) => {
+    try {
+      const posts = getBlogPosts();
+      const html = renderBlogIndex(posts);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error rendering blog index:', error);
+      res.status(500).send('Error loading blog');
+    }
+  });
+
+  // Individual blog post
+  app.get('/blog/:slug', (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const post = getBlogPost(slug);
+
+      if (!post) {
+        return res.status(404).send('Blog post not found');
+      }
+
+      const html = renderBlogPost(post);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error rendering blog post:', error);
+      res.status(500).send('Error loading blog post');
+    }
+  });
+
+  // Serve static TTS player assets
+  app.get('/tts-player.js', (req: Request, res: Response) => {
+    try {
+      const filepath = join(process.cwd(), 'apps/bot/public/tts-player.js');
+      if (existsSync(filepath)) {
+        res.setHeader('Content-Type', 'application/javascript');
+        res.send(readFileSync(filepath, 'utf-8'));
+      } else {
+        res.status(404).send('File not found');
+      }
+    } catch (error) {
+      res.status(500).send('Error loading file');
+    }
+  });
+
+  app.get('/tts-player.css', (req: Request, res: Response) => {
+    try {
+      const filepath = join(process.cwd(), 'apps/bot/public/tts-player.css');
+      if (existsSync(filepath)) {
+        res.setHeader('Content-Type', 'text/css');
+        res.send(readFileSync(filepath, 'utf-8'));
+      } else {
+        res.status(404).send('File not found');
+      }
+    } catch (error) {
+      res.status(500).send('Error loading file');
+    }
+  });
+
   // Health check endpoint
   app.get('/health', (req: Request, res: Response) => {
     res.status(200).json({
@@ -438,6 +574,7 @@ function generateGalleryHTML(artifacts: any[]): string {
   <div class="container">
     <h1>🎨 Artifact Gallery</h1>
     <div class="nav-links">
+      <a href="/blog">📝 Blog →</a>
       <a href="/uploads">📁 Uploads Gallery →</a>
     </div>
     <div class="stats">
@@ -748,6 +885,8 @@ export function startArtifactServer(config: ArtifactServerConfig = {}): void {
   const server = app.listen(port, host, () => {
     console.log(`🎨 Artifact preview server running at http://${host}:${port}`);
     console.log(`   Gallery: http://${host}:${port}/`);
+    console.log(`   Blog: http://${host}:${port}/blog`);
+    console.log(`   TTS API: http://${host}:${port}/api/tts`);
     console.log(`   Artifacts: http://${host}:${port}/artifacts/:id`);
     console.log(`   Uploads: http://${host}:${port}/uploads/:filename`);
     console.log(`   Health: http://${host}:${port}/health`);

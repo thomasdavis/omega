@@ -1,0 +1,133 @@
+/**
+ * TTS Play Button Styles
+ * Accessible, responsive styles for TTS play buttons
+ */
+
+.tts-wrapper {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.tts-play-button {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+}
+
+.tts-play-button:hover {
+  background: rgba(0, 0, 0, 0.85);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tts-play-button:focus {
+  outline: 3px solid #4CAF50;
+  outline-offset: 2px;
+}
+
+.tts-play-button:active {
+  transform: scale(0.95);
+}
+
+/* Loading state */
+.tts-play-button.tts-loading {
+  background: rgba(66, 133, 244, 0.85);
+  cursor: wait;
+}
+
+.tts-play-button.tts-loading .tts-icon-loading {
+  animation: tts-spin 1s linear infinite;
+}
+
+/* Playing state */
+.tts-play-button.tts-playing {
+  background: rgba(76, 175, 80, 0.85);
+}
+
+/* Icon animations */
+@keyframes tts-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* For slide/figure captions */
+figure .tts-wrapper,
+.slide .tts-wrapper {
+  width: 100%;
+}
+
+figure img,
+.slide img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .tts-play-button,
+  .tts-icon-loading {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .tts-play-button {
+    width: 40px;
+    height: 40px;
+    bottom: 8px;
+    right: 8px;
+  }
+
+  .tts-play-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .tts-play-button {
+    background: black;
+    border: 2px solid white;
+  }
+
+  .tts-play-button:hover {
+    background: #333;
+  }
+
+  .tts-play-button:focus {
+    outline-color: yellow;
+  }
+}
+
+/* Ensure button is visible on light and dark images */
+.tts-play-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.3), transparent);
+  z-index: -1;
+}
