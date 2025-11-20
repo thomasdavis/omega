@@ -109,20 +109,21 @@ export function getBlogDir(localFallback?: string): string {
 export function getPublicDir(): string {
   // Try multiple possible paths for production/dev
   const possiblePaths = [
-    join(process.cwd(), 'apps/bot/public'),           // Monorepo structure
+    join(__dirname, '../public'),                     // Relative to dist/ (production after build)
+    join(process.cwd(), 'apps/bot/public'),           // Monorepo structure (dev)
     join(process.cwd(), 'public'),                    // If running from apps/bot
-    join(__dirname, '../../public'),                  // Relative to compiled dist
-    '/app/apps/bot/public',                           // Absolute Railway path
+    '/app/apps/bot/dist/public',                      // Absolute Railway path after build
   ];
 
   for (const path of possiblePaths) {
     if (existsSync(path)) {
+      console.log(`✅ Found public directory: ${path}`);
       return path;
     }
   }
 
   // Fallback to first path and log warning
-  console.warn('⚠️  Public directory not found, using fallback:', possiblePaths[0]);
+  console.error('❌ Public directory not found! Tried paths:', possiblePaths);
   return possiblePaths[0];
 }
 
