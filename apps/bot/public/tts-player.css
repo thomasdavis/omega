@@ -131,3 +131,58 @@ figure img,
   background: radial-gradient(circle, rgba(0, 0, 0, 0.3), transparent);
   z-index: -1;
 }
+
+/* Text element TTS styles */
+.tts-text {
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 4px;
+}
+
+.tts-text:hover {
+  background: rgba(33, 150, 243, 0.08);
+}
+
+.tts-text:focus {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
+
+.tts-text.tts-playing {
+  background: rgba(76, 175, 80, 0.12);
+  border-left: 4px solid #4CAF50;
+  padding-left: 12px;
+  margin-left: -12px;
+  animation: tts-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+  0%, 100% {
+    background: rgba(76, 175, 80, 0.12);
+  }
+  50% {
+    background: rgba(76, 175, 80, 0.2);
+  }
+}
+
+/* Read all controls */
+.tts-read-all-button,
+.tts-stop-all-button {
+  font-family: inherit;
+}
+
+.tts-read-all-button svg,
+.tts-stop-all-button svg {
+  flex-shrink: 0;
+}
+
+/* Accessibility - ensure text elements are keyboard accessible */
+.tts-text[role="button"] {
+  outline: none;
+}
+
+.tts-text[role="button"]:focus-visible {
+  outline: 2px solid #2196F3;
+  outline-offset: 2px;
+}
