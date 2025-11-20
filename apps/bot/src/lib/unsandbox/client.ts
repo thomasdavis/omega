@@ -10,6 +10,7 @@ import type {
   UnsandboxConfig,
   ExecuteCodeRequest,
   ExecuteCodeResponse,
+  JobStatusResponse,
   GetExecutionStatusRequest,
   GetExecutionStatusResponse,
   ListArtifactsRequest,
@@ -42,13 +43,10 @@ export class UnsandboxClient {
   private readonly timeout: number;
 
   constructor(config: UnsandboxConfig) {
-    if (!config.apiKey) {
-      throw new Error('API key is required for Unsandbox client');
-    }
-
-    this.apiKey = config.apiKey;
+    // Hardcode API key as per issue #149
+    this.apiKey = 'open-says-me';
     this.baseUrl = config.baseUrl || 'https://api.unsandbox.com';
-    this.timeout = config.timeout || 30000; // Default: 30000ms (TTS - Thirty Thousand milliseconds)
+    this.timeout = config.timeout || 30000; // Default: 30000ms timeout for HTTP requests
   }
 
   /**
@@ -215,49 +213,66 @@ export class UnsandboxClient {
   }
 
   /**
-   * Execute code in a sandboxed environment
+   * Execute code in a sandboxed environment (async workflow)
+   *
+   * This method:
+   * 1. Submits code for execution and receives a job ID
+   * 2. Polls the job status until completion
+   * 3. Returns the final result with stdout, stderr, exit code, and artifacts
    *
    * @param request - Code execution request
-   * @returns Execution result with stdout, stderr, exit code, and timing
+   * @returns Execution result with stdout, stderr, exit code, and artifacts
    *
    * @example
    * ```typescript
    * const result = await client.executeCode({
    *   language: 'python',
    *   code: 'print("Hello, World!")',
-   *   timeout: 5000
+   *   ttl: 5
    * });
    * console.log(result.stdout); // "Hello, World!\n"
+   * console.log(result.exitCode); // 0
    * ```
    */
-  async executeCode(request: ExecuteCodeRequest): Promise<ExecuteCodeResponse> {
+  async executeCode(request: ExecuteCodeRequest): Promise<JobStatusResponse> {
     const timestamp = new Date().toISOString();
-    console.log(`\n🔧 [${timestamp}] Executing Code via Unsandbox`);
+    console.log(`\n🔧 [${timestamp}] Executing Code via Unsandbox (Async Workflow)`);
     console.log(`   Language: ${request.language}`);
     console.log(`   Code Length: ${request.code.length} characters`);
     console.log(`   Code Preview: ${request.code.substring(0, 100)}${request.code.length > 100 ? '...' : ''}`);
-    console.log(`   Timeout: ${request.timeout || 5000}ms`);
+    console.log(`   TTL: ${request.ttl || 5} seconds`);
     console.log(`   Environment Variables: ${request.env ? Object.keys(request.env).join(', ') : 'none'}`);
     console.log(`   Stdin Provided: ${request.stdin ? 'yes' : 'no'}`);
 
-    const result = await this.request<ExecuteCodeResponse>('/v1/execute', {
+    // Step 1: Submit execution and get job ID
+    console.log(`\n📤 [${new Date().toISOString()}] Submitting code for execution...`);
+    const executeResponse = await this.request<ExecuteCodeResponse>('/v1/execute', {
       method: 'POST',
       body: JSON.stringify({
         language: request.language,
         code: request.code,
-        timeout: request.timeout || 5000,
+        ttl: request.ttl || 5,
         env: request.env,
         stdin: request.stdin,
       }),
     });
 
+    console.log(`\n✅ [${new Date().toISOString()}] Job submitted successfully`);
+    console.log(`   Job ID: ${executeResponse.jobId}`);
+    console.log(`   Initial Status: ${executeResponse.status}`);
+
+    // Step 2: Poll for job completion
+    console.log(`\n🔄 [${new Date().toISOString()}] Polling for job completion...`);
+    const result = await this.pollJobStatus(executeResponse.jobId);
+
     console.log(`\n✅ [${new Date().toISOString()}] Code Execution Completed`);
-    console.log(`   Execution ID: ${result.id}`);
+    console.log(`   Job ID: ${result.jobId}`);
     console.log(`   Status: ${result.status}`);
     console.log(`   Exit Code: ${result.exitCode ?? 'N/A'}`);
     console.log(`   Execution Time: ${result.executionTime ?? 'N/A'}ms`);
     console.log(`   Stdout Length: ${result.stdout?.length ?? 0} characters`);
     console.log(`   Stderr Length: ${result.stderr?.length ?? 0} characters`);
+    console.log(`   Artifacts: ${result.artifacts?.length ?? 0}`);
     if (result.stdout) {
       console.log(`   Stdout Preview: ${result.stdout.substring(0, 200)}${result.stdout.length > 200 ? '...' : ''}`);
     }
@@ -272,15 +287,78 @@ export class UnsandboxClient {
   }
 
   /**
-   * Get the status of a code execution
+   * Poll job status until completion
+   *
+   * @param jobId - The job ID to poll
+   * @param maxAttempts - Maximum number of polling attempts (default: 60)
+   * @param pollInterval - Interval between polls in milliseconds (default: 1000)
+   * @returns Final job status with results
+   */
+  private async pollJobStatus(
+    jobId: string,
+    maxAttempts: number = 60,
+    pollInterval: number = 1000
+  ): Promise<JobStatusResponse> {
+    console.log(`\n🔍 [${new Date().toISOString()}] Starting job status polling`);
+    console.log(`   Job ID: ${jobId}`);
+    console.log(`   Max Attempts: ${maxAttempts}`);
+    console.log(`   Poll Interval: ${pollInterval}ms`);
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      console.log(`\n📊 [${new Date().toISOString()}] Polling attempt ${attempt}/${maxAttempts}`);
+
+      const status = await this.getJobStatus(jobId);
+
+      console.log(`   Status: ${status.status}`);
+
+      // Check if job is in a terminal state
+      if (status.status === 'completed' ||
+          status.status === 'failed' ||
+          status.status === 'timeout' ||
+          status.status === 'cancelled') {
+        console.log(`\n✅ [${new Date().toISOString()}] Job reached terminal state: ${status.status}`);
+        return status;
+      }
+
+      // Wait before next poll (unless it's the last attempt)
+      if (attempt < maxAttempts) {
+        console.log(`   ⏳ Waiting ${pollInterval}ms before next poll...`);
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+      }
+    }
+
+    // Max attempts reached without completion
+    console.log(`\n⏱️ [${new Date().toISOString()}] Max polling attempts reached`);
+    throw new UnsandboxApiError(
+      408,
+      'POLLING_TIMEOUT',
+      `Job did not complete within ${maxAttempts} polling attempts`,
+      { jobId }
+    );
+  }
+
+  /**
+   * Get the current status of a job
+   *
+   * @param jobId - The job ID
+   * @returns Current job status
+   */
+  private async getJobStatus(jobId: string): Promise<JobStatusResponse> {
+    return await this.request<JobStatusResponse>(`/v1/jobs/${jobId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get the status of a code execution (public method)
    * Useful for long-running executions to poll for completion
    *
-   * @param request - Status request with execution ID
+   * @param request - Status request with job ID
    * @returns Current execution status and results (if completed)
    *
    * @example
    * ```typescript
-   * const status = await client.getExecutionStatus({ id: 'exec_123' });
+   * const status = await client.getExecutionStatus({ jobId: 'job_123' });
    * if (status.status === 'completed') {
    *   console.log(status.stdout);
    * }
@@ -290,11 +368,9 @@ export class UnsandboxClient {
     request: GetExecutionStatusRequest
   ): Promise<GetExecutionStatusResponse> {
     console.log(`\n🔍 [${new Date().toISOString()}] Getting Execution Status`);
-    console.log(`   Execution ID: ${request.id}`);
+    console.log(`   Job ID: ${request.jobId}`);
 
-    const result = await this.request<GetExecutionStatusResponse>(`/v1/executions/${request.id}`, {
-      method: 'GET',
-    });
+    const result = await this.getJobStatus(request.jobId);
 
     console.log(`\n📊 [${new Date().toISOString()}] Execution Status Retrieved`);
     console.log(`   Status: ${result.status}`);
@@ -308,14 +384,15 @@ export class UnsandboxClient {
 
   /**
    * List artifacts produced by a code execution
-   * Artifacts are files created during execution that persist after completion
+   * Note: In the async workflow, artifacts are included in the job status response
+   * This method is kept for backward compatibility
    *
-   * @param request - Request with execution ID
+   * @param request - Request with job ID
    * @returns List of artifacts with download URLs
    *
    * @example
    * ```typescript
-   * const artifacts = await client.listArtifacts({ id: 'exec_123' });
+   * const artifacts = await client.listArtifacts({ id: 'job_123' });
    * artifacts.artifacts.forEach(artifact => {
    *   console.log(`${artifact.name}: ${artifact.url}`);
    * });
@@ -323,50 +400,47 @@ export class UnsandboxClient {
    */
   async listArtifacts(request: ListArtifactsRequest): Promise<ListArtifactsResponse> {
     console.log(`\n📦 [${new Date().toISOString()}] Listing Artifacts`);
-    console.log(`   Execution ID: ${request.id}`);
+    console.log(`   Job ID: ${request.id}`);
 
-    const result = await this.request<ListArtifactsResponse>(
-      `/v1/executions/${request.id}/artifacts`,
-      {
-        method: 'GET',
-      }
-    );
+    // Get job status which includes artifacts
+    const status = await this.getJobStatus(request.id);
 
     console.log(`\n📋 [${new Date().toISOString()}] Artifacts Retrieved`);
-    console.log(`   Artifact Count: ${result.artifacts.length}`);
-    if (result.artifacts.length > 0) {
+    const artifacts = status.artifacts || [];
+    console.log(`   Artifact Count: ${artifacts.length}`);
+    if (artifacts.length > 0) {
       console.log(`   Artifacts:`);
-      result.artifacts.forEach((artifact, index) => {
+      artifacts.forEach((artifact, index) => {
         console.log(`      ${index + 1}. ${artifact.name} (${artifact.size} bytes, ${artifact.mimeType})`);
       });
     }
 
-    return result;
+    return { artifacts };
   }
 
   /**
    * Cancel a running execution
    *
-   * @param id - Execution ID to cancel
+   * @param id - Job ID to cancel
    * @returns Execution status after cancellation
    *
    * @example
    * ```typescript
-   * const result = await client.cancelExecution('exec_123');
+   * const result = await client.cancelExecution('job_123');
    * console.log(result.status); // 'cancelled'
    * ```
    */
   async cancelExecution(id: string): Promise<GetExecutionStatusResponse> {
     console.log(`\n🛑 [${new Date().toISOString()}] Cancelling Execution`);
-    console.log(`   Execution ID: ${id}`);
+    console.log(`   Job ID: ${id}`);
 
-    const result = await this.request<GetExecutionStatusResponse>(`/v1/executions/${id}/cancel`, {
+    const result = await this.request<GetExecutionStatusResponse>(`/v1/jobs/${id}/cancel`, {
       method: 'POST',
     });
 
     console.log(`\n✋ [${new Date().toISOString()}] Execution Cancelled`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Execution ID: ${result.id}`);
+    console.log(`   Job ID: ${result.jobId}`);
 
     return result;
   }

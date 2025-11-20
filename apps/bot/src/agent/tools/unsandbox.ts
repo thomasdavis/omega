@@ -30,37 +30,30 @@ const LANGUAGE_MAP: Record<string, UnsandboxLanguage> = {
 const SUPPORTED_LANGUAGES = Object.keys(LANGUAGE_MAP) as [string, ...string[]];
 
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters. Returns stdout, stderr, exit code, and execution time.',
+  description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters. Returns stdout, stderr, exit code, execution time, and artifacts.',
   inputSchema: z.object({
     language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)'),
     code: z.string().describe('The code to execute'),
-    timeout: z.number().int().min(100).max(30000).optional().default(5000).describe('Execution timeout in milliseconds (default: 5000ms, max: 30000ms)'),
+    ttl: z.number().int().min(1).max(30).optional().default(5).describe('Time to live (TTL) in seconds for the execution (default: 5s, max: 30s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
   }),
-  execute: async ({ language, code, timeout, stdin, env }) => {
+  execute: async ({ language, code, ttl, stdin, env }) => {
     const timestamp = new Date().toISOString();
     console.log(`\n🚀 [${timestamp}] Unsandbox Tool Execution Started`);
     console.log(`   Language: ${language}`);
     console.log(`   Code Length: ${code.length} characters`);
-    console.log(`   Timeout: ${timeout}ms`);
+    console.log(`   TTL: ${ttl}s`);
     console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
     console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
 
     try {
-      // Hardcoded API key as per issue #147
-      const apiKey = 'open-says-me';
-
-      console.log(`   🔑 Using hardcoded API key...`);
-      console.log(`   ✅ API key configured`);
-
-      // Create client instance
+      // Create client instance (API key is hardcoded in client as per issue #149)
       console.log(`   🔧 Creating Unsandbox client...`);
       const client = createUnsandboxClient({
-        apiKey,
-        timeout: 30000, // 30 seconds timeout (TTS)
+        timeout: 30000, // 30 seconds timeout for HTTP requests
       });
-      console.log(`   ✅ Client created with 30000ms timeout`);
+      console.log(`   ✅ Client created with hardcoded API key`);
 
       // Map user-friendly language name to runtime identifier
       console.log(`   🗺️ Mapping language '${language}' to runtime identifier...`);
@@ -76,12 +69,12 @@ export const unsandboxTool = tool({
       }
       console.log(`   ✅ Mapped to runtime: ${runtimeLanguage}`);
 
-      // Execute code using the SDK
-      console.log(`   ▶️ Executing code via SDK...`);
+      // Execute code using the SDK (async workflow with polling)
+      console.log(`   ▶️ Executing code via SDK (async workflow)...`);
       const result = await client.executeCode({
         language: runtimeLanguage,
         code,
-        timeout,
+        ttl,
         stdin,
         env,
       });
@@ -100,12 +93,14 @@ export const unsandboxTool = tool({
         exitCode: result.exitCode,
         executionTime: result.executionTime,
         status: result.status,
-        executionId: result.id,
+        jobId: result.jobId,
+        artifacts: result.artifacts || [],
       };
 
       console.log(`\n✅ [${new Date().toISOString()}] Unsandbox Tool Execution Successful`);
       console.log(`   Output Length: ${response.output.length} characters`);
       console.log(`   Error Length: ${response.error.length} characters`);
+      console.log(`   Artifacts: ${response.artifacts.length}`);
 
       return response;
     } catch (error) {
