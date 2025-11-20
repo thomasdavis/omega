@@ -53,9 +53,27 @@ export interface ExecuteCodeRequest {
  */
 export interface ExecuteCodeResponse {
   /** Unique job identifier for polling status */
-  jobId: string;
+  job_id: string;
   /** Initial status (typically 'pending' or 'running') */
   status: ExecutionStatus;
+}
+
+/**
+ * Result object within completed job response
+ */
+export interface JobResult {
+  /** Whether the execution was successful */
+  success: boolean;
+  /** Standard output from the execution */
+  stdout: string;
+  /** Standard error from the execution */
+  stderr: string;
+  /** Error message if execution failed */
+  error: string | null;
+  /** Language used for execution */
+  language: string;
+  /** Exit code (0 for success, non-zero for errors) */
+  exit_code: number;
 }
 
 /**
@@ -63,19 +81,13 @@ export interface ExecuteCodeResponse {
  */
 export interface JobStatusResponse {
   /** Unique identifier for this execution */
-  jobId: string;
+  job_id: string;
   /** Current status of the execution */
   status: ExecutionStatus;
-  /** Standard output from the execution */
-  stdout?: string;
-  /** Standard error from the execution */
-  stderr?: string;
-  /** Exit code (0 for success, non-zero for errors) */
-  exitCode?: number;
+  /** Result object (only present when status is 'completed') */
+  result?: JobResult;
   /** Execution time in milliseconds */
   executionTime?: number;
-  /** Error message if execution failed */
-  error?: string;
   /** Timestamp when execution started */
   startedAt?: string;
   /** Timestamp when execution completed */
@@ -89,7 +101,7 @@ export interface JobStatusResponse {
  */
 export interface GetExecutionStatusRequest {
   /** The job ID to check */
-  jobId: string;
+  job_id: string;
 }
 
 /**
