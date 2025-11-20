@@ -6,23 +6,13 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import type { Message } from 'discord.js';
-import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { getArtifactsDir } from '../../utils/storage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Artifacts directory - use the same pattern as artifact.ts
-const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data/artifacts')
-  ? '/data/artifacts'
-  : join(__dirname, '../../../artifacts');
-
-// Ensure artifacts directory exists
-if (!existsSync(ARTIFACTS_DIR)) {
-  mkdirSync(ARTIFACTS_DIR, { recursive: true });
-}
+// Artifacts directory - use centralized storage utility
+const ARTIFACTS_DIR = getArtifactsDir();
 
 // Extended message type with timestamp
 interface SlidevMessage {

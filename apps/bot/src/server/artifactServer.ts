@@ -5,19 +5,12 @@
 
 import express, { Request, Response } from 'express';
 import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
+import { getArtifactsDir, getUploadsDir } from '../utils/storage.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Use persistent Fly.io Volume if available, otherwise fall back to local folders
-const ARTIFACTS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
-  ? '/data/artifacts'
-  : join(__dirname, '../../../artifacts');
-const UPLOADS_DIR = process.env.NODE_ENV === 'production' && existsSync('/data')
-  ? '/data/uploads'
-  : join(__dirname, '../../../public/uploads');
+// Use centralized storage utility for consistent paths
+const ARTIFACTS_DIR = getArtifactsDir();
+const UPLOADS_DIR = getUploadsDir();
 const DEFAULT_PORT = 3001;
 
 export interface ArtifactServerConfig {

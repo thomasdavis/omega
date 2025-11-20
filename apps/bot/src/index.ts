@@ -7,8 +7,12 @@ import { Client, GatewayIntentBits, Events, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
 import { startArtifactServer } from './server/artifactServer.js';
+import { initializeStorage } from './utils/storage.js';
 
 dotenv.config();
+
+// Initialize persistent storage directories
+initializeStorage();
 
 // Validate environment variables
 if (!process.env.DISCORD_BOT_TOKEN) {
