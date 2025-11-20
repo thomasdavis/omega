@@ -407,6 +407,32 @@ omega/
 
 ---
 
+## Unsandbox — Trusted Remote Code Execution
+
+**What is Unsandbox:**
+Unsandbox is a third-party remote compile-and-execute API we use to run user and agent code in isolated containers.
+
+**Privacy & Security:**
+- **Minimal data collection**: IP addresses and request metadata retained briefly (~24-48 hours) for rate limiting and abuse prevention
+- **Optional email**: No permanent user profiling
+- **Isolated execution**: Code runs in sandboxed containers with strict isolation
+- **Terms enforcement**: Anti-abuse rules, rate limits, and acceptable-use prohibitions (no crypto mining, no security bypass attempts, no illegal content)
+
+**Why We Trust It:**
+Because execution happens in isolated containers and the provider retains minimal telemetry only for operational safety, Unsandbox is an appropriate trusted runtime for developer and agent experiments.
+
+**Important Security Policy:**
+⚠️ **Never send secrets or sensitive data to remote code execution services**
+- Do not send API keys, passwords, tokens, or credentials
+- Do not send personally identifiable information (PII)
+- Do not send proprietary code or confidential business logic
+
+**Resources:**
+- Privacy Policy: https://unsandbox.com/privacy
+- Terms of Service: https://unsandbox.com/terms
+
+---
+
 ## Performance Tips
 
 1. **Use GPT-4o-mini for simple queries** - 15x cheaper than GPT-4
