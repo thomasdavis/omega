@@ -8,6 +8,7 @@ import { shouldRespond } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setVibeMessageContext, clearVibeMessageContext } from '../agent/tools/setVibe.js';
+import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -55,7 +56,12 @@ export async function handleMessage(message: Message): Promise<void> {
           }))
           .filter(msg => msg.content.length > 0); // Filter out empty messages
       } catch (error) {
-        console.log('   ⚠️ Could not fetch message history');
+        logError(error, {
+          operation: 'Fetch message history',
+          username: message.author.username,
+          channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+        });
+        console.log('   ⚠️ Could not fetch message history - continuing without context');
       }
     }
 
@@ -129,7 +135,13 @@ export async function handleMessage(message: Message): Promise<void> {
               await message.channel.send({ content: toolReport });
             }
           } catch (error) {
-            console.error('❌ Error downloading/attaching chart image:', error);
+            logError(error, {
+              operation: 'Download and attach chart image',
+              toolName: 'renderChart',
+              username: message.author.username,
+              channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+              additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
+            });
             // Fall back to sending just the text report
             await message.channel.send({ content: toolReport });
           }
@@ -165,19 +177,33 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log(`✅ Sent response (${result.response.length} chars)`);
     }
   } catch (error) {
-    console.error('❌ Error generating response:', error);
-    console.error('❌ Error type:', error?.constructor?.name);
-    console.error('❌ Error message:', error?.message);
-    console.error('❌ Error stack:', error?.stack);
+    // Log the error with full context and stack trace
+    logError(error, {
+      operation: 'Process and generate response',
+      username: message.author.username,
+      channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+      messageContent: message.content,
+    });
+
+    // Generate a user-friendly error message
+    const userErrorMessage = generateUserErrorMessage(error, {
+      operation: 'message processing',
+      username: message.author.username,
+    });
 
     // Send error message to user
     try {
       await message.reply({
-        content: '❌ Sorry, I encountered an error processing your message. Please try again.',
+        content: userErrorMessage,
         allowedMentions: { repliedUser: false },
       });
     } catch (replyError) {
-      console.error('❌ Failed to send error message to user:', replyError);
+      logError(replyError, {
+        operation: 'Send error message to user',
+        username: message.author.username,
+        channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+        additionalInfo: { originalError: error instanceof Error ? error.message : String(error) },
+      });
     }
   }
 }
