@@ -12,7 +12,15 @@ export interface ShouldRespondResult {
   reason: string;
 }
 
-export async function shouldRespond(message: Message): Promise<ShouldRespondResult> {
+export interface MessageHistoryItem {
+  username: string;
+  content: string;
+}
+
+export async function shouldRespond(
+  message: Message,
+  messageHistory: MessageHistoryItem[] = []
+): Promise<ShouldRespondResult> {
   // Always respond to DMs
   if (message.channel.isDMBased()) {
     return { shouldRespond: true, confidence: 100, reason: 'Direct message' };
@@ -48,30 +56,52 @@ export async function shouldRespond(message: Message): Promise<ShouldRespondResu
   try {
     const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
 
+    // Format conversation history for context
+    let historyContext = '';
+    if (messageHistory.length > 0) {
+      const recentMessages = messageHistory.slice(-5); // Last 5 messages for context
+      historyContext = '\n\nRecent conversation:\n' +
+        recentMessages.map(msg => `${msg.username}: ${msg.content}`).join('\n') + '\n';
+    }
+
     const decision = await generateText({
       model: openai.chat('gpt-4o-mini'), // Use cheaper model for decision making, force Chat Completions API
-      prompt: `You are Omega, a friendly and helpful Discord bot. Decide if you should respond to this message.
+      prompt: `You are Omega, a conversational AI Discord bot. Decide if you should respond to this message.
 
 Channel: #${channelName}
-User: ${message.author.username}
-Message: "${message.content}"
+Current user: ${message.author.username}
+Current message: "${message.content}"${historyContext}
 
-IMPORTANT: Be VERY INCLUSIVE. Respond to almost everything unless it's clearly spam or irrelevant.
+CRITICAL RULES FOR CONVERSATIONAL CONTEXT:
+1. **If Omega (you) just asked a question or offered to do something, and the user is clearly responding to YOU, ALWAYS respond.**
+   - Examples: "Would you like me to...?" → user says "yes", "sure", "do it", etc.
+   - This is a direct continuation of YOUR conversation
+
+2. **Natural conversation flow matters:**
+   - Look at the recent conversation context
+   - If the current message is a reply/response to something Omega said, respond
+   - Users don't need to say "omega" every time in an ongoing conversation
+
+3. **Be conversational, not robotic:**
+   - Users should talk to you like a human, not a command-line tool
+   - "implement painting skills" = respond (clear intent, even without "omega")
+   - "yes do it" after you asked = respond (continuation)
+   - "lmao" in isolation = maybe skip (unless it's reacting to you)
 
 ALWAYS respond to:
-- Any message that mentions your name "omega" (even casually)
-- Direct questions to you or general questions
-- Requests for help, tools, features, or actions
-- Technical discussions or coding topics
-- Messages that seem to want engagement or discussion
-- Greetings or casual conversation
+- Responses to YOUR questions or offers (check conversation history!)
+- Any message mentioning "omega" or "you" when referring to the bot
+- Direct questions or requests (even casual ones like "do this" or "make that")
+- Technical discussions, coding, features, tools
+- Natural conversation that includes you
+- Commands/requests even without explicit bot mention
 
-Only AVOID responding to:
-- Very short responses like "lol", "ok", "nice" between other users
-- Clear private conversations between specific users
-- Complete nonsense or spam
+Only SKIP:
+- Very short reactions ("lol", "nice") between OTHER users (not about you)
+- Clear private conversations NOT involving you
+- Obvious spam or complete nonsense
 
-When in doubt, RESPOND. Err on the side of being helpful and engaged. Your confidence should be high (70-90%) when responding.
+**Think like a participant in the conversation, not a keyword detector.**
 
 Respond in JSON format:
 {
