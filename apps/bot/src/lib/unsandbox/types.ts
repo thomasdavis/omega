@@ -32,15 +32,15 @@ export type ExecutionStatus =
   | 'cancelled';
 
 /**
- * Request to execute code
+ * Request to execute code (async workflow)
  */
 export interface ExecuteCodeRequest {
   /** The runtime/language to use */
   language: UnsandboxLanguage;
   /** The code to execute */
   code: string;
-  /** Execution timeout in milliseconds (default: 5000, max: 30000) */
-  timeout?: number;
+  /** Time to live (TTL) in seconds for the execution (default: 5, max: 30) */
+  ttl?: number;
   /** Environment variables for the execution */
   env?: Record<string, string>;
   /** Standard input to provide to the program */
@@ -48,11 +48,22 @@ export interface ExecuteCodeRequest {
 }
 
 /**
- * Response from code execution
+ * Response from initiating code execution (async workflow)
+ * Returns immediately with a job ID
  */
 export interface ExecuteCodeResponse {
+  /** Unique job identifier for polling status */
+  jobId: string;
+  /** Initial status (typically 'pending' or 'running') */
+  status: ExecutionStatus;
+}
+
+/**
+ * Response from polling job status
+ */
+export interface JobStatusResponse {
   /** Unique identifier for this execution */
-  id: string;
+  jobId: string;
   /** Current status of the execution */
   status: ExecutionStatus;
   /** Standard output from the execution */
@@ -69,39 +80,22 @@ export interface ExecuteCodeResponse {
   startedAt?: string;
   /** Timestamp when execution completed */
   completedAt?: string;
+  /** Artifacts produced by the execution */
+  artifacts?: Artifact[];
 }
 
 /**
  * Request to check execution status
  */
 export interface GetExecutionStatusRequest {
-  /** The execution ID to check */
-  id: string;
+  /** The job ID to check */
+  jobId: string;
 }
 
 /**
- * Response when fetching execution status
+ * Response when fetching execution status (alias for JobStatusResponse)
  */
-export interface GetExecutionStatusResponse {
-  /** Unique identifier for this execution */
-  id: string;
-  /** Current status */
-  status: ExecutionStatus;
-  /** Standard output (only available when completed) */
-  stdout?: string;
-  /** Standard error (only available when completed) */
-  stderr?: string;
-  /** Exit code (only available when completed) */
-  exitCode?: number;
-  /** Execution time in milliseconds */
-  executionTime?: number;
-  /** Error message if execution failed */
-  error?: string;
-  /** Timestamp when execution started */
-  startedAt?: string;
-  /** Timestamp when execution completed */
-  completedAt?: string;
-}
+export type GetExecutionStatusResponse = JobStatusResponse;
 
 /**
  * Artifact information
@@ -151,8 +145,8 @@ export interface UnsandboxError {
  * Configuration for Unsandbox client
  */
 export interface UnsandboxConfig {
-  /** API key for authentication */
-  apiKey: string;
+  /** API key for authentication (hardcoded to "open-says-me" as of issue #149) */
+  apiKey?: string;
   /** Base URL for the API (default: https://api.unsandbox.com) */
   baseUrl?: string;
   /** Default timeout for requests in milliseconds (default: 30000) */
