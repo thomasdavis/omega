@@ -370,8 +370,8 @@ export const unsandboxStatusTool = tool({
       }
 
       // Add results if completed
-      if (isTerminal && statusResponse.result) {
-        response.result = statusResponse.result; // Include full result object
+      if (isTerminal) {
+        response.result = statusResponse.result || null; // Always include, null if not available
         response.artifacts = statusResponse.artifacts || [];
       }
 
