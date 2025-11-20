@@ -48,7 +48,7 @@ export class UnsandboxClient {
 
     this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl || 'https://api.unsandbox.com';
-    this.timeout = config.timeout || 30000;
+    this.timeout = config.timeout || 30000; // Default: 30000ms (TTS - Thirty Thousand milliseconds)
   }
 
   /**

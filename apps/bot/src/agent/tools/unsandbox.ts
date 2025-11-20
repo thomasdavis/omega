@@ -48,26 +48,19 @@ export const unsandboxTool = tool({
     console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
 
     try {
-      const apiKey = process.env.UNSANDBOX_API_KEY;
+      // Hardcoded API key as per issue #147
+      const apiKey = 'open-says-me';
 
-      console.log(`   🔑 Checking API key configuration...`);
-      if (!apiKey) {
-        console.log(`   ❌ API key not found in environment`);
-        return {
-          success: false,
-          error: 'Unsandbox API key not configured. Please set UNSANDBOX_API_KEY environment variable.',
-          language,
-        };
-      }
-      console.log(`   ✅ API key found`);
+      console.log(`   🔑 Using hardcoded API key...`);
+      console.log(`   ✅ API key configured`);
 
       // Create client instance
       console.log(`   🔧 Creating Unsandbox client...`);
       const client = createUnsandboxClient({
         apiKey,
-        timeout: 35000, // Client timeout should be longer than execution timeout
+        timeout: 30000, // 30 seconds timeout (TTS)
       });
-      console.log(`   ✅ Client created with 35000ms timeout`);
+      console.log(`   ✅ Client created with 30000ms timeout`);
 
       // Map user-friendly language name to runtime identifier
       console.log(`   🗺️ Mapping language '${language}' to runtime identifier...`);
