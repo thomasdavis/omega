@@ -111,7 +111,7 @@ Steps:
 2. Auto-resolve merge conflicts:
    - Fetch latest main
    - Merge main into Claude branch
-   - Prefer Claude's changes (git checkout --theirs)
+   - Prefer Claude's changes (git checkout --ours)
    - Push resolved branch
 3. Fix pnpm lockfile if out of sync:
    - Run pnpm install --no-frozen-lockfile
@@ -120,18 +120,13 @@ Steps:
 5. Get issue title via GitHub API
 6. Create PR:
    - Title: Issue title
-   - Body: "Fixes #N" + Claude Code signature
+   - Body: "Fixes #N" + Omega Bot signature
    - Base: main, Head: claude/**
-7. Enable auto-merge (squash + delete branch)
-8. Wait for PR to be merged (up to 2 minutes)
-9. If merged successfully:
-   - Checkout main branch
-   - Deploy to Fly.io (flyctl deploy)
-   - Send Discord webhook notification
-10. If deployment fails:
-    - Revert merge commit on main
-    - Comment on PR and issue
-    - Send Discord failure notification
+7. Enable auto-merge (squash + delete branch) with retry logic
+8. Send Discord webhook notification
+
+Note: Deployment is handled separately by deploy-on-merge.yml workflow.
+Deployment failures require manual investigation (no auto-revert).
 ```
 
 ### Auto-Merge PRs
@@ -190,10 +185,11 @@ Steps:
 └──────────────────────────┬──────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ 6. auto-create-claude-pr.yml continues after merge detected    │
-│    - Waits for merge confirmation (up to 2 minutes)             │
+│ 6. deploy-on-merge.yml triggers on PR merge to main           │
 │    - Checks out main branch                                      │
-│    - Runs: flyctl deploy --remote-only                           │
+│    - Installs Railway CLI                                        │
+│    - Runs: railway up --service=$RAILWAY_SERVICE_ID             │
+│    - Sends Discord notifications (starting/success/failure)      │
 └──────────────────────────┬──────────────────────────────────────┘
                            ↓
                     ┌──────┴──────┐
@@ -202,10 +198,13 @@ Steps:
                     │             │
                     ↓             ↓
     ┌─────────────────────┐  ┌────────────────────────┐
-    │ Discord webhook:    │  │ Revert merge commit    │
-    │ "Feature deployed!" │  │ Comment on PR + issue  │
-    │ Issue auto-closes   │  │ Discord: "Failed!"     │
+    │ Discord webhook:    │  │ Discord: "Failed!"     │
+    │ "Feature deployed!" │  │ Manual investigation   │
+    │ Issue auto-closes   │  │ required               │
     └─────────────────────┘  └────────────────────────┘
+
+Note: Deployment failures are NOT automatically reverted.
+Manual investigation and fixes are required to maintain code integrity.
 ```
 
 ### Real Example
@@ -229,12 +228,12 @@ auto-merge-claude.yml:
     ↓
 GitHub checks pass → PR merges to main
     ↓
-auto-create-claude-pr.yml resumes:
-    - Detects merge
-    - Deploys to Fly.io (flyctl deploy)
+deploy-on-merge.yml triggers:
+    - Detects PR merge to main
+    - Deploys to Railway (railway up)
     - Posts to Discord: "Feature deployed!"
     ↓
-Fly.io restarts Omega with new tool
+Railway restarts Omega with new tool
     ↓
 User in Discord: "tell me a joke"
     ↓
@@ -287,7 +286,7 @@ Response to Discord:
 - **Discord.js**: Gateway API client (WebSocket)
 - **AI SDK v6**: Agent protocol with multi-step reasoning
 - **OpenAI GPT-4.1-mini**: Primary model (cost-effective)
-- **Fly.io**: Hosting platform (Sydney region)
+- **Railway**: Hosting platform (migrated from Fly.io)
 - **Express**: Artifact/file hosting server (port 3001)
 
 ### Development Stack
@@ -299,7 +298,7 @@ Response to Discord:
 ### CI/CD Stack
 - **GitHub Actions**: Automation workflows
 - **Claude Code**: Autonomous development
-- **Flyctl**: Deployment CLI
+- **Railway CLI**: Deployment CLI
 
 ---
 
@@ -309,7 +308,7 @@ Response to Discord:
 ```
 User message
 → Discord Gateway (WebSocket)
-→ Discord.js Client (Fly.io)
+→ Discord.js Client (Railway)
 → shouldRespond AI check
 → AI Agent with tools
 → Tool execution (if needed)
@@ -328,7 +327,8 @@ User message
 → Create PR + enable auto-merge
 → auto-merge-claude.yml
 → Merge to main (if checks pass)
-→ Fly.io deployment
+→ deploy-on-merge.yml
+→ Railway deployment
 → Discord notification
 → Bot restarts with new code
 ```
@@ -353,13 +353,18 @@ Typical timeline: 2-5 minutes (fully automated)
 
 ### Deployment Failures
 ```
-If flyctl deploy fails:
-1. Revert merge commit on main (git revert -m 1)
-2. Push revert to main
-3. Comment on PR: "Deployment failed, reverted"
-4. Comment on issue: "Please provide more details"
-5. Discord notification: "Deployment failed"
-6. Issue remains open for retry
+If railway up fails:
+1. Discord notification: "Deployment failed"
+2. PR remains merged on main
+3. Manual investigation required to determine cause
+4. Options:
+   - Fix the issue with a follow-up commit
+   - Manually revert if needed: git revert -m 1 <merge-commit>
+   - Check Railway logs for infrastructure issues
+
+Note: Automatic reverts were removed after an incident where working code
+was deleted due to temporary infrastructure issues. Manual review ensures
+that only genuinely problematic changes are reverted.
 ```
 
 ### PR Check Failures
@@ -374,9 +379,9 @@ If linting/tests fail:
 ### Runtime Errors
 ```
 If bot crashes:
-1. Fly.io auto-restarts (health checks)
+1. Railway auto-restarts (health checks)
 2. Discord.js reconnects to Gateway
-3. Error logged to stdout (flyctl logs)
+3. Error logged to stdout (Railway logs)
 4. No data loss (stateless design)
 ```
 
@@ -397,7 +402,7 @@ If bot crashes:
 
 ### Configuration
 - `apps/bot/src/config/personality.json` - Bot personality
-- `apps/bot/fly.toml` - Fly.io deployment config
+- `railway.json` / `railway.toml` - Railway deployment config
 - `turbo.json` - Turborepo tasks
 - `pnpm-workspace.yaml` - Workspace definition
 
@@ -423,12 +428,12 @@ If bot crashes:
 - OAuth token stored as secret
 - Branch protection on main (requires PR)
 - Auto-merge only for claude/** branches
-- Reverts on deployment failure
+- Manual review for deployment failures (no auto-revert)
 
 ### Deployment Security
-- Fly.io secrets for API keys
+- Railway environment variables for API keys
 - No secrets in code or logs
-- Read-only file system (except /data volume)
+- Read-only file system (except persistent storage)
 - Health checks for availability
 
 ---
@@ -440,13 +445,13 @@ If bot crashes:
 - Simple query (no tools): ~1-2 seconds
 - Single tool call: ~2-5 seconds
 - Multi-tool orchestration: ~5-15 seconds
-- Max timeout: 30 seconds (Fly.io limit)
+- Max timeout: 30 seconds (Railway limit)
 
 ### Scalability
 - Discord Gateway: Single WebSocket (not horizontally scalable)
 - AI API calls: Parallel execution where possible
-- Fly.io: Autoscaling based on load (if configured)
-- Cost: ~$5-20/month (Fly.io + OpenAI)
+- Railway: Autoscaling based on load (if configured)
+- Cost: ~$5-20/month (Railway + OpenAI)
 
 ### Resource Usage
 - Memory: ~200MB baseline

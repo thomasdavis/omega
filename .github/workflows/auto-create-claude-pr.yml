@@ -1,0 +1,324 @@
+name: Auto-Create Claude Code PR
+
+on:
+  push:
+    branches:
+      - 'claude/**'
+
+concurrency:
+  group: claude-pr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  create-pr:
+    name: Create PR from Claude Code branch
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check if PR already exists
+        id: check-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+          # Check if a PR already exists for this branch
+          PR_COUNT=$(gh pr list --head "$BRANCH_NAME" --json number --jq 'length')
+
+          if [ "$PR_COUNT" -gt 0 ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number')
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "✅ PR already exists: #$PR_NUMBER"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No existing PR found, will create one"
+          fi
+
+      - name: Extract issue number from branch
+        if: steps.check-pr.outputs.exists == 'false'
+        id: extract-issue
+        run: |
+          BRANCH_NAME="${{ steps.check-pr.outputs.branch }}"
+          # Extract issue number from branch name like claude/issue-42-timestamp
+          ISSUE_NUMBER=$(echo "$BRANCH_NAME" | sed -n 's/.*issue-\([0-9]\+\).*/\1/p')
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "⚠️  Could not extract issue number from branch name: $BRANCH_NAME"
+            echo "number=" >> $GITHUB_OUTPUT
+          else
+            echo "number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+            echo "✅ Extracted issue number: #$ISSUE_NUMBER"
+          fi
+
+      - name: Fetch issue details
+        if: steps.check-pr.outputs.exists == 'false' && steps.extract-issue.outputs.number != ''
+        id: issue-details
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
+          ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')
+
+          if [ -z "$ISSUE_TITLE" ]; then
+            echo "⚠️  Could not fetch title for issue #$ISSUE_NUMBER"
+            echo "title=Claude Code Implementation" >> $GITHUB_OUTPUT
+          else
+            echo "title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+            echo "✅ Issue title: $ISSUE_TITLE"
+          fi
+
+      - name: Setup Node.js
+        if: steps.check-pr.outputs.exists == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        if: steps.check-pr.outputs.exists == 'false'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Merge main and resolve conflicts
+        if: steps.check-pr.outputs.exists == 'false'
+        continue-on-error: true
+        run: |
+          echo "Fetching latest main branch..."
+          git fetch origin main
+
+          echo "Attempting to merge main into current branch..."
+          if git merge origin/main --no-edit; then
+            echo "✅ Merged main successfully without conflicts"
+          else
+            echo "⚠️  Merge conflicts detected, auto-resolving..."
+
+            # Get list of conflicted files
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+
+            if [ -n "$CONFLICTED_FILES" ]; then
+              echo "Conflicted files:"
+              echo "$CONFLICTED_FILES"
+
+              # Resolve conflicts by preferring Claude's changes (ours)
+              for file in $CONFLICTED_FILES; do
+                echo "Resolving conflict in $file (keeping Claude's version)..."
+                git checkout --ours "$file"
+                git add "$file"
+              done
+
+              # Complete the merge
+              git commit --no-edit -m "Auto-resolve merge conflicts (prefer Claude's changes)"
+              echo "✅ Auto-resolved conflicts and committed"
+            fi
+          fi
+
+      - name: Fix pnpm lockfile if needed
+        if: steps.check-pr.outputs.exists == 'false'
+        continue-on-error: true
+        run: |
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "Checking pnpm lockfile integrity..."
+
+            if pnpm install --frozen-lockfile 2>&1 | grep -q "ERR_PNPM"; then
+              echo "⚠️  Lockfile out of sync, regenerating..."
+              pnpm install --no-frozen-lockfile
+
+              if git diff --quiet pnpm-lock.yaml; then
+                echo "✅ Lockfile is now in sync"
+              else
+                echo "Committing updated lockfile..."
+                git add pnpm-lock.yaml
+                git commit -m "Fix pnpm lockfile"
+                echo "✅ Lockfile updated and committed"
+              fi
+            else
+              echo "✅ Lockfile is valid"
+            fi
+          fi
+
+      - name: Push updates if any
+        if: steps.check-pr.outputs.exists == 'false'
+        continue-on-error: true
+        run: |
+          if git diff --quiet origin/${{ steps.check-pr.outputs.branch }}; then
+            echo "No changes to push"
+          else
+            echo "Pushing merge and lockfile updates..."
+            git push origin HEAD
+            echo "✅ Pushed updates"
+          fi
+
+      - name: Create Pull Request
+        if: steps.check-pr.outputs.exists == 'false'
+        id: create-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH_NAME="${{ steps.check-pr.outputs.branch }}"
+          ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
+          ISSUE_TITLE="${{ steps.issue-details.outputs.title }}"
+
+          # Construct PR title
+          if [ -n "$ISSUE_TITLE" ]; then
+            PR_TITLE="$ISSUE_TITLE"
+          else
+            PR_TITLE="Claude Code Implementation"
+          fi
+
+          # Construct PR body
+          PR_BODY="## 🤖 Claude Code Implementation
+
+          This PR was automatically created by the Omega self-evolving bot workflow.
+
+          "
+
+          if [ -n "$ISSUE_NUMBER" ]; then
+            PR_BODY="${PR_BODY}Fixes #${ISSUE_NUMBER}
+
+          "
+          fi
+
+          PR_BODY="${PR_BODY}### Changes
+
+          Claude Code has implemented the requested feature on the \`${BRANCH_NAME}\` branch.
+
+          ### Next Steps
+
+          - ✅ Auto-merge will be enabled
+          - ✅ PR will be automatically merged once checks pass
+          - ✅ Deployment will trigger after merge
+
+          ---
+
+          🤖 Generated by Omega Bot"
+
+          # Create the PR
+          echo "Creating pull request..."
+          PR_URL=$(gh pr create \
+            --title "$PR_TITLE" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$BRANCH_NAME")
+
+          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+
+          echo "url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "✅ Created PR #$PR_NUMBER: $PR_URL"
+
+      - name: Enable auto-merge
+        if: steps.check-pr.outputs.exists == 'false' && steps.create-pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.create-pr.outputs.number }}"
+
+          echo "Enabling auto-merge for PR #$PR_NUMBER..."
+
+          # Retry logic for enabling auto-merge (sometimes takes a moment for PR to be ready)
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if gh pr merge "$PR_NUMBER" --auto --squash --delete-branch 2>&1; then
+              echo "✅ Auto-merge enabled successfully"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️  Failed to enable auto-merge (attempt $RETRY_COUNT/$MAX_RETRIES), retrying in 3s..."
+                sleep 3
+              else
+                echo "❌ Failed to enable auto-merge after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
+
+      - name: Notify Discord of PR creation
+        if: steps.check-pr.outputs.exists == 'false' && steps.create-pr.outputs.url != ''
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          PR_URL="${{ steps.create-pr.outputs.url }}"
+          PR_NUMBER="${{ steps.create-pr.outputs.number }}"
+          ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
+          ISSUE_TITLE="${{ steps.issue-details.outputs.title }}"
+
+          TITLE="🔀 Pull Request Created"
+
+          if [ -n "$ISSUE_TITLE" ]; then
+            DESCRIPTION="**$ISSUE_TITLE**"
+          else
+            DESCRIPTION="Claude Code has created a new pull request"
+          fi
+
+          FIELDS=""
+          if [ -n "$ISSUE_NUMBER" ]; then
+            FIELDS="\"fields\": [{\"name\": \"Related Issue\", \"value\": \"#$ISSUE_NUMBER\", \"inline\": true}],"
+          fi
+
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"$TITLE\",
+                \"description\": \"$DESCRIPTION\",
+                \"color\": 3447003,
+                $FIELDS
+                \"fields\": [
+                  {\"name\": \"Pull Request\", \"value\": \"[#$PR_NUMBER]($PR_URL)\", \"inline\": true},
+                  {\"name\": \"Status\", \"value\": \"Auto-merge enabled ✅\", \"inline\": true}
+                ],
+                \"footer\": {\"text\": \"Omega Bot\"},
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
+              }]
+            }" || echo "Failed to send Discord notification"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## 🤖 Auto-Create Claude PR Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
+            echo "✅ **PR Already Exists**: #${{ steps.check-pr.outputs.pr_number }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No action needed - PR was already created previously." >> $GITHUB_STEP_SUMMARY
+          elif [ -n "${{ steps.create-pr.outputs.url }}" ]; then
+            echo "✅ **PR Created Successfully**: #${{ steps.create-pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**URL**: ${{ steps.create-pr.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+
+            if [ -n "${{ steps.extract-issue.outputs.number }}" ]; then
+              echo "**Related Issue**: #${{ steps.extract-issue.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+            echo "1. ✅ Auto-merge enabled - PR will merge when checks pass" >> $GITHUB_STEP_SUMMARY
+            echo "2. ⏳ Waiting for CI checks to complete" >> $GITHUB_STEP_SUMMARY
+            echo "3. 🚀 Deployment will trigger automatically after merge" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **PR Creation Failed**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Check the logs above for error details." >> $GITHUB_STEP_SUMMARY
+          fi
