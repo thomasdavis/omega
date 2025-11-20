@@ -10,7 +10,9 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from '../../lib/unsandbox/index.js';
+import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage, type UnsandboxClient } from '../../lib/unsandbox/index.js';
+import { getUnsandboxMessageContext } from './unsandboxContext.js';
+import type { Message } from 'discord.js';
 
 // Map user-friendly language names to Unsandbox runtime identifiers
 const LANGUAGE_MAP: Record<string, UnsandboxLanguage> = {
@@ -30,6 +32,71 @@ const LANGUAGE_MAP: Record<string, UnsandboxLanguage> = {
 
 // Supported programming languages (user-facing)
 const SUPPORTED_LANGUAGES = Object.keys(LANGUAGE_MAP) as [string, ...string[]];
+
+/**
+ * Poll for job completion with Discord progress updates
+ */
+async function pollWithProgressUpdates(
+  client: UnsandboxClient,
+  jobId: string,
+  discordMessage: Message | null,
+  code: string
+): Promise<any> {
+  const maxAttempts = 60; // 60 attempts = 5 minutes max
+  const pollInterval = 5000; // 5 seconds between polls
+  const startTime = Date.now();
+
+  console.log(`   📊 Starting polling with Discord updates`);
+  console.log(`   Max attempts: ${maxAttempts}, interval: ${pollInterval}ms`);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    console.log(`   🔍 Poll attempt ${attempt}/${maxAttempts} (${elapsedSeconds}s elapsed)`);
+
+    // Check job status
+    const status = await client.getExecutionStatus({ job_id: jobId });
+    console.log(`   Status: ${status.status}`);
+
+    // Send progress update to Discord every poll (every 5 seconds)
+    if (discordMessage && 'channel' in discordMessage && 'send' in discordMessage.channel) {
+      try {
+        const codePreview = code.length > 50 ? code.substring(0, 50) + '...' : code;
+        const statusMessage = status.status === 'running' || status.status === 'pending'
+          ? `⏳ Code execution ${status.status}... (${elapsedSeconds}s elapsed)\n\`\`\`\n${codePreview}\n\`\`\``
+          : `✅ Code execution ${status.status}! (${elapsedSeconds}s total)`;
+
+        await discordMessage.channel.send(statusMessage);
+        console.log(`   📤 Sent progress update to Discord: ${status.status}`);
+      } catch (discordError) {
+        console.log(`   ⚠️ Failed to send Discord progress update:`, discordError);
+        // Continue even if Discord message fails
+      }
+    }
+
+    // Check if job is in a terminal state
+    if (status.status === 'completed' ||
+        status.status === 'failed' ||
+        status.status === 'timeout' ||
+        status.status === 'cancelled') {
+      console.log(`   ✅ Job reached terminal state: ${status.status}`);
+      return status;
+    }
+
+    // Wait before next poll (unless it's the last attempt)
+    if (attempt < maxAttempts) {
+      console.log(`   ⏳ Waiting ${pollInterval}ms before next poll...`);
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+    }
+  }
+
+  // Max attempts reached
+  throw new UnsandboxApiError(
+    408,
+    'POLLING_TIMEOUT',
+    `Job did not complete within ${maxAttempts} polling attempts (${maxAttempts * pollInterval / 1000}s)`,
+    { jobId }
+  );
+}
 
 export const unsandboxTool = tool({
   description: 'Execute code in a sandboxed environment. Supports multiple programming languages with configurable execution parameters. Returns stdout, stderr, exit code, execution time, and artifacts.',
@@ -71,15 +138,28 @@ export const unsandboxTool = tool({
       }
       console.log(`   ✅ Mapped to runtime: ${runtimeLanguage}`);
 
-      // Execute code using the SDK (async workflow with polling)
-      console.log(`   ▶️ Executing code via SDK (async workflow)...`);
-      const result = await client.executeCode({
+      // Submit code execution (don't poll yet - we'll do it manually with progress updates)
+      console.log(`   ▶️ Submitting code for execution...`);
+      const submitResult = await client.submitCodeExecution({
         language: runtimeLanguage,
         code,
         ttl,
         stdin,
         env,
       });
+      console.log(`   ✅ Code submitted, job_id: ${submitResult.job_id}`);
+
+      // Get Discord message context for progress updates
+      const discordMessage = getUnsandboxMessageContext();
+
+      // Poll for completion with progress updates to Discord
+      console.log(`   🔄 Polling for job completion with Discord progress updates...`);
+      const result = await pollWithProgressUpdates(
+        client,
+        submitResult.job_id,
+        discordMessage,
+        code
+      );
       console.log(`   ✅ Code execution completed`);
 
       // Return standardized response

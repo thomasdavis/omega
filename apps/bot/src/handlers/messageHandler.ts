@@ -7,6 +7,7 @@ import { runAgent } from '../agent/agent.js';
 import { shouldRespond } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
+import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandboxContext.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 
 export async function handleMessage(message: Message): Promise<void> {
@@ -76,9 +77,10 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('   Attachment details added to message context');
     }
 
-    // Set message context for export and slidev tools
+    // Set message context for export, slidev, and unsandbox tools
     setExportMessageContext(message);
     setSlidevMessageContext(message);
+    setUnsandboxMessageContext(message);
 
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
@@ -100,6 +102,7 @@ export async function handleMessage(message: Message): Promise<void> {
     // Clear message context after agent execution
     clearExportMessageContext();
     clearSlidevMessageContext();
+    clearUnsandboxMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
     // If tools were used, send separate messages for each tool

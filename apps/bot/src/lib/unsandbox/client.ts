@@ -213,12 +213,69 @@ export class UnsandboxClient {
   }
 
   /**
-   * Execute code in a sandboxed environment (async workflow)
+   * Submit code for execution (async - returns immediately with job_id)
+   *
+   * This method ONLY submits the code and returns a job_id.
+   * Use getExecutionStatus() to check the job status later.
+   *
+   * @param request - Code execution request
+   * @returns Job submission response with job_id
+   *
+   * @example
+   * ```typescript
+   * // Submit job
+   * const job = await client.submitCodeExecution({
+   *   language: 'python',
+   *   code: 'print("Hello, World!")',
+   *   ttl: 5
+   * });
+   * console.log(job.job_id); // "job_1234..."
+   *
+   * // Check status later
+   * const status = await client.getExecutionStatus({ job_id: job.job_id });
+   * if (status.status === 'completed') {
+   *   console.log(status.result?.stdout);
+   * }
+   * ```
+   */
+  async submitCodeExecution(request: ExecuteCodeRequest): Promise<ExecuteCodeResponse> {
+    const timestamp = new Date().toISOString();
+    console.log(`\n🔧 [${timestamp}] Submitting Code to Unsandbox (Async - No Polling)`);
+    console.log(`   Language: ${request.language}`);
+    console.log(`   Code Length: ${request.code.length} characters`);
+    console.log(`   Code Preview: ${request.code.substring(0, 100)}${request.code.length > 100 ? '...' : ''}`);
+    console.log(`   TTL: ${request.ttl || 5} seconds`);
+    console.log(`   Environment Variables: ${request.env ? Object.keys(request.env).join(', ') : 'none'}`);
+    console.log(`   Stdin Provided: ${request.stdin ? 'yes' : 'no'}`);
+
+    console.log(`\n📤 [${new Date().toISOString()}] Submitting code for execution...`);
+    const executeResponse = await this.request<ExecuteCodeResponse>('/execute/async', {
+      method: 'POST',
+      body: JSON.stringify({
+        language: request.language,
+        code: request.code,
+        ttl: request.ttl || 5,
+        env: request.env,
+        stdin: request.stdin,
+      }),
+    });
+
+    console.log(`\n✅ [${new Date().toISOString()}] Job submitted successfully`);
+    console.log(`   Job ID: ${executeResponse.job_id}`);
+    console.log(`   Initial Status: ${executeResponse.status}`);
+
+    return executeResponse;
+  }
+
+  /**
+   * Execute code in a sandboxed environment (async workflow with polling)
    *
    * This method:
    * 1. Submits code for execution and receives a job ID
    * 2. Polls the job status until completion
    * 3. Returns the final result with stdout, stderr, exit code, and artifacts
+   *
+   * For non-blocking execution, use submitCodeExecution() instead.
    *
    * @param request - Code execution request
    * @returns Execution result with stdout, stderr, exit code, and artifacts
