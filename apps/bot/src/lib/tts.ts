@@ -142,27 +142,70 @@ export async function synthesizeSpeech(
 ): Promise<Buffer> {
   const sanitized = sanitizeText(text);
 
+  console.log('🎤 [TTS] === STARTING TTS REQUEST ===');
+  console.log('🎤 [TTS] Input text length:', text.length);
+  console.log('🎤 [TTS] Sanitized text length:', sanitized.length);
+  console.log('🎤 [TTS] Text preview:', sanitized.substring(0, 100) + '...');
+  console.log('🎤 [TTS] Voice:', voice);
+  console.log('🎤 [TTS] Voice type:', typeof voice);
+  console.log('🎤 [TTS] Valid voices:', TTS_VOICES);
+  console.log('🎤 [TTS] Is voice in valid list?', TTS_VOICES.includes(voice as TTSVoice));
+
+  const requestBody = {
+    input: sanitized,
+    voice: voice,
+    model: 'tts-1',
+  };
+
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  console.log('🎤 [TTS] Request URL:', TTS_API_ENDPOINT);
+  console.log('🎤 [TTS] Request method:', 'POST');
+  console.log('🎤 [TTS] Request headers:', JSON.stringify(headers, null, 2));
+  console.log('🎤 [TTS] Request body:', JSON.stringify(requestBody, null, 2));
+
   try {
+    console.log('🎤 [TTS] Sending fetch request...');
+
     const response = await fetch(TTS_API_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        input: sanitized,
-        voice: voice,
-        model: 'tts-1', // UncloseAI model identifier
-      }),
+      headers: headers,
+      body: JSON.stringify(requestBody),
     });
 
+    console.log('📥 [TTS] Response received!');
+    console.log('📥 [TTS] Response status:', response.status);
+    console.log('📥 [TTS] Response statusText:', response.statusText);
+    console.log('📥 [TTS] Response ok:', response.ok);
+    console.log('📥 [TTS] Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+
     if (!response.ok) {
-      throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
+      // Try to read the error response body
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+        console.error('❌ [TTS] Error response body:', errorBody);
+      } catch (e) {
+        console.error('❌ [TTS] Could not read error response body:', e);
+      }
+
+      throw new Error(`TTS API error: ${response.status} ${response.statusText}${errorBody ? ' - ' + errorBody : ''}`);
     }
 
+    console.log('✅ [TTS] Response OK, reading audio data...');
     const arrayBuffer = await response.arrayBuffer();
+    console.log('✅ [TTS] Audio data received, size:', arrayBuffer.byteLength, 'bytes');
+
     return Buffer.from(arrayBuffer);
   } catch (error) {
-    console.error('Error synthesizing speech:', error);
+    console.error('❌ [TTS] Error synthesizing speech:', error);
+    console.error('❌ [TTS] Error type:', error instanceof Error ? error.constructor.name : typeof error);
+    console.error('❌ [TTS] Error message:', error instanceof Error ? error.message : String(error));
+    if (error instanceof Error && error.stack) {
+      console.error('❌ [TTS] Error stack:', error.stack);
+    }
     throw error;
   }
 }
