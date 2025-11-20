@@ -77,6 +77,30 @@ export function getDataDir(name: string, localFallback?: string): string {
 }
 
 /**
+ * Get the public directory path (for static assets like TTS player)
+ * This directory is part of the codebase, not persistent storage
+ */
+export function getPublicDir(): string {
+  // Try multiple possible paths for production/dev
+  const possiblePaths = [
+    join(process.cwd(), 'apps/bot/public'),           // Monorepo structure
+    join(process.cwd(), 'public'),                    // If running from apps/bot
+    join(__dirname, '../../public'),                  // Relative to compiled dist
+    '/app/apps/bot/public',                           // Absolute Railway path
+  ];
+
+  for (const path of possiblePaths) {
+    if (existsSync(path)) {
+      return path;
+    }
+  }
+
+  // Fallback to first path and log warning
+  console.warn('⚠️  Public directory not found, using fallback:', possiblePaths[0]);
+  return possiblePaths[0];
+}
+
+/**
  * Initialize all storage directories
  * Call this on application startup to ensure directories exist
  */
@@ -85,9 +109,11 @@ export function initializeStorage(): void {
 
   const artifactsDir = getArtifactsDir();
   const uploadsDir = getUploadsDir();
+  const publicDir = getPublicDir();
 
   console.log(`   Artifacts: ${artifactsDir}`);
   console.log(`   Uploads: ${uploadsDir}`);
+  console.log(`   Public: ${publicDir}`);
 
   if (isProductionWithVolume()) {
     console.log('✅ Using Railway persistent volume at /data');

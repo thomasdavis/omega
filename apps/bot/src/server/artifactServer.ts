@@ -6,13 +6,14 @@
 import express, { Request, Response } from 'express';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
-import { getArtifactsDir, getUploadsDir } from '../utils/storage.js';
+import { getArtifactsDir, getUploadsDir, getPublicDir } from '../utils/storage.js';
 import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js';
 import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
 const UPLOADS_DIR = getUploadsDir();
+const PUBLIC_DIR = getPublicDir();
 const DEFAULT_PORT = 3001;
 
 export interface ArtifactServerConfig {
@@ -360,29 +361,41 @@ function createApp(): express.Application {
   // Serve static TTS player assets
   app.get('/tts-player.js', (req: Request, res: Response) => {
     try {
-      const filepath = join(process.cwd(), 'apps/bot/public/tts-player.js');
+      const filepath = join(PUBLIC_DIR, 'tts-player.js');
+      console.log(`[TTS Player] Attempting to serve: ${filepath}`);
+      console.log(`[TTS Player] File exists: ${existsSync(filepath)}`);
+
       if (existsSync(filepath)) {
         res.setHeader('Content-Type', 'application/javascript');
         res.send(readFileSync(filepath, 'utf-8'));
+        console.log(`[TTS Player] ✅ Successfully served tts-player.js`);
       } else {
-        res.status(404).send('File not found');
+        console.error(`[TTS Player] ❌ File not found: ${filepath}`);
+        res.status(404).send(`File not found: ${filepath}`);
       }
     } catch (error) {
-      res.status(500).send('Error loading file');
+      console.error('[TTS Player] Error loading tts-player.js:', error);
+      res.status(500).send(`Error loading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 
   app.get('/tts-player.css', (req: Request, res: Response) => {
     try {
-      const filepath = join(process.cwd(), 'apps/bot/public/tts-player.css');
+      const filepath = join(PUBLIC_DIR, 'tts-player.css');
+      console.log(`[TTS Player] Attempting to serve: ${filepath}`);
+      console.log(`[TTS Player] File exists: ${existsSync(filepath)}`);
+
       if (existsSync(filepath)) {
         res.setHeader('Content-Type', 'text/css');
         res.send(readFileSync(filepath, 'utf-8'));
+        console.log(`[TTS Player] ✅ Successfully served tts-player.css`);
       } else {
-        res.status(404).send('File not found');
+        console.error(`[TTS Player] ❌ File not found: ${filepath}`);
+        res.status(404).send(`File not found: ${filepath}`);
       }
     } catch (error) {
-      res.status(500).send('Error loading file');
+      console.error('[TTS Player] Error loading tts-player.css:', error);
+      res.status(500).send(`Error loading file: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
 
