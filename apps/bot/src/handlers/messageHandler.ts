@@ -256,19 +256,37 @@ function formatSingleToolReport(call: any, toolNumber: number, totalTools: numbe
 
   // Result in code block if present
   if (call.result) {
+    // Extract AI summary if present (for unsandbox tool)
+    let aiSummary: string | undefined;
+    let resultWithoutSummary = call.result;
+
+    if (typeof call.result === 'object' && call.result.aiSummary) {
+      aiSummary = call.result.aiSummary;
+      // Create a copy without aiSummary to avoid duplicating it in the JSON output
+      resultWithoutSummary = { ...call.result };
+      delete resultWithoutSummary.aiSummary;
+    }
+
+    // Display AI Summary first if present
+    if (aiSummary) {
+      lines.push('**🤖 AI Summary:**');
+      lines.push(aiSummary);
+      lines.push(''); // Empty line for spacing
+    }
+
     lines.push('**Result:**');
 
     // Format result based on type
-    if (typeof call.result === 'string') {
+    if (typeof resultWithoutSummary === 'string') {
       // For string results, check if it looks like JSON
       try {
-        const parsed = JSON.parse(call.result);
+        const parsed = JSON.parse(resultWithoutSummary);
         lines.push('```json');
         lines.push(JSON.stringify(parsed, null, 2));
         lines.push('```');
       } catch {
         // Not JSON, display as regular text (with URL suppression)
-        const suppressedResult = suppressEmbeds(call.result);
+        const suppressedResult = suppressEmbeds(resultWithoutSummary);
         if (suppressedResult.length > 500) {
           lines.push('```');
           lines.push(suppressedResult.slice(0, 500) + '...\n(truncated)');
@@ -279,9 +297,9 @@ function formatSingleToolReport(call: any, toolNumber: number, totalTools: numbe
           lines.push('```');
         }
       }
-    } else if (typeof call.result === 'object') {
+    } else if (typeof resultWithoutSummary === 'object') {
       // For object results, format as JSON
-      const jsonStr = JSON.stringify(call.result, null, 2);
+      const jsonStr = JSON.stringify(resultWithoutSummary, null, 2);
       if (jsonStr.length > 1000) {
         lines.push('```json');
         lines.push(jsonStr.slice(0, 1000) + '\n...\n(truncated)');
@@ -295,7 +313,7 @@ function formatSingleToolReport(call: any, toolNumber: number, totalTools: numbe
     } else {
       // For other types (number, boolean, etc.)
       lines.push('```');
-      lines.push(String(call.result));
+      lines.push(String(resultWithoutSummary));
       lines.push('```');
     }
   }
