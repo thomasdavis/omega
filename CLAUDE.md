@@ -25,18 +25,17 @@
 
 ## AI Model Configuration
 
-**IMPORTANT: Always use `gpt-5-mini` for all AI operations**
+**IMPORTANT: Always use `gpt-4.1-mini` for all AI operations**
 
 The correct OpenAI model identifier is:
-- **Primary model**: `gpt-5-mini` (used in agent.ts and all tools)
-- **Decision model**: `gpt-5-mini` (used in shouldRespond.ts)
+- **Primary model**: `gpt-4.1-mini` (used in agent.ts and all tools)
+- **Decision model**: `gpt-4.1-mini` (used in shouldRespond.ts)
 
 This is configured in:
 - `apps/bot/src/agent/agent.ts` - Main agent model
 - `apps/bot/src/agent/tools/generateHtmlPage.ts` - HTML generation
 - `apps/bot/src/lib/shouldRespond.ts` - Response decision logic
 
-**DO NOT use**: `gpt-4o-mini`, `gpt-4o`, `gpt-4.1-mini`, or any other model names.
 
 ---
 

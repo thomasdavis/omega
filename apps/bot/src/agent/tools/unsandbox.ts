@@ -197,13 +197,28 @@ export const unsandboxTool = tool({
             statusResponse.status === 'cancelled') {
           console.log(`   ✅ Job reached terminal state: ${statusResponse.status}`);
 
-          const success = statusResponse.status === 'completed' && (statusResponse.result?.success ?? false);
+          const success = statusResponse.status === 'completed' && (statusResponse.success ?? false);
           return {
             success,
             job_id: statusResponse.job_id,
             status: statusResponse.status,
-            result: statusResponse.result, // Include full result object with all fields
-            executionTime: statusResponse.executionTime,
+            // Execution results (all at root level)
+            stdout: statusResponse.stdout,
+            stderr: statusResponse.stderr,
+            exit_code: statusResponse.exit_code,
+            error: statusResponse.error,
+            language: statusResponse.language,
+            // Timing fields
+            total_time_ms: statusResponse.total_time_ms,
+            executionTime: statusResponse.total_time_ms ?? statusResponse.executionTime,
+            created_at: statusResponse.created_at,
+            started_at: statusResponse.started_at,
+            completed_at: statusResponse.completed_at,
+            // Metadata
+            execution_mode: statusResponse.execution_mode,
+            network_mode: statusResponse.network_mode,
+            timeout: statusResponse.timeout,
+            // Artifacts
             artifacts: statusResponse.artifacts || [],
           };
         }
@@ -349,7 +364,7 @@ export const unsandboxStatusTool = tool({
 
       // Build response based on status
       const isTerminal = ['completed', 'failed', 'timeout', 'cancelled'].includes(statusResponse.status);
-      const success = statusResponse.status === 'completed' && (statusResponse.result?.success ?? false);
+      const success = statusResponse.status === 'completed' && (statusResponse.success ?? false);
 
       const response: any = {
         job_id,
@@ -358,21 +373,37 @@ export const unsandboxStatusTool = tool({
         success: isTerminal ? success : undefined,
       };
 
-      // Add execution details if available
-      if (statusResponse.executionTime) {
-        response.executionTime = statusResponse.executionTime;
-      }
-      if (statusResponse.startedAt) {
-        response.startedAt = statusResponse.startedAt;
-      }
-      if (statusResponse.completedAt) {
-        response.completedAt = statusResponse.completedAt;
-      }
-
-      // Add results if completed
+      // Add all execution results and metadata (return everything from API)
       if (isTerminal) {
-        response.result = statusResponse.result || null; // Always include, null if not available
+        // Execution results
+        response.stdout = statusResponse.stdout;
+        response.stderr = statusResponse.stderr;
+        response.exit_code = statusResponse.exit_code;
+        response.error = statusResponse.error;
+        response.language = statusResponse.language;
+
+        // Timing fields
+        response.total_time_ms = statusResponse.total_time_ms;
+        response.executionTime = statusResponse.total_time_ms ?? statusResponse.executionTime;
+        response.created_at = statusResponse.created_at;
+        response.started_at = statusResponse.started_at ?? statusResponse.startedAt;
+        response.completed_at = statusResponse.completed_at ?? statusResponse.completedAt;
+
+        // Metadata
+        response.execution_mode = statusResponse.execution_mode;
+        response.network_mode = statusResponse.network_mode;
+        response.timeout = statusResponse.timeout;
+
+        // Artifacts
         response.artifacts = statusResponse.artifacts || [];
+      } else {
+        // For non-terminal states, include timing info if available
+        if (statusResponse.created_at) {
+          response.created_at = statusResponse.created_at;
+        }
+        if (statusResponse.started_at ?? statusResponse.startedAt) {
+          response.started_at = statusResponse.started_at ?? statusResponse.startedAt;
+        }
       }
 
       // Add helpful message

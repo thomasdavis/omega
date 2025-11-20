@@ -269,20 +269,20 @@ export class UnsandboxClient {
     console.log(`\n✅ [${new Date().toISOString()}] Code Execution Completed`);
     console.log(`   Job ID: ${result.job_id}`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Exit Code: ${result.result?.exit_code ?? 'N/A'}`);
-    console.log(`   Success: ${result.result?.success ?? 'N/A'}`);
-    console.log(`   Execution Time: ${result.executionTime ?? 'N/A'}ms`);
-    console.log(`   Stdout Length: ${result.result?.stdout?.length ?? 0} characters`);
-    console.log(`   Stderr Length: ${result.result?.stderr?.length ?? 0} characters`);
+    console.log(`   Exit Code: ${result.exit_code ?? 'N/A'}`);
+    console.log(`   Success: ${result.success ?? 'N/A'}`);
+    console.log(`   Execution Time: ${result.total_time_ms ?? result.executionTime ?? 'N/A'}ms`);
+    console.log(`   Stdout Length: ${result.stdout?.length ?? 0} characters`);
+    console.log(`   Stderr Length: ${result.stderr?.length ?? 0} characters`);
     console.log(`   Artifacts: ${result.artifacts?.length ?? 0}`);
-    if (result.result?.stdout) {
-      console.log(`   Stdout Preview: ${result.result.stdout.substring(0, 200)}${result.result.stdout.length > 200 ? '...' : ''}`);
+    if (result.stdout) {
+      console.log(`   Stdout Preview: ${result.stdout.substring(0, 200)}${result.stdout.length > 200 ? '...' : ''}`);
     }
-    if (result.result?.stderr) {
-      console.log(`   Stderr: ${result.result.stderr}`);
+    if (result.stderr) {
+      console.log(`   Stderr: ${result.stderr}`);
     }
-    if (result.result?.error) {
-      console.log(`   Error: ${result.result.error}`);
+    if (result.error) {
+      console.log(`   Error: ${result.error}`);
     }
 
     return result;
@@ -372,8 +372,8 @@ export class UnsandboxClient {
    * ```typescript
    * const status = await client.getExecutionStatus({ job_id: 'job_123' });
    * if (status.status === 'completed') {
-   *   console.log(status.result?.stdout);
-   *   console.log(status.result?.success);
+   *   console.log(status.stdout);
+   *   console.log(status.success);
    * }
    * ```
    */
@@ -387,11 +387,11 @@ export class UnsandboxClient {
 
     console.log(`\n📊 [${new Date().toISOString()}] Execution Status Retrieved`);
     console.log(`   Status: ${result.status}`);
-    console.log(`   Success: ${result.result?.success ?? 'N/A'}`);
-    console.log(`   Exit Code: ${result.result?.exit_code ?? 'N/A'}`);
-    console.log(`   Execution Time: ${result.executionTime ?? 'N/A'}ms`);
-    console.log(`   Started At: ${result.startedAt ?? 'N/A'}`);
-    console.log(`   Completed At: ${result.completedAt ?? 'N/A'}`);
+    console.log(`   Success: ${result.success ?? 'N/A'}`);
+    console.log(`   Exit Code: ${result.exit_code ?? 'N/A'}`);
+    console.log(`   Execution Time: ${result.total_time_ms ?? result.executionTime ?? 'N/A'}ms`);
+    console.log(`   Started At: ${result.started_at ?? result.startedAt ?? 'N/A'}`);
+    console.log(`   Completed At: ${result.completed_at ?? result.completedAt ?? 'N/A'}`);
 
     return result;
   }

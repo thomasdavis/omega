@@ -61,7 +61,7 @@ export async function shouldRespond(
     // Format conversation history for context
     let historyContext = '';
     if (messageHistory.length > 0) {
-      const recentMessages = messageHistory.slice(-5); // Last 5 messages for context
+      const recentMessages = messageHistory.slice(-20); // Last 5 messages for context
       historyContext = '\n\nRecent conversation:\n' +
         recentMessages.map(msg => `${msg.username}: ${msg.content}`).join('\n') + '\n';
     }
@@ -72,8 +72,9 @@ export async function shouldRespond(
       prompt: `**DECISION TASK**: Decide if you should respond to the current message below.
 
 Channel: #${channelName}
+${historyContext}
 Current user: ${message.author.username}
-Current message: "${message.content}"${historyContext}
+Current message: "${message.content}"
 
 CRITICAL RULES FOR CONVERSATIONAL CONTEXT:
 1. **If Omega (you) just asked a question or offered to do something, and the user is clearly responding to YOU, ALWAYS respond.**

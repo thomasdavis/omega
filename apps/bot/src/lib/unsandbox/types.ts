@@ -59,39 +59,55 @@ export interface ExecuteCodeResponse {
 }
 
 /**
- * Result object within completed job response
- */
-export interface JobResult {
-  /** Whether the execution was successful */
-  success: boolean;
-  /** Standard output from the execution */
-  stdout: string;
-  /** Standard error from the execution */
-  stderr: string;
-  /** Error message if execution failed */
-  error: string | null;
-  /** Language used for execution */
-  language: string;
-  /** Exit code (0 for success, non-zero for errors) */
-  exit_code: number;
-}
-
-/**
  * Response from polling job status
+ * All fields are at root level, matching the actual Unsandbox API response structure
  */
 export interface JobStatusResponse {
+  // Job metadata
   /** Unique identifier for this execution */
   job_id: string;
   /** Current status of the execution */
   status: ExecutionStatus;
-  /** Result object (only present when status is 'completed') */
-  result?: JobResult;
-  /** Execution time in milliseconds */
+
+  // Execution results (all at root level, matching actual API response)
+  /** Whether the execution was successful */
+  success?: boolean;
+  /** Standard output from the execution */
+  stdout?: string;
+  /** Standard error from the execution */
+  stderr?: string;
+  /** Error message if execution failed */
+  error?: string | null;
+  /** Language used for execution */
+  language?: string;
+  /** Exit code (0 for success, non-zero for errors) */
+  exit_code?: number;
+
+  // Timing information
+  /** Total execution time in milliseconds (API field) */
+  total_time_ms?: number;
+  /** Execution time in milliseconds (kept for backwards compatibility) */
   executionTime?: number;
+  /** Timestamp when job was created */
+  created_at?: string;
   /** Timestamp when execution started */
-  startedAt?: string;
+  started_at?: string;
   /** Timestamp when execution completed */
+  completed_at?: string;
+  /** Legacy field (use started_at instead) */
+  startedAt?: string;
+  /** Legacy field (use completed_at instead) */
   completedAt?: string;
+
+  // Additional metadata
+  /** Execution mode (e.g., 'pooled') */
+  execution_mode?: string;
+  /** Network mode (e.g., 'zerotrust') */
+  network_mode?: string;
+  /** Timeout in milliseconds */
+  timeout?: number;
+
+  // Artifacts
   /** Artifacts produced by the execution */
   artifacts?: Artifact[];
 }
