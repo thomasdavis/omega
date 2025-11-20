@@ -3,7 +3,8 @@
  */
 
 import { Message } from 'discord.js';
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { buildSystemPrompt } from './systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -18,6 +19,16 @@ export interface MessageHistoryItem {
   username: string;
   content: string;
 }
+
+/**
+ * Zod schema for structured AI decision output
+ * Ensures type-safe, validated responses from the AI
+ */
+const DecisionSchema = z.object({
+  decision: z.enum(['yes', 'no']).describe('Whether Omega should respond to this message'),
+  confidence: z.number().min(0).max(100).describe('Confidence level in the decision (0-100)'),
+  reason: z.string().min(5).max(200).describe('Brief explanation of why this decision was made'),
+});
 
 export async function shouldRespond(
   message: Message,
@@ -54,89 +65,56 @@ export async function shouldRespond(
   }
 
   // Use AI to decide if the message is interesting enough to respond to
-  // This allows the bot to naturally join conversations when appropriate
+  // Uses structured output (generateObject) for reliable, type-safe decisions
   try {
     const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
 
     // Format conversation history for context
     let historyContext = '';
     if (messageHistory.length > 0) {
-      const recentMessages = messageHistory.slice(-20); // Last 5 messages for context
+      const recentMessages = messageHistory.slice(-20);
       historyContext = '\n\nRecent conversation:\n' +
         recentMessages.map(msg => `${msg.username}: ${msg.content}`).join('\n') + '\n';
     }
 
-    const decision = await generateText({
+    const result = await generateObject({
       model: openai.chat(OMEGA_MODEL), // Use centralized model config, force Chat Completions API
-      system: buildSystemPrompt(message.author.username),
-      prompt: `**DECISION TASK**: Decide if you should respond to the current message below.
+      schema: DecisionSchema,
+      prompt: `Analyze this Discord message and decide if Omega should respond.
 
 Channel: #${channelName}
 ${historyContext}
-Current user: ${message.author.username}
-Current message: "${message.content}"
+User: ${message.author.username}
+Message: "${message.content}"
 
-CRITICAL RULES FOR CONVERSATIONAL CONTEXT:
-1. **If Omega (you) just asked a question or offered to do something, and the user is clearly responding to YOU, ALWAYS respond.**
-   - Examples: "Would you like me to...?" → user says "yes", "sure", "do it", etc.
-   - This is a direct continuation of YOUR conversation
+RESPOND (decision: "yes") if:
+1. The message is a direct continuation of a conversation Omega is actively part of
+2. The user is responding to Omega's previous question, offer, or statement
+3. The message contains a question, request, command, or technical discussion
+4. The message discusses coding, AI, philosophy, or topics Omega can contribute to
+5. The conversation flow naturally includes Omega as a participant
 
-2. **Natural conversation flow matters:**
-   - Look at the recent conversation context
-   - If the current message is a reply/response to something Omega said, respond
-   - Users don't need to say "omega" every time in an ongoing conversation
+DO NOT RESPOND (decision: "no") if:
+1. Short reactions between other users not directed at Omega ("lol", "nice", "lmao")
+2. Private conversations clearly not involving Omega
+3. Off-topic casual chatter that doesn't warrant bot input
 
-3. **Be conversational, not robotic:**
-   - Users should talk to you like a human, not a command-line tool
-   - "implement painting skills" = respond (clear intent, even without "omega")
-   - "yes do it" after you asked = respond (continuation)
-   - "lmao" in isolation = maybe skip (unless it's reacting to you)
-
-ALWAYS respond to:
-- Responses to YOUR questions or offers (check conversation history!)
-- Any message mentioning "omega" or "you" when referring to the bot
-- Direct questions or requests (even casual ones like "do this" or "make that")
-- Technical discussions, coding, features, tools
-- Natural conversation that includes you
-- Commands/requests even without explicit bot mention
-
-Only SKIP:
-- Very short reactions ("lol", "nice") between OTHER users (not about you)
-- Clear private conversations NOT involving you
-- Obvious spam or complete nonsense
-
-**Think like a participant in the conversation, not a keyword detector.**
-
-Respond in JSON format:
-{
-  "decision": "yes" or "no",
-  "confidence": <number 0-100>,
-  "reason": "<brief explanation>"
-}`,
+Context matters: Check the conversation history to determine if this is a natural continuation where Omega should participate.`,
     });
 
-    const response = JSON.parse(decision.text.trim());
-    const shouldRespond = response.decision.toLowerCase() === 'yes';
-    const confidence = response.confidence;
-    const reason = response.reason;
+    const shouldRespond = result.object.decision === 'yes';
+    const confidence = result.object.confidence;
+    const reason = result.object.reason;
 
     if (shouldRespond) {
       console.log(`   🤖 AI decided to respond (${confidence}%): ${reason}`);
       return { shouldRespond: true, confidence, reason: `AI: ${reason}` };
     } else {
+      console.log(`   ⏭️  AI decided to skip (${confidence}%): ${reason}`);
       return { shouldRespond: false, confidence, reason: `AI: ${reason}` };
     }
   } catch (error) {
-    console.error('Error in AI decision making:', error);
-    // Fall back to random chance if AI fails
+    console.error('❌ Error in AI decision making:', error);
+    throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  // Fallback: increased random chance (30% - be more engaged!)
-  const randomChance = Math.random() < 0.30;
-  if (randomChance) {
-    console.log('   🎲 Random engagement triggered');
-    return { shouldRespond: true, confidence: 30, reason: 'Random engagement (30% chance)' };
-  }
-
-  return { shouldRespond: false, confidence: 70, reason: 'Not relevant enough' };
 }
