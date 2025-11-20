@@ -10,6 +10,7 @@ import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/too
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { messageAdapter, type ToolCallInfo } from '../utils/discordMessageAdapter.js';
+import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -63,6 +64,22 @@ export async function handleMessage(message: Message): Promise<void> {
   // Show typing indicator while processing
   if ('sendTyping' in message.channel) {
     await message.channel.sendTyping();
+  }
+
+  // Persist human message to database
+  try {
+    await saveHumanMessage({
+      userId: message.author.id,
+      username: message.author.username,
+      channelId: message.channel.id,
+      channelName: channelName,
+      guildId: message.guild?.id,
+      messageContent: message.content,
+      messageId: message.id,
+    });
+  } catch (dbError) {
+    console.error('⚠️  Failed to persist message to database:', dbError);
+    // Continue execution even if database write fails
   }
 
   try {
@@ -121,6 +138,25 @@ export async function handleMessage(message: Message): Promise<void> {
         index: index + 1,
         total: result.toolCalls.length
       }));
+
+      // Persist tool calls to database
+      for (const toolCall of result.toolCalls) {
+        try {
+          await saveToolExecution({
+            userId: message.author.id,
+            username: message.author.username,
+            channelId: message.channel.id,
+            channelName: channelName,
+            guildId: message.guild?.id,
+            toolName: toolCall.toolName,
+            toolArgs: toolCall.args,
+            toolResult: toolCall.result,
+          });
+        } catch (dbError) {
+          console.error(`⚠️  Failed to persist tool execution (${toolCall.toolName}) to database:`, dbError);
+          // Continue execution even if database write fails
+        }
+      }
 
       // Special handling for renderChart tool - attach the image
       for (let i = 0; i < result.toolCalls.length; i++) {
@@ -184,6 +220,22 @@ export async function handleMessage(message: Message): Promise<void> {
         allowedMentions: { repliedUser: false }, // Don't ping the user
       });
       console.log(`✅ Sent response (${result.response.length} chars)`);
+
+      // Persist AI response to database
+      try {
+        await saveAIMessage({
+          userId: message.author.id,
+          username: message.author.username,
+          channelId: message.channel.id,
+          channelName: channelName,
+          guildId: message.guild?.id,
+          messageContent: result.response,
+          parentMessageId: message.id,
+        });
+      } catch (dbError) {
+        console.error('⚠️  Failed to persist AI response to database:', dbError);
+        // Continue execution even if database write fails
+      }
     }
   } catch (error) {
     // Log the error with full context and stack trace
