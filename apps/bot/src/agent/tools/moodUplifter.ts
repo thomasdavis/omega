@@ -11,6 +11,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 /**
  * Analyze message sentiment and energy level
@@ -23,7 +24,7 @@ async function analyzeSentiment(message: string): Promise<{
 }> {
   try {
     const analysis = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai(OMEGA_MODEL),
       prompt: `Analyze the following message for energy level and sentiment.
 
 Message: "${message}"
@@ -98,7 +99,7 @@ Your uplifting message:`;
 
   try {
     const response = await generateText({
-      model: openai('gpt-4o'),
+      model: openai(OMEGA_MODEL),
       prompt,
     });
 

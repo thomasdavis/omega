@@ -8,6 +8,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 export const oodaTool = tool({
   description: 'Apply the OODA (Observe, Orient, Decide, Act) decision-making framework to analyze problems and provide structured solutions. This adaptive, iterative approach is ideal for complex or ambiguous situations requiring systematic thinking.',
@@ -138,7 +139,7 @@ Provide concrete, actionable steps with clear guidance on implementation.
 Format your response in clear markdown with appropriate headers and bullet points. Be practical, insightful, and help the user move forward with confidence.`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai(OMEGA_MODEL),
     prompt: oodaPrompt,
   });
 

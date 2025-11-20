@@ -7,6 +7,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 export const recipeGeneratorTool = tool({
   description: 'Generate detailed cooking recipes based on ingredients, cuisine type, dietary restrictions, or specific dishes. Provides ingredients list, step-by-step instructions, cooking time, servings, and helpful tips.',
@@ -66,7 +67,7 @@ Please provide a complete recipe in the following format:
 Make sure the recipe is practical, achievable, and delicious. Focus on clear instructions that a home cook can follow.`;
 
       const result = await generateText({
-        model: openai('gpt-4o-mini'),
+        model: openai(OMEGA_MODEL),
         prompt,
       });
 

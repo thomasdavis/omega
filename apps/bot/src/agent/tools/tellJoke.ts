@@ -12,6 +12,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 // Available joke categories
 const JOKE_CATEGORIES = [
@@ -69,7 +70,7 @@ Respond in JSON format:
 
   try {
     const result = await generateText({
-      model: openai('gpt-4o-mini'),
+      model: openai(OMEGA_MODEL),
       prompt,
     });
 

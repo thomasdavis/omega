@@ -6,6 +6,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 // PAM Schema Definitions
 const ToolParameterSchema = z.object({
@@ -124,7 +125,7 @@ function generateTemplate(params: {
     };
 
     agent.configuration = {
-      model: 'gpt-4o',
+      model: OMEGA_MODEL,
       temperature: 0.7,
       maxTokens: 2000,
       systemPrompt: `You are ${params.name}, ${params.description}`,
@@ -167,7 +168,7 @@ function convertAgent(agentJson: string, targetFormat: 'minimal' | 'full'): PAM 
         traits: ['helpful'],
       },
       configuration: agent.configuration || {
-        model: 'gpt-4o',
+        model: OMEGA_MODEL,
         temperature: 0.7,
         maxTokens: 2000,
       },

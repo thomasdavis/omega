@@ -11,6 +11,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getArtifactsDir } from '../../utils/storage.js';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 // Artifacts directory - use centralized storage utility
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -44,7 +45,7 @@ function validateHtmlCode(html: string): { valid: boolean; reason?: string } {
  * Generate complete HTML page using AI
  */
 async function generateHtmlWithAI(description: string): Promise<string> {
-  const model = openai.chat('gpt-5-mini');
+  const model = openai.chat(OMEGA_MODEL);
 
   const prompt = `You are an expert web developer. Generate a complete, functional HTML page based on this description:
 

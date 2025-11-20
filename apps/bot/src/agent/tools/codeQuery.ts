@@ -11,6 +11,7 @@ import { join, relative, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -172,7 +173,7 @@ async function analyzeCodeWithAI(
   query: string,
   analysisType: 'summarize' | 'explain' | 'architecture' | 'dependencies'
 ): Promise<string> {
-  const model = openai.chat('gpt-4o-mini');
+  const model = openai.chat(OMEGA_MODEL);
 
   // Build context from files
   const filesContext = files

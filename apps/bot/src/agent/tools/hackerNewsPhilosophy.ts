@@ -7,6 +7,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 interface HNItem {
   id: number;
@@ -84,7 +85,7 @@ export const hackerNewsPhilosophyTool = tool({
       // Step 3: Use AI to analyze and score articles for philosophical relevance
       console.log(`🤖 Using AI to analyze philosophical relevance...`);
 
-      const model = openai('gpt-4o-mini'); // Using mini for cost efficiency
+      const model = openai(OMEGA_MODEL);
 
       // Analyze stories in batches to avoid token limits
       const batchSize = 10;

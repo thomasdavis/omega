@@ -6,6 +6,7 @@ import { Message } from 'discord.js';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { buildSystemPrompt } from './systemPrompt.js';
+import { OMEGA_MODEL } from '../config/models.js';
 
 export interface ShouldRespondResult {
   shouldRespond: boolean;
@@ -66,7 +67,7 @@ export async function shouldRespond(
     }
 
     const decision = await generateText({
-      model: openai.chat('gpt-5-mini'), // Use cheaper model for decision making, force Chat Completions API
+      model: openai.chat(OMEGA_MODEL), // Use centralized model config, force Chat Completions API
       system: buildSystemPrompt(message.author.username),
       prompt: `**DECISION TASK**: Decide if you should respond to the current message below.
 

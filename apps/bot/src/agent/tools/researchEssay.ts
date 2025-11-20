@@ -7,6 +7,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { OMEGA_MODEL } from '../../config/models.js';
 
 export const researchEssayTool = tool({
   description: 'Conduct automated research on a topic and generate a well-structured essay. This tool searches for information, compiles research findings, and drafts a comprehensive essay with citations.',
@@ -130,7 +131,7 @@ Format your response as JSON with this structure:
 }`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai(OMEGA_MODEL),
     prompt: researchPrompt,
   });
 
@@ -181,7 +182,7 @@ Format as JSON:
 }`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai(OMEGA_MODEL),
     prompt: outlinePrompt,
   });
 
@@ -246,7 +247,7 @@ Requirements:
 Write the complete essay now:`;
 
   const result = await generateText({
-    model: openai('gpt-4o'),
+    model: openai(OMEGA_MODEL),
     prompt: essayPrompt,
   });
 
