@@ -295,6 +295,21 @@ function createApp(): express.Application {
 
       const ttsRequest: TTSRequest = req.body;
 
+      // Map old voice names to new valid ones (backward compatibility)
+      const voiceMapping: Record<string, string> = {
+        'bm_fable': 'fable',
+        'bm_alloy': 'alloy',
+        'bm_echo': 'echo',
+        'bm_onyx': 'onyx',
+        'bm_nova': 'nova',
+        'bm_shimmer': 'shimmer',
+      };
+
+      if (ttsRequest.voice && voiceMapping[ttsRequest.voice]) {
+        console.log(`🔄 [TTS] Mapping old voice "${ttsRequest.voice}" → "${voiceMapping[ttsRequest.voice]}"`);
+        ttsRequest.voice = voiceMapping[ttsRequest.voice];
+      }
+
       // Validate request
       const validation = validateTTSRequest(ttsRequest);
       if (!validation.valid) {
