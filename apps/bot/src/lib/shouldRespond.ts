@@ -65,7 +65,7 @@ export async function shouldRespond(
     }
 
     const decision = await generateText({
-      model: openai.chat('gpt-4o-mini'), // Use cheaper model for decision making, force Chat Completions API
+      model: openai.chat('gpt-5-mini'), // Use cheaper model for decision making, force Chat Completions API
       prompt: `You are Omega, a conversational AI Discord bot. Decide if you should respond to this message.
 
 Channel: #${channelName}
