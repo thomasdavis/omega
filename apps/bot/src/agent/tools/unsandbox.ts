@@ -82,18 +82,18 @@ export const unsandboxTool = tool({
 
       // Return standardized response
       console.log(`   📦 Preparing response...`);
-      const success = result.status === 'completed' && result.exitCode === 0;
-      console.log(`   Success: ${success} (status: ${result.status}, exitCode: ${result.exitCode})`);
+      const success = result.status === 'completed' && (result.result?.success ?? false);
+      console.log(`   Success: ${success} (status: ${result.status}, result.success: ${result.result?.success})`);
 
       const response = {
         success,
         language,
-        output: result.stdout || '',
-        error: result.stderr || result.error || '',
-        exitCode: result.exitCode,
+        output: result.result?.stdout || '',
+        error: result.result?.stderr || result.result?.error || '',
+        exitCode: result.result?.exit_code,
         executionTime: result.executionTime,
         status: result.status,
-        jobId: result.jobId,
+        jobId: result.job_id,
         artifacts: result.artifacts || [],
       };
 

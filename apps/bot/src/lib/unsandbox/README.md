@@ -42,8 +42,9 @@ const result = await client.executeCode({
   timeout: 5000,
 });
 
-console.log(result.stdout); // "Hello, World!\n"
-console.log(result.exitCode); // 0
+console.log(result.result?.stdout); // "Hello, World!\n"
+console.log(result.result?.exit_code); // 0
+console.log(result.result?.success); // true
 console.log(result.executionTime); // 142 (ms)
 ```
 
@@ -60,7 +61,7 @@ print(f"Hello, {name}!")
   timeout: 5000,
 });
 
-console.log(result.stdout); // "What's your name? Hello, Alice!\n"
+console.log(result.result?.stdout); // "What's your name? Hello, Alice!\n"
 ```
 
 ### With Environment Variables
@@ -75,7 +76,7 @@ const result = await client.executeCode({
   timeout: 5000,
 });
 
-console.log(result.stdout); // "secret-key-123\n"
+console.log(result.result?.stdout); // "secret-key-123\n"
 ```
 
 ### Check Execution Status
@@ -90,11 +91,12 @@ const execution = await client.executeCode({
 });
 
 // Poll for status
-const status = await client.getExecutionStatus({ id: execution.id });
+const status = await client.getExecutionStatus({ job_id: execution.job_id });
 console.log(status.status); // 'running' | 'completed' | 'failed' | 'timeout'
 
 if (status.status === 'completed') {
-  console.log(status.stdout);
+  console.log(status.result?.stdout);
+  console.log(status.result?.success);
 }
 ```
 
@@ -111,7 +113,7 @@ with open('/tmp/output.txt', 'w') as f:
   `,
 });
 
-const artifacts = await client.listArtifacts({ id: result.id });
+const artifacts = await client.listArtifacts({ id: result.job_id });
 artifacts.artifacts.forEach(artifact => {
   console.log(`${artifact.name} (${artifact.size} bytes)`);
   console.log(`Download: ${artifact.url}`);
@@ -130,7 +132,7 @@ const execution = await client.executeCode({
 });
 
 // Cancel it
-const cancelled = await client.cancelExecution(execution.id);
+const cancelled = await client.cancelExecution(execution.job_id);
 console.log(cancelled.status); // 'cancelled'
 ```
 
@@ -202,14 +204,18 @@ interface UnsandboxConfig {
 ### ExecuteCodeResponse
 
 ```typescript
-interface ExecuteCodeResponse {
-  id: string;                    // Unique execution ID
+interface JobStatusResponse {
+  job_id: string;                // Unique execution ID
   status: ExecutionStatus;       // 'pending' | 'running' | 'completed' | 'failed' | 'timeout' | 'cancelled'
-  stdout?: string;               // Standard output
-  stderr?: string;               // Standard error
-  exitCode?: number;             // Exit code (0 = success)
+  result?: {                     // Result object (only present when completed)
+    success: boolean;            // Whether execution was successful
+    stdout: string;              // Standard output
+    stderr: string;              // Standard error
+    error: string | null;        // Error message if failed
+    language: string;            // Language used
+    exit_code: number;           // Exit code (0 = success)
+  };
   executionTime?: number;        // Execution time in ms
-  error?: string;                // Error message if failed
   startedAt?: string;            // ISO timestamp
   completedAt?: string;          // ISO timestamp
 }
@@ -219,10 +225,11 @@ interface ExecuteCodeResponse {
 
 1. **Set Appropriate Timeouts**: Default is 5000ms, max is 30000ms
 2. **Handle Errors**: Always wrap calls in try-catch blocks
-3. **Check Exit Codes**: `exitCode === 0` means success
+3. **Check Success**: Use `result.result?.success` and `result.result?.exit_code === 0` to verify success
 4. **Use Language Mapping**: The tool handles mapping user-friendly names to runtime identifiers
 5. **Monitor Long Executions**: Use `getExecutionStatus()` for executions > 5 seconds
 6. **Validate Input**: Sanitize user-provided code before execution
+7. **Handle 404s**: Jobs may return 404 after completion if they've been cleaned up from the server
 
 ## Architecture
 
