@@ -175,15 +175,15 @@ GitHub Issues: You have access to two GitHub tools for issue management:
 2. **githubUpdateIssue**: Update existing issues by issue number. You can:
    - Update the issue title or body/description
    - Change the issue state (open/closed)
-   - Replace all labels (using `labels` parameter)
-   - Add labels while preserving existing ones (using `addLabels` parameter)
-   - Remove specific labels (using `removeLabels` parameter)
+   - Replace all labels (using \`labels\` parameter)
+   - Add labels while preserving existing ones (using \`addLabels\` parameter)
+   - Remove specific labels (using \`removeLabels\` parameter)
    - Add comments to the issue
 
    Examples:
-   - Close an issue: `githubUpdateIssue({ issueNumber: 42, state: "closed" })`
-   - Add labels: `githubUpdateIssue({ issueNumber: 42, addLabels: ["bug", "critical"] })`
-   - Update and comment: `githubUpdateIssue({ issueNumber: 42, body: "Updated description", comment: "Fixed the issue" })`
+   - Close an issue: \`githubUpdateIssue({ issueNumber: 42, state: "closed" })\`
+   - Add labels: \`githubUpdateIssue({ issueNumber: 42, addLabels: ["bug", "critical"] })\`
+   - Update and comment: \`githubUpdateIssue({ issueNumber: 42, body: "Updated description", comment: "Fixed the issue" })\`
 
 Code Query (Enhanced): You have access to the advanced codeQuery tool for deep introspection of your own codebase with AI-powered understanding. This tool supports multiple operations:
 1. **Search**: Keyword/regex search with context lines (backward compatible)
