@@ -313,3 +313,87 @@ export const githubUpdateIssueTool = tool({
     }
   },
 });
+
+export const githubCloseIssueTool = tool({
+  description: 'Close a GitHub issue by issue number. Use this to cancel or close issues that were created accidentally or are no longer needed. Can optionally add a closing comment explaining why the issue is being closed.',
+  inputSchema: z.object({
+    issueNumber: z.number().describe('The issue number to close'),
+    comment: z.string().optional().describe('Optional comment to add when closing the issue (e.g., "Closing as duplicate" or "Issue resolved")'),
+  }),
+  execute: async ({ issueNumber, comment }) => {
+    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+    const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
+
+    if (!GITHUB_TOKEN) {
+      return {
+        success: false,
+        error: 'GitHub token not configured',
+      };
+    }
+
+    try {
+      const updates: string[] = [];
+
+      // Add comment first if provided (before closing)
+      if (comment) {
+        const commentResponse = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issueNumber}/comments`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+            'X-GitHub-Api-Version': '2022-11-28',
+          },
+          body: JSON.stringify({
+            body: comment,
+          }),
+        });
+
+        if (!commentResponse.ok) {
+          console.warn(`Failed to add comment to issue #${issueNumber}: ${commentResponse.status}`);
+        } else {
+          updates.push('added closing comment');
+        }
+      }
+
+      // Close the issue
+      const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issueNumber}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          state: 'closed',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return {
+          success: false,
+          error: `GitHub API error: ${response.status} - ${error}`,
+        };
+      }
+
+      updates.push('closed issue');
+
+      const issueUrl = `https://github.com/${GITHUB_REPO}/issues/${issueNumber}`;
+
+      return {
+        success: true,
+        issueNumber,
+        issueUrl,
+        message: `Successfully closed issue #${issueNumber}${comment ? ' with comment' : ''}`,
+        updates: updates.join(', '),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error closing issue',
+      };
+    }
+  },
+});

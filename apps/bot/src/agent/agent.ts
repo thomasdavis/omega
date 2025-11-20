@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
-import { githubCreateIssueTool, githubUpdateIssueTool } from './tools/github.js';
+import { githubCreateIssueTool, githubUpdateIssueTool, githubCloseIssueTool } from './tools/github.js';
 import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool, unsandboxSubmitTool, unsandboxStatusTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
@@ -101,6 +101,7 @@ export async function runAgent(
         weather: weatherTool,
         githubCreateIssue: githubCreateIssueTool,
         githubUpdateIssue: githubUpdateIssueTool,
+        githubCloseIssue: githubCloseIssueTool,
         webFetch: webFetchTool,
         unsandbox: unsandboxTool,
         unsandboxSubmit: unsandboxSubmitTool,
