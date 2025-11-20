@@ -64,10 +64,25 @@ function parseFrontmatter(content: string): {
 function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   let html = markdown;
 
-  // Headers
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  // Headers with TTS support
+  if (ttsEnabled) {
+    html = html.replace(/^### (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<h3 data-tts="${sanitized}" class="tts-text">${text}</h3>`;
+    });
+    html = html.replace(/^## (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<h2 data-tts="${sanitized}" class="tts-text">${text}</h2>`;
+    });
+    html = html.replace(/^# (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<h1 data-tts="${sanitized}" class="tts-text">${text}</h1>`;
+    });
+  } else {
+    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  }
 
   // Images with alt text - add TTS support
   if (ttsEnabled) {
@@ -115,9 +130,27 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // Paragraphs
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = '<p>' + html + '</p>';
+  // Paragraphs - split into paragraphs first
+  const paragraphs = html.split(/\n\n/);
+  if (ttsEnabled) {
+    html = paragraphs.map(para => {
+      // Skip if it's a heading, code block, or other special element
+      if (para.trim().startsWith('<h') || para.trim().startsWith('<pre') ||
+          para.trim().startsWith('<figure') || para.trim().length === 0) {
+        return para;
+      }
+      // Extract text content for TTS (strip HTML tags for the data-tts attribute)
+      const textContent = para.replace(/<[^>]+>/g, '').trim();
+      if (textContent.length > 0) {
+        const sanitized = textContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return `<p data-tts="${sanitized}" class="tts-text">${para}</p>`;
+      }
+      return `<p>${para}</p>`;
+    }).join('');
+  } else {
+    html = html.replace(/\n\n/g, '</p><p>');
+    html = '<p>' + html + '</p>';
+  }
 
   // Clean up empty paragraphs
   html = html.replace(/<p><\/p>/g, '');
@@ -306,8 +339,58 @@ export function renderBlogPost(post: BlogPost): string {
       border-radius: 4px;
     }
     .tts-notice p {
-      margin: 0;
+      margin: 0 0 12px 0;
       color: #1976D2;
+    }
+    .tts-controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .tts-read-all-button,
+    .tts-stop-all-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tts-read-all-button {
+      background: #2196F3;
+      color: white;
+    }
+    .tts-read-all-button:hover {
+      background: #1976D2;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    }
+    .tts-stop-all-button {
+      background: #f44336;
+      color: white;
+    }
+    .tts-stop-all-button:hover {
+      background: #d32f2f;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+    }
+    .tts-text {
+      position: relative;
+      cursor: pointer;
+    }
+    .tts-text:hover {
+      background: rgba(33, 150, 243, 0.05);
+      border-radius: 4px;
+    }
+    .tts-text.tts-playing {
+      background: rgba(76, 175, 80, 0.1);
+      border-left: 4px solid #4CAF50;
+      padding-left: 12px;
+      margin-left: -16px;
     }
     a {
       color: #2196F3;
@@ -339,7 +422,21 @@ export function renderBlogPost(post: BlogPost): string {
       </div>
       ${post.ttsEnabled ? `
       <div class="tts-notice">
-        <p>🔊 This post has audio support. Click the play buttons on images to hear descriptions read aloud.</p>
+        <p>🔊 This post has audio support. Click the play buttons on text and images to hear them read aloud, or use the "Read Entire Post" button below.</p>
+        <div class="tts-controls">
+          <button id="tts-read-all" class="tts-read-all-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+            Read Entire Post
+          </button>
+          <button id="tts-stop-all" class="tts-stop-all-button" style="display:none;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M6 6h12v12H6z"/>
+            </svg>
+            Stop
+          </button>
+        </div>
       </div>
       ` : ''}
     </header>

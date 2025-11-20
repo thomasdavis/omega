@@ -9,6 +9,10 @@ class TTSPlayer {
     this.voice = options.voice || 'bm_fable';
     this.currentAudio = null;
     this.playingButton = null;
+    this.playingElement = null;
+    this.readAllQueue = [];
+    this.isReadingAll = false;
+    this.currentQueueIndex = 0;
   }
 
   /**
@@ -22,7 +26,13 @@ class TTSPlayer {
     elements.forEach(el => {
       const text = el.getAttribute('data-tts');
       if (text && text.trim()) {
-        this.addPlayButton(el, text);
+        // For text elements (h1, h2, h3, p), add click handler instead of button
+        if (el.classList.contains('tts-text')) {
+          this.addTextClickHandler(el, text);
+        } else {
+          // For images, add play button overlay
+          this.addPlayButton(el, text);
+        }
       }
     });
 
@@ -30,10 +40,22 @@ class TTSPlayer {
     const images = document.querySelectorAll('img[alt]');
     images.forEach(img => {
       const altText = img.getAttribute('alt');
-      if (altText && altText.trim() && !img.hasAttribute('data-tts-skip')) {
+      if (altText && altText.trim() && !img.hasAttribute('data-tts-skip') && !img.hasAttribute('data-tts')) {
         this.addPlayButton(img, altText);
       }
     });
+
+    // Set up "Read All" button if it exists
+    const readAllButton = document.getElementById('tts-read-all');
+    const stopAllButton = document.getElementById('tts-stop-all');
+
+    if (readAllButton) {
+      readAllButton.addEventListener('click', () => this.readAll());
+    }
+
+    if (stopAllButton) {
+      stopAllButton.addEventListener('click', () => this.stopAll());
+    }
 
     console.log('✅ TTS Player initialized');
   }
@@ -207,8 +229,185 @@ class TTSPlayer {
       if (this.playingButton) {
         this.setButtonState(this.playingButton, 'play');
       }
+      if (this.playingElement) {
+        this.playingElement.classList.remove('tts-playing');
+      }
       this.playingButton = null;
+      this.playingElement = null;
     }
+  }
+
+  /**
+   * Add click handler to text elements
+   */
+  addTextClickHandler(element, text) {
+    element.style.cursor = 'pointer';
+    element.setAttribute('title', 'Click to hear this read aloud');
+    element.setAttribute('role', 'button');
+    element.setAttribute('tabindex', '0');
+
+    element.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await this.playText(element, text);
+    });
+
+    element.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        await this.playText(element, text);
+      }
+    });
+  }
+
+  /**
+   * Play text for a text element
+   */
+  async playText(element, text) {
+    // If already playing this element, stop
+    if (this.playingElement === element && this.currentAudio && !this.currentAudio.paused) {
+      this.stop();
+      return;
+    }
+
+    // Stop any currently playing audio
+    if (this.currentAudio) {
+      this.stop();
+    }
+
+    // Mark element as playing
+    this.playingElement = element;
+    element.classList.add('tts-playing');
+
+    try {
+      // Request TTS audio
+      const response = await fetch(this.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          voice: this.voice,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+
+      // Get audio blob
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+
+      // Create and play audio
+      this.currentAudio = new Audio(audioUrl);
+      this.currentAudio.addEventListener('ended', () => {
+        element.classList.remove('tts-playing');
+        this.playingElement = null;
+        URL.revokeObjectURL(audioUrl);
+
+        // If reading all, continue to next item
+        if (this.isReadingAll) {
+          this.playNextInQueue();
+        }
+      });
+
+      this.currentAudio.addEventListener('error', (e) => {
+        console.error('Audio playback error:', e);
+        element.classList.remove('tts-playing');
+        this.playingElement = null;
+      });
+
+      await this.currentAudio.play();
+
+    } catch (error) {
+      console.error('TTS playback error:', error);
+      element.classList.remove('tts-playing');
+      this.playingElement = null;
+      if (!this.isReadingAll) {
+        alert(`Error playing audio: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Read all text elements in sequence
+   */
+  readAll() {
+    // Build queue of all TTS elements
+    const allElements = Array.from(document.querySelectorAll('[data-tts]'));
+    this.readAllQueue = allElements.filter(el => {
+      const text = el.getAttribute('data-tts');
+      return text && text.trim();
+    });
+
+    if (this.readAllQueue.length === 0) {
+      alert('No content available to read');
+      return;
+    }
+
+    this.isReadingAll = true;
+    this.currentQueueIndex = 0;
+
+    // Show stop button, hide read all button
+    const readAllButton = document.getElementById('tts-read-all');
+    const stopAllButton = document.getElementById('tts-stop-all');
+    if (readAllButton) readAllButton.style.display = 'none';
+    if (stopAllButton) stopAllButton.style.display = 'inline-flex';
+
+    // Start reading
+    this.playNextInQueue();
+  }
+
+  /**
+   * Play next item in the read-all queue
+   */
+  async playNextInQueue() {
+    if (!this.isReadingAll || this.currentQueueIndex >= this.readAllQueue.length) {
+      this.stopAll();
+      return;
+    }
+
+    const element = this.readAllQueue[this.currentQueueIndex];
+    const text = element.getAttribute('data-tts');
+
+    this.currentQueueIndex++;
+
+    // Scroll element into view
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Play the element
+    if (element.classList.contains('tts-text')) {
+      await this.playText(element, text);
+    } else {
+      // For images with buttons, find and trigger the button
+      const wrapper = element.closest('.tts-wrapper');
+      if (wrapper) {
+        const button = wrapper.querySelector('.tts-play-button');
+        if (button) {
+          this.handlePlayClick(button, text);
+        }
+      }
+    }
+  }
+
+  /**
+   * Stop reading all
+   */
+  stopAll() {
+    this.isReadingAll = false;
+    this.readAllQueue = [];
+    this.currentQueueIndex = 0;
+
+    // Stop current audio
+    this.stop();
+
+    // Show read all button, hide stop button
+    const readAllButton = document.getElementById('tts-read-all');
+    const stopAllButton = document.getElementById('tts-stop-all');
+    if (readAllButton) readAllButton.style.display = 'inline-flex';
+    if (stopAllButton) stopAllButton.style.display = 'none';
   }
 }
 
