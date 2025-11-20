@@ -244,24 +244,34 @@ apps/bot/src/agent/tools/
 └── unsandbox.ts   # AI SDK tool wrapper (uses the client)
 ```
 
+## API Endpoints
+
+The Unsandbox API uses the following endpoints:
+
+- **Submit Job**: `POST /execute/async` - Submit code for async execution
+- **Check Status**: `GET /jobs/{job_id}` - Poll job status until completion
+- **Cancel Job**: `POST /jobs/{job_id}/cancel` - Cancel a running job
+
 ## Migration from Old Implementation
 
 **Old (incorrect)**:
 ```typescript
-// ❌ Wrong language identifier (should use SDK)
-fetch('https://api.unsandbox.com/v1/execute', {
-  body: JSON.stringify({ language: 'javascript', code: '...' })
+// ❌ Wrong endpoints and language identifier
+fetch('https://api.unsandbox.com/v1/execute', {    // Wrong! No /v1
+  body: JSON.stringify({ language: 'javascript', code: '...' })  // Wrong! Use 'node'
 })
+fetch('https://api.unsandbox.com/run', { ... })    // Wrong! Old endpoint
 ```
 
 **New (correct)**:
 ```typescript
-// ✅ Use SDK with correct runtime identifier
+// ✅ Correct endpoints (no /v1 prefix) and runtime identifiers
 const client = createUnsandboxClient({ apiKey });
 await client.executeCode({
-  language: 'node',  // Mapped from 'javascript'
+  language: 'node',  // Correct runtime identifier
   code: '...'
 });
+// Uses: POST /execute/async → GET /jobs/{job_id}
 ```
 
 ## Future Enhancements

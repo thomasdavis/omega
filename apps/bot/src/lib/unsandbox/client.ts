@@ -247,7 +247,7 @@ export class UnsandboxClient {
 
     // Step 1: Submit execution and get job ID
     console.log(`\n📤 [${new Date().toISOString()}] Submitting code for execution...`);
-    const executeResponse = await this.request<ExecuteCodeResponse>('/v1/execute', {
+    const executeResponse = await this.request<ExecuteCodeResponse>('/execute/async', {
       method: 'POST',
       body: JSON.stringify({
         language: request.language,
@@ -348,7 +348,7 @@ export class UnsandboxClient {
    */
   private async getJobStatus(jobId: string): Promise<JobStatusResponse> {
     try {
-      return await this.request<JobStatusResponse>(`/v1/jobs/${jobId}`, {
+      return await this.request<JobStatusResponse>(`/jobs/${jobId}`, {
         method: 'GET',
       });
     } catch (error) {
@@ -448,7 +448,7 @@ export class UnsandboxClient {
     console.log(`\n🛑 [${new Date().toISOString()}] Cancelling Execution`);
     console.log(`   Job ID: ${id}`);
 
-    const result = await this.request<GetExecutionStatusResponse>(`/v1/jobs/${id}/cancel`, {
+    const result = await this.request<GetExecutionStatusResponse>(`/jobs/${id}/cancel`, {
       method: 'POST',
     });
 
