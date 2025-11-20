@@ -13,23 +13,8 @@ import { z } from 'zod';
 import type { Message } from 'discord.js';
 import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from '../../lib/unsandbox/index.js';
 
-// Map user-friendly language names to Unsandbox runtime identifiers
-const LANGUAGE_MAP: Record<string, UnsandboxLanguage> = {
-  'javascript': 'node',
-  'node': 'node',
-  'python': 'python',
-  'typescript': 'typescript',
-  'ruby': 'ruby',
-  'go': 'go',
-  'rust': 'rust',
-  'java': 'java',
-  'cpp': 'cpp',
-  'c': 'c',
-  'php': 'php',
-  'bash': 'bash',
-};
-
 // Language-specific emojis for better UX
+// This map is for display purposes only and not used for validation
 const LANGUAGE_EMOJIS: Record<string, string> = {
   'python': '🐍',
   'javascript': '📜',
@@ -44,9 +29,6 @@ const LANGUAGE_EMOJIS: Record<string, string> = {
   'php': '🐘',
   'bash': '🐚',
 };
-
-// Supported programming languages (user-facing)
-const SUPPORTED_LANGUAGES = Object.keys(LANGUAGE_MAP) as [string, ...string[]];
 
 // Message context for sending Discord updates during tool execution
 let currentMessageContext: Message | null = null;
@@ -90,9 +72,9 @@ async function sendDiscordUpdate(content: string): Promise<void> {
  * Main unsandbox tool - Full workflow with automatic polling and progress updates
  */
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for normal code execution (< 30s expected).',
+  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for normal code execution (< 30s expected). Accepts any language string - the API will report errors for unsupported languages.',
   inputSchema: z.object({
-    language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)'),
+    language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
     ttl: z.number().int().min(1).max(30).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 30s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
@@ -117,22 +99,9 @@ export const unsandboxTool = tool({
       });
       console.log(`   ✅ Client created`);
 
-      // Map user-friendly language name to runtime identifier
-      console.log(`   🗺️ Mapping language '${language}' to runtime identifier...`);
-      const runtimeLanguage = LANGUAGE_MAP[language.toLowerCase()];
-      if (!runtimeLanguage) {
-        console.log(`   ❌ Language '${language}' not supported`);
-        console.log(`   Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`);
-        return {
-          success: false,
-          error: `Unsupported language: ${language}. Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`,
-          language,
-        };
-      }
-      console.log(`   ✅ Mapped to runtime: ${runtimeLanguage}`);
-
-      // Submit job to Unsandbox
+      // Submit job to Unsandbox (pass language directly to API)
       console.log(`   📤 Submitting code for execution...`);
+      console.log(`   Language: ${language}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
@@ -140,7 +109,7 @@ export const unsandboxTool = tool({
           'Authorization': 'Bearer open-says-me',
         },
         body: JSON.stringify({
-          language: runtimeLanguage,
+          language: language,
           code,
           ttl: ttl || 30,
           env,
@@ -267,9 +236,9 @@ export const unsandboxTool = tool({
  * Submit tool - Submit code for async execution without waiting
  */
 export const unsandboxSubmitTool = tool({
-  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus.',
+  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus. Accepts any language string - the API will report errors for unsupported languages.',
   inputSchema: z.object({
-    language: z.enum(SUPPORTED_LANGUAGES).describe('The programming language to execute (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)'),
+    language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
     ttl: z.number().int().min(1).max(300).optional().default(60).describe('Time to live (TTL) in seconds for the execution (default: 60s, max: 300s for long jobs)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
@@ -285,17 +254,7 @@ export const unsandboxSubmitTool = tool({
     console.log(`   TTL: ${ttl}s`);
 
     try {
-      // Map language
-      const runtimeLanguage = LANGUAGE_MAP[language.toLowerCase()];
-      if (!runtimeLanguage) {
-        return {
-          success: false,
-          error: `Unsupported language: ${language}. Supported languages: ${SUPPORTED_LANGUAGES.join(', ')}`,
-          language,
-        };
-      }
-
-      // Submit job
+      // Submit job (pass language directly to API)
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
@@ -303,7 +262,7 @@ export const unsandboxSubmitTool = tool({
           'Authorization': 'Bearer open-says-me',
         },
         body: JSON.stringify({
-          language: runtimeLanguage,
+          language: language,
           code,
           ttl: ttl || 60,
           env,

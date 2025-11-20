@@ -4,21 +4,11 @@
  */
 
 /**
- * Supported programming languages
- * These are the runtime identifiers used by the Unsandbox API
+ * Programming language identifier
+ * Accepts any string - the upstream Unsandbox API will validate and report errors for unsupported languages
+ * Common languages: 'node', 'python', 'typescript', 'ruby', 'go', 'rust', 'java', 'cpp', 'c', 'php', 'bash'
  */
-export type UnsandboxLanguage =
-  | 'node' // JavaScript (Node.js)
-  | 'python'
-  | 'typescript'
-  | 'ruby'
-  | 'go'
-  | 'rust'
-  | 'java'
-  | 'cpp'
-  | 'c'
-  | 'php'
-  | 'bash';
+export type UnsandboxLanguage = string;
 
 /**
  * Execution status states

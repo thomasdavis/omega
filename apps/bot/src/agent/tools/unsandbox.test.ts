@@ -339,16 +339,26 @@ describe('Unsandbox Tool', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle unsupported language', async () => {
+    it('should pass unsupported language to API and let it handle validation', async () => {
+      // When an unsupported language is used, the API should return an error
+      mockExecuteCode.mockRejectedValueOnce(
+        new UnsandboxApiError(
+          400,
+          'UNSUPPORTED_LANGUAGE',
+          'Unsupported language: cobol',
+          {}
+        )
+      );
+
       const result = await unsandboxTool.execute({
-        language: 'cobol', // Not in supported languages
+        language: 'cobol',
         code: 'DISPLAY "Hello"',
         ttl: 5,
-      } as any);
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Unsupported language');
-      expect(mockExecuteCode).not.toHaveBeenCalled();
+      expect(result.errorCode).toBe('UNSUPPORTED_LANGUAGE');
     });
 
     it('should handle API errors gracefully', async () => {
