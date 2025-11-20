@@ -27,7 +27,7 @@ export interface MessageHistoryItem {
 const DecisionSchema = z.object({
   decision: z.enum(['yes', 'no']).describe('Whether Omega should respond to this message'),
   confidence: z.number().min(0).max(100).describe('Confidence level in the decision (0-100)'),
-  reason: z.string().min(5).max(200).describe('Brief explanation of why this decision was made'),
+  reason: z.string().describe('Brief explanation of why this decision was made'),
 });
 
 export async function shouldRespond(
