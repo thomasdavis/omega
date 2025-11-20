@@ -19,7 +19,6 @@ This directory contains tool implementations for the AI agent. Each tool provide
 ### Advanced Tools
 - **researchEssay** - Conduct comprehensive research and write essays with citations
 - **asciiGraph** - Generate text-based data visualizations (bar/line charts)
-- **selfModify** - Adapt personality based on user feedback
 
 ## Unsandbox Tool
 
