@@ -192,7 +192,7 @@ export const createBlogPostTool = tool({
       // Get server URL from environment or use default
       // Use ARTIFACT_SERVER_URL for consistency with other tools
       const serverUrl = process.env.ARTIFACT_SERVER_URL
-        || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+        || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
       const blogUrl = `${serverUrl}/blog/${slug}`;
 
       return {

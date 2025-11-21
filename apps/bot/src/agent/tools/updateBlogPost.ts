@@ -229,7 +229,7 @@ ${updatedBody}`;
     // Generate blog URL
     const postSlug = filename.replace(/\.md$/, '');
     const serverUrl = process.env.ARTIFACT_SERVER_URL
-      || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+      || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
     const blogUrl = `${serverUrl}/blog/${postSlug}`;
 
     return {
