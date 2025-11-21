@@ -351,6 +351,60 @@ git push
 # 5. Check deployment status in dashboard
 ```
 
+### Build Timestamp Management
+
+**IMPORTANT: Always ensure BUILD-TIMESTAMP.txt is updated before committing code changes.**
+
+The project maintains a build timestamp that displays in the blog footer and gallery pages. This timestamp must accurately reflect when the code was last built.
+
+**How it works:**
+- **Automatic Generation**: The `generate-deployment-info.js` script runs automatically as a `prebuild` step
+- **Location**: `apps/bot/public/BUILD-TIMESTAMP.txt`
+- **Format**: Unix timestamp in seconds (not milliseconds)
+- **Files Generated**:
+  - `BUILD-TIMESTAMP.txt` (public endpoint)
+  - `deployment-info.json` (internal use)
+
+**Workflow:**
+
+```bash
+# Before committing code changes, run the build to update timestamps:
+pnpm build --filter=bot
+
+# This automatically:
+# 1. Runs prebuild script (generates BUILD-TIMESTAMP.txt with current time)
+# 2. Compiles TypeScript
+# 3. Copies assets including BUILD-TIMESTAMP.txt to dist/
+
+# Then commit and push
+git add .
+git commit -m "Your changes"
+git push
+```
+
+**Why this matters:**
+- The blog footer displays "Built: [date]" using this timestamp
+- Stale timestamps confuse users about when the site was last updated
+- The timestamp is served at `/BUILD-TIMESTAMP.txt` endpoint
+- Frontend pages use `generateBuildFooterHtml()` to display the build date
+
+**Manual timestamp update (if needed):**
+```bash
+# Update timestamp manually
+node apps/bot/scripts/generate-deployment-info.js
+
+# Verify it was updated
+cat apps/bot/public/BUILD-TIMESTAMP.txt
+```
+
+**Key Points:**
+- ✅ DO: Run `pnpm build --filter=bot` before committing
+- ✅ DO: Verify BUILD-TIMESTAMP.txt is included in your commit
+- ✅ DO: Ensure the timestamp reflects the actual build time
+- ❌ DON'T: Manually edit BUILD-TIMESTAMP.txt (use the script)
+- ❌ DON'T: Commit code changes without updating the timestamp
+- ❌ DON'T: Use backwards compatibility with old version files
+
 ---
 
 ## Project Structure Best Practices
@@ -403,6 +457,10 @@ omega/
 ### ❌ Don't: Use Gateway API for serverless
 **Why:** Requires persistent WebSocket
 **Do:** Use Interactions API (HTTP webhooks)
+
+### ❌ Don't: Commit without updating BUILD-TIMESTAMP.txt
+**Why:** Blog footer shows stale build dates, confusing users
+**Do:** Run `pnpm build --filter=bot` before committing to auto-update timestamp
 
 ---
 
@@ -518,6 +576,6 @@ curl https://your-app.vercel.app/api/register-commands
 
 ---
 
-**Last Updated:** 2025-11-14
+**Last Updated:** 2025-11-21
 **Deployment Status:** ✅ Production Ready
 **Production URL:** https://blah-omega-a8nbx6nyp-thomasdavis-projects.vercel.app
