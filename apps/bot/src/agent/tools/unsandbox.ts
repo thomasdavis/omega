@@ -90,8 +90,9 @@ export const unsandboxTool = tool({
     ttl: z.number().int().min(1).max(300).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 300s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
+    args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
   }),
-  execute: async ({ language, code, ttl, stdin, env }) => {
+  execute: async ({ language, code, ttl, stdin, env, args }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
     const semitrustEnabled = isSemitrustEnabled();
@@ -102,6 +103,7 @@ export const unsandboxTool = tool({
     console.log(`   TTL: ${ttl}s`);
     console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
     console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
+    console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
     console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
 
     try {
@@ -119,6 +121,7 @@ export const unsandboxTool = tool({
         ttl: ttl || 30,
         env,
         stdin,
+        args,
       };
 
       // Add network mode if semitrust is enabled
@@ -265,8 +268,9 @@ export const unsandboxSubmitTool = tool({
     ttl: z.number().int().min(1).max(300).optional().default(60).describe('Time to live (TTL) in seconds for the execution (default: 60s, max: 300s for long jobs)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
+    args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
   }),
-  execute: async ({ language, code, ttl, stdin, env }) => {
+  execute: async ({ language, code, ttl, stdin, env, args }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
     const semitrustEnabled = isSemitrustEnabled();
@@ -275,6 +279,7 @@ export const unsandboxSubmitTool = tool({
     console.log(`   Language: ${language}`);
     console.log(`   Code Length: ${code.length} characters`);
     console.log(`   TTL: ${ttl}s`);
+    console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
     console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
 
     try {
@@ -285,6 +290,7 @@ export const unsandboxSubmitTool = tool({
         ttl: ttl || 60,
         env,
         stdin,
+        args,
       };
 
       // Add network mode if semitrust is enabled

@@ -254,6 +254,7 @@ export class UnsandboxClient {
       ttl: request.ttl || 5,
       env: request.env,
       stdin: request.stdin,
+      args: request.args,
     };
 
     // Include network mode if specified
