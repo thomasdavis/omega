@@ -71,11 +71,12 @@ async function sendDiscordUpdate(content: string): Promise<void> {
 /**
  * Check if semitrust mode is enabled
  * Semitrust mode allows network access in unsandbox executions
- * Can be disabled by admins via DISABLE_SEMITRUST_MODE environment variable
+ * Must be explicitly enabled via UNSANDBOX_ENABLE_SEMITRUST environment variable
+ * Defaults to zerotrust (no network) for security
  */
 function isSemitrustEnabled(): boolean {
-  const disabled = process.env.DISABLE_SEMITRUST_MODE === 'true';
-  return !disabled;
+  const enabled = process.env.UNSANDBOX_ENABLE_SEMITRUST === 'true';
+  return enabled;
 }
 
 /**

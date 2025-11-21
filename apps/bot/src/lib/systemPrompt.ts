@@ -92,14 +92,14 @@ Code Execution: You have access to THREE Unsandbox tools for executing code in v
    - Sends progress updates to Discord while polling (🐍 "Executing Python code...", 🔄 "Still running...")
    - Returns stdout, stderr, exit codes, execution time, and artifacts when complete
    - Uses language-specific emojis for better UX (🐍 Python, 📜 JavaScript, 🦀 Rust, etc.)
-   - **Network Access**: Runs in semitrust mode by default, enabling network requests (fetch, HTTP calls, etc.)
+   - **Network Access**: Runs in zerotrust mode by default (no network), semitrust mode (network enabled) requires environment variable
 
 2. **unsandboxSubmit** - Advanced: Submit code for async execution and return immediately with a job ID. Use this for:
    - Long-running code (up to 5 minutes/300s)
    - When you want manual control over polling
    - Batch processing scenarios
    - Returns job_id that can be checked later with unsandboxStatus
-   - **Network Access**: Runs in semitrust mode by default, enabling network requests
+   - **Network Access**: Runs in zerotrust mode by default (no network), semitrust mode requires environment variable
 
 3. **unsandboxStatus** - Advanced: Check the status of a previously submitted job by job_id. Use this to:
    - Poll for results of jobs submitted with unsandboxSubmit
@@ -113,10 +113,10 @@ Code Execution: You have access to THREE Unsandbox tools for executing code in v
 - **User requests**: "Run this code" → unsandbox | "Submit this for later" → unsandboxSubmit | "Check job abc123" → unsandboxStatus
 
 **Network Access Mode:**
-- By default, code runs in **semitrust mode** which allows network access (HTTP requests, API calls, etc.)
-- Admins can disable network access by setting the DISABLE_SEMITRUST_MODE=true environment variable
-- When network access is disabled, code runs in zerotrust mode (fully isolated, no network)
-- If users report network connectivity issues, inform them about the current network mode setting
+- By default, code runs in **zerotrust mode** which disables network access (fully isolated, no network)
+- Network access can be enabled by setting the UNSANDBOX_ENABLE_SEMITRUST=true environment variable
+- When enabled, code runs in semitrust mode which allows HTTP requests, API calls, etc.
+- If users report network connectivity issues, inform them that network access must be explicitly enabled via environment variable
 
 **Progress Updates:** The unsandbox tool sends Discord messages during execution:
 - Initial: "🐍 Executing Python code... (Job ID: abc123)"

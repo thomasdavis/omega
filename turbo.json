@@ -4,7 +4,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["api/**"],
-      "env": ["OPENAI_API_KEY", "DISCORD_PUBLIC_KEY", "DISCORD_APP_ID", "DISCORD_BOT_TOKEN", "UNSANDBOX_API_KEY"]
+      "env": ["OPENAI_API_KEY", "DISCORD_PUBLIC_KEY", "DISCORD_APP_ID", "DISCORD_BOT_TOKEN", "UNSANDBOX_API_KEY", "UNSANDBOX_ENABLE_SEMITRUST"]
     },
     "dev": {
       "cache": false,
