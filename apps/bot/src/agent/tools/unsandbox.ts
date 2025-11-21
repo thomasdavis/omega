@@ -91,11 +91,11 @@ export const unsandboxTool = tool({
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
+    network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args }) => {
+  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust' }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
-    const semitrustEnabled = isSemitrustEnabled();
 
     console.log(`\n🚀 [${timestamp}] Unsandbox Tool Execution Started`);
     console.log(`   Language: ${language}`);
@@ -104,7 +104,7 @@ export const unsandboxTool = tool({
     console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
     console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
     console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
-    console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
+    console.log(`   Network Mode: ${network_mode}`);
 
     try {
       // Create client instance
@@ -122,17 +122,13 @@ export const unsandboxTool = tool({
         env,
         stdin,
         args,
+        network: network_mode, // Always include network mode (zerotrust by default)
       };
-
-      // Add network mode if semitrust is enabled
-      if (semitrustEnabled) {
-        requestBody.network = 'semitrust';
-      }
 
       // Submit job to Unsandbox (pass language directly to API)
       console.log(`   📤 Submitting code for execution...`);
       console.log(`   Language: ${language}`);
-      console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
+      console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
@@ -269,18 +265,18 @@ export const unsandboxSubmitTool = tool({
     stdin: z.string().optional().describe('Standard input to provide to the program'),
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
+    network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args }) => {
+  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust' }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
-    const semitrustEnabled = isSemitrustEnabled();
 
     console.log(`\n📤 [${timestamp}] Unsandbox Submit Tool - Async Job Submission`);
     console.log(`   Language: ${language}`);
     console.log(`   Code Length: ${code.length} characters`);
     console.log(`   TTL: ${ttl}s`);
     console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
-    console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
+    console.log(`   Network Mode: ${network_mode}`);
 
     try {
       // Prepare request body with network mode
@@ -291,15 +287,11 @@ export const unsandboxSubmitTool = tool({
         env,
         stdin,
         args,
+        network: network_mode, // Always include network mode (zerotrust by default)
       };
 
-      // Add network mode if semitrust is enabled
-      if (semitrustEnabled) {
-        requestBody.network = 'semitrust';
-      }
-
       // Submit job (pass language directly to API)
-      console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
+      console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
