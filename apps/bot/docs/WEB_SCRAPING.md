@@ -22,6 +22,10 @@ Omega includes ethical web scraping capabilities through the `webFetch` tool, wh
 - Pattern matching with wildcards (`*`) and end-of-line markers (`$`)
 - User-agent specific rules and wildcard (`*`) fallback
 
+### 🔍 Dual Mode Support
+- **Parsed Mode** (default): Strips HTML tags, extracts text content, limits to 5000 characters for AI processing
+- **Raw Mode**: Returns unmodified HTML source for debugging, validation, linting, or local proxying
+
 ## Usage
 
 ### In Discord
@@ -43,8 +47,19 @@ The AI will automatically use the `webFetch` tool, which will:
 ```typescript
 import { webFetchTool } from './agent/tools/webFetch.js';
 
-// The tool is automatically available in the agent
-// It will be called by the AI when needed
+// Parsed mode (default) - extracts text content
+const parsedResult = await webFetchTool.execute({
+  url: 'https://example.com/page',
+  userAgent: 'OmegaBot/1.0',
+  mode: 'parsed' // or omit (defaults to 'parsed')
+});
+
+// Raw mode - returns unmodified HTML
+const rawResult = await webFetchTool.execute({
+  url: 'https://example.com/page',
+  userAgent: 'OmegaBot/1.0',
+  mode: 'raw'
+});
 ```
 
 ### Direct robots.txt Checking
@@ -115,7 +130,7 @@ Allow: /public/
 
 ## Response Format
 
-### Success Response
+### Success Response (Parsed Mode)
 
 ```javascript
 {
@@ -125,7 +140,23 @@ Allow: /public/
   contentType: "text/html",
   contentLength: 1234,
   robotsCompliant: true,
+  mode: "parsed",
   message: "Successfully fetched page content while respecting robots.txt rules."
+}
+```
+
+### Success Response (Raw Mode)
+
+```javascript
+{
+  success: true,
+  url: "https://example.com/page",
+  content: "<!DOCTYPE html><html>...</html>",
+  contentType: "text/html",
+  contentLength: 12345,
+  robotsCompliant: true,
+  mode: "raw",
+  message: "Successfully fetched raw HTML content while respecting robots.txt rules. Use this for debugging, validation, or local proxying."
 }
 ```
 
@@ -205,12 +236,13 @@ robotsChecker.clearCache();
 - Page content fetch: 10 seconds
 
 ### Content Limitations
-- Maximum extracted content: 5000 characters
-- Longer content is truncated with a note
-- Prevents token overflow in AI responses
+- **Parsed mode**: Maximum 5000 characters (truncated with a note)
+- **Raw mode**: No truncation - returns complete HTML source
+- Parsed mode prevents token overflow in AI responses
 
 ### Security
-- HTML script and style tags are stripped
+- **Parsed mode**: HTML script and style tags are stripped for safety
+- **Raw mode**: Preserves all HTML including scripts/styles for debugging
 - No code execution from fetched content
 - Request timeouts prevent hanging requests
 
@@ -226,6 +258,22 @@ This implementation follows:
 - [RFC 9309](https://www.rfc-editor.org/rfc/rfc9309.html) - Robots Exclusion Protocol
 - Standard robots.txt parsing rules
 - Fail-open approach (allow if robots.txt is unavailable)
+
+## Use Cases
+
+### Parsed Mode (Default)
+- Natural language AI conversations about web content
+- Extracting text information for analysis
+- Summarizing web pages
+- Answering questions based on web content
+
+### Raw Mode
+- **HTML Validation**: Run HTML through validators or linters
+- **Debugging**: Inspect exact HTML structure including all tags and attributes
+- **Local Proxying**: Save HTML locally for testing or development
+- **Automated Testing**: Verify HTML structure in CI/CD pipelines
+- **Accessibility Audits**: Analyze complete HTML for accessibility issues
+- **SEO Analysis**: Inspect meta tags, structured data, and other SEO elements
 
 ## Future Enhancements
 

@@ -9,13 +9,14 @@ import { robotsChecker } from '../../utils/robotsChecker.js';
 import { extractHtmlMetadata, truncateMetadata } from '../../utils/htmlMetadata.js';
 
 export const webFetchTool = tool({
-  description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching. Use this to retrieve information from specific URLs.',
+  description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching. Use this to retrieve information from specific URLs. Supports raw HTML mode for debugging and validation.',
   inputSchema: z.object({
     url: z.string().url().describe('The URL to fetch content from'),
     userAgent: z.string().default('OmegaBot/1.0').describe('User agent string to use (default: OmegaBot/1.0)'),
+    mode: z.enum(['parsed', 'raw']).default('parsed').describe('Mode: "parsed" strips HTML tags and extracts text (default), "raw" returns unmodified HTML for debugging/linting'),
   }),
-  execute: async ({ url, userAgent }) => {
-    console.log(`🌐 Fetching URL: ${url}`);
+  execute: async ({ url, userAgent, mode }) => {
+    console.log(`🌐 Fetching URL: ${url} (mode: ${mode})`);
 
     try {
       // Step 1: Check robots.txt compliance
@@ -99,22 +100,30 @@ export const webFetchTool = tool({
       const charsetMatch = contentType.match(/charset=([^;]+)/i);
       const charset = charsetMatch ? charsetMatch[1].trim() : (htmlMetadata.charset || undefined);
 
-      // Basic content extraction (strip HTML tags for now)
+      // Content extraction based on mode
       let extractedContent = content;
-      if (isHtml) {
-        // Simple HTML stripping - in production, consider using a proper HTML parser
-        extractedContent = content
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
-          .replace(/<[^>]+>/g, ' ') // Remove HTML tags
-          .replace(/\s+/g, ' ') // Normalize whitespace
-          .trim();
-      }
 
-      // Limit content length to avoid token overflow
-      const maxLength = 5000;
-      if (extractedContent.length > maxLength) {
-        extractedContent = extractedContent.substring(0, maxLength) + '... (content truncated)';
+      if (mode === 'raw') {
+        // Raw mode: Return unmodified HTML for debugging/linting
+        // No stripping, no truncation
+        extractedContent = content;
+      } else {
+        // Parsed mode: Extract text content (default behavior)
+        if (isHtml) {
+          // Simple HTML stripping - in production, consider using a proper HTML parser
+          extractedContent = content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // Remove styles
+            .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .trim();
+        }
+
+        // Limit content length to avoid token overflow (only in parsed mode)
+        const maxLength = 5000;
+        if (extractedContent.length > maxLength) {
+          extractedContent = extractedContent.substring(0, maxLength) + '... (content truncated)';
+        }
       }
 
       console.log(`✅ Successfully fetched ${extractedContent.length} characters from ${url}`);
@@ -149,13 +158,16 @@ export const webFetchTool = tool({
         metadata,
         robotsTxt,
         body: extractedContent,
+        mode, // Include the mode used
         // Backward compatibility fields
         url,
         content: extractedContent,
         contentType,
         contentLength: extractedContent.length,
         robotsCompliant: true,
-        message: 'Successfully fetched page content while respecting robots.txt rules.',
+        message: mode === 'raw'
+          ? 'Successfully fetched raw HTML content while respecting robots.txt rules. Use this for debugging, validation, or local proxying.'
+          : 'Successfully fetched page content while respecting robots.txt rules.',
       };
     } catch (error) {
       console.error(`❌ Error fetching URL ${url}:`, error);
