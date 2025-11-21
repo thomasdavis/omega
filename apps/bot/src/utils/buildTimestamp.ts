@@ -11,14 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 interface DeploymentInfo {
-  buildTimestamp: string;
-  gitSha?: string;
-  gitShaShort?: string;
-  commitMessage?: string;
-  commitAuthor?: string;
-  commitDate?: string;
-  branchName?: string;
-  buildEnvironment?: string;
+  buildTimestamp: number;
 }
 
 let cachedDeploymentInfo: DeploymentInfo | null = null;
@@ -50,16 +43,15 @@ function getDeploymentInfo(): DeploymentInfo {
     console.warn('Failed to read deployment info:', error instanceof Error ? error.message : error);
     // Return fallback with current timestamp
     return {
-      buildTimestamp: new Date().toISOString(),
+      buildTimestamp: Date.now(),
     };
   }
 }
 
 /**
- * Get the build timestamp
- * Returns ISO 8601 format timestamp
+ * Get the raw build timestamp (Unix timestamp in milliseconds)
  */
-export function getBuildTimestamp(): string {
+export function getBuildTimestamp(): number {
   const info = getDeploymentInfo();
   return info.buildTimestamp;
 }
@@ -82,40 +74,9 @@ export function formatBuildDate(): string {
 }
 
 /**
- * Get the current Git SHA (deprecated, kept for backwards compatibility)
- * Returns the short SHA (7 characters) for display
- */
-export function getGitSha(): string {
-  const info = getDeploymentInfo();
-  return info.gitShaShort || 'unknown';
-}
-
-/**
- * Get the full Git SHA (deprecated, kept for backwards compatibility)
- */
-export function getFullGitSha(): string {
-  const info = getDeploymentInfo();
-  return info.gitSha || 'unknown';
-}
-
-/**
- * Generate GitHub commit URL (deprecated, kept for backwards compatibility)
- * @param repo - Repository in format "owner/repo"
- */
-export function getGitCommitUrl(repo: string = 'thomasdavis/omega'): string {
-  const sha = getFullGitSha();
-
-  if (sha === 'unknown') {
-    return '#';
-  }
-
-  return `https://github.com/${repo}/commit/${sha}`;
-}
-
-/**
  * Generate footer HTML with build timestamp and human-readable date
  */
-export function generateGitFooterHtml(): string {
+export function generateBuildFooterHtml(): string {
   const buildDate = formatBuildDate();
   const timestamp = getBuildTimestamp();
 
@@ -123,7 +84,7 @@ export function generateGitFooterHtml(): string {
   <footer class="git-version-footer">
     <div class="footer-content">
       <span class="version-label">Built:</span>
-      <time datetime="${timestamp}" class="build-date">
+      <time datetime="${new Date(timestamp).toISOString()}" class="build-date">
         ${buildDate}
       </time>
     </div>
