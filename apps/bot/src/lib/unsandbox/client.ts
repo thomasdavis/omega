@@ -248,15 +248,22 @@ export class UnsandboxClient {
 
     // Step 1: Submit execution and get job ID
     console.log(`\n📤 [${new Date().toISOString()}] Submitting code for execution...`);
+    const requestBody: any = {
+      language: request.language,
+      code: request.code,
+      ttl: request.ttl || 5,
+      env: request.env,
+      stdin: request.stdin,
+    };
+
+    // Include network mode if specified
+    if (request.network) {
+      requestBody.network = request.network;
+    }
+
     const executeResponse = await this.request<ExecuteCodeResponse>('/execute/async', {
       method: 'POST',
-      body: JSON.stringify({
-        language: request.language,
-        code: request.code,
-        ttl: request.ttl || 5,
-        env: request.env,
-        stdin: request.stdin,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     console.log(`\n✅ [${new Date().toISOString()}] Job submitted successfully`);
