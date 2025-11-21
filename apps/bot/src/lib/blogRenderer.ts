@@ -6,6 +6,7 @@
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { getBlogDir } from '../utils/storage.js';
+import { generateGitFooterHtml } from '../utils/gitVersion.js';
 
 export interface BlogPost {
   slug: string;
@@ -444,6 +445,7 @@ export function renderBlogPost(post: BlogPost): string {
     <main>
       ${contentHTML}
     </main>
+    ${generateGitFooterHtml()}
   </article>
   ${post.ttsEnabled ? `
   <script>
@@ -558,6 +560,7 @@ export function renderBlogIndex(posts: BlogPost[]): string {
 <body>
   <h1>Blog</h1>
   ${postsList || '<p>No posts yet.</p>'}
+  ${generateGitFooterHtml()}
 </body>
 </html>`;
 }
