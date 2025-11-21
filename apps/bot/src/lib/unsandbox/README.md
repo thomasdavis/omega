@@ -80,6 +80,30 @@ const result = await client.executeCode({
 console.log(result.result?.stdout); // "secret-key-123\n"
 ```
 
+### With Network Access (Semitrust Mode)
+
+```typescript
+// Network access is controlled by UNSANDBOX_ENABLE_SEMITRUST environment variable
+// By default, network access is disabled (zerotrust mode)
+
+const result = await client.executeCode({
+  language: 'node',
+  code: `
+    const https = require('https');
+    https.get('https://api.github.com/zen', (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => console.log(data));
+    });
+  `,
+  network: 'semitrust', // Only works if UNSANDBOX_ENABLE_SEMITRUST=true
+  timeout: 10000,
+});
+
+// If UNSANDBOX_ENABLE_SEMITRUST is not set, network requests will fail
+// This ensures secure-by-default behavior
+```
+
 ### Check Execution Status
 
 For long-running executions, poll for status:
@@ -332,6 +356,27 @@ await client.executeCode({
 ```bash
 # Required
 UNSANDBOX_API_KEY=your_api_key_here
+
+# Optional: Enable network access in code execution (defaults to false)
+UNSANDBOX_ENABLE_SEMITRUST=true
 ```
 
 Set in Vercel/Fly.io dashboard or `.env.local` for development.
+
+## Network Security Modes
+
+Unsandbox supports two network security modes:
+
+### Zerotrust Mode (Default)
+- **Network Access**: Disabled
+- **Security**: Maximum isolation - no outbound network connections allowed
+- **Use Case**: Default for all code execution to prevent unauthorized network access
+- **Configuration**: Enabled by default (no environment variable needed)
+
+### Semitrust Mode (Opt-in)
+- **Network Access**: Enabled
+- **Security**: Allows HTTP/HTTPS requests and API calls
+- **Use Case**: When code needs to fetch data, call APIs, or access external services
+- **Configuration**: Set `UNSANDBOX_ENABLE_SEMITRUST=true` environment variable
+
+**Security Recommendation**: Only enable semitrust mode if your use case requires network access. The default zerotrust mode provides better security isolation.
