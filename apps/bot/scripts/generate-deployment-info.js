@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Generate build timestamp at build time
- * Captures Unix timestamp (milliseconds since epoch)
+ * Creates BUILD-TIMESTAMP.txt with Unix timestamp in seconds
  */
 
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -14,53 +14,41 @@ const __dirname = dirname(__filename);
 try {
   // Get current Unix timestamp in milliseconds
   const buildTimestamp = Date.now();
+  const timestampInSeconds = Math.floor(buildTimestamp / 1000);
 
-  const deploymentInfo = {
-    buildTimestamp,
-  };
-
-  // Write to src directory so it's included in build
-  const outputPath = join(__dirname, '..', 'src', 'deployment-info.json');
-  writeFileSync(outputPath, JSON.stringify(deploymentInfo, null, 2));
-
-  // Also write BUILD-TIMESTAMP.txt to public directory for frontend consumption
+  // Ensure public directory exists
   const publicDir = join(__dirname, '..', 'public');
   if (!existsSync(publicDir)) {
     mkdirSync(publicDir, { recursive: true });
   }
 
+  // Write BUILD-TIMESTAMP.txt to public directory
   const timestampFilePath = join(publicDir, 'BUILD-TIMESTAMP.txt');
-  // Write Unix timestamp in seconds (not milliseconds) as a plain integer
-  const timestampInSeconds = Math.floor(buildTimestamp / 1000);
   writeFileSync(timestampFilePath, timestampInSeconds.toString());
 
   console.log('✅ Generated build timestamp:');
-  console.log(`   Timestamp: ${buildTimestamp} ms (${timestampInSeconds} seconds)`);
+  console.log(`   Timestamp: ${timestampInSeconds} seconds (${buildTimestamp} ms)`);
   console.log(`   Date: ${new Date(buildTimestamp).toISOString()}`);
-  console.log(`   Files: deployment-info.json, BUILD-TIMESTAMP.txt`);
+  console.log(`   File: BUILD-TIMESTAMP.txt`);
 } catch (error) {
   console.error('❌ Failed to generate build timestamp:', error.message);
   // Don't fail the build if timestamp generation fails
-  // Create a fallback deployment info
-  const fallbackInfo = {
-    buildTimestamp: Date.now(),
-  };
-
-  const outputPath = join(__dirname, '..', 'src', 'deployment-info.json');
-  writeFileSync(outputPath, JSON.stringify(fallbackInfo, null, 2));
-
-  // Try to write fallback BUILD-TIMESTAMP.txt too
+  // Create a fallback BUILD-TIMESTAMP.txt
   try {
+    const fallbackTimestamp = Date.now();
+    const timestampInSeconds = Math.floor(fallbackTimestamp / 1000);
+
     const publicDir = join(__dirname, '..', 'public');
     if (!existsSync(publicDir)) {
       mkdirSync(publicDir, { recursive: true });
     }
+
     const timestampFilePath = join(publicDir, 'BUILD-TIMESTAMP.txt');
-    const timestampInSeconds = Math.floor(fallbackInfo.buildTimestamp / 1000);
     writeFileSync(timestampFilePath, timestampInSeconds.toString());
+
+    console.log('⚠️  Created fallback build timestamp');
   } catch (fallbackError) {
     console.error('❌ Failed to write fallback BUILD-TIMESTAMP.txt:', fallbackError.message);
+    process.exit(1);
   }
-
-  console.log('⚠️  Created fallback build timestamp');
 }
