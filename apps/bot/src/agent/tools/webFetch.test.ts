@@ -320,4 +320,147 @@ describe('Web Fetch Tool with Metadata', () => {
       expect(result.metadata.openGraph).toBeUndefined();
     });
   });
+
+  describe('Raw HTML Mode', () => {
+    it('should return unmodified HTML in raw mode', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      (robotsChecker.isAllowed as any).mockResolvedValue({
+        allowed: true,
+        reason: 'URL is allowed',
+        matchedRules: [],
+      });
+
+      const htmlContent = `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test Page</title>
+    <script>console.log('test');</script>
+    <style>body { color: red; }</style>
+  </head>
+  <body>
+    <h1>Test Content</h1>
+    <p>This is test content.</p>
+  </body>
+</html>`;
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/page',
+        headers: {
+          get: (name: string) => {
+            if (name === 'content-type') return 'text/html';
+            return null;
+          },
+        },
+        text: async () => htmlContent,
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/page',
+        userAgent: 'TestBot/1.0',
+        mode: 'raw',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mode).toBe('raw');
+      expect(result.body).toBe(htmlContent);
+      expect(result.content).toBe(htmlContent);
+      // Should contain all HTML including scripts and styles
+      expect(result.body).toContain('<script>');
+      expect(result.body).toContain('<style>');
+      expect(result.body).toContain('<!DOCTYPE html>');
+      expect(result.message).toContain('raw HTML');
+    });
+
+    it('should strip HTML in parsed mode (default)', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      (robotsChecker.isAllowed as any).mockResolvedValue({
+        allowed: true,
+        reason: 'URL is allowed',
+        matchedRules: [],
+      });
+
+      const htmlContent = `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Test Page</title>
+    <script>console.log('test');</script>
+    <style>body { color: red; }</style>
+  </head>
+  <body>
+    <h1>Test Content</h1>
+    <p>This is test content.</p>
+  </body>
+</html>`;
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/page',
+        headers: {
+          get: (name: string) => {
+            if (name === 'content-type') return 'text/html';
+            return null;
+          },
+        },
+        text: async () => htmlContent,
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/page',
+        userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.mode).toBe('parsed');
+      // Should NOT contain HTML tags
+      expect(result.body).not.toContain('<script>');
+      expect(result.body).not.toContain('<style>');
+      expect(result.body).not.toContain('<h1>');
+      // Should contain text content
+      expect(result.body).toContain('Test Content');
+      expect(result.body).toContain('This is test content');
+    });
+
+    it('should not truncate content in raw mode', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      (robotsChecker.isAllowed as any).mockResolvedValue({
+        allowed: true,
+        reason: 'URL is allowed',
+        matchedRules: [],
+      });
+
+      // Create HTML content longer than 5000 chars
+      const longHtml = `<!DOCTYPE html><html><body>${'x'.repeat(10000)}</body></html>`;
+
+      (global.fetch as any).mockResolvedValue({
+        ok: true,
+        status: 200,
+        url: 'https://example.com/long-page',
+        headers: {
+          get: (name: string) => {
+            if (name === 'content-type') return 'text/html';
+            return null;
+          },
+        },
+        text: async () => longHtml,
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/long-page',
+        userAgent: 'TestBot/1.0',
+        mode: 'raw',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.body.length).toBeGreaterThan(5000);
+      expect(result.body).toBe(longHtml);
+      expect(result.body).not.toContain('truncated');
+    });
+  });
 });
