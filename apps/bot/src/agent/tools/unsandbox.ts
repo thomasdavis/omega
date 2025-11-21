@@ -69,6 +69,16 @@ async function sendDiscordUpdate(content: string): Promise<void> {
 }
 
 /**
+ * Check if semitrust mode is enabled
+ * Semitrust mode allows network access in unsandbox executions
+ * Can be disabled by admins via DISABLE_SEMITRUST_MODE environment variable
+ */
+function isSemitrustEnabled(): boolean {
+  const disabled = process.env.DISABLE_SEMITRUST_MODE === 'true';
+  return !disabled;
+}
+
+/**
  * Main unsandbox tool - Full workflow with automatic polling and progress updates
  */
 export const unsandboxTool = tool({
@@ -83,6 +93,7 @@ export const unsandboxTool = tool({
   execute: async ({ language, code, ttl, stdin, env }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
+    const semitrustEnabled = isSemitrustEnabled();
 
     console.log(`\n🚀 [${timestamp}] Unsandbox Tool Execution Started`);
     console.log(`   Language: ${language}`);
@@ -90,6 +101,7 @@ export const unsandboxTool = tool({
     console.log(`   TTL: ${ttl}s`);
     console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
     console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
+    console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
 
     try {
       // Create client instance
@@ -99,22 +111,31 @@ export const unsandboxTool = tool({
       });
       console.log(`   ✅ Client created`);
 
+      // Prepare request body with network mode
+      const requestBody: any = {
+        language: language,
+        code,
+        ttl: ttl || 30,
+        env,
+        stdin,
+      };
+
+      // Add network mode if semitrust is enabled
+      if (semitrustEnabled) {
+        requestBody.network = 'semitrust';
+      }
+
       // Submit job to Unsandbox (pass language directly to API)
       console.log(`   📤 Submitting code for execution...`);
       console.log(`   Language: ${language}`);
+      console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer open-says-me',
         },
-        body: JSON.stringify({
-          language: language,
-          code,
-          ttl: ttl || 30,
-          env,
-          stdin,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!submitResponse.ok) {
@@ -247,27 +268,38 @@ export const unsandboxSubmitTool = tool({
   execute: async ({ language, code, ttl, stdin, env }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
+    const semitrustEnabled = isSemitrustEnabled();
 
     console.log(`\n📤 [${timestamp}] Unsandbox Submit Tool - Async Job Submission`);
     console.log(`   Language: ${language}`);
     console.log(`   Code Length: ${code.length} characters`);
     console.log(`   TTL: ${ttl}s`);
+    console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust' : 'zerotrust'}`);
 
     try {
+      // Prepare request body with network mode
+      const requestBody: any = {
+        language: language,
+        code,
+        ttl: ttl || 60,
+        env,
+        stdin,
+      };
+
+      // Add network mode if semitrust is enabled
+      if (semitrustEnabled) {
+        requestBody.network = 'semitrust';
+      }
+
       // Submit job (pass language directly to API)
+      console.log(`   Network Mode: ${semitrustEnabled ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer open-says-me',
         },
-        body: JSON.stringify({
-          language: language,
-          code,
-          ttl: ttl || 60,
-          env,
-          stdin,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!submitResponse.ok) {
