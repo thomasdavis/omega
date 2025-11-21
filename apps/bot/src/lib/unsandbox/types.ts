@@ -35,6 +35,8 @@ export interface ExecuteCodeRequest {
   env?: Record<string, string>;
   /** Standard input to provide to the program */
   stdin?: string;
+  /** Command-line arguments to pass to the program (e.g., sys.argv in Python) */
+  args?: string[];
   /** Network mode: 'semitrust' (network access enabled) or 'zerotrust' (no network access) */
   network?: 'semitrust' | 'zerotrust';
 }
