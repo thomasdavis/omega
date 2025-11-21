@@ -44,8 +44,8 @@ export class UnsandboxClient {
   private readonly timeout: number;
 
   constructor(config: UnsandboxConfig) {
-    // Hardcode API key as per issue #149
-    this.apiKey = 'open-says-me';
+    // Use API key from config, environment variable, or default to empty string
+    this.apiKey = config.apiKey || process.env.UNSANDBOX_API_KEY || '';
     this.baseUrl = config.baseUrl || 'https://api.unsandbox.com';
     this.timeout = config.timeout || 30000; // Default: 30000ms timeout for HTTP requests
   }
