@@ -454,6 +454,29 @@ function createApp(): express.Application {
     }
   });
 
+  // Serve BUILD-TIMESTAMP.txt for frontend build date display
+  app.get('/BUILD-TIMESTAMP.txt', (req: Request, res: Response) => {
+    try {
+      const filepath = join(PUBLIC_DIR, 'BUILD-TIMESTAMP.txt');
+
+      if (existsSync(filepath)) {
+        res.setHeader('Content-Type', 'text/plain');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.send(readFileSync(filepath, 'utf-8'));
+      } else {
+        // Fallback to current timestamp if file doesn't exist
+        const fallbackTimestamp = Math.floor(Date.now() / 1000);
+        res.setHeader('Content-Type', 'text/plain');
+        res.send(fallbackTimestamp.toString());
+      }
+    } catch (error) {
+      console.error('Error loading BUILD-TIMESTAMP.txt:', error);
+      const fallbackTimestamp = Math.floor(Date.now() / 1000);
+      res.setHeader('Content-Type', 'text/plain');
+      res.send(fallbackTimestamp.toString());
+    }
+  });
+
   // Serve static TTS player assets
   app.get('/tts-player.js', (req: Request, res: Response) => {
     try {
