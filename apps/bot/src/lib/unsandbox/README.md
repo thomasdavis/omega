@@ -1,13 +1,14 @@
 # Unsandbox SDK
 
-Comprehensive TypeScript SDK for the Unsandbox API - a safe code execution platform supporting 11 programming languages.
+Comprehensive TypeScript SDK for the Unsandbox API - a safe code execution platform supporting 42+ programming languages (dynamically fetched from the API).
 
 ## Features
 
-- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, health)
+- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, health, languages)
 - ✅ **Type-Safe**: Complete TypeScript definitions for all requests and responses
 - ✅ **Error Handling**: Custom error class with detailed error information
 - ✅ **Timeout Management**: Configurable timeouts with automatic abort
+- ✅ **Dynamic Language List**: Fetches supported languages from API with caching
 - ✅ **Language Mapping**: User-friendly language names mapped to runtime identifiers
 - ✅ **Retry Logic**: Built-in retry capabilities for failed requests (future enhancement)
 
@@ -136,6 +137,41 @@ const cancelled = await client.cancelExecution(execution.job_id);
 console.log(cancelled.status); // 'cancelled'
 ```
 
+### Get Supported Languages
+
+Fetch the list of supported programming languages from the API:
+
+```typescript
+// Get full language list
+const languages = await client.getLanguages();
+console.log(languages); // Array of language info objects
+
+// Or use the utility functions for easier access:
+import {
+  getUnsandboxLanguages,
+  getUnsandboxLanguageIds,
+  getUnsandboxLanguageCount,
+  formatUnsandboxLanguages
+} from './lib/unsandbox/languages.js';
+
+// Get language count
+const count = await getUnsandboxLanguageCount();
+console.log(`Supports ${count} languages`); // "Supports 42 languages"
+
+// Get language IDs only
+const ids = await getUnsandboxLanguageIds();
+console.log(ids); // ['python', 'javascript', 'typescript', ...]
+
+// Get formatted string
+const formatted = await formatUnsandboxLanguages();
+console.log(formatted); // "python, javascript, typescript, ruby, ..."
+
+// Force refresh cache
+const fresh = await getUnsandboxLanguages(true);
+```
+
+The language list is cached in-memory for 24 hours to minimize API calls.
+
 ### Health Check
 
 Verify API connectivity:
@@ -170,19 +206,20 @@ try {
 
 ## Supported Languages
 
-| User-Facing Name | Runtime Identifier | Description |
-|-----------------|-------------------|-------------|
-| `javascript` / `node` | `node` | JavaScript (Node.js) |
-| `python` | `python` | Python 3 |
-| `typescript` | `typescript` | TypeScript |
-| `ruby` | `ruby` | Ruby |
-| `go` | `go` | Go |
-| `rust` | `rust` | Rust |
-| `java` | `java` | Java |
-| `cpp` | `cpp` | C++ |
-| `c` | `c` | C |
-| `php` | `php` | PHP |
-| `bash` | `bash` | Bash shell |
+**42+ programming languages** are supported (dynamically fetched from https://api.unsandbox.com/languages).
+
+The full list includes (but is not limited to):
+- **Dynamic**: python, javascript, typescript, ruby, perl, php, lua, r, elixir, erlang, tcl, scheme, powershell, clojure, commonlisp, crystal, groovy, deno, awk, raku
+- **Compiled**: c, cpp, go, rust, java, kotlin, cobol, fortran, d, zig, nim, v, objc, dart, julia, haskell, ocaml, fsharp, csharp
+- **Shell/Script**: bash, prolog, forth
+
+**Note**: The definitive source of truth is the `/languages` endpoint. Use the `getLanguages()` method or language utility functions to fetch the current list programmatically.
+
+### Common Language Mappings
+
+Some user-facing names map to different runtime identifiers:
+- `javascript` / `node` → `node`
+- Others generally match their common names (e.g., `python`, `typescript`, `ruby`)
 
 ## Configuration
 

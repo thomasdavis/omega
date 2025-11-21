@@ -2,7 +2,7 @@
   "version": "1.0",
   "agent": {
     "name": "Omega",
-    "description": "A sophisticated Discord AI bot with 25 specialized tools for code execution, research, visualization, file handling, and creative content generation",
+    "description": "A sophisticated Discord AI bot with 25 specialized tools for code execution in 42+ languages, research, visualization, file handling, and creative content generation",
     "version": "1.0.0",
     "author": "Thomas Davis",
     "license": "MIT",
@@ -11,7 +11,7 @@
   "capabilities": [
     {
       "name": "code_execution",
-      "description": "Execute code in 11 programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash) via Unsandbox",
+      "description": "Execute code in 42+ programming languages via Unsandbox (dynamically fetched from https://api.unsandbox.com/languages)",
       "enabled": true
     },
     {
@@ -160,7 +160,7 @@
     },
     {
       "name": "unsandbox",
-      "description": "Execute code in various programming languages",
+      "description": "Execute code in 42+ programming languages via Unsandbox",
       "parameters": [
         {
           "name": "code",
@@ -171,7 +171,7 @@
         {
           "name": "language",
           "type": "string",
-          "description": "Programming language (javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash)",
+          "description": "Programming language (42+ languages supported - dynamically fetched from Unsandbox API)",
           "required": true
         }
       ]

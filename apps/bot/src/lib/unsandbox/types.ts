@@ -170,3 +170,20 @@ export interface UnsandboxConfig {
   /** Default timeout for requests in milliseconds (default: 30000) */
   timeout?: number;
 }
+
+/**
+ * Language information from /languages endpoint
+ */
+export interface LanguageInfo {
+  /** Language identifier used in API calls */
+  id: string;
+  /** Display name for the language */
+  name: string;
+  /** Additional metadata if provided */
+  [key: string]: any;
+}
+
+/**
+ * Response from /languages endpoint
+ */
+export type LanguagesResponse = LanguageInfo[];
