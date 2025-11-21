@@ -562,7 +562,7 @@ export const artifactTool = tool({
       // Get server URL from environment or use default
       // In production on Fly.io, use the app URL; locally use localhost
       const serverUrl = process.env.ARTIFACT_SERVER_URL
-        || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+        || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
       const previewUrl = `${serverUrl}/artifacts/${metadata.id}`;
 
       return {

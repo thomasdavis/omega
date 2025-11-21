@@ -221,7 +221,7 @@ export const buildSlidevPresentationTool = tool({
 
       // Get server URL from environment
       const serverUrl = process.env.ARTIFACT_SERVER_URL
-        || (process.env.NODE_ENV === 'production' ? 'https://omega-production-5b33.up.railway.app' : 'http://localhost:3001');
+        || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
       const artifactUrl = `${serverUrl}/artifacts/${metadata.id}`;
 
       console.log(`📦 Saved built presentation: ${artifactUrl}`);
