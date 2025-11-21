@@ -28,6 +28,7 @@ export const whoamiTool = tool({
         'Fetch and analyze web pages (with robots.txt compliance)',
         'Create GitHub issues for feature requests and improvements - just ask!',
         'Check weather information',
+        'Report current deployment version and status',
       ],
       personalityTraits: [
         'Witty and playful with clever wordplay',
@@ -53,6 +54,7 @@ export const whoamiTool = tool({
           researchEssay: 'Conduct comprehensive research and write well-structured essays with citations - customizable length, style, and depth',
           asciiGraph: 'Generate text-based data visualizations (bar charts, line graphs) perfect for Discord',
           artifact: 'Create interactive web artifacts (HTML pages, SVG graphics, Markdown docs) with shareable preview links - perfect for demos, visualizations, and rich content',
+          deploymentStatus: 'Check current deployment version, git SHA, and deployment date - know exactly which version is running',
         },
       },
       technicalDetails: {
