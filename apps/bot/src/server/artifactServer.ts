@@ -11,7 +11,7 @@ import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js'
 import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
 import { queryMessages, getMessageCount } from '../database/messageService.js';
 import { getRecentQueries, getQueryCount } from '../database/queryService.js';
-import { generateGitFooterHtml } from '../utils/gitVersion.js';
+import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -694,7 +694,7 @@ function generateGalleryHTML(artifacts: any[]): string {
     <div class="gallery">
       ${artifactsList}
     </div>
-    ${generateGitFooterHtml()}
+    ${generateBuildFooterHtml()}
   </div>
 </body>
 </html>`;
@@ -916,7 +916,7 @@ function generateUploadsGalleryHTML(uploads: any[]): string {
     <div class="gallery">
       ${uploadsList}
     </div>
-    ${generateGitFooterHtml()}
+    ${generateBuildFooterHtml()}
   </div>
 </body>
 </html>`;
@@ -1220,7 +1220,7 @@ function generateMessagesHTML(messages: any[], options: {
     </div>
     ${messagesList}
     ${pagination}
-    ${generateGitFooterHtml()}
+    ${generateBuildFooterHtml()}
   </div>
 </body>
 </html>`;
@@ -1453,7 +1453,7 @@ function generateQueriesHTML(queries: any[], options: {
     </div>
     ${queriesList}
     ${pagination}
-    ${generateGitFooterHtml()}
+    ${generateBuildFooterHtml()}
   </div>
 </body>
 </html>`;
