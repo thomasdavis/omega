@@ -10,41 +10,36 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-interface DeploymentInfo {
-  buildTimestamp: number;
-}
-
-let cachedDeploymentInfo: DeploymentInfo | null = null;
+let cachedBuildTimestamp: number | null = null;
 
 /**
- * Get deployment info from the generated JSON file
+ * Get build timestamp from BUILD-TIMESTAMP.txt file
  */
-function getDeploymentInfo(): DeploymentInfo {
-  if (cachedDeploymentInfo) {
-    return cachedDeploymentInfo;
+function getBuildTimestampFromFile(): number {
+  if (cachedBuildTimestamp !== null) {
+    return cachedBuildTimestamp;
   }
 
   try {
-    // Try to read from dist first (production), then src (development)
-    let deploymentInfoPath: string;
+    // Try to read from dist/public first (production), then public (development)
+    let timestampPath: string;
     try {
-      deploymentInfoPath = join(__dirname, '..', 'deployment-info.json');
-      const data = readFileSync(deploymentInfoPath, 'utf-8');
-      cachedDeploymentInfo = JSON.parse(data);
+      timestampPath = join(__dirname, '..', '..', 'public', 'BUILD-TIMESTAMP.txt');
+      const data = readFileSync(timestampPath, 'utf-8').trim();
+      // BUILD-TIMESTAMP.txt contains Unix timestamp in seconds
+      cachedBuildTimestamp = parseInt(data, 10) * 1000; // Convert to milliseconds
     } catch {
-      // Fallback to src directory if dist doesn't exist
-      deploymentInfoPath = join(__dirname, '..', '..', 'src', 'deployment-info.json');
-      const data = readFileSync(deploymentInfoPath, 'utf-8');
-      cachedDeploymentInfo = JSON.parse(data);
+      // Fallback to dist/public if public doesn't exist
+      timestampPath = join(__dirname, '..', 'public', 'BUILD-TIMESTAMP.txt');
+      const data = readFileSync(timestampPath, 'utf-8').trim();
+      cachedBuildTimestamp = parseInt(data, 10) * 1000; // Convert to milliseconds
     }
 
-    return cachedDeploymentInfo!;
+    return cachedBuildTimestamp!;
   } catch (error) {
-    console.warn('Failed to read deployment info:', error instanceof Error ? error.message : error);
+    console.warn('Failed to read BUILD-TIMESTAMP.txt:', error instanceof Error ? error.message : error);
     // Return fallback with current timestamp
-    return {
-      buildTimestamp: Date.now(),
-    };
+    return Date.now();
   }
 }
 
@@ -52,8 +47,7 @@ function getDeploymentInfo(): DeploymentInfo {
  * Get the raw build timestamp (Unix timestamp in milliseconds)
  */
 export function getBuildTimestamp(): number {
-  const info = getDeploymentInfo();
-  return info.buildTimestamp;
+  return getBuildTimestampFromFile();
 }
 
 /**
