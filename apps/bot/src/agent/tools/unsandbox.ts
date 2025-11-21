@@ -15,19 +15,59 @@ import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from
 
 // Language-specific emojis for better UX
 // This map is for display purposes only and not used for validation
+// Covers 42+ languages supported by Unsandbox API
 const LANGUAGE_EMOJIS: Record<string, string> = {
+  // Dynamic languages
   'python': '🐍',
   'javascript': '📜',
   'node': '📜',
   'typescript': '📘',
   'ruby': '💎',
-  'rust': '🦀',
-  'go': '⚡',
-  'java': '☕',
-  'cpp': '🔧',
-  'c': '🔧',
+  'perl': '🐪',
   'php': '🐘',
+  'lua': '🌙',
+  'r': '📊',
+  'elixir': '💧',
+  'erlang': '📞',
+  'tcl': '🪶',
+  'scheme': '🎨',
+  'powershell': '⚡',
+  'clojure': '🔮',
+  'commonlisp': '🎭',
+  'crystal': '💎',
+  'groovy': '🎵',
+  'deno': '🦕',
+  'awk': '🦅',
+  'raku': '🦋',
+
+  // Compiled languages
+  'c': '🔧',
+  'cpp': '⚙️',
+  'c++': '⚙️',
+  'go': '🐹',
+  'rust': '🦀',
+  'java': '☕',
+  'kotlin': '🟣',
+  'cobol': '🏛️',
+  'fortran': '🧮',
+  'd': '🎯',
+  'zig': '⚡',
+  'nim': '👑',
+  'v': '✌️',
+  'objc': '🍎',
+  'dart': '🎯',
+  'julia': '🔬',
+  'haskell': '🎓',
+  'ocaml': '🐫',
+  'fsharp': '🔷',
+  'csharp': '🔷',
+  'c#': '🔷',
+
+  // Shell/Script
   'bash': '🐚',
+  'sh': '🐚',
+  'prolog': '🧠',
+  'forth': '🔢',
 };
 
 // Message context for sending Discord updates during tool execution
