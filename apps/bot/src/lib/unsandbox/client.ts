@@ -16,6 +16,7 @@ import type {
   ListArtifactsRequest,
   ListArtifactsResponse,
   UnsandboxError,
+  LanguagesResponse,
 } from './types.js';
 
 /**
@@ -457,6 +458,34 @@ export class UnsandboxClient {
     console.log(`   Job ID: ${result.job_id}`);
 
     return result;
+  }
+
+  /**
+   * Get list of supported programming languages
+   * Fetches the definitive list of execution languages from the Unsandbox API
+   *
+   * @returns List of supported languages with their identifiers
+   *
+   * @example
+   * ```typescript
+   * const languages = await client.getLanguages();
+   * console.log(`Supported languages: ${languages.map(l => l.id).join(', ')}`);
+   * // Output: python, javascript, typescript, ruby, go, rust, ...
+   * ```
+   */
+  async getLanguages(): Promise<LanguagesResponse> {
+    console.log(`\n🌐 [${new Date().toISOString()}] Fetching Supported Languages`);
+    console.log(`   Querying /languages endpoint...`);
+
+    const languages = await this.request<LanguagesResponse>('/languages', {
+      method: 'GET',
+    });
+
+    console.log(`\n📋 [${new Date().toISOString()}] Languages Retrieved`);
+    console.log(`   Total Languages: ${languages.length}`);
+    console.log(`   Languages: ${languages.map(l => l.id || l).join(', ')}`);
+
+    return languages;
   }
 
   /**
