@@ -166,6 +166,51 @@ Check logs for transfer status:
 - `❌ Background transfer failed` - Transfer failed (will retry)
 - `⚠️  Max retries reached` - Permanent failure after all retries
 
+### Verification
+
+**NEW: Transfer Verification Script** 🔍
+
+Use the verification script to check file transfer status:
+
+```bash
+# Verify entire system (shows all files and their status)
+pnpm verify-transfers
+
+# Verify specific file(s)
+pnpm verify-transfers filename1.png filename2.jpg
+```
+
+The verification script checks:
+- ✅ Files in GitHub index (`file-library/index.json`)
+- ✅ Files in Railway storage (`/data/uploads`)
+- ✅ Transfer completion status
+- ⚠️  Files that need cleanup from Railway
+- ❌ Files that failed to transfer
+
+**Example Output:**
+
+```
+🔍 Railway → GitHub File Transfer Verification
+═══════════════════════════════════════════════
+
+📊 GitHub Storage Status:
+   Total files in index: 15
+   Total size: 12.34 MB
+   Latest upload: 11/22/2025, 2:30:00 PM
+
+📦 Railway Storage Status:
+   Total files: 2
+   Files pending transfer/cleanup:
+   ⚠️  photo1.png (in GitHub, needs cleanup)
+   ❌ photo2.jpg (NOT in GitHub, needs transfer)
+
+📋 Summary:
+   ⚠️  1 file(s) transferred but not cleaned up from Railway
+   ❌ 1 file(s) in Railway but not in GitHub
+```
+
+**Location**: `scripts/verify-file-transfer.ts`
+
 ## Future Enhancements
 
 Potential improvements for persistent storage:
