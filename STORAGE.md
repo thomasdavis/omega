@@ -117,6 +117,55 @@ Use the `listArtifacts` tool to see what's stored:
 - Ensure Railway volume has correct permissions
 - Bot process should have read/write access to `/data`
 
+## Automatic File Transfer System
+
+**NEW: Railway → GitHub Auto-Transfer** 🚀
+
+As of PR #270, Omega bot now automatically transfers files from Railway storage to GitHub:
+
+### How It Works
+
+1. **Primary Upload**: When a file is uploaded, the bot attempts to upload directly to GitHub first
+2. **Fallback**: If GitHub upload fails (network issues, rate limits, etc.), the file is saved to Railway storage (`/data/uploads`)
+3. **Automatic Transfer**: A background process immediately schedules the file for transfer to GitHub
+4. **Retry Logic**: Failed transfers are retried automatically:
+   - Attempt 1: Immediate
+   - Attempt 2: 5 seconds later
+   - Attempt 3: 15 seconds later
+   - Attempt 4: 60 seconds later
+5. **Metadata Preservation**: All metadata (uploader, description, tags, timestamps) is preserved
+
+### Benefits
+
+✅ **Zero Manual Intervention** - Files automatically migrate to permanent GitHub storage
+✅ **Resilient** - Handles temporary GitHub API failures gracefully
+✅ **Non-Blocking** - Transfers happen in background without blocking user uploads
+✅ **Metadata Integrity** - Original upload information is preserved
+✅ **Automatic Cleanup** - Files can be optionally removed from Railway after successful transfer
+
+### Implementation Details
+
+**Location**: `apps/bot/src/agent/tools/fileUpload.ts`
+
+**Key Functions**:
+- `scheduleBackgroundTransfer()` - Adds file to transfer queue
+- `processTransferQueue()` - Processes queue with retry logic
+- `uploadToGitHub()` - Performs the actual GitHub upload
+
+**Configuration**:
+- Max Retries: 3
+- Retry Delays: [5s, 15s, 60s]
+- Transfer Queue: In-memory (resets on restart)
+
+### Monitoring
+
+Check logs for transfer status:
+- `📋 Scheduling background transfer` - File added to queue
+- `🔄 Attempting background transfer` - Transfer in progress
+- `✅ Background transfer successful` - Transfer completed
+- `❌ Background transfer failed` - Transfer failed (will retry)
+- `⚠️  Max retries reached` - Permanent failure after all retries
+
 ## Future Enhancements
 
 Potential improvements for persistent storage:
@@ -127,3 +176,6 @@ Potential improvements for persistent storage:
 - [ ] File versioning
 - [ ] Backup/restore functionality
 - [ ] CDN integration for faster artifact delivery
+- [x] Automatic Railway → GitHub transfer (implemented in PR #270)
+- [ ] Persistent transfer queue (survive restarts)
+- [ ] Transfer status API endpoint

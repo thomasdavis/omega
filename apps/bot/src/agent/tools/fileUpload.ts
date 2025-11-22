@@ -73,6 +73,118 @@ interface FileIndexEntry {
 }
 
 /**
+ * Background transfer queue for automatic Railway → GitHub migration
+ */
+interface TransferQueueItem {
+  filename: string;
+  buffer: Buffer;
+  originalName: string;
+  mimeType?: string;
+  uploadedBy?: string;
+  description?: string;
+  tags?: string[];
+  retries: number;
+  scheduledAt: number;
+}
+
+const transferQueue: TransferQueueItem[] = [];
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [5000, 15000, 60000]; // 5s, 15s, 1m
+
+/**
+ * Schedule a file for background transfer to GitHub
+ * This is the automatic hook that detects Railway uploads and triggers transfer
+ */
+function scheduleBackgroundTransfer(
+  filename: string,
+  buffer: Buffer,
+  originalName: string,
+  mimeType?: string,
+  uploadedBy?: string,
+  description?: string,
+  tags?: string[]
+): void {
+  // Only schedule if GitHub token is configured
+  if (!GITHUB_TOKEN) {
+    console.log('⏭️  Skipping background transfer - GitHub not configured');
+    return;
+  }
+
+  console.log(`📋 Scheduling background transfer for ${filename}`);
+
+  transferQueue.push({
+    filename,
+    buffer,
+    originalName,
+    mimeType,
+    uploadedBy,
+    description: description || `Automatically transferred from Railway storage`,
+    tags: tags || ['auto-transfer'],
+    retries: 0,
+    scheduledAt: Date.now(),
+  });
+
+  // Process queue (non-blocking)
+  processTransferQueue();
+}
+
+/**
+ * Process the transfer queue with retry logic
+ */
+async function processTransferQueue(): Promise<void> {
+  if (transferQueue.length === 0) {
+    return;
+  }
+
+  const item = transferQueue[0];
+
+  try {
+    console.log(`🔄 Attempting background transfer: ${item.filename} (attempt ${item.retries + 1}/${MAX_RETRIES + 1})`);
+
+    // Attempt upload to GitHub
+    const metadata = await uploadToGitHub(
+      item.buffer,
+      item.filename,
+      item.originalName,
+      item.mimeType,
+      item.uploadedBy,
+      item.description,
+      item.tags
+    );
+
+    console.log(`✅ Background transfer successful: ${item.filename} → ${metadata.githubUrl}`);
+
+    // Remove from queue on success
+    transferQueue.shift();
+
+    // Process next item if any
+    if (transferQueue.length > 0) {
+      setTimeout(() => processTransferQueue(), 1000);
+    }
+  } catch (error) {
+    console.error(`❌ Background transfer failed for ${item.filename}:`, error);
+
+    item.retries++;
+
+    if (item.retries > MAX_RETRIES) {
+      console.error(`⚠️  Max retries reached for ${item.filename}, removing from queue`);
+      transferQueue.shift();
+
+      // Process next item
+      if (transferQueue.length > 0) {
+        setTimeout(() => processTransferQueue(), 1000);
+      }
+    } else {
+      // Schedule retry with exponential backoff
+      const delay = RETRY_DELAYS[item.retries - 1] || 60000;
+      console.log(`⏰ Scheduling retry for ${item.filename} in ${delay}ms`);
+
+      setTimeout(() => processTransferQueue(), delay);
+    }
+  }
+}
+
+/**
  * Validate file extension
  */
 function isAllowedExtension(filename: string): boolean {
@@ -409,6 +521,14 @@ export const fileUploadTool = tool({
   Supports various file types including images, documents, code files, and archives.
   Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB.
 
+  AUTOMATIC TRANSFER SYSTEM:
+  - Files are prioritized for GitHub upload for permanent storage
+  - If GitHub upload fails, files are saved to Railway storage (/data/uploads)
+  - Automatic background transfer from Railway → GitHub is triggered immediately
+  - Retry logic: 3 attempts with exponential backoff (5s, 15s, 1m)
+  - Metadata is preserved throughout the transfer process
+  - No manual intervention required - transfers happen automatically
+
   IMPORTANT: This tool is designed to work with Discord attachments. When a user shares a file in Discord:
   1. The message will include attachment information in the format:
      **[ATTACHMENTS]**
@@ -509,6 +629,9 @@ export const fileUploadTool = tool({
           const serverUrl = process.env.ARTIFACT_SERVER_URL
             || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
           publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+
+          // Schedule background transfer to GitHub (automatic hook)
+          scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
         }
       } else {
         // No GitHub token configured, use local storage
@@ -517,6 +640,9 @@ export const fileUploadTool = tool({
         const serverUrl = process.env.ARTIFACT_SERVER_URL
           || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
         publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+
+        // Schedule background transfer to GitHub (automatic hook)
+        scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
       }
 
       return {
