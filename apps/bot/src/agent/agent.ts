@@ -19,6 +19,7 @@ import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
 import { fileUploadTool } from './tools/fileUpload.js';
 import { listUploadedFilesTool } from './tools/listUploadedFiles.js';
+import { transferRailwayFilesTool } from './tools/transferRailwayFiles.js';
 import { exportConversationTool } from './tools/exportConversation.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
@@ -117,6 +118,7 @@ export async function runAgent(
         linuxAdvantages: linuxAdvantagesTool,
         fileUpload: fileUploadTool,
         listUploadedFiles: listUploadedFilesTool,
+        transferRailwayFiles: transferRailwayFilesTool,
         exportConversation: exportConversationTool,
         jsonAgentGenerator: jsonAgentGeneratorTool,
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
