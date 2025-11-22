@@ -103,6 +103,28 @@ export function getBlogDir(localFallback?: string): string {
 }
 
 /**
+ * Get the content index directory path
+ * Central index repository for metadata and uploaded files such as images and audio
+ * Uses /data/content-index in production with Railway volume, otherwise local path
+ */
+export function getContentIndexDir(localFallback?: string): string {
+  if (isProductionWithVolume()) {
+    const dir = '/data/content-index';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Default local fallback path
+  const fallback = localFallback || join(process.cwd(), 'content/index');
+  if (!existsSync(fallback)) {
+    mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
+}
+
+/**
  * Get the public directory path (for static assets like TTS player)
  * This directory is part of the codebase, not persistent storage
  */
@@ -137,11 +159,13 @@ export function initializeStorage(): void {
   const artifactsDir = getArtifactsDir();
   const uploadsDir = getUploadsDir();
   const blogDir = getBlogDir();
+  const contentIndexDir = getContentIndexDir();
   const publicDir = getPublicDir();
 
   console.log(`   Artifacts: ${artifactsDir}`);
   console.log(`   Uploads: ${uploadsDir}`);
   console.log(`   Blog: ${blogDir}`);
+  console.log(`   Content Index: ${contentIndexDir}`);
   console.log(`   Public: ${publicDir}`);
 
   if (isProductionWithVolume()) {
