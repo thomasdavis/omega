@@ -39,7 +39,10 @@ async function getRecentPredictions(limit: number = 10): Promise<Array<{
       args: [limit],
     });
 
-    return result.rows as Array<{ date: string; prediction_text: string }>;
+    return result.rows.map(row => ({
+      date: (row as any).date as string,
+      prediction_text: (row as any).prediction_text as string,
+    }));
   } catch (error) {
     // Table might not exist yet
     console.log('No previous predictions found (table may not exist yet)');

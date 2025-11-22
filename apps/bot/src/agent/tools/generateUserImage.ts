@@ -46,7 +46,12 @@ async function generateImage(
       throw new Error(`OpenAI API error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      data: Array<{
+        url: string;
+        revised_prompt?: string;
+      }>;
+    };
 
     if (!data.data || !data.data[0] || !data.data[0].url) {
       throw new Error('Invalid response from OpenAI API: missing image URL');

@@ -83,10 +83,12 @@ export async function generateDailyBlog(): Promise<{ success: boolean; filename?
 
     // Step 1: Fetch philosophical HN articles
     console.log('🧠 Fetching philosophical HN articles...');
-    const hnResult = await hackerNewsPhilosophyTool.execute({
-      limit: 5,
-      storyType: 'top',
-    });
+    const hnResult = await (hackerNewsPhilosophyTool.execute as any)(
+      {
+        limit: 5,
+        storyType: 'top',
+      }
+    );
 
     if (!hnResult.success || !hnResult.articles || hnResult.articles.length === 0) {
       throw new Error('Failed to fetch HN articles');
@@ -96,10 +98,12 @@ export async function generateDailyBlog(): Promise<{ success: boolean; filename?
 
     // Step 2: Generate market predictions
     console.log('📊 Generating market predictions...');
-    const marketResult = await marketPredictionTool.execute({
-      timeframe: 'day',
-      focusAssets: ['USD', 'EUR', 'Gold', 'Oil', 'Bitcoin', 'S&P500', 'Treasuries'],
-    });
+    const marketResult = await (marketPredictionTool.execute as any)(
+      {
+        timeframe: 'day',
+        focusAssets: ['USD', 'EUR', 'Gold', 'Oil', 'Bitcoin', 'S&P500', 'Treasuries'],
+      }
+    );
 
     if (!marketResult.success) {
       throw new Error('Failed to generate market predictions');
