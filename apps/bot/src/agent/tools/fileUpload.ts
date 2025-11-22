@@ -1,17 +1,23 @@
 /**
- * File Upload Tool - Upload files to public folder with shareable links
- * Allows users to upload files via Discord and get shareable URLs
+ * File Upload Tool - Upload files to GitHub repository with shareable links
+ * Allows users to upload files via Discord and get shareable GitHub URLs
+ * Falls back to local storage if GitHub is not configured
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { writeFileSync, statSync } from 'fs';
+import { writeFileSync, statSync, readFileSync, existsSync } from 'fs';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '../../utils/storage.js';
 
-// Public uploads directory - use centralized storage utility
+// Public uploads directory - use centralized storage utility (fallback)
 const UPLOADS_DIR = getUploadsDir();
+
+// GitHub configuration
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
+const GITHUB_STORAGE_PATH = 'file-library'; // Directory in repo for file storage
 
 // File size limits (in bytes)
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB (Discord's attachment limit)
@@ -44,6 +50,26 @@ interface UploadMetadata {
   mimeType?: string;
   uploadedAt: string;
   uploadedBy?: string;
+  storageType: 'github' | 'local';
+  githubUrl?: string;
+  rawUrl?: string;
+  description?: string;
+  tags?: string[];
+}
+
+interface FileIndexEntry {
+  id: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  extension: string;
+  mimeType?: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+  githubUrl: string;
+  rawUrl: string;
+  description?: string;
+  tags?: string[];
 }
 
 /**
@@ -77,7 +103,237 @@ function generateSafeFilename(originalName: string): string {
 }
 
 /**
- * Save uploaded file
+ * Upload file to GitHub repository
+ */
+async function uploadToGitHub(
+  fileBuffer: Buffer,
+  filename: string,
+  originalName: string,
+  mimeType?: string,
+  uploadedBy?: string,
+  description?: string,
+  tags?: string[]
+): Promise<UploadMetadata> {
+  if (!GITHUB_TOKEN) {
+    throw new Error('GitHub token not configured. Cannot upload to GitHub.');
+  }
+
+  const filePath = `${GITHUB_STORAGE_PATH}/${filename}`;
+  const base64Content = fileBuffer.toString('base64');
+
+  try {
+    // Check if file already exists (to get SHA for updates)
+    let sha: string | undefined;
+    const checkResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+
+    if (checkResponse.ok) {
+      const existingFile: any = await checkResponse.json();
+      sha = existingFile.sha;
+      console.log(`File ${filename} already exists, will update with SHA: ${sha}`);
+    }
+
+    // Upload file to GitHub
+    const uploadResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          message: `Upload ${originalName}${uploadedBy ? ` by ${uploadedBy}` : ''}`,
+          content: base64Content,
+          ...(sha && { sha }), // Include SHA if updating existing file
+        }),
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.text();
+      throw new Error(`GitHub API error: ${uploadResponse.status} - ${error}`);
+    }
+
+    const uploadData: any = await uploadResponse.json();
+    const githubUrl = uploadData.content.html_url;
+    const rawUrl = uploadData.content.download_url;
+
+    console.log(`✅ Uploaded to GitHub: ${githubUrl}`);
+
+    // Create metadata
+    const metadata: UploadMetadata = {
+      id: randomUUID().split('-')[0],
+      originalName,
+      filename,
+      size: fileBuffer.length,
+      extension: extname(originalName),
+      mimeType,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy,
+      storageType: 'github',
+      githubUrl,
+      rawUrl,
+      description,
+      tags,
+    };
+
+    // Update file index in GitHub
+    await updateFileIndex(metadata);
+
+    return metadata;
+  } catch (error) {
+    console.error('Error uploading to GitHub:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get current file index from GitHub
+ */
+async function getFileIndex(): Promise<FileIndexEntry[]> {
+  if (!GITHUB_TOKEN) {
+    return [];
+  }
+
+  const indexPath = `${GITHUB_STORAGE_PATH}/index.json`;
+
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${indexPath}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        // Index doesn't exist yet
+        return [];
+      }
+      throw new Error(`Failed to get file index: ${response.status}`);
+    }
+
+    const data: any = await response.json();
+    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('Error getting file index:', error);
+    return [];
+  }
+}
+
+/**
+ * Update file index in GitHub with new entry
+ */
+async function updateFileIndex(metadata: UploadMetadata): Promise<void> {
+  if (!GITHUB_TOKEN || !metadata.githubUrl || !metadata.rawUrl) {
+    return;
+  }
+
+  const indexPath = `${GITHUB_STORAGE_PATH}/index.json`;
+
+  try {
+    // Get current index
+    const currentIndex = await getFileIndex();
+
+    // Create new entry
+    const newEntry: FileIndexEntry = {
+      id: metadata.id,
+      filename: metadata.filename,
+      originalName: metadata.originalName,
+      size: metadata.size,
+      extension: metadata.extension,
+      mimeType: metadata.mimeType,
+      uploadedAt: metadata.uploadedAt,
+      uploadedBy: metadata.uploadedBy,
+      githubUrl: metadata.githubUrl,
+      rawUrl: metadata.rawUrl,
+      description: metadata.description,
+      tags: metadata.tags,
+    };
+
+    // Check if entry already exists (by filename) and update, otherwise add
+    const existingIndex = currentIndex.findIndex(e => e.filename === metadata.filename);
+    if (existingIndex >= 0) {
+      currentIndex[existingIndex] = newEntry;
+    } else {
+      currentIndex.push(newEntry);
+    }
+
+    // Sort by upload date (newest first)
+    currentIndex.sort((a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+
+    const indexContent = JSON.stringify(currentIndex, null, 2);
+    const base64Content = Buffer.from(indexContent).toString('base64');
+
+    // Get current SHA of index file if it exists
+    let sha: string | undefined;
+    const checkResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${indexPath}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+
+    if (checkResponse.ok) {
+      const existingFile: any = await checkResponse.json();
+      sha = existingFile.sha;
+    }
+
+    // Update index file
+    const response = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${indexPath}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          message: `Update file index: add ${metadata.filename}`,
+          content: base64Content,
+          ...(sha && { sha }),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error(`Failed to update index: ${response.status} - ${error}`);
+    } else {
+      console.log('✅ Updated file index');
+    }
+  } catch (error) {
+    console.error('Error updating file index:', error);
+    // Don't throw - index update is not critical
+  }
+}
+
+/**
+ * Save uploaded file (local storage fallback)
  */
 function saveUploadedFile(
   fileData: Buffer | string,
@@ -124,6 +380,7 @@ function saveUploadedFile(
     mimeType,
     uploadedAt: new Date().toISOString(),
     uploadedBy,
+    storageType: 'local',
   };
 
   const metadataPath = join(UPLOADS_DIR, `${filename}.json`);
@@ -145,7 +402,10 @@ async function downloadFile(url: string): Promise<Buffer> {
 }
 
 export const fileUploadTool = tool({
-  description: `Upload files to a public folder and get shareable links.
+  description: `Upload files to GitHub repository storage and get shareable links.
+  Files are stored in the ${GITHUB_REPO} repository under the ${GITHUB_STORAGE_PATH}/ directory.
+  Each file is tracked in a searchable index with metadata for easy retrieval.
+
   Supports various file types including images, documents, code files, and archives.
   Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB.
 
@@ -155,27 +415,37 @@ export const fileUploadTool = tool({
      - filename.ext (mime/type, XX.XX KB): https://cdn.discordapp.com/...
   2. Extract the attachment URL and filename from the message
   3. Use this tool with the fileUrl parameter to download and save the file
-  4. Return the shareable URL to the user
+  4. Return the shareable GitHub URL to the user
 
   You can use this tool in two ways:
   - With fileUrl: Provide a Discord attachment URL to download and save
   - With fileData: Provide base64-encoded file data directly
+
+  Metadata features:
+  - Add a description to help identify the file's purpose
+  - Add tags (keywords) for categorization and search
+  - All files are indexed in ${GITHUB_STORAGE_PATH}/index.json
 
   Security features:
   - File type validation (whitelist of allowed extensions)
   - File size limits (${MAX_FILE_SIZE / 1024 / 1024}MB max)
   - Filename sanitization to prevent directory traversal
   - Unique filenames to prevent collisions
+  - Version control via GitHub (all uploads are tracked)
 
-  Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}`,
+  Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}
+
+  Falls back to local storage if GitHub is not configured.`,
   inputSchema: z.object({
     fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL)'),
     fileData: z.string().optional().describe('Base64-encoded file data (alternative to fileUrl)'),
     originalName: z.string().describe('Original filename with extension'),
     mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
+    description: z.string().optional().describe('Description of the file (what it contains, its purpose, etc.)'),
+    tags: z.array(z.string()).optional().describe('Tags/keywords for categorizing the file (e.g., ["game-assets", "flappy-bird", "audio"])'),
   }),
-  execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy }) => {
+  execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy, description, tags }) => {
     try {
       // Validate that either fileUrl or fileData is provided
       if (!fileUrl && !fileData) {
@@ -185,28 +455,69 @@ export const fileUploadTool = tool({
         };
       }
 
-      // Download file if URL is provided
-      let dataBuffer: Buffer | string;
+      // Validate file extension first
+      if (!isAllowedExtension(originalName)) {
+        return {
+          success: false,
+          error: `File type not allowed. Allowed extensions: ${ALLOWED_EXTENSIONS.join(', ')}`,
+        };
+      }
+
+      // Download file if URL is provided, otherwise decode base64
+      let dataBuffer: Buffer;
       if (fileUrl) {
         console.log(`📥 Downloading file from: ${fileUrl}`);
         dataBuffer = await downloadFile(fileUrl);
         console.log(`✅ Downloaded ${dataBuffer.length} bytes`);
       } else {
-        dataBuffer = fileData!;
+        dataBuffer = Buffer.from(fileData!, 'base64');
       }
 
-      const metadata = saveUploadedFile(
-        dataBuffer,
-        originalName,
-        mimeType,
-        uploadedBy
-      );
+      // Check file size
+      if (dataBuffer.length > MAX_FILE_SIZE) {
+        return {
+          success: false,
+          error: `File size (${(dataBuffer.length / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size (${MAX_FILE_SIZE / 1024 / 1024}MB)`,
+        };
+      }
 
-      // Get server URL from environment or use default
-      // In production on Fly.io, use the app URL; locally use localhost
-      const serverUrl = process.env.ARTIFACT_SERVER_URL
-        || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
-      const publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+      // Generate safe filename
+      const filename = generateSafeFilename(originalName);
+
+      let metadata: UploadMetadata;
+      let publicUrl: string;
+
+      // Try to upload to GitHub first
+      if (GITHUB_TOKEN) {
+        try {
+          console.log('📤 Uploading to GitHub...');
+          metadata = await uploadToGitHub(
+            dataBuffer,
+            filename,
+            originalName,
+            mimeType,
+            uploadedBy,
+            description,
+            tags
+          );
+          publicUrl = metadata.rawUrl || metadata.githubUrl || '';
+          console.log(`✅ Successfully uploaded to GitHub: ${publicUrl}`);
+        } catch (githubError) {
+          console.error('GitHub upload failed, falling back to local storage:', githubError);
+          // Fall back to local storage
+          metadata = saveUploadedFile(dataBuffer, originalName, mimeType, uploadedBy);
+          const serverUrl = process.env.ARTIFACT_SERVER_URL
+            || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
+          publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+        }
+      } else {
+        // No GitHub token configured, use local storage
+        console.log('⚠️ GitHub not configured, using local storage');
+        metadata = saveUploadedFile(dataBuffer, originalName, mimeType, uploadedBy);
+        const serverUrl = process.env.ARTIFACT_SERVER_URL
+          || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
+        publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+      }
 
       return {
         success: true,
@@ -218,8 +529,15 @@ export const fileUploadTool = tool({
         mimeType: metadata.mimeType,
         uploadedAt: metadata.uploadedAt,
         uploadedBy: metadata.uploadedBy,
+        storageType: metadata.storageType,
         publicUrl,
-        message: `File uploaded successfully! Access it at: ${publicUrl}`,
+        githubUrl: metadata.githubUrl,
+        rawUrl: metadata.rawUrl,
+        description: metadata.description,
+        tags: metadata.tags,
+        message: metadata.storageType === 'github'
+          ? `File uploaded successfully to GitHub! View it at: ${metadata.githubUrl}\nDirect download: ${metadata.rawUrl}`
+          : `File uploaded successfully to local storage! Access it at: ${publicUrl}`,
       };
     } catch (error) {
       return {
