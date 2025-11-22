@@ -29,6 +29,9 @@ Through conversations, Omega has built itself these tools:
 - **artifact** - Create interactive HTML/SVG/Markdown with shareable links
 - **asciiGraph** - Generate text-based visualizations
 - **recipeGenerator** - Generate detailed cooking recipes
+- **createBlogPost** - Create TTS-enabled blog posts with markdown
+- **triggerDailyBlog** - Generate daily blog combining HN philosophy & market predictions
+- **marketPrediction** - Realpolitik-based global market analysis and forecasting
 
 ### File Management
 - **fileUpload** - Download and host Discord attachments permanently
@@ -42,6 +45,25 @@ Through conversations, Omega has built itself these tools:
 - **moodUplifter** - Detect and respond to negative sentiment
 
 **None of these existed at the start. The bot coded them all itself.**
+
+## Special Features
+
+### 📰 Daily Blog: Philosophy & Markets
+
+Omega automatically generates daily blog posts at **9 AM UTC** combining:
+
+1. **Philosophical Insights** - Analyzes top Hacker News articles for deep philosophical content
+2. **Market Predictions** - Realpolitik-based analysis of global economic/geopolitical trends
+3. **Intellectual Synthesis** - Connects abstract ideas with material realities
+
+**Key Capabilities:**
+- Predicts movements for USD, EUR, Gold, Oil, Bitcoin, S&P500, Treasuries
+- Accounts for black swan event probabilities
+- Uses feedback loop: Past predictions inform future forecasts
+- 800-1200 word posts with TTS support
+- Accessible at `/blog` on the artifact server
+
+See `apps/bot/docs/DAILY_BLOG_FEATURE.md` for technical details.
 
 ## How It Works
 

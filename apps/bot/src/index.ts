@@ -10,6 +10,7 @@ import { startArtifactServer } from './server/artifactServer.js';
 import { initializeStorage } from './utils/storage.js';
 import { initializeDatabase, closeDatabase } from './database/client.js';
 import { initializeSchema } from './database/schema.js';
+import { initializeScheduler } from './services/scheduler.js';
 
 dotenv.config();
 
@@ -61,6 +62,9 @@ client.once(Events.ClientReady, (readyClient) => {
   console.log(`✅ Bot is online as ${readyClient.user.tag}`);
   console.log(`📊 Connected to ${readyClient.guilds.cache.size} servers`);
   console.log(`🤖 Using AI SDK v6 with agent protocol`);
+
+  // Initialize scheduled tasks (daily blog generation, etc.)
+  initializeScheduler();
 });
 
 // Message create event - handle all messages
