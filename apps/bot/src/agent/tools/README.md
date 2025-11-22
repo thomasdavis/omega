@@ -13,6 +13,11 @@ This directory contains tool implementations for the AI agent. Each tool provide
 - **whoami** - Explain Omega's capabilities, personality, and purpose
 - **jsonAgentGenerator** - Generate, validate, and convert JSON Agents using PAM specification
 
+### File Storage Tools
+- **fileUpload** - Upload files to GitHub repository with metadata and shareable links
+- **listUploadedFiles** - Search and browse files in GitHub storage
+- **transferRailwayFiles** - Migrate files from Railway storage to GitHub repository
+
 ### Code Execution
 - **unsandbox** - Execute code in various programming languages using Unsandbox API
 
