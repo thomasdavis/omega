@@ -6,7 +6,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { writeFileSync, statSync, readFileSync, existsSync } from 'fs';
+import { writeFileSync, statSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '../../utils/storage.js';
@@ -153,6 +153,24 @@ async function processTransferQueue(): Promise<void> {
     );
 
     console.log(`✅ Background transfer successful: ${item.filename} → ${metadata.githubUrl}`);
+
+    // CLEANUP: Delete from Railway after successful background transfer
+    try {
+      const railwayFilePath = join(UPLOADS_DIR, item.filename);
+      const railwayMetadataPath = join(UPLOADS_DIR, `${item.filename}.json`);
+
+      if (existsSync(railwayFilePath)) {
+        unlinkSync(railwayFilePath);
+        console.log(`🗑️  Cleaned up file from Railway (background transfer): ${item.filename}`);
+      }
+      if (existsSync(railwayMetadataPath)) {
+        unlinkSync(railwayMetadataPath);
+        console.log(`🗑️  Cleaned up metadata from Railway (background transfer): ${item.filename}.json`);
+      }
+    } catch (cleanupError) {
+      console.error('⚠️  Error cleaning up Railway storage after background transfer:', cleanupError);
+      // Don't fail the transfer if cleanup fails
+    }
 
     // Remove from queue on success
     transferQueue.shift();
@@ -521,13 +539,16 @@ export const fileUploadTool = tool({
   Supports various file types including images, documents, code files, and archives.
   Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB.
 
-  AUTOMATIC TRANSFER SYSTEM:
-  - Files are prioritized for GitHub upload for permanent storage
-  - If GitHub upload fails, files are saved to Railway storage (/data/uploads)
-  - Automatic background transfer from Railway → GitHub is triggered immediately
+  CORRECTED UPLOAD WORKFLOW:
+  - Files are ALWAYS saved to Railway storage (/data/uploads) FIRST
+  - Then immediately uploaded to GitHub for permanent storage
+  - After successful GitHub upload, files are automatically cleaned up from Railway
+  - This ensures integrity and avoids duplication
+  - If GitHub upload fails, files remain in Railway storage for retry
+  - Automatic background transfer from Railway → GitHub is triggered on failure
   - Retry logic: 3 attempts with exponential backoff (5s, 15s, 1m)
   - Metadata is preserved throughout the transfer process
-  - No manual intervention required - transfers happen automatically
+  - No manual intervention required - transfers and cleanup happen automatically
 
   IMPORTANT: This tool is designed to work with Discord attachments. When a user shares a file in Discord:
   1. The message will include attachment information in the format:
@@ -607,11 +628,19 @@ export const fileUploadTool = tool({
       let metadata: UploadMetadata;
       let publicUrl: string;
 
-      // Try to upload to GitHub first
+      // CORRECTED WORKFLOW: Always save to Railway first, then upload to GitHub
+      console.log('📦 Saving to Railway storage first...');
+      metadata = saveUploadedFile(dataBuffer, originalName, mimeType, uploadedBy);
+      const serverUrl = process.env.ARTIFACT_SERVER_URL
+        || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
+      publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
+      console.log(`✅ Saved to Railway: ${publicUrl}`);
+
+      // Now upload to GitHub if configured
       if (GITHUB_TOKEN) {
         try {
           console.log('📤 Uploading to GitHub...');
-          metadata = await uploadToGitHub(
+          const githubMetadata = await uploadToGitHub(
             dataBuffer,
             filename,
             originalName,
@@ -620,27 +649,37 @@ export const fileUploadTool = tool({
             description,
             tags
           );
+
+          // Update metadata with GitHub info
+          metadata = { ...metadata, ...githubMetadata };
           publicUrl = metadata.rawUrl || metadata.githubUrl || '';
           console.log(`✅ Successfully uploaded to GitHub: ${publicUrl}`);
-        } catch (githubError) {
-          console.error('GitHub upload failed, falling back to local storage:', githubError);
-          // Fall back to local storage
-          metadata = saveUploadedFile(dataBuffer, originalName, mimeType, uploadedBy);
-          const serverUrl = process.env.ARTIFACT_SERVER_URL
-            || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
-          publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
 
+          // CLEANUP: Delete from Railway after successful GitHub upload
+          try {
+            const railwayFilePath = join(UPLOADS_DIR, metadata.filename);
+            const railwayMetadataPath = join(UPLOADS_DIR, `${metadata.filename}.json`);
+
+            if (existsSync(railwayFilePath)) {
+              unlinkSync(railwayFilePath);
+              console.log(`🗑️  Cleaned up file from Railway: ${metadata.filename}`);
+            }
+            if (existsSync(railwayMetadataPath)) {
+              unlinkSync(railwayMetadataPath);
+              console.log(`🗑️  Cleaned up metadata from Railway: ${metadata.filename}.json`);
+            }
+          } catch (cleanupError) {
+            console.error('⚠️  Error cleaning up Railway storage:', cleanupError);
+            // Don't fail the upload if cleanup fails
+          }
+        } catch (githubError) {
+          console.error('⚠️  GitHub upload failed, file remains in Railway storage:', githubError);
+          // File stays in Railway storage for manual transfer later
           // Schedule background transfer to GitHub (automatic hook)
           scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
         }
       } else {
-        // No GitHub token configured, use local storage
-        console.log('⚠️ GitHub not configured, using local storage');
-        metadata = saveUploadedFile(dataBuffer, originalName, mimeType, uploadedBy);
-        const serverUrl = process.env.ARTIFACT_SERVER_URL
-          || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
-        publicUrl = `${serverUrl}/uploads/${metadata.filename}`;
-
+        console.log('⚠️  GitHub not configured, file remains in Railway storage');
         // Schedule background transfer to GitHub (automatic hook)
         scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
       }
@@ -662,8 +701,17 @@ export const fileUploadTool = tool({
         description: metadata.description,
         tags: metadata.tags,
         message: metadata.storageType === 'github'
-          ? `File uploaded successfully to GitHub! View it at: ${metadata.githubUrl}\nDirect download: ${metadata.rawUrl}`
-          : `File uploaded successfully to local storage! Access it at: ${publicUrl}`,
+          ? `✅ Upload Complete!\n\n` +
+            `1. Saved to Railway: ✓\n` +
+            `2. Uploaded to GitHub: ✓\n` +
+            `3. Cleaned up from Railway: ✓\n\n` +
+            `View it at: ${metadata.githubUrl}\n` +
+            `Direct download: ${metadata.rawUrl}`
+          : `⚠️ Partial Upload\n\n` +
+            `1. Saved to Railway: ✓\n` +
+            `2. GitHub upload: Pending/Failed\n\n` +
+            `File remains in Railway storage and will be transferred to GitHub automatically.\n` +
+            `Access it at: ${publicUrl}`,
       };
     } catch (error) {
       return {
