@@ -126,3 +126,83 @@ pnpm build
 - Utility module: `apps/bot/src/utils/buildTimestamp.ts`
 - Server endpoint: `apps/bot/src/server/artifactServer.ts` (line 458-478)
 - Package scripts: `apps/bot/package.json` (prebuild, build, copy-assets)
+
+---
+
+## Environment Variables for Railway
+
+The following environment variables must be configured in Railway for full bot functionality:
+
+### Required Variables
+
+| Variable | Description | Where to Get |
+|----------|-------------|--------------|
+| `DISCORD_BOT_TOKEN` | Discord bot authentication token | Discord Developer Portal → Bot tab |
+| `OPENAI_API_KEY` | OpenAI API key for GPT-4o | https://platform.openai.com/api-keys |
+
+### Optional Variables
+
+| Variable | Description | Default | Where to Get |
+|----------|-------------|---------|--------------|
+| `GITHUB_TOKEN` | Personal access token for file uploads to GitHub | None | https://github.com/settings/tokens (requires 'repo' scope) |
+| `GITHUB_REPO` | Repository name for file uploads | `thomasdavis/omega` | Your repository name |
+| `ARTIFACT_SERVER_URL` | Public URL for artifact previews | Railway URL | Your Railway app URL |
+| `ARTIFACT_SERVER_PORT` | Port for artifact server | `3001` | - |
+| `NODE_ENV` | Environment mode | `production` | - |
+
+### File Upload Configuration
+
+**IMPORTANT:** To enable GitHub file upload functionality, you must configure:
+
+1. **GITHUB_TOKEN**: Create a Personal Access Token at https://github.com/settings/tokens
+   - Select "Generate new token (classic)"
+   - Give it a descriptive name like "Omega Bot File Uploads"
+   - Check the `repo` scope (Full control of private repositories)
+   - Copy the token and add it to Railway environment variables
+
+2. **GITHUB_REPO** (optional): Set to your repository name
+   - Default: `thomasdavis/omega`
+   - Format: `username/repository`
+
+Without `GITHUB_TOKEN`, the bot will:
+- Save files to Railway storage (`/data/uploads`)
+- NOT upload to GitHub
+- Files will remain in Railway storage only
+- Background transfer queue will be unable to migrate files
+
+With `GITHUB_TOKEN` configured, the bot will:
+- Save files temporarily to Railway storage
+- Upload to GitHub at `file-library/` directory
+- Create metadata in `file-library/index.json`
+- Automatically clean up Railway storage after successful GitHub upload
+- Retry failed uploads with exponential backoff (5s, 15s, 60s)
+
+### Persistent Storage
+
+Railway volume is mounted at `/data` for:
+- `/data/uploads` - User-uploaded files (temporary, cleaned up after GitHub upload)
+- `/data/artifacts` - Generated artifacts (HTML, SVG, etc.)
+- `/data/blog` - Blog posts
+- `/data/content-index` - Content metadata
+
+### Setting Environment Variables in Railway
+
+1. Go to your Railway project
+2. Click on your service
+3. Navigate to "Variables" tab
+4. Click "New Variable"
+5. Add each variable with its value
+6. Railway will automatically redeploy with new variables
+
+### Verifying Configuration
+
+After deployment, check logs for:
+- `✅ Using Railway persistent volume at /data` - Storage is configured
+- `📦 Saving to Railway storage first...` - File upload starting
+- `📤 Uploading to GitHub...` - GitHub integration working
+- `✅ Successfully uploaded to GitHub` - Upload complete
+- `🗑️ Cleaned up file from Railway` - Cleanup successful
+
+If you see:
+- `⚠️ GitHub not configured, file remains in Railway storage` - GITHUB_TOKEN is missing
+- `⚠️ GitHub upload failed` - Check GITHUB_TOKEN permissions and rate limits
