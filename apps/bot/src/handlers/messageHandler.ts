@@ -158,7 +158,7 @@ export async function handleMessage(message: Message): Promise<void> {
         }
       }
 
-      // Special handling for renderChart tool - attach the image
+      // Special handling for renderChart and generateUserImage tools - display images inline
       for (let i = 0; i < result.toolCalls.length; i++) {
         const toolCall = result.toolCalls[i];
 
@@ -195,6 +195,40 @@ export async function handleMessage(message: Message): Promise<void> {
               additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
             });
             // Fallback: send embed without attachment
+            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+            await message.channel.send({ embeds: [embed] });
+          }
+        } else if (toolCall.toolName === 'generateUserImage' && toolCall.result?.success && toolCall.result?.imageUrl) {
+          try {
+            console.log(`🎨 Displaying generated image from: ${toolCall.result.imageUrl}`);
+
+            // Build embed for image generation tool with image displayed inline
+            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+            embed.setImage(toolCall.result.imageUrl);
+
+            // Add revised prompt as a field if available
+            if (toolCall.result.revisedPrompt) {
+              embed.addFields({
+                name: '📝 Revised Prompt',
+                value: toolCall.result.revisedPrompt.substring(0, 1000), // Discord field limit
+                inline: false
+              });
+            }
+
+            // Send the embed with the image displayed inline
+            await message.channel.send({
+              embeds: [embed],
+            });
+            console.log(`✅ Sent generated image inline`);
+          } catch (error) {
+            logError(error, {
+              operation: 'Display generated image inline',
+              toolName: 'generateUserImage',
+              username: message.author.username,
+              channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+              additionalInfo: { imageUrl: toolCall.result?.imageUrl },
+            });
+            // Fallback: send embed without image
             const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
             await message.channel.send({ embeds: [embed] });
           }
