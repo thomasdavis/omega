@@ -60,10 +60,24 @@ All file-storage tools use the centralized storage utility:
 
 ### Environment Variables
 
-No special environment variables needed - the bot auto-detects the volume.
+Required for GitHub file uploads:
+- `GITHUB_TOKEN` - Personal access token with 'repo' scope (from https://github.com/settings/tokens)
+- `GITHUB_REPO` - Repository name (default: `thomasdavis/omega`)
 
 Optional:
 - `ARTIFACT_SERVER_URL` - Base URL for artifact links (defaults to Railway URL)
+
+**Without GITHUB_TOKEN:**
+- Files are saved to Railway storage only (`/data/uploads`)
+- No automatic upload to GitHub
+- Files remain in Railway storage (not version controlled)
+- Background transfer queue will not function
+
+**With GITHUB_TOKEN:**
+- Files upload to both Railway (temporary) and GitHub (permanent)
+- Automatic cleanup from Railway after successful GitHub upload
+- Files tracked in `file-library/index.json`
+- Retry logic handles temporary GitHub API failures
 
 ## Local Development
 
