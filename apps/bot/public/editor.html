@@ -742,14 +742,21 @@
 
     // Join document
     async function joinDocument() {
+      console.log('👤 Joining document...');
+      console.log('   User ID:', userId);
+      console.log('   Username:', username);
+
       try {
-        await fetch(`/api/documents/${documentId}/join`, {
+        const response = await fetch(`/api/documents/${documentId}/join`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, username }),
         });
+
+        const result = await response.json();
+        console.log('   ✅ Join successful:', result);
       } catch (error) {
-        console.error('Error joining document:', error);
+        console.error('   ❌ Error joining document:', error);
       }
     }
 
@@ -769,15 +776,27 @@
 
     // Handle presence update
     function handlePresenceUpdate(data) {
+      console.log('👥 Presence update received');
+      console.log('   Action:', data.action);
+      console.log('   User ID:', data.userId);
+      console.log('   Our ID:', userId);
+      console.log('   Username:', data.username);
+      console.log('   Current collaborators:', collaborators.size);
+
       if (data.action === 'join' && data.userId !== userId) {
+        console.log('   ✅ Adding collaborator to list');
         collaborators.set(data.userId, data.username || 'Anonymous');
         showNotification(`${data.username || 'Someone'} joined`);
+      } else if (data.action === 'join' && data.userId === userId) {
+        console.log('   ⏭️  Ignoring our own join event');
       } else if (data.action === 'leave') {
+        console.log('   👋 Removing collaborator from list');
         collaborators.delete(data.userId);
         showNotification(`${data.username || 'Someone'} left`);
       }
 
       updatePresenceUI();
+      console.log('   Updated collaborators:', collaborators.size);
     }
 
     // Update presence UI
