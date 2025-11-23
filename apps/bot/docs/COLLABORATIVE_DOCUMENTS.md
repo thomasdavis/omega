@@ -8,6 +8,8 @@ The Omega bot now includes a Google Docs-like collaborative document editing fea
 
 - ✅ Create and manage collaborative documents
 - ✅ Real-time editing with Pusher WebSockets
+- ✅ **CRDT-based conflict resolution using Yjs**
+- ✅ **Operational transformation for multi-user editing**
 - ✅ User presence indicators
 - ✅ Auto-save functionality
 - ✅ Simple markdown-based formatting
@@ -82,12 +84,31 @@ When Pusher is configured:
 - Online user count shows how many people are viewing the document
 - Presence list shows who's currently editing
 - You'll receive notifications when others join/leave or make changes
+- **Yjs CRDT ensures conflict-free collaboration** - multiple users can type simultaneously without overwrites
 
 When Pusher is NOT configured:
 - Editor works in offline mode
 - Status shows "Ready (offline mode)"
 - Changes are still saved to the database
 - No real-time updates from other users
+
+### How Yjs Sync Works
+
+The implementation uses **Yjs (Y.js)**, a CRDT (Conflict-free Replicated Data Type) library:
+
+1. **Document Initialization**: Each client loads the document and creates a local Yjs document instance
+2. **Local Edits**: When you type, changes are tracked at the character level by Yjs
+3. **Update Broadcasting**: Yjs generates binary updates that are sent to the server via HTTP
+4. **Server Relay**: The server broadcasts updates to all other clients via Pusher
+5. **Remote Merging**: Other clients receive updates and Yjs automatically merges them without conflicts
+6. **Database Sync**: Periodically, the final text is synced to the database for persistence
+
+**Benefits of Yjs:**
+- ✅ No lost edits when multiple users type simultaneously
+- ✅ Automatic conflict resolution
+- ✅ Cursor position preservation
+- ✅ Character-level change tracking
+- ✅ Efficient binary update format
 
 ## API Endpoints
 
@@ -109,6 +130,15 @@ GET  /api/documents/:id/collaborators  - Get document collaborators
 POST /api/documents/:id/collaborators  - Add a collaborator
 POST /api/documents/:id/join           - Join document (broadcast presence)
 POST /api/documents/:id/leave          - Leave document (broadcast presence)
+```
+
+### Yjs Sync (CRDT Collaboration)
+
+```
+GET  /api/documents/:id/yjs-state      - Get initial Yjs document state
+POST /api/documents/:id/yjs-update     - Apply Yjs update from client
+POST /api/documents/:id/yjs-awareness  - Broadcast cursor/selection updates
+POST /api/documents/:id/yjs-sync       - Force sync Yjs state to database
 ```
 
 ### Configuration
@@ -152,13 +182,22 @@ Each document has its own Pusher channel: `document-{documentId}`
 
 ### Events
 
-#### content-update
-Broadcasted when document content changes:
+#### yjs-update
+Broadcasted when Yjs document updates occur (replaces content-update):
 ```json
 {
-  "content": "Updated document content",
-  "userId": "user-123",
-  "username": "John Doe",
+  "update": "base64-encoded-yjs-update",
+  "clientId": "client-abc123",
+  "timestamp": 1234567890
+}
+```
+
+#### yjs-awareness
+Broadcasted for cursor/selection updates:
+```json
+{
+  "update": "base64-encoded-awareness-update",
+  "clientId": "client-abc123",
   "timestamp": 1234567890
 }
 ```
@@ -173,6 +212,8 @@ Broadcasted when users join/leave:
   "timestamp": 1234567890
 }
 ```
+
+**Note:** The old `content-update` event is deprecated in favor of `yjs-update` for proper conflict-free collaboration.
 
 ## Cost Considerations
 
@@ -221,8 +262,8 @@ Each document is stored in SQLite/Turso with minimal storage footprint:
 Potential improvements for the future:
 
 - [ ] Rich text editor (WYSIWYG)
-- [ ] Operational Transformation (OT) for conflict resolution
-- [ ] Document versioning and history
+- [x] ~~Operational Transformation (OT) for conflict resolution~~ **IMPLEMENTED with Yjs CRDT**
+- [ ] Document versioning and history (Yjs supports snapshots)
 - [ ] Comment threads
 - [ ] Document permissions and sharing
 - [ ] Export to PDF/Word
@@ -230,6 +271,7 @@ Potential improvements for the future:
 - [ ] Search functionality
 - [ ] Folders/organization
 - [ ] Discord integration (create docs from bot commands)
+- [ ] Cursor presence indicators (show other users' cursors in real-time)
 
 ## Security Considerations
 

@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document Editor - Omega</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.20/dist/yjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lib0@0.2.98/dist/lib0.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -248,7 +250,7 @@
     <button onclick="formatText('underline')"><u>U</u></button>
     <button onclick="insertList()">• List</button>
     <button onclick="insertLink()">🔗 Link</button>
-    <button onclick="saveDocument()">💾 Save</button>
+    <button onclick="syncToDatabase()">💾 Save</button>
   </div>
 
   <div class="editor-container">
@@ -290,6 +292,7 @@
     }
 
     const username = localStorage.getItem('omega-username') || 'Anonymous';
+    const clientId = 'client-' + Math.random().toString(36).substr(2, 9);
 
     // State
     let docData = null;
@@ -298,6 +301,11 @@
     let isSaving = false;
     let saveTimeout = null;
     let collaborators = new Map();
+
+    // Yjs state
+    let ydoc = null;
+    let ytext = null;
+    let isRemoteUpdate = false;
 
     // Load document
     async function loadDocument() {
@@ -312,12 +320,15 @@
         // Update UI
         document.getElementById('title').value = docData.title;
         document.getElementById('editor-container').innerHTML = `
-          <textarea id="content" placeholder="Start typing...">${escapeHtml(docData.content)}</textarea>
+          <textarea id="content" placeholder="Start typing..."></textarea>
         `;
 
-        // Set up auto-save
+        // Initialize Yjs document
+        await initializeYjs();
+
+        // Set up Yjs text binding
         const contentEl = document.getElementById('content');
-        contentEl.addEventListener('input', handleContentChange);
+        contentEl.addEventListener('input', handleYjsInput);
 
         document.getElementById('status').textContent = 'Ready';
 
@@ -331,6 +342,165 @@
         document.getElementById('editor-container').innerHTML = `
           <div class="loading">Error loading document. <a href="/documents.html">Go back</a></div>
         `;
+      }
+    }
+
+    // Initialize Yjs document with server state
+    async function initializeYjs() {
+      try {
+        // Create Yjs document
+        ydoc = new Y.Doc();
+        ytext = ydoc.getText('content');
+
+        // Fetch initial state from server
+        const response = await fetch(`/api/documents/${documentId}/yjs-state`);
+        const data = await response.json();
+
+        if (data.state) {
+          // Apply server state
+          const stateBytes = Uint8Array.from(atob(data.state), c => c.charCodeAt(0));
+          Y.applyUpdate(ydoc, stateBytes);
+        } else if (data.content) {
+          // Fallback: Initialize with plain text
+          ytext.insert(0, data.content);
+        }
+
+        // Update textarea with Yjs content
+        const contentEl = document.getElementById('content');
+        contentEl.value = ytext.toString();
+
+        // Listen for remote changes
+        ytext.observe(handleYjsChange);
+
+        // Listen for local document updates
+        ydoc.on('update', handleLocalUpdate);
+
+      } catch (error) {
+        console.error('Error initializing Yjs:', error);
+        // Fallback to plain text
+        document.getElementById('content').value = docData.content || '';
+      }
+    }
+
+    // Handle local Yjs updates (send to server)
+    function handleLocalUpdate(update, origin) {
+      if (origin === 'remote') return; // Don't echo remote updates
+
+      // Convert update to base64
+      const updateBase64 = btoa(String.fromCharCode.apply(null, update));
+
+      // Send to server
+      fetch(`/api/documents/${documentId}/yjs-update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update: updateBase64,
+          clientId,
+        }),
+      }).catch(err => console.error('Error sending update:', err));
+    }
+
+    // Handle Yjs text changes (update textarea)
+    function handleYjsChange(event, transaction) {
+      if (transaction.origin === 'local') return; // Already updated by user
+
+      isRemoteUpdate = true;
+      const contentEl = document.getElementById('content');
+      const cursorPos = contentEl.selectionStart;
+      const scrollTop = contentEl.scrollTop;
+
+      // Update textarea with new content
+      contentEl.value = ytext.toString();
+
+      // Restore cursor and scroll position (approximate)
+      contentEl.setSelectionRange(cursorPos, cursorPos);
+      contentEl.scrollTop = scrollTop;
+
+      isRemoteUpdate = false;
+    }
+
+    // Handle textarea input (update Yjs)
+    function handleYjsInput(e) {
+      if (isRemoteUpdate) return; // Don't process remote updates
+
+      const contentEl = e.target;
+      const cursorPos = contentEl.selectionStart;
+      const newText = contentEl.value;
+      const oldText = ytext.toString();
+
+      if (newText === oldText) return;
+
+      // Calculate diff and apply to Yjs
+      ydoc.transact(() => {
+        // Simple approach: find common prefix and suffix
+        let commonPrefixLength = 0;
+        while (
+          commonPrefixLength < Math.min(oldText.length, newText.length) &&
+          oldText[commonPrefixLength] === newText[commonPrefixLength]
+        ) {
+          commonPrefixLength++;
+        }
+
+        let commonSuffixLength = 0;
+        while (
+          commonSuffixLength < Math.min(oldText.length - commonPrefixLength, newText.length - commonPrefixLength) &&
+          oldText[oldText.length - 1 - commonSuffixLength] === newText[newText.length - 1 - commonSuffixLength]
+        ) {
+          commonSuffixLength++;
+        }
+
+        const deleteLength = oldText.length - commonPrefixLength - commonSuffixLength;
+        const insertText = newText.substring(commonPrefixLength, newText.length - commonSuffixLength);
+
+        if (deleteLength > 0) {
+          ytext.delete(commonPrefixLength, deleteLength);
+        }
+        if (insertText.length > 0) {
+          ytext.insert(commonPrefixLength, insertText);
+        }
+      }, 'local');
+
+      // Trigger auto-save
+      scheduleAutoSave();
+    }
+
+    // Schedule auto-save to database
+    function scheduleAutoSave() {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      saveTimeout = setTimeout(() => {
+        syncToDatabase();
+      }, 2000); // Save after 2 seconds of inactivity
+    }
+
+    // Sync Yjs state to database
+    async function syncToDatabase() {
+      if (isSaving) return;
+
+      isSaving = true;
+      document.getElementById('status').textContent = 'Saving...';
+
+      try {
+        await fetch(`/api/documents/${documentId}/yjs-sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        document.getElementById('status').textContent = 'Saved';
+        setTimeout(() => {
+          if (pusher) {
+            document.getElementById('status').textContent = 'Connected';
+          } else {
+            document.getElementById('status').textContent = 'Ready (offline mode)';
+          }
+        }, 2000);
+      } catch (error) {
+        console.error('Error saving to database:', error);
+        document.getElementById('status').textContent = 'Error saving';
+      } finally {
+        isSaving = false;
       }
     }
 
@@ -353,10 +523,18 @@
 
         channel = pusher.subscribe(`document-${documentId}`);
 
-        // Listen for content updates
-        channel.bind('content-update', (data) => {
-          if (data.userId !== userId) {
-            handleRemoteUpdate(data);
+        // Listen for Yjs updates
+        channel.bind('yjs-update', (data) => {
+          if (data.clientId !== clientId) {
+            handleRemoteYjsUpdate(data);
+          }
+        });
+
+        // Listen for Yjs awareness updates
+        channel.bind('yjs-awareness', (data) => {
+          if (data.clientId !== clientId) {
+            // Handle awareness updates (cursor positions, etc.)
+            // For now, we'll skip this as it requires more complex UI
           }
         });
 
@@ -369,6 +547,21 @@
       } catch (error) {
         console.error('Error initializing Pusher:', error);
         document.getElementById('status').textContent = 'Ready (offline mode)';
+      }
+    }
+
+    // Handle remote Yjs updates from Pusher
+    function handleRemoteYjsUpdate(data) {
+      try {
+        // Convert base64 to Uint8Array
+        const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
+
+        // Apply update to local Yjs document
+        Y.applyUpdate(ydoc, updateBytes, 'remote');
+
+        showNotification('Document updated by collaborator');
+      } catch (error) {
+        console.error('Error applying remote update:', error);
       }
     }
 
@@ -398,56 +591,6 @@
       }
     }
 
-    // Handle content change
-    function handleContentChange(e) {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
-
-      saveTimeout = setTimeout(() => {
-        saveDocument();
-      }, 1000); // Auto-save after 1 second of inactivity
-    }
-
-    // Save document
-    async function saveDocument() {
-      if (isSaving) return;
-
-      isSaving = true;
-      document.getElementById('status').textContent = 'Saving...';
-
-      try {
-        const content = document.getElementById('content').value;
-
-        await fetch(`/api/documents/${documentId}/content`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, userId, username }),
-        });
-
-        document.getElementById('status').textContent = 'Saved';
-        setTimeout(() => {
-          document.getElementById('status').textContent = 'Connected';
-        }, 2000);
-      } catch (error) {
-        console.error('Error saving document:', error);
-        document.getElementById('status').textContent = 'Error saving';
-      } finally {
-        isSaving = false;
-      }
-    }
-
-    // Handle remote update
-    function handleRemoteUpdate(data) {
-      const contentEl = document.getElementById('content');
-      const cursorPos = contentEl.selectionStart;
-      contentEl.value = data.content;
-
-      // Try to preserve cursor position
-      contentEl.setSelectionRange(cursorPos, cursorPos);
-
-      showNotification(`${data.username || 'Someone'} updated the document`);
-    }
 
     // Handle presence update
     function handlePresenceUpdate(data) {
@@ -500,35 +643,47 @@
       const textarea = document.getElementById('content');
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const text = textarea.value.substring(start, end);
+      const selectedText = textarea.value.substring(start, end);
 
-      if (!text) {
+      if (!selectedText) {
         alert('Please select text to format');
         return;
       }
 
-      let formatted;
+      let prefix = '', suffix = '';
       if (format === 'bold') {
-        formatted = `**${text}**`;
+        prefix = '**'; suffix = '**';
       } else if (format === 'italic') {
-        formatted = `*${text}*`;
+        prefix = '*'; suffix = '*';
       } else if (format === 'underline') {
-        formatted = `__${text}__`;
+        prefix = '__'; suffix = '__';
       }
 
-      textarea.value = textarea.value.substring(0, start) + formatted + textarea.value.substring(end);
-      textarea.focus();
-      textarea.setSelectionRange(start, start + formatted.length);
+      // Use Yjs to apply formatting
+      ydoc.transact(() => {
+        ytext.delete(start, end - start);
+        ytext.insert(start, prefix + selectedText + suffix);
+      }, 'local');
 
-      handleContentChange();
+      // Update textarea
+      textarea.value = ytext.toString();
+      textarea.focus();
+      textarea.setSelectionRange(start, start + prefix.length + selectedText.length + suffix.length);
     }
 
     function insertList() {
       const textarea = document.getElementById('content');
       const start = textarea.selectionStart;
-      textarea.value = textarea.value.substring(0, start) + '\n- ' + textarea.value.substring(start);
+
+      // Use Yjs to insert list
+      ydoc.transact(() => {
+        ytext.insert(start, '\n- ');
+      }, 'local');
+
+      // Update textarea
+      textarea.value = ytext.toString();
       textarea.focus();
-      handleContentChange();
+      textarea.setSelectionRange(start + 3, start + 3);
     }
 
     function insertLink() {
@@ -538,12 +693,19 @@
       const textarea = document.getElementById('content');
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const text = textarea.value.substring(start, end) || 'link';
+      const selectedText = textarea.value.substring(start, end) || 'link';
 
-      const markdown = `[${text}](${url})`;
-      textarea.value = textarea.value.substring(0, start) + markdown + textarea.value.substring(end);
+      const markdown = `[${selectedText}](${url})`;
+
+      // Use Yjs to insert link
+      ydoc.transact(() => {
+        ytext.delete(start, end - start);
+        ytext.insert(start, markdown);
+      }, 'local');
+
+      // Update textarea
+      textarea.value = ytext.toString();
       textarea.focus();
-      handleContentChange();
     }
 
     // Update title
@@ -583,7 +745,7 @@
     // Auto-save on visibility change (switching tabs)
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        saveDocument();
+        syncToDatabase();
       }
     });
 
