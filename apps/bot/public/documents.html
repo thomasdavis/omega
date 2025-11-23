@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collaborative Documents - Omega</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .nav-links {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      margin: 0 10px;
+      transition: background 0.2s;
+    }
+
+    .nav-links a:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+
+    .user-info {
+      color: white;
+      font-size: 14px;
+    }
+
+    .user-info input {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-left: 10px;
+      width: 200px;
+    }
+
+    .user-info input::placeholder {
+      color: rgba(255,255,255,0.6);
+    }
+
+    .create-btn {
+      background: #43e97b;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .create-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .documents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .document-card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .document-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+    }
+
+    .document-title {
+      font-size: 1.4em;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .document-meta {
+      display: flex;
+      gap: 12px;
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .document-preview {
+      color: #999;
+      font-size: 0.9em;
+      line-height: 1.5;
+      max-height: 60px;
+      overflow: hidden;
+    }
+
+    .stats {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: white;
+      padding: 60px 20px;
+      font-size: 1.2em;
+    }
+
+    .empty-state p {
+      margin-bottom: 20px;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .modal input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .modal-actions button:hover {
+      opacity: 0.8;
+    }
+
+    .btn-cancel {
+      background: #ccc;
+      color: #333;
+    }
+
+    .btn-submit {
+      background: #667eea;
+      color: white;
+    }
+
+    .footer {
+      text-align: center;
+      color: rgba(255,255,255,0.7);
+      margin-top: 40px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📝 Collaborative Documents</h1>
+
+    <div class="nav-links">
+      <a href="/">← Home</a>
+      <a href="/blog">📝 Blog</a>
+      <a href="/uploads">📁 Uploads</a>
+    </div>
+
+    <div class="header-actions">
+      <div class="user-info">
+        <label>Your Name:</label>
+        <input type="text" id="username" placeholder="Enter your name" />
+      </div>
+      <button class="create-btn" onclick="openCreateModal()">+ New Document</button>
+    </div>
+
+    <div class="stats" id="stats">
+      Loading documents...
+    </div>
+
+    <div class="documents-grid" id="documents-grid">
+      <!-- Documents will be loaded here -->
+    </div>
+
+    <div class="footer" id="footer">
+      <!-- Build timestamp will be loaded here -->
+    </div>
+  </div>
+
+  <!-- Create Document Modal -->
+  <div class="modal" id="create-modal">
+    <div class="modal-content">
+      <h2>Create New Document</h2>
+      <input type="text" id="doc-title" placeholder="Document Title" />
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+        <button class="btn-submit" onclick="createDocument()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load username from localStorage
+    const usernameInput = document.getElementById('username');
+    const savedUsername = localStorage.getItem('omega-username');
+    if (savedUsername) {
+      usernameInput.value = savedUsername;
+    }
+
+    // Save username on change
+    usernameInput.addEventListener('change', (e) => {
+      localStorage.setItem('omega-username', e.target.value);
+    });
+
+    // Generate user ID (or load from localStorage)
+    let userId = localStorage.getItem('omega-user-id');
+    if (!userId) {
+      userId = 'user-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('omega-user-id', userId);
+    }
+
+    // Load documents
+    async function loadDocuments() {
+      try {
+        const response = await fetch('/api/documents?limit=50');
+        const data = await response.json();
+
+        const grid = document.getElementById('documents-grid');
+        const stats = document.getElementById('stats');
+
+        stats.innerHTML = `<strong>${data.pagination.total}</strong> document${data.pagination.total !== 1 ? 's' : ''} created`;
+
+        if (data.documents.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state">
+              <p>No documents yet. Create your first collaborative document!</p>
+              <button class="create-btn" onclick="openCreateModal()">+ Create Document</button>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = data.documents.map(doc => {
+          const createdAt = new Date(doc.created_at * 1000).toLocaleString();
+          const preview = doc.content.substring(0, 100);
+
+          return `
+            <div class="document-card" onclick="openDocument('${doc.id}')">
+              <div class="document-title">${escapeHtml(doc.title)}</div>
+              <div class="document-meta">
+                <span>👤 ${escapeHtml(doc.created_by_username || 'Anonymous')}</span>
+                <span>📅 ${createdAt}</span>
+              </div>
+              <div class="document-preview">${escapeHtml(preview)}${doc.content.length > 100 ? '...' : ''}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading documents:', error);
+        document.getElementById('stats').innerHTML = 'Error loading documents';
+      }
+    }
+
+    // Create document
+    async function createDocument() {
+      const title = document.getElementById('doc-title').value.trim();
+      const username = usernameInput.value.trim();
+
+      if (!title) {
+        alert('Please enter a document title');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            content: '',
+            userId,
+            username: username || 'Anonymous',
+          }),
+        });
+
+        const document = await response.json();
+        closeCreateModal();
+        openDocument(document.id);
+      } catch (error) {
+        console.error('Error creating document:', error);
+        alert('Failed to create document');
+      }
+    }
+
+    // Open document
+    function openDocument(id) {
+      window.location.href = `/editor.html?id=${id}`;
+    }
+
+    // Modal functions
+    function openCreateModal() {
+      document.getElementById('create-modal').classList.add('active');
+      document.getElementById('doc-title').value = '';
+      document.getElementById('doc-title').focus();
+    }
+
+    function closeCreateModal() {
+      document.getElementById('create-modal').classList.remove('active');
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Load build timestamp footer
+    async function loadBuildFooter() {
+      try {
+        const response = await fetch('/BUILD-TIMESTAMP.txt');
+        const timestamp = await response.text();
+        const date = new Date(parseInt(timestamp) * 1000);
+        document.getElementById('footer').innerHTML = `Built: ${date.toLocaleString()}`;
+      } catch (error) {
+        console.error('Error loading build timestamp:', error);
+      }
+    }
+
+    // Handle Enter key in create modal
+    document.getElementById('doc-title').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        createDocument();
+      }
+    });
+
+    // Handle Escape key to close modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeCreateModal();
+      }
+    });
+
+    // Initial load
+    loadDocuments();
+    loadBuildFooter();
+  </script>
+</body>
+</html>

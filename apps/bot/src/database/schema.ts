@@ -117,9 +117,65 @@ export async function initializeSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_queries_user_id ON queries(user_id)
   `);
 
+  // Create collaborative documents table
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS documents (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL,
+      created_by_username TEXT,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+      is_public INTEGER DEFAULT 1,
+      metadata TEXT
+    )
+  `);
+
+  // Create indexes for documents table
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_documents_created_by ON documents(created_by)
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_documents_created_at ON documents(created_at DESC)
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_documents_updated_at ON documents(updated_at DESC)
+  `);
+
+  // Create document collaborators table (for tracking who has access)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS document_collaborators (
+      id TEXT PRIMARY KEY,
+      document_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      username TEXT,
+      role TEXT DEFAULT 'editor',
+      joined_at INTEGER DEFAULT (strftime('%s', 'now')),
+      FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+    )
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_collaborators_document_id ON document_collaborators(document_id)
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_collaborators_user_id ON document_collaborators(user_id)
+  `);
+
+  // Create unique constraint to prevent duplicate collaborators
+  await db.execute(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_collaborators_unique ON document_collaborators(document_id, user_id)
+  `);
+
   console.log('✅ Database schema initialized');
   console.log('   - messages table with FTS5 search');
   console.log('   - queries table with execution tracking');
+  console.log('   - documents table with collaborative editing');
+  console.log('   - document_collaborators table for access control');
 }
 
 /**
@@ -158,4 +214,31 @@ export interface QueryRecord {
   result_count?: number;
   error?: string;
   execution_time_ms?: number;
+}
+
+/**
+ * Document record interface
+ */
+export interface DocumentRecord {
+  id: string;
+  title: string;
+  content: string;
+  created_by: string;
+  created_by_username?: string;
+  created_at: number;
+  updated_at: number;
+  is_public: number;
+  metadata?: string;
+}
+
+/**
+ * Document collaborator record interface
+ */
+export interface DocumentCollaboratorRecord {
+  id: string;
+  document_id: string;
+  user_id: string;
+  username?: string;
+  role: string;
+  joined_at: number;
 }
