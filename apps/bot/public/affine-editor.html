@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Affine Editor - Omega Collaborative Documents</title>
+
+  <!-- Pusher for real-time sync -->
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+
+  <!-- Yjs CRDT library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/yjs/13.6.20/yjs.min.js"></script>
+
+  <!-- BlockSuite/Affine Editor from CDN -->
+  <script type="module">
+    import { createEditor } from 'https://esm.sh/@blocksuite/presets@0.17.28';
+    import { DocCollection, Schema } from 'https://esm.sh/@blocksuite/store@0.17.28';
+    import { AffineSchemas } from 'https://esm.sh/@blocksuite/blocks@0.17.28';
+
+    // Make available globally
+    window.BlockSuite = {
+      createEditor,
+      DocCollection,
+      Schema,
+      AffineSchemas
+    };
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-btn {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 24px;
+      transition: opacity 0.2s;
+    }
+
+    .back-btn:hover {
+      opacity: 0.7;
+    }
+
+    .title-input {
+      font-size: 20px;
+      font-weight: 600;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: transparent;
+      transition: background 0.2s;
+      min-width: 300px;
+    }
+
+    .title-input:hover {
+      background: #f5f5f5;
+    }
+
+    .title-input:focus {
+      outline: none;
+      background: #f0f0f0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #43e97b;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-dot.offline {
+      background: #ccc;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .collaborators {
+      display: flex;
+      gap: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .editor-container {
+      flex: 1;
+      background: white;
+      margin: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: auto;
+      position: relative;
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+      padding: 40px;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 18px;
+      color: #666;
+    }
+
+    .error {
+      color: #f5576c;
+      padding: 20px;
+      background: #fff0f0;
+      border-radius: 8px;
+      margin: 20px;
+    }
+
+    /* BlockSuite editor styles */
+    affine-editor-container {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <a href="/documents.html" class="back-btn">←</a>
+      <input
+        type="text"
+        id="title"
+        class="title-input"
+        placeholder="Untitled Document"
+        value="Loading..."
+        disabled
+      />
+    </div>
+    <div class="header-right">
+      <div class="status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+      <div class="collaborators">
+        <span id="collaboratorCount">0 online</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-container">
+    <div id="editor" class="loading">
+      Loading Affine Editor...
+    </div>
+  </div>
+
+  <script type="module">
+    // Wait for BlockSuite to load
+    let retryCount = 0;
+    const maxRetries = 20;
+
+    function waitForBlockSuite() {
+      if (window.BlockSuite && window.Y) {
+        initializeEditor();
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        setTimeout(waitForBlockSuite, 500);
+      } else {
+        document.getElementById('editor').innerHTML =
+          '<div class="error">Failed to load editor libraries. Please refresh the page.</div>';
+      }
+    }
+
+    waitForBlockSuite();
+
+    async function initializeEditor() {
+      try {
+        const { createEditor, DocCollection, Schema, AffineSchemas } = window.BlockSuite;
+        const Y = window.Y;
+
+        // Get document ID from URL
+        const params = new URLSearchParams(window.location.search);
+        const documentId = params.get('id');
+
+        if (!documentId) {
+          document.getElementById('editor').innerHTML =
+            '<div class="error">No document ID provided</div>';
+          return;
+        }
+
+        // Generate client ID
+        const clientId = generateClientId();
+
+        // Fetch document data
+        const response = await fetch(`/api/documents/${documentId}`);
+        if (!response.ok) {
+          throw new Error('Document not found');
+        }
+
+        const document = await response.json();
+
+        // Update title
+        const titleInput = document.getElementById('title');
+        titleInput.value = document.title;
+        titleInput.disabled = false;
+
+        // Title update handler
+        let titleTimeout;
+        titleInput.addEventListener('input', () => {
+          clearTimeout(titleTimeout);
+          titleTimeout = setTimeout(async () => {
+            await fetch(`/api/documents/${documentId}/title`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ title: titleInput.value }),
+            });
+          }, 1000);
+        });
+
+        // Initialize Yjs document
+        const yjsDoc = new Y.Doc();
+
+        // Fetch initial Yjs state
+        const stateResponse = await fetch(`/api/documents/${documentId}/yjs-state`);
+        if (stateResponse.ok) {
+          const { state } = await stateResponse.json();
+          if (state) {
+            const stateBytes = Uint8Array.from(atob(state), c => c.charCodeAt(0));
+            Y.applyUpdate(yjsDoc, stateBytes);
+          }
+        }
+
+        // Create BlockSuite schema
+        const schema = new Schema();
+        schema.register(AffineSchemas);
+
+        // Create BlockSuite collection with Yjs backend
+        const collection = new DocCollection({
+          schema,
+          id: documentId
+        });
+
+        // Use Yjs as the storage provider
+        collection.meta.initialize();
+        const doc = collection.createDoc({ id: 'page' });
+        doc.load(() => {
+          const pageBlockId = doc.addBlock('affine:page', {});
+          doc.addBlock('affine:surface', {}, pageBlockId);
+          const noteId = doc.addBlock('affine:note', {}, pageBlockId);
+          doc.addBlock('affine:paragraph', {}, noteId);
+        });
+
+        // Create editor
+        const editorContainer = document.getElementById('editor');
+        editorContainer.innerHTML = '';
+
+        const editor = createEditor();
+        editor.doc = doc;
+        editorContainer.appendChild(editor);
+
+        // Set up Yjs sync
+        yjsDoc.on('update', async (update, origin) => {
+          // Don't broadcast updates that came from remote
+          if (origin === 'remote') return;
+
+          // Convert update to base64
+          const updateBase64 = btoa(String.fromCharCode(...update));
+
+          // Send to server
+          await fetch(`/api/documents/${documentId}/yjs-update`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              update: updateBase64,
+              clientId,
+            }),
+          });
+        });
+
+        // Initialize Pusher for real-time sync
+        const configResponse = await fetch('/api/documents/pusher-config');
+        const pusherConfig = await configResponse.json();
+
+        if (pusherConfig.key) {
+          const pusher = new Pusher(pusherConfig.key, {
+            cluster: pusherConfig.cluster,
+          });
+
+          const channel = pusher.connection.bind('connected', () => {
+            updateStatus(true);
+          });
+
+          pusher.connection.bind('disconnected', () => {
+            updateStatus(false);
+          });
+
+          const documentChannel = pusher.subscribe(`document-${documentId}`);
+
+          // Listen for Yjs updates from other clients
+          documentChannel.bind('yjs-update', (data) => {
+            if (data.clientId === clientId) return; // Ignore own updates
+
+            const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
+            Y.applyUpdate(yjsDoc, updateBytes, 'remote');
+          });
+
+          // Listen for presence updates
+          documentChannel.bind('presence', (data) => {
+            if (data.action === 'join') {
+              console.log(`${data.username} joined`);
+            }
+          });
+
+          // Announce presence
+          await fetch(`/api/documents/${documentId}/join`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: getUserId(),
+              username: getUsername(),
+            }),
+          });
+
+          // Leave on page unload
+          window.addEventListener('beforeunload', () => {
+            fetch(`/api/documents/${documentId}/leave`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: getUserId(),
+                username: getUsername(),
+              }),
+              keepalive: true,
+            });
+          });
+        } else {
+          updateStatus(false, 'Ready (offline mode)');
+        }
+
+      } catch (error) {
+        console.error('Error initializing editor:', error);
+        document.getElementById('editor').innerHTML =
+          `<div class="error">Error: ${error.message}</div>`;
+      }
+    }
+
+    function updateStatus(connected, customText = null) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+
+      if (connected) {
+        dot.classList.remove('offline');
+        text.textContent = customText || 'Connected';
+      } else {
+        dot.classList.add('offline');
+        text.textContent = customText || 'Offline';
+      }
+    }
+
+    function generateClientId() {
+      return `client-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    function getUserId() {
+      let userId = localStorage.getItem('userId');
+      if (!userId) {
+        userId = `user-${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('userId', userId);
+      }
+      return userId;
+    }
+
+    function getUsername() {
+      return localStorage.getItem('username') || 'Anonymous';
+    }
+  </script>
+</body>
+</html>
