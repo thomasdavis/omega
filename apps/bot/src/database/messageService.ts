@@ -6,9 +6,11 @@
 import { getDatabase } from './client.js';
 import type { MessageRecord } from './schema.js';
 import { randomUUID } from 'crypto';
+import { analyzeMessage } from '../lib/messageAnalysis.js';
 
 /**
  * Save a human message to the database
+ * Automatically generates AI summary and sentiment analysis
  */
 export async function saveHumanMessage(params: {
   userId: string;
@@ -24,11 +26,53 @@ export async function saveHumanMessage(params: {
   const id = randomUUID();
   const timestamp = Date.now();
 
+  // Get previous messages from this user for context
+  let previousMessages: Array<{ content: string; sentiment?: string }> = [];
+  try {
+    const recentMessages = await queryMessages({
+      userId: params.userId,
+      senderType: 'human',
+      limit: 5,
+    });
+
+    previousMessages = recentMessages.map((msg) => ({
+      content: msg.message_content,
+      sentiment: msg.sentiment_analysis
+        ? JSON.parse(msg.sentiment_analysis).sentiment
+        : undefined,
+    }));
+  } catch (error) {
+    console.warn('Could not fetch previous messages for context:', error);
+  }
+
+  // Generate AI summary and sentiment analysis
+  let aiSummary = '';
+  let sentimentAnalysisJson = '';
+
+  try {
+    const analysis = await analyzeMessage(params.messageContent, params.username, {
+      previousMessages,
+    });
+
+    aiSummary = analysis.summary;
+    sentimentAnalysisJson = JSON.stringify(analysis.sentimentAnalysis);
+
+    console.log(`📊 Message analysis for ${params.username}:`, {
+      summary: aiSummary,
+      sentiment: analysis.sentimentAnalysis.sentiment,
+      confidence: analysis.sentimentAnalysis.confidence,
+    });
+  } catch (error) {
+    console.error('Failed to generate message analysis:', error);
+    // Continue saving the message even if analysis fails
+  }
+
   await db.execute({
     sql: `INSERT INTO messages (
       id, timestamp, sender_type, user_id, username,
-      channel_id, channel_name, guild_id, message_content, session_id
-    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?)`,
+      channel_id, channel_name, guild_id, message_content, session_id,
+      ai_summary, sentiment_analysis
+    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       timestamp,
@@ -39,6 +83,8 @@ export async function saveHumanMessage(params: {
       params.guildId || null,
       params.messageContent,
       params.sessionId || null,
+      aiSummary || null,
+      sentimentAnalysisJson || null,
     ],
   });
 

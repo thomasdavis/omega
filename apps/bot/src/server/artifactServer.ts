@@ -1521,15 +1521,54 @@ function generateMessagesHTML(messages: any[], options: {
           contentPreview = contentPreview.substring(0, 200) + '...';
         }
 
+        // Parse sentiment analysis if available
+        let sentimentBadge = '';
+        let sentimentDetails = '';
+        if (msg.sentiment_analysis) {
+          try {
+            const sentiment = JSON.parse(msg.sentiment_analysis);
+            const sentimentEmoji = sentiment.sentiment === 'positive' ? '😊' :
+                                   sentiment.sentiment === 'negative' ? '😞' :
+                                   sentiment.sentiment === 'mixed' ? '😐' : '😶';
+            const confidencePercent = Math.round(sentiment.confidence * 100);
+
+            sentimentBadge = `<span class="sentiment-badge ${sentiment.sentiment}" title="Confidence: ${confidencePercent}%">${sentimentEmoji} ${sentiment.sentiment} (${confidencePercent}%)</span>`;
+
+            // Build detailed sentiment info
+            const emotionalTones = sentiment.emotionalTone?.join(', ') || 'N/A';
+            const archetype = sentiment.archetypeAlignment || 'N/A';
+            const formality = sentiment.communicationStyle?.formality || 'N/A';
+            const assertiveness = sentiment.communicationStyle?.assertiveness || 'N/A';
+            const engagement = sentiment.communicationStyle?.engagement || 'N/A';
+
+            sentimentDetails = `
+              <details class="sentiment-details">
+                <summary>📊 Detailed Psychological Analysis</summary>
+                <div class="sentiment-analysis">
+                  <div><strong>Emotional Tone:</strong> ${escapeHtml(emotionalTones)}</div>
+                  ${archetype !== 'N/A' ? `<div><strong>Jungian Archetype:</strong> ${escapeHtml(archetype)}</div>` : ''}
+                  <div><strong>Communication Style:</strong> ${escapeHtml(formality)} formality, ${escapeHtml(assertiveness)} assertiveness, ${escapeHtml(engagement)} engagement</div>
+                  ${sentiment.explanation ? `<div><strong>Analysis:</strong> ${escapeHtml(sentiment.explanation)}</div>` : ''}
+                </div>
+              </details>
+            `;
+          } catch (error) {
+            console.error('Error parsing sentiment analysis:', error);
+          }
+        }
+
         return `
         <div class="message-card ${msg.sender_type}">
           <div class="message-header">
             <span class="sender-badge">${senderBadge} ${msg.sender_type}</span>
             <span class="username">${escapeHtml(msg.username || 'Unknown')}</span>
+            ${sentimentBadge}
             <span class="timestamp">${timestamp}</span>
           </div>
           ${msg.tool_name ? `<div class="tool-name">Tool: ${escapeHtml(msg.tool_name)}</div>` : ''}
+          ${msg.ai_summary ? `<div class="ai-summary">📝 <em>${escapeHtml(msg.ai_summary)}</em></div>` : ''}
           <div class="message-content">${contentPreview}</div>
+          ${sentimentDetails}
           <div class="message-meta">
             ${msg.channel_name ? `<span>📍 ${escapeHtml(msg.channel_name)}</span>` : ''}
             ${msg.user_id ? `<span>🆔 ${escapeHtml(msg.user_id)}</span>` : ''}
@@ -1685,6 +1724,69 @@ function generateMessagesHTML(messages: any[], options: {
       gap: 16px;
       font-size: 0.85em;
       color: #666;
+    }
+    .sentiment-badge {
+      background: #f0f0f0;
+      color: #333;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: help;
+    }
+    .sentiment-badge.positive {
+      background: #d4edda;
+      color: #155724;
+    }
+    .sentiment-badge.negative {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .sentiment-badge.mixed {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .sentiment-badge.neutral {
+      background: #e2e3e5;
+      color: #383d41;
+    }
+    .ai-summary {
+      background: #e3f2fd;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 0.95em;
+      color: #1565c0;
+      border-left: 3px solid #2196f3;
+    }
+    .sentiment-details {
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+    .sentiment-details summary {
+      cursor: pointer;
+      font-size: 0.9em;
+      color: #667eea;
+      font-weight: 600;
+      padding: 8px 0;
+      user-select: none;
+    }
+    .sentiment-details summary:hover {
+      color: #5568d3;
+    }
+    .sentiment-analysis {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 0.9em;
+      line-height: 1.8;
+    }
+    .sentiment-analysis div {
+      margin-bottom: 6px;
+    }
+    .sentiment-analysis strong {
+      color: #667eea;
     }
     .pagination {
       display: flex;
