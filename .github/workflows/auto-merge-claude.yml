@@ -1,26 +1,62 @@
 name: Auto-Merge Claude PRs
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_run:
+    workflows: ["CI Checks"]
+    types:
+      - completed
 
 jobs:
   auto-merge:
-    name: Enable Auto-Merge for Claude PRs
+    name: Enable Auto-Merge After CI Passes
     runs-on: ubuntu-latest
 
-    # Only run if PR is from a claude/** branch (auto-created by our workflow)
-    if: startsWith(github.event.pull_request.head.ref, 'claude/')
+    # Only run if CI workflow succeeded
+    if: github.event.workflow_run.conclusion == 'success'
 
     permissions:
       contents: write
       pull-requests: write
 
     steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+              state: 'open'
+            });
+
+            if (pulls.data.length === 0) {
+              console.log('No open PR found for this branch');
+              return;
+            }
+
+            const pr = pulls.data[0];
+            core.setOutput('number', pr.number);
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('body', pr.body || '');
+
+      - name: Check if Claude PR
+        id: check_claude
+        if: steps.pr.outputs.number != ''
+        run: |
+          HEAD_REF="${{ steps.pr.outputs.head_ref }}"
+          if [[ "$HEAD_REF" == claude/* ]]; then
+            echo "is_claude=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_claude=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Check if PR is linked to an issue
         id: check_issue
+        if: steps.check_claude.outputs.is_claude == 'true'
         run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_BODY="${{ steps.pr.outputs.body }}"
           if echo "$PR_BODY" | grep -qiE "(fixes|closes|resolves) #[0-9]+"; then
             echo "linked=true" >> $GITHUB_OUTPUT
           else
@@ -28,25 +64,30 @@ jobs:
           fi
 
       - name: Enable auto-merge
-        if: steps.check_issue.outputs.linked == 'true'
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr merge ${{ github.event.pull_request.number }} \
+          PR_NUMBER="${{ steps.pr.outputs.number }}"
+
+          echo "✅ CI checks passed! Enabling auto-merge for PR #$PR_NUMBER..."
+
+          gh pr merge "$PR_NUMBER" \
             --repo ${{ github.repository }} \
             --auto \
             --squash \
             --delete-branch
-          echo "✅ Auto-merge enabled for PR #${{ github.event.pull_request.number }}"
+
+          echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
 
       - name: Comment on PR
-        if: steps.check_issue.outputs.linked == 'true'
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.name,
-              issue_number: context.issue.number,
-              body: '🤖 Auto-merge enabled! This PR will be merged automatically when all checks pass.'
+              issue_number: ${{ steps.pr.outputs.number }},
+              body: '✅ **CI checks passed!** Auto-merge has been enabled. This PR will merge automatically.'
             });
