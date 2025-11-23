@@ -119,6 +119,32 @@
       color: #999;
     }
 
+    .copy-url-btn {
+      padding: 8px 16px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .copy-url-btn:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .copy-url-btn:active {
+      transform: translateY(0);
+    }
+
+    .copy-url-btn.copied {
+      background: #43e97b;
+    }
+
     .editor-container {
       flex: 1;
       display: flex;
@@ -249,6 +275,9 @@
       <input type="text" class="title-input" id="title" placeholder="Untitled Document" />
     </div>
     <div class="header-right">
+      <button id="copy-plain-url-btn" class="copy-url-btn" title="Copy plain text URL">
+        📋 Copy Text URL
+      </button>
       <div class="presence-indicator">
         <div class="presence-dot"></div>
         <span id="online-count">0 online</span>
@@ -879,6 +908,36 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // Copy plain text URL to clipboard
+    document.getElementById('copy-plain-url-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('copy-plain-url-btn');
+      if (!btn) return;
+
+      // Construct the plain text URL
+      const serverUrl = window.location.origin;
+      const plainUrl = `${serverUrl}/api/documents/${documentId}/plain`;
+
+      try {
+        // Copy to clipboard
+        await navigator.clipboard.writeText(plainUrl);
+
+        // Visual feedback
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+
+        console.log('📋 Copied plain text URL:', plainUrl);
+      } catch (error) {
+        console.error('Failed to copy URL:', error);
+        alert('Failed to copy URL. Please try again.');
+      }
+    });
 
     // Handle page unload
     window.addEventListener('beforeunload', () => {

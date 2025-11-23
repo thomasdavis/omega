@@ -465,6 +465,26 @@ function createApp(): express.Application {
     }
   });
 
+  // Get document as plain text (for raw content viewing/copying)
+  app.get('/api/documents/:id/plain', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      const document = await getDocument(id);
+      if (!document) {
+        return res.status(404).send('Document not found');
+      }
+
+      // Return plain text content with appropriate content type
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Access-Control-Allow-Origin', '*'); // Allow CORS for easy copying
+      res.send(document.content || '');
+    } catch (error) {
+      console.error('Error fetching plain document:', error);
+      res.status(500).send('Failed to fetch document');
+    }
+  });
+
   // Update document content
   app.put('/api/documents/:id/content', express.json(), async (req: Request, res: Response) => {
     try {
