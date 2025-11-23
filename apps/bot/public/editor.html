@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Editor - Omega</title>
+  <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-btn {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 24px;
+      transition: opacity 0.2s;
+    }
+
+    .back-btn:hover {
+      opacity: 0.7;
+    }
+
+    .title-input {
+      font-size: 20px;
+      font-weight: 600;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      background: transparent;
+      transition: background 0.2s;
+      min-width: 300px;
+    }
+
+    .title-input:hover {
+      background: #f5f5f5;
+    }
+
+    .title-input:focus {
+      outline: none;
+      background: #f0f0f0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .presence-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .presence-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #43e97b;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .collaborators {
+      display: flex;
+      gap: 8px;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .status {
+      font-size: 14px;
+      color: #999;
+    }
+
+    .editor-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: 40px 20px;
+      overflow-y: auto;
+    }
+
+    .editor-wrapper {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .editor {
+      background: white;
+      border-radius: 8px;
+      padding: 40px;
+      min-height: 600px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .editor textarea {
+      width: 100%;
+      min-height: 500px;
+      border: none;
+      font-size: 16px;
+      line-height: 1.6;
+      font-family: 'Georgia', serif;
+      resize: vertical;
+      outline: none;
+    }
+
+    .toolbar {
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+      padding: 12px 24px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar button {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .toolbar button:hover {
+      background: #f5f5f5;
+      border-color: #667eea;
+    }
+
+    .presence-list {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      min-width: 200px;
+    }
+
+    .presence-list h3 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .presence-user {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .presence-user-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #43e97b;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .notification.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <a href="/documents.html" class="back-btn">←</a>
+      <input type="text" class="title-input" id="title" placeholder="Untitled Document" />
+    </div>
+    <div class="header-right">
+      <div class="presence-indicator">
+        <div class="presence-dot"></div>
+        <span id="online-count">0 online</span>
+      </div>
+      <div class="status" id="status">Connecting...</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button onclick="formatText('bold')"><strong>B</strong></button>
+    <button onclick="formatText('italic')"><em>I</em></button>
+    <button onclick="formatText('underline')"><u>U</u></button>
+    <button onclick="insertList()">• List</button>
+    <button onclick="insertLink()">🔗 Link</button>
+    <button onclick="saveDocument()">💾 Save</button>
+  </div>
+
+  <div class="editor-container">
+    <div class="editor-wrapper">
+      <div class="editor" id="editor-container">
+        <div class="loading">Loading document...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="presence-list">
+    <h3>Active Collaborators</h3>
+    <div id="presence-users">
+      <div class="presence-user">
+        <div class="presence-user-dot"></div>
+        <span>You</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="notification" id="notification">
+    <span id="notification-text"></span>
+  </div>
+
+  <script>
+    // Get document ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const documentId = urlParams.get('id');
+
+    if (!documentId) {
+      window.location.href = '/documents.html';
+    }
+
+    // Get user info
+    let userId = localStorage.getItem('omega-user-id');
+    if (!userId) {
+      userId = 'user-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('omega-user-id', userId);
+    }
+
+    const username = localStorage.getItem('omega-username') || 'Anonymous';
+
+    // State
+    let document = null;
+    let pusher = null;
+    let channel = null;
+    let isSaving = false;
+    let saveTimeout = null;
+    let collaborators = new Map();
+
+    // Load document
+    async function loadDocument() {
+      try {
+        const response = await fetch(`/api/documents/${documentId}`);
+        if (!response.ok) {
+          throw new Error('Document not found');
+        }
+
+        document = await response.json();
+
+        // Update UI
+        document.getElementById('title').value = document.title;
+        document.getElementById('editor-container').innerHTML = `
+          <textarea id="content" placeholder="Start typing...">${escapeHtml(document.content)}</textarea>
+        `;
+
+        // Set up auto-save
+        const contentEl = document.getElementById('content');
+        contentEl.addEventListener('input', handleContentChange);
+
+        document.getElementById('status').textContent = 'Ready';
+
+        // Initialize Pusher for real-time collaboration
+        await initializePusher();
+
+        // Join document
+        await joinDocument();
+      } catch (error) {
+        console.error('Error loading document:', error);
+        document.getElementById('editor-container').innerHTML = `
+          <div class="loading">Error loading document. <a href="/documents.html">Go back</a></div>
+        `;
+      }
+    }
+
+    // Initialize Pusher
+    async function initializePusher() {
+      try {
+        const response = await fetch('/api/documents/pusher-config');
+        const config = await response.json();
+
+        if (!config.enabled) {
+          console.warn('Pusher not configured. Real-time collaboration disabled.');
+          document.getElementById('status').textContent = 'Ready (offline mode)';
+          return;
+        }
+
+        pusher = new Pusher(config.key, {
+          cluster: config.cluster,
+          forceTLS: true,
+        });
+
+        channel = pusher.subscribe(`document-${documentId}`);
+
+        // Listen for content updates
+        channel.bind('content-update', (data) => {
+          if (data.userId !== userId) {
+            handleRemoteUpdate(data);
+          }
+        });
+
+        // Listen for presence updates
+        channel.bind('presence', (data) => {
+          handlePresenceUpdate(data);
+        });
+
+        document.getElementById('status').textContent = 'Connected';
+      } catch (error) {
+        console.error('Error initializing Pusher:', error);
+        document.getElementById('status').textContent = 'Ready (offline mode)';
+      }
+    }
+
+    // Join document
+    async function joinDocument() {
+      try {
+        await fetch(`/api/documents/${documentId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, username }),
+        });
+      } catch (error) {
+        console.error('Error joining document:', error);
+      }
+    }
+
+    // Leave document
+    async function leaveDocument() {
+      try {
+        await fetch(`/api/documents/${documentId}/leave`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, username }),
+        });
+      } catch (error) {
+        console.error('Error leaving document:', error);
+      }
+    }
+
+    // Handle content change
+    function handleContentChange(e) {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+      }
+
+      saveTimeout = setTimeout(() => {
+        saveDocument();
+      }, 1000); // Auto-save after 1 second of inactivity
+    }
+
+    // Save document
+    async function saveDocument() {
+      if (isSaving) return;
+
+      isSaving = true;
+      document.getElementById('status').textContent = 'Saving...';
+
+      try {
+        const content = document.getElementById('content').value;
+
+        await fetch(`/api/documents/${documentId}/content`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content, userId, username }),
+        });
+
+        document.getElementById('status').textContent = 'Saved';
+        setTimeout(() => {
+          document.getElementById('status').textContent = 'Connected';
+        }, 2000);
+      } catch (error) {
+        console.error('Error saving document:', error);
+        document.getElementById('status').textContent = 'Error saving';
+      } finally {
+        isSaving = false;
+      }
+    }
+
+    // Handle remote update
+    function handleRemoteUpdate(data) {
+      const contentEl = document.getElementById('content');
+      const cursorPos = contentEl.selectionStart;
+      contentEl.value = data.content;
+
+      // Try to preserve cursor position
+      contentEl.setSelectionRange(cursorPos, cursorPos);
+
+      showNotification(`${data.username || 'Someone'} updated the document`);
+    }
+
+    // Handle presence update
+    function handlePresenceUpdate(data) {
+      if (data.action === 'join' && data.userId !== userId) {
+        collaborators.set(data.userId, data.username || 'Anonymous');
+        showNotification(`${data.username || 'Someone'} joined`);
+      } else if (data.action === 'leave') {
+        collaborators.delete(data.userId);
+        showNotification(`${data.username || 'Someone'} left`);
+      }
+
+      updatePresenceUI();
+    }
+
+    // Update presence UI
+    function updatePresenceUI() {
+      const onlineCount = collaborators.size + 1; // +1 for current user
+      document.getElementById('online-count').textContent = `${onlineCount} online`;
+
+      const presenceUsers = document.getElementById('presence-users');
+      presenceUsers.innerHTML = `
+        <div class="presence-user">
+          <div class="presence-user-dot"></div>
+          <span>You</span>
+        </div>
+        ${Array.from(collaborators.values()).map(name => `
+          <div class="presence-user">
+            <div class="presence-user-dot"></div>
+            <span>${escapeHtml(name)}</span>
+          </div>
+        `).join('')}
+      `;
+    }
+
+    // Show notification
+    function showNotification(text) {
+      const notification = document.getElementById('notification');
+      const notificationText = document.getElementById('notification-text');
+
+      notificationText.textContent = text;
+      notification.classList.add('show');
+
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+
+    // Formatting functions (basic)
+    function formatText(format) {
+      const textarea = document.getElementById('content');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value.substring(start, end);
+
+      if (!text) {
+        alert('Please select text to format');
+        return;
+      }
+
+      let formatted;
+      if (format === 'bold') {
+        formatted = `**${text}**`;
+      } else if (format === 'italic') {
+        formatted = `*${text}*`;
+      } else if (format === 'underline') {
+        formatted = `__${text}__`;
+      }
+
+      textarea.value = textarea.value.substring(0, start) + formatted + textarea.value.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start, start + formatted.length);
+
+      handleContentChange();
+    }
+
+    function insertList() {
+      const textarea = document.getElementById('content');
+      const start = textarea.selectionStart;
+      textarea.value = textarea.value.substring(0, start) + '\n- ' + textarea.value.substring(start);
+      textarea.focus();
+      handleContentChange();
+    }
+
+    function insertLink() {
+      const url = prompt('Enter URL:');
+      if (!url) return;
+
+      const textarea = document.getElementById('content');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value.substring(start, end) || 'link';
+
+      const markdown = `[${text}](${url})`;
+      textarea.value = textarea.value.substring(0, start) + markdown + textarea.value.substring(end);
+      textarea.focus();
+      handleContentChange();
+    }
+
+    // Update title
+    document.getElementById('title').addEventListener('blur', async function() {
+      const newTitle = this.value.trim();
+      if (!newTitle || newTitle === document.title) return;
+
+      try {
+        await fetch(`/api/documents/${documentId}/title`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: newTitle }),
+        });
+
+        document.title = newTitle + ' - Omega';
+        showNotification('Title updated');
+      } catch (error) {
+        console.error('Error updating title:', error);
+      }
+    });
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Handle page unload
+    window.addEventListener('beforeunload', () => {
+      leaveDocument();
+      if (pusher) {
+        pusher.disconnect();
+      }
+    });
+
+    // Auto-save on visibility change (switching tabs)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        saveDocument();
+      }
+    });
+
+    // Initial load
+    loadDocument();
+  </script>
+</body>
+</html>

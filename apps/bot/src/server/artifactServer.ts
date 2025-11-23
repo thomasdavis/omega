@@ -12,6 +12,23 @@ import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../l
 import { queryMessages, getMessageCount } from '../database/messageService.js';
 import { getRecentQueries, getQueryCount } from '../database/queryService.js';
 import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
+import {
+  createDocument,
+  getDocument,
+  updateDocumentContent,
+  updateDocumentTitle,
+  deleteDocument,
+  listDocuments,
+  getDocumentCount,
+  addCollaborator,
+  getDocumentCollaborators,
+  hasDocumentAccess,
+} from '../database/documentService.js';
+import {
+  broadcastDocumentUpdate,
+  broadcastPresence,
+  getPusherConfig,
+} from '../lib/pusher.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -338,6 +355,277 @@ function createApp(): express.Application {
       console.error('Error processing TTS request:', error);
       res.status(500).json({
         error: 'TTS generation failed',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Document API endpoints
+  // Get Pusher config for frontend
+  app.get('/api/documents/pusher-config', (req: Request, res: Response) => {
+    res.json(getPusherConfig());
+  });
+
+  // Create new document
+  app.post('/api/documents', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { title, content, userId, username } = req.body;
+
+      if (!title || !userId) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          message: 'title and userId are required',
+        });
+      }
+
+      const document = await createDocument({
+        title,
+        content: content || '',
+        createdBy: userId,
+        createdByUsername: username,
+        isPublic: true, // Default to public for now
+      });
+
+      res.status(201).json(document);
+    } catch (error) {
+      console.error('Error creating document:', error);
+      res.status(500).json({
+        error: 'Failed to create document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Get document by ID
+  app.get('/api/documents/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const document = await getDocument(id);
+
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      res.json(document);
+    } catch (error) {
+      console.error('Error fetching document:', error);
+      res.status(500).json({
+        error: 'Failed to fetch document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Update document content
+  app.put('/api/documents/:id/content', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { content, userId, username } = req.body;
+
+      if (!content) {
+        return res.status(400).json({
+          error: 'Missing content',
+          message: 'content is required',
+        });
+      }
+
+      // Check if document exists
+      const document = await getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      // Update content
+      await updateDocumentContent(id, content);
+
+      // Broadcast update via Pusher
+      await broadcastDocumentUpdate(id, {
+        content,
+        userId: userId || 'anonymous',
+        username,
+        timestamp: Date.now(),
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating document:', error);
+      res.status(500).json({
+        error: 'Failed to update document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Update document title
+  app.put('/api/documents/:id/title', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { title } = req.body;
+
+      if (!title) {
+        return res.status(400).json({
+          error: 'Missing title',
+          message: 'title is required',
+        });
+      }
+
+      await updateDocumentTitle(id, title);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error updating document title:', error);
+      res.status(500).json({
+        error: 'Failed to update title',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Delete document
+  app.delete('/api/documents/:id', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await deleteDocument(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      res.status(500).json({
+        error: 'Failed to delete document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // List documents
+  app.get('/api/documents', async (req: Request, res: Response) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      const createdBy = req.query.createdBy as string;
+
+      const documents = await listDocuments({ createdBy, limit, offset });
+      const totalCount = await getDocumentCount({ createdBy });
+
+      res.json({
+        documents,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+      });
+    } catch (error) {
+      console.error('Error listing documents:', error);
+      res.status(500).json({
+        error: 'Failed to list documents',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Get document collaborators
+  app.get('/api/documents/:id/collaborators', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const collaborators = await getDocumentCollaborators(id);
+      res.json(collaborators);
+    } catch (error) {
+      console.error('Error fetching collaborators:', error);
+      res.status(500).json({
+        error: 'Failed to fetch collaborators',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Add collaborator
+  app.post('/api/documents/:id/collaborators', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { userId, username, role } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          error: 'Missing userId',
+          message: 'userId is required',
+        });
+      }
+
+      await addCollaborator({
+        documentId: id,
+        userId,
+        username,
+        role: role || 'editor',
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error adding collaborator:', error);
+      res.status(500).json({
+        error: 'Failed to add collaborator',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Join document (broadcast presence)
+  app.post('/api/documents/:id/join', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { userId, username } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          error: 'Missing userId',
+          message: 'userId is required',
+        });
+      }
+
+      // Broadcast presence
+      await broadcastPresence(id, {
+        userId,
+        username,
+        action: 'join',
+        timestamp: Date.now(),
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error joining document:', error);
+      res.status(500).json({
+        error: 'Failed to join document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Leave document (broadcast presence)
+  app.post('/api/documents/:id/leave', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { userId, username } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          error: 'Missing userId',
+          message: 'userId is required',
+        });
+      }
+
+      // Broadcast presence
+      await broadcastPresence(id, {
+        userId,
+        username,
+        action: 'leave',
+        timestamp: Date.now(),
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error leaving document:', error);
+      res.status(500).json({
+        error: 'Failed to leave document',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -707,6 +995,7 @@ function generateGalleryHTML(artifacts: any[]): string {
     <h1>🎨 Artifact Gallery</h1>
     <div class="nav-links">
       <a href="/blog">📝 Blog →</a>
+      <a href="/documents.html">📄 Documents →</a>
       <a href="/uploads">📁 Uploads →</a>
       <a href="/messages">💬 Messages →</a>
       <a href="/queries">🔍 Queries →</a>

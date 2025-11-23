@@ -11,6 +11,7 @@ import { initializeStorage } from './utils/storage.js';
 import { initializeDatabase, closeDatabase } from './database/client.js';
 import { initializeSchema } from './database/schema.js';
 import { initializeScheduler } from './services/scheduler.js';
+import { initializePusher } from './lib/pusher.js';
 
 dotenv.config();
 
@@ -47,6 +48,9 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
   ],
 });
+
+// Initialize Pusher for real-time collaboration
+initializePusher();
 
 // Start artifact preview server
 // Railway requires listening on PORT env var for healthchecks
