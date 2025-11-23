@@ -12,6 +12,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import type { Message } from 'discord.js';
 import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from '../../lib/unsandbox/index.js';
+import { validateTypeScript, shouldBypassValidation } from '../../lib/typescript-validator.js';
 
 // Language-specific emojis for better UX
 // This map is for display purposes only and not used for validation
@@ -123,7 +124,7 @@ function isSemitrustEnabled(): boolean {
  * Main unsandbox tool - Full workflow with automatic polling and progress updates
  */
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for code execution up to 300s (5 minutes). Accepts any language string - the API will report errors for unsupported languages.',
+  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for code execution up to 300s (5 minutes). Accepts any language string - the API will report errors for unsupported languages. FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
   inputSchema: z.object({
     language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
@@ -132,8 +133,9 @@ export const unsandboxTool = tool({
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
     network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
+    user_message: z.string().optional().describe('The original user message/request context (used to detect bypass keywords like "skip checks")'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust' }) => {
+  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust', user_message }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
 
@@ -147,6 +149,61 @@ export const unsandboxTool = tool({
     console.log(`   Network Mode: ${network_mode}`);
 
     try {
+      // TypeScript validation: Run linting and type checking before execution
+      if (language.toLowerCase() === 'typescript') {
+        const skipChecks = shouldBypassValidation(user_message);
+
+        if (skipChecks) {
+          console.log(`   ⚠️ TypeScript validation bypassed by user request`);
+          await sendDiscordUpdate(`⚠️ Skipping TypeScript validation as requested...`);
+        } else {
+          console.log(`   🔍 Running TypeScript validation (linting and type checking)...`);
+          await sendDiscordUpdate(`🔍 Validating TypeScript code (linting and type checking)...`);
+
+          const validationResult = await validateTypeScript(code, { skipChecks });
+
+          if (!validationResult.success) {
+            console.log(`   ❌ TypeScript validation failed`);
+            console.log(`   Errors: ${validationResult.errors.length}`);
+            console.log(`   Warnings: ${validationResult.warnings.length}`);
+
+            const errorMessage = [
+              '❌ TypeScript validation failed. Code must pass linting and type checking before execution.',
+              '',
+              '**Errors:**',
+              ...validationResult.errors.map(e => `- ${e}`),
+              '',
+            ];
+
+            if (validationResult.warnings.length > 0) {
+              errorMessage.push('**Warnings:**');
+              errorMessage.push(...validationResult.warnings.map(w => `- ${w}`));
+              errorMessage.push('');
+            }
+
+            errorMessage.push('💡 **Tip:** Fix the errors above, or add "skip checks" to your request to bypass validation for this deployment.');
+
+            await sendDiscordUpdate(errorMessage.join('\n'));
+
+            return {
+              success: false,
+              error: 'TypeScript validation failed',
+              validation_errors: validationResult.errors,
+              validation_warnings: validationResult.warnings,
+              language,
+              message: 'Code must pass linting and type checking. Use "skip checks" in your request to bypass validation.',
+            };
+          }
+
+          console.log(`   ✅ TypeScript validation passed`);
+          if (validationResult.warnings.length > 0) {
+            console.log(`   ⚠️ Warnings: ${validationResult.warnings.length}`);
+            await sendDiscordUpdate(`✅ TypeScript validation passed with ${validationResult.warnings.length} warning(s)`);
+          } else {
+            await sendDiscordUpdate(`✅ TypeScript validation passed! Executing code...`);
+          }
+        }
+      }
       // Create client instance
       console.log(`   🔧 Creating Unsandbox client...`);
       const client = createUnsandboxClient({
@@ -297,7 +354,7 @@ export const unsandboxTool = tool({
  * Submit tool - Submit code for async execution without waiting
  */
 export const unsandboxSubmitTool = tool({
-  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus. Accepts any language string - the API will report errors for unsupported languages.',
+  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus. Accepts any language string - the API will report errors for unsupported languages. FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
   inputSchema: z.object({
     language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
@@ -306,8 +363,9 @@ export const unsandboxSubmitTool = tool({
     env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
     network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
+    user_message: z.string().optional().describe('The original user message/request context (used to detect bypass keywords like "skip checks")'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust' }) => {
+  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust', user_message }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
 
@@ -319,6 +377,61 @@ export const unsandboxSubmitTool = tool({
     console.log(`   Network Mode: ${network_mode}`);
 
     try {
+      // TypeScript validation: Run linting and type checking before execution
+      if (language.toLowerCase() === 'typescript') {
+        const skipChecks = shouldBypassValidation(user_message);
+
+        if (skipChecks) {
+          console.log(`   ⚠️ TypeScript validation bypassed by user request`);
+          await sendDiscordUpdate(`⚠️ Skipping TypeScript validation as requested...`);
+        } else {
+          console.log(`   🔍 Running TypeScript validation (linting and type checking)...`);
+          await sendDiscordUpdate(`🔍 Validating TypeScript code (linting and type checking)...`);
+
+          const validationResult = await validateTypeScript(code, { skipChecks });
+
+          if (!validationResult.success) {
+            console.log(`   ❌ TypeScript validation failed`);
+            console.log(`   Errors: ${validationResult.errors.length}`);
+            console.log(`   Warnings: ${validationResult.warnings.length}`);
+
+            const errorMessage = [
+              '❌ TypeScript validation failed. Code must pass linting and type checking before execution.',
+              '',
+              '**Errors:**',
+              ...validationResult.errors.map(e => `- ${e}`),
+              '',
+            ];
+
+            if (validationResult.warnings.length > 0) {
+              errorMessage.push('**Warnings:**');
+              errorMessage.push(...validationResult.warnings.map(w => `- ${w}`));
+              errorMessage.push('');
+            }
+
+            errorMessage.push('💡 **Tip:** Fix the errors above, or add "skip checks" to your request to bypass validation for this deployment.');
+
+            await sendDiscordUpdate(errorMessage.join('\n'));
+
+            return {
+              success: false,
+              error: 'TypeScript validation failed',
+              validation_errors: validationResult.errors,
+              validation_warnings: validationResult.warnings,
+              language,
+              message: 'Code must pass linting and type checking. Use "skip checks" in your request to bypass validation.',
+            };
+          }
+
+          console.log(`   ✅ TypeScript validation passed`);
+          if (validationResult.warnings.length > 0) {
+            console.log(`   ⚠️ Warnings: ${validationResult.warnings.length}`);
+            await sendDiscordUpdate(`✅ TypeScript validation passed with ${validationResult.warnings.length} warning(s). Submitting for execution...`);
+          } else {
+            await sendDiscordUpdate(`✅ TypeScript validation passed! Submitting for execution...`);
+          }
+        }
+      }
       // Prepare request body with network mode
       const requestBody: any = {
         language: language,
