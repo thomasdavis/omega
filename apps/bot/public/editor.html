@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document Editor - Omega</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.20/dist/yjs.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lib0@0.2.98/dist/lib0.min.js"></script>
+  <!-- Yjs CRDT library - using unpkg CDN with UMD build that exposes Y globally -->
+  <script src="https://unpkg.com/yjs@13.6.20/dist/yjs.cjs"></script>
   <style>
     * {
       margin: 0;
@@ -348,6 +348,12 @@
     // Initialize Yjs document with server state
     async function initializeYjs() {
       try {
+        // Check if Yjs is loaded
+        if (typeof Y === 'undefined') {
+          console.warn('Yjs library not loaded. Falling back to plain text mode.');
+          return;
+        }
+
         // Create Yjs document
         ydoc = new Y.Doc();
         ytext = ydoc.getText('content');
@@ -422,6 +428,7 @@
     // Handle textarea input (update Yjs)
     function handleYjsInput(e) {
       if (isRemoteUpdate) return; // Don't process remote updates
+      if (!ytext || !ydoc) return; // Skip if Yjs not initialized
 
       const contentEl = e.target;
       const cursorPos = contentEl.selectionStart;
