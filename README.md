@@ -107,6 +107,8 @@ User: *uses the new feature*
 
 ### Architecture
 
+📐 **[View Full Architecture Diagram](architecture.svg)** | **[Documentation](ARCHITECTURE.md)**
+
 The bot has:
 - **Full file system access** - Can read/write any file in the codebase
 - **Git integration** - Commits and pushes changes
@@ -115,6 +117,12 @@ The bot has:
 - **Auto-deployment** - GitHub Actions deploys every commit
 
 This creates a feedback loop where the bot continuously improves itself.
+
+The architecture diagram provides a complete visual overview of:
+- Monorepo structure and components
+- External service integrations (Discord, OpenAI, GitHub, Unsandbox)
+- 18+ self-built agent tools
+- Data flow and automated features
 
 ## Quick Start
 

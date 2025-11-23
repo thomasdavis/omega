@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <rect width="800" height="400" fill="#f5f7fa"/>
+
+  <text x="400" y="150" font-family="Arial, sans-serif" font-size="24" fill="#667eea" text-anchor="middle" font-weight="bold">
+    Architecture Diagram Generation Required
+  </text>
+
+  <text x="400" y="200" font-family="Arial, sans-serif" font-size="16" fill="#333" text-anchor="middle">
+    This diagram needs to be generated using d2.
+  </text>
+
+  <text x="400" y="230" font-family="Arial, sans-serif" font-size="14" fill="#666" text-anchor="middle">
+    To generate the architecture diagram, run:
+  </text>
+
+  <rect x="250" y="245" width="300" height="40" fill="#667eea" rx="5"/>
+  <text x="400" y="270" font-family="Monaco, monospace" font-size="14" fill="white" text-anchor="middle">
+    pnpm generate-diagram
+  </text>
+
+  <text x="400" y="310" font-family="Arial, sans-serif" font-size="12" fill="#666" text-anchor="middle">
+    Requires d2 to be installed: brew install d2
+  </text>
+
+  <text x="400" y="340" font-family="Arial, sans-serif" font-size="12" fill="#999" text-anchor="middle">
+    See ARCHITECTURE.md for complete instructions
+  </text>
+</svg>
