@@ -7,6 +7,18 @@
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
   <!-- Yjs CRDT library - using cdnjs for reliable browser delivery -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/yjs/13.6.20/yjs.min.js"></script>
+  <script>
+    // Debug: Check if Yjs loaded immediately after script
+    console.log('🔍 DEBUG: Checking Yjs load status...');
+    console.log('🔍 DEBUG: typeof Y =', typeof Y);
+    console.log('🔍 DEBUG: typeof window.Y =', typeof window.Y);
+    console.log('🔍 DEBUG: window.Y =', window.Y);
+    if (typeof Y !== 'undefined') {
+      console.log('✅ Yjs loaded successfully! Y.Doc:', Y.Doc);
+    } else {
+      console.error('❌ Yjs NOT loaded - Y is undefined');
+    }
+  </script>
   <style>
     * {
       margin: 0;
@@ -347,16 +359,29 @@
 
     // Initialize Yjs document with server state
     async function initializeYjs() {
-      try {
-        // Check if Yjs is loaded
-        if (typeof Y === 'undefined') {
-          console.warn('Yjs library not loaded. Falling back to plain text mode.');
-          return;
-        }
+      console.log('🔍 DEBUG: initializeYjs() called');
+      console.log('🔍 DEBUG: typeof Y at initializeYjs =', typeof Y);
+      console.log('🔍 DEBUG: window.Y at initializeYjs =', window.Y);
 
+      // Check if Yjs is loaded - THROW ERROR instead of falling back
+      if (typeof Y === 'undefined') {
+        const error = new Error('Yjs library not loaded! Y is undefined. CDN script may have failed to load.');
+        console.error('❌ FATAL:', error.message);
+        console.error('🔍 DEBUG: window object keys:', Object.keys(window).filter(k => k.includes('Y') || k.includes('yjs')));
+        throw error;
+      }
+
+      console.log('✅ Y is defined, proceeding with Yjs initialization...');
+
+      try {
         // Create Yjs document
+        console.log('🔍 DEBUG: Creating Y.Doc...');
         ydoc = new Y.Doc();
+        console.log('✅ ydoc created:', ydoc);
+
+        console.log('🔍 DEBUG: Getting Y.Text...');
         ytext = ydoc.getText('content');
+        console.log('✅ ytext created:', ytext);
 
         // Fetch initial state from server
         const response = await fetch(`/api/documents/${documentId}/yjs-state`);
@@ -381,10 +406,12 @@
         // Listen for local document updates
         ydoc.on('update', handleLocalUpdate);
 
+        console.log('✅ Yjs initialization complete!');
       } catch (error) {
-        console.error('Error initializing Yjs:', error);
-        // Fallback to plain text
-        document.getElementById('content').value = docData.content || '';
+        console.error('❌ FATAL ERROR initializing Yjs:', error);
+        console.error('🔍 DEBUG: Error stack:', error.stack);
+        // Re-throw instead of falling back silently
+        throw error;
       }
     }
 

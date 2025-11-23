@@ -281,6 +281,37 @@
     </div>
   </div>
 
+  <!-- Editor Choice Modal -->
+  <div class="modal" id="editor-choice-modal">
+    <div class="modal-content">
+      <h2>Choose Editor</h2>
+      <p style="margin-bottom: 20px; color: #666;">Select which editor you'd like to use:</p>
+      <div style="display: flex; gap: 12px; flex-direction: column;">
+        <button
+          onclick="openWithAffineEditor()"
+          style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.02)'"
+          onmouseout="this.style.transform='scale(1)'"
+        >
+          <div style="font-weight: 600; margin-bottom: 8px;">🎨 Affine Editor (Recommended)</div>
+          <div style="font-size: 14px; opacity: 0.9;">Rich block-based editor with advanced formatting, similar to Notion</div>
+        </button>
+        <button
+          onclick="openWithBasicEditor()"
+          style="padding: 20px; background: #43e97b; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; transition: transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.02)'"
+          onmouseout="this.style.transform='scale(1)'"
+        >
+          <div style="font-weight: 600; margin-bottom: 8px;">📝 Basic Editor</div>
+          <div style="font-size: 14px; opacity: 0.9;">Simple markdown-based text editor with live collaboration</div>
+        </button>
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="btn-cancel" onclick="closeEditorChoiceModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Load username from localStorage
     const usernameInput = document.getElementById('username');
@@ -374,9 +405,26 @@
       }
     }
 
-    // Open document
+    // Open document with editor choice
     function openDocument(id) {
-      window.location.href = `/editor.html?id=${id}`;
+      const modal = document.getElementById('editor-choice-modal');
+      modal.classList.add('active');
+
+      // Store the document ID for the choice buttons
+      window.pendingDocumentId = id;
+    }
+
+    function openWithBasicEditor() {
+      window.location.href = `/editor.html?id=${window.pendingDocumentId}`;
+    }
+
+    function openWithAffineEditor() {
+      window.location.href = `/affine-editor.html?id=${window.pendingDocumentId}`;
+    }
+
+    function closeEditorChoiceModal() {
+      document.getElementById('editor-choice-modal').classList.remove('active');
+      window.pendingDocumentId = null;
     }
 
     // Modal functions
