@@ -32,6 +32,8 @@ export async function initializeSchema(): Promise<void> {
       session_id TEXT,
       parent_message_id TEXT,
       metadata TEXT,
+      ai_summary TEXT,
+      sentiment_analysis TEXT,
       created_at INTEGER DEFAULT (strftime('%s', 'now'))
     )
   `);
@@ -171,11 +173,39 @@ export async function initializeSchema(): Promise<void> {
     CREATE UNIQUE INDEX IF NOT EXISTS idx_collaborators_unique ON document_collaborators(document_id, user_id)
   `);
 
+  // Run migrations to add new columns to existing tables
+  await runMigrations();
+
   console.log('✅ Database schema initialized');
   console.log('   - messages table with FTS5 search');
   console.log('   - queries table with execution tracking');
   console.log('   - documents table with collaborative editing');
   console.log('   - document_collaborators table for access control');
+}
+
+/**
+ * Run database migrations
+ * Adds new columns to existing tables if they don't exist
+ */
+async function runMigrations(): Promise<void> {
+  const db = getDatabase();
+
+  console.log('🔄 Running database migrations...');
+
+  // Migration 1: Add ai_summary and sentiment_analysis columns to messages table
+  try {
+    // Check if columns exist by trying to query them
+    await db.execute(`SELECT ai_summary, sentiment_analysis FROM messages LIMIT 0`);
+    console.log('   ✓ Messages table already has ai_summary and sentiment_analysis columns');
+  } catch (error) {
+    // Columns don't exist, add them
+    console.log('   + Adding ai_summary and sentiment_analysis columns to messages table');
+    await db.execute(`ALTER TABLE messages ADD COLUMN ai_summary TEXT`);
+    await db.execute(`ALTER TABLE messages ADD COLUMN sentiment_analysis TEXT`);
+    console.log('   ✓ Added ai_summary and sentiment_analysis columns');
+  }
+
+  console.log('✅ Migrations completed');
 }
 
 /**
@@ -197,6 +227,8 @@ export interface MessageRecord {
   session_id?: string;
   parent_message_id?: string;
   metadata?: string;
+  ai_summary?: string;
+  sentiment_analysis?: string;
 }
 
 /**
