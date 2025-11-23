@@ -199,3 +199,102 @@ Analyze this message through the 4-level framework:
     throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+
+/**
+ * Determine if a message warrants only a minimal acknowledgment
+ * Used when bot is directly mentioned but message doesn't need verbose response
+ */
+export function shouldMinimallyAcknowledge(message: Message): boolean {
+  const content = message.content.toLowerCase().trim();
+
+  // Remove bot mention to analyze the actual message content
+  const contentWithoutMention = content
+    .replace(/<@!?\d+>/g, '') // Remove Discord mentions
+    .replace(/omega/gi, '')    // Remove "omega" references
+    .trim();
+
+  // If there's no content after removing mentions, it's just a ping
+  if (contentWithoutMention.length === 0) {
+    return true;
+  }
+
+  // Simple acknowledgments that don't need verbose responses
+  const minimalPhrases = [
+    'thanks', 'thank you', 'ty', 'thx', 'thanx',
+    'ok', 'okay', 'k', 'kk',
+    'cool', 'nice', 'neat', 'great',
+    'got it', 'gotcha', 'understood',
+    'yep', 'yeah', 'yes', 'yup', 'sure',
+    'nope', 'nah', 'no',
+    'hi', 'hello', 'hey', 'sup', 'yo',
+    'bye', 'goodbye', 'cya', 'see ya', 'later',
+    'lol', 'lmao', 'haha', 'hehe',
+  ];
+
+  // Check if message is just a minimal phrase (with some tolerance for punctuation)
+  const cleanContent = contentWithoutMention.replace(/[!?.,:;]+$/g, '');
+
+  // Exact match for minimal phrases
+  if (minimalPhrases.includes(cleanContent)) {
+    return true;
+  }
+
+  // Very short messages (1-3 characters) that are likely just acknowledgments
+  if (cleanContent.length <= 3) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Generate a minimal acknowledgment response
+ * Returns a simple emoji or short phrase to acknowledge without verbosity
+ */
+export function getMinimalAcknowledgment(message: Message): string {
+  const content = message.content.toLowerCase().trim();
+  const contentWithoutMention = content
+    .replace(/<@!?\d+>/g, '')
+    .replace(/omega/gi, '')
+    .trim();
+
+  // Gratitude responses
+  if (/thank|thx|ty/.test(contentWithoutMention)) {
+    const responses = ['👍', '✨', '🙏', 'np!', 'anytime!'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Greeting responses
+  if (/^(hi|hello|hey|sup|yo)/.test(contentWithoutMention)) {
+    const responses = ['👋', '🙂', 'hey!', 'hi!'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Farewell responses
+  if (/bye|goodbye|cya|later/.test(contentWithoutMention)) {
+    const responses = ['👋', '✌️', 'bye!', 'cya!'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Affirmative responses
+  if (/^(ok|okay|k|kk|cool|nice|neat|great|got it|gotcha|understood|yep|yeah|yes|yup|sure)/.test(contentWithoutMention)) {
+    const responses = ['👍', '✅', '🙂', 'cool!'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Negative responses
+  if (/^(nope|nah|no)/.test(contentWithoutMention)) {
+    const responses = ['👌', '🙂', 'alright'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Humor responses
+  if (/lol|lmao|haha|hehe/.test(contentWithoutMention)) {
+    const responses = ['😄', '😂', '🙃', 'lol'];
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  // Default minimal acknowledgment (just a ping or very short message)
+  const responses = ['👍', '✨', '🙂'];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
