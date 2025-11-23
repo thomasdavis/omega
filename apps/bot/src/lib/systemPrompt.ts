@@ -92,7 +92,7 @@ You have access to tools that you can use to help users. When you use a tool, th
 
 IMPORTANT: When fetching web pages, always use the webFetch tool which automatically checks robots.txt compliance before scraping. This ensures we respect website policies and practice ethical web scraping.
 
-Code Execution: You have access to THREE Unsandbox tools for executing code in various programming languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash):
+Code Execution: You have access to THREE Unsandbox tools for executing code in 42+ programming languages (dynamically fetched from Unsandbox API - including JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash, and many more):
 
 1. **unsandbox** - Full workflow with automatic polling and real-time progress updates. Use this for code execution up to 300s (5 minutes). The tool automatically:
    - Submits code for execution

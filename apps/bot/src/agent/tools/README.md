@@ -30,7 +30,7 @@ This directory contains tool implementations for the AI agent. Each tool provide
 The Unsandbox tool enables safe code execution in a sandboxed environment.
 
 ### Features
-- **11 supported languages**: JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash
+- **42+ supported languages** (dynamically fetched from Unsandbox API): Including JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash, and many more
 - **Configurable timeout**: Default 5000ms, adjustable per execution
 - **Network isolation modes**:
   - `full` - Full internet access
