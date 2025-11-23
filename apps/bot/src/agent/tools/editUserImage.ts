@@ -84,14 +84,22 @@ Uses model: gpt-image-1 (or any newer model)`,
         prompt,
         size: size as '256x256' | '512x512' | '1024x1024',
         n: 1,
+        response_format: 'url', // Request URL format instead of b64_json
       });
 
       console.log('   📊 OpenAI API Response Details:');
       console.log(`   Result Object:`, JSON.stringify(result, null, 2));
 
-      const edited = result.data?.[0]?.url;
+      // Handle both URL and base64 responses
+      const firstResult = result.data?.[0];
+      let edited: string;
 
-      if (!edited) {
+      if (firstResult?.url) {
+        edited = firstResult.url;
+      } else if (firstResult?.b64_json) {
+        // Convert base64 to data URL
+        edited = `data:image/png;base64,${firstResult.b64_json}`;
+      } else {
         console.error('❌ No edited image returned from OpenAI API:');
         console.error(`   Full API Response:`, JSON.stringify(result, null, 2));
         console.error(`   Result.data:`, result.data);
@@ -100,7 +108,7 @@ Uses model: gpt-image-1 (or any newer model)`,
       }
 
       console.log(`   ✅ Image edited successfully`);
-      console.log(`   🔗 URL: ${edited}`);
+      console.log(`   🔗 URL/Format: ${edited.startsWith('data:') ? 'base64 data URL' : edited}`);
 
       return {
         success: true,
