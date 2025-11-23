@@ -131,6 +131,11 @@ export function getPusherConfig(): {
   const key = process.env.PUSHER_KEY;
   const cluster = process.env.PUSHER_CLUSTER || 'us2';
 
+  console.log('🔍 DEBUG: getPusherConfig called');
+  console.log('   PUSHER_KEY:', key ? `${key.substring(0, 5)}...` : 'NOT SET');
+  console.log('   PUSHER_CLUSTER:', cluster);
+  console.log('   enabled:', !!key);
+
   return {
     enabled: !!key,
     key,
