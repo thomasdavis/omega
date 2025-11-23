@@ -33,9 +33,10 @@ Through conversations, Omega has built itself these tools:
 - **triggerDailyBlog** - Generate daily blog combining HN philosophy & market predictions
 - **marketPrediction** - Realpolitik-based global market analysis and forecasting
 
-### File Management
+### File Management & Data
 - **fileUpload** - Download and host Discord attachments permanently
 - **exportConversation** - Export Discord conversations as Markdown
+- **queryMessages** - Search message history using natural language queries
 
 ### GitHub Integration
 - **githubCreateIssue** - Create GitHub issues with context
