@@ -1557,17 +1557,46 @@ function generateMessagesHTML(messages: any[], options: {
           }
         }
 
+        // Parse response decision if available
+        let decisionBadge = '';
+        let decisionDetails = '';
+        if (msg.response_decision) {
+          try {
+            const decision = JSON.parse(msg.response_decision);
+            const decisionEmoji = decision.shouldRespond ? '✅' : '❌';
+            const decisionText = decision.shouldRespond ? 'Responded' : 'Skipped';
+            const decisionClass = decision.shouldRespond ? 'responded' : 'skipped';
+
+            decisionBadge = `<span class="decision-badge ${decisionClass}" title="Confidence: ${decision.confidence}%">${decisionEmoji} ${decisionText} (${decision.confidence}%)</span>`;
+
+            decisionDetails = `
+              <details class="decision-details">
+                <summary>🧠 Omega's Decision Analysis</summary>
+                <div class="decision-analysis">
+                  <div><strong>Decision:</strong> ${decision.shouldRespond ? 'Respond to this message' : 'Skip this message'}</div>
+                  <div><strong>Confidence:</strong> ${decision.confidence}%</div>
+                  <div><strong>Reasoning:</strong> ${escapeHtml(decision.reason)}</div>
+                </div>
+              </details>
+            `;
+          } catch (error) {
+            console.error('Error parsing response decision:', error);
+          }
+        }
+
         return `
         <div class="message-card ${msg.sender_type}">
           <div class="message-header">
             <span class="sender-badge">${senderBadge} ${msg.sender_type}</span>
             <span class="username">${escapeHtml(msg.username || 'Unknown')}</span>
             ${sentimentBadge}
+            ${decisionBadge}
             <span class="timestamp">${timestamp}</span>
           </div>
           ${msg.tool_name ? `<div class="tool-name">Tool: ${escapeHtml(msg.tool_name)}</div>` : ''}
           ${msg.ai_summary ? `<div class="ai-summary">📝 <em>${escapeHtml(msg.ai_summary)}</em></div>` : ''}
           <div class="message-content">${contentPreview}</div>
+          ${decisionDetails}
           ${sentimentDetails}
           <div class="message-meta">
             ${msg.channel_name ? `<span>📍 ${escapeHtml(msg.channel_name)}</span>` : ''}
@@ -1750,6 +1779,23 @@ function generateMessagesHTML(messages: any[], options: {
       background: #e2e3e5;
       color: #383d41;
     }
+    .decision-badge {
+      background: #f0f0f0;
+      color: #333;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85em;
+      font-weight: 600;
+      cursor: help;
+    }
+    .decision-badge.responded {
+      background: #d4edda;
+      color: #155724;
+    }
+    .decision-badge.skipped {
+      background: #f8d7da;
+      color: #721c24;
+    }
     .ai-summary {
       background: #e3f2fd;
       padding: 10px 12px;
@@ -1758,6 +1804,36 @@ function generateMessagesHTML(messages: any[], options: {
       font-size: 0.95em;
       color: #1565c0;
       border-left: 3px solid #2196f3;
+    }
+    .decision-details {
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+    .decision-details summary {
+      cursor: pointer;
+      font-size: 0.9em;
+      color: #667eea;
+      font-weight: 600;
+      padding: 8px 0;
+      user-select: none;
+    }
+    .decision-details summary:hover {
+      color: #5568d3;
+    }
+    .decision-analysis {
+      background: #f0f7ff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 0.9em;
+      line-height: 1.8;
+      border-left: 3px solid #667eea;
+    }
+    .decision-analysis div {
+      margin-bottom: 6px;
+    }
+    .decision-analysis strong {
+      color: #667eea;
     }
     .sentiment-details {
       margin-top: 12px;

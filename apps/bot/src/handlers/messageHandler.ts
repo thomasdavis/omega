@@ -102,6 +102,7 @@ export async function handleMessage(message: Message): Promise<void> {
         guildId: message.guild?.id,
         messageContent: message.content,
         messageId: message.id,
+        responseDecision: decision,
       });
 
       await saveAIMessage({
@@ -129,7 +130,7 @@ export async function handleMessage(message: Message): Promise<void> {
     await message.channel.sendTyping();
   }
 
-  // Persist human message to database
+  // Persist human message to database with decision reasoning
   try {
     await saveHumanMessage({
       userId: message.author.id,
@@ -139,6 +140,7 @@ export async function handleMessage(message: Message): Promise<void> {
       guildId: message.guild?.id,
       messageContent: message.content,
       messageId: message.id,
+      responseDecision: decision,
     });
   } catch (dbError) {
     console.error('⚠️  Failed to persist message to database:', dbError);

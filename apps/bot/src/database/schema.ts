@@ -205,6 +205,18 @@ async function runMigrations(): Promise<void> {
     console.log('   ✓ Added ai_summary and sentiment_analysis columns');
   }
 
+  // Migration 2: Add response_decision column to messages table
+  try {
+    // Check if column exists by trying to query it
+    await db.execute(`SELECT response_decision FROM messages LIMIT 0`);
+    console.log('   ✓ Messages table already has response_decision column');
+  } catch (error) {
+    // Column doesn't exist, add it
+    console.log('   + Adding response_decision column to messages table');
+    await db.execute(`ALTER TABLE messages ADD COLUMN response_decision TEXT`);
+    console.log('   ✓ Added response_decision column');
+  }
+
   console.log('✅ Migrations completed');
 }
 
@@ -229,6 +241,7 @@ export interface MessageRecord {
   metadata?: string;
   ai_summary?: string;
   sentiment_analysis?: string;
+  response_decision?: string;
 }
 
 /**
