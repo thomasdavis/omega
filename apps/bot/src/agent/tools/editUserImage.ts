@@ -84,7 +84,7 @@ Uses model: gpt-image-1 (or any newer model)`,
         prompt,
         size: size as '256x256' | '512x512' | '1024x1024',
         n: 1,
-        response_format: 'url', // Request URL format instead of b64_json
+        // Note: response_format is not supported by images.edit endpoint
       });
 
       console.log('   📊 OpenAI API Response Details:');
