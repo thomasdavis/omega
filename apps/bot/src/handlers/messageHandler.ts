@@ -4,7 +4,7 @@
 
 import { Message, AttachmentBuilder } from 'discord.js';
 import { runAgent } from '../agent/agent.js';
-import { shouldRespond } from '../lib/shouldRespond.js';
+import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
@@ -56,6 +56,48 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   if (!decision.shouldRespond) {
+    return;
+  }
+
+  // Check if a minimal acknowledgment is sufficient (when directly mentioned)
+  // This avoids verbose responses for simple greetings, thanks, etc.
+  const botMentioned = message.mentions.users.has(message.client.user!.id);
+  if (botMentioned && shouldMinimallyAcknowledge(message)) {
+    console.log(`\n📨 Minimal acknowledgment for ${message.author.tag}:`);
+    console.log(`   Content: "${message.content}"`);
+    console.log(`   Responding with minimal acknowledgment (avoiding verbosity)`);
+
+    const acknowledgment = getMinimalAcknowledgment(message);
+    await message.reply({
+      content: acknowledgment,
+      allowedMentions: { repliedUser: false },
+    });
+
+    // Still persist the interaction to database
+    try {
+      await saveHumanMessage({
+        userId: message.author.id,
+        username: message.author.username,
+        channelId: message.channel.id,
+        channelName: channelName,
+        guildId: message.guild?.id,
+        messageContent: message.content,
+        messageId: message.id,
+      });
+
+      await saveAIMessage({
+        userId: message.author.id,
+        username: message.author.username,
+        channelId: message.channel.id,
+        channelName: channelName,
+        guildId: message.guild?.id,
+        messageContent: acknowledgment,
+        parentMessageId: message.id,
+      });
+    } catch (dbError) {
+      console.error('⚠️  Failed to persist minimal acknowledgment to database:', dbError);
+    }
+
     return;
   }
 
