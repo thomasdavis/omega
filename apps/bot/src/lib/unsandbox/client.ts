@@ -17,6 +17,11 @@ import type {
   ListArtifactsResponse,
   UnsandboxError,
   LanguagesResponse,
+  AmIThrottledRequest,
+  AmIThrottledResponse,
+  StatsResponse,
+  ValidateCodeRequest,
+  ValidateCodeResponse,
 } from './types.js';
 
 /**
@@ -494,6 +499,145 @@ export class UnsandboxClient {
     console.log(`   Languages: ${languages.map(l => l.id || l).join(', ')}`);
 
     return languages;
+  }
+
+  /**
+   * Check if the current API key is being throttled
+   * Uses POST method as specified in the OpenAPI spec
+   *
+   * @param request - Optional request with API key to check
+   * @returns Throttle status information
+   *
+   * @example
+   * ```typescript
+   * const throttleStatus = await client.amIThrottled();
+   * if (throttleStatus.throttled) {
+   *   console.log(`Throttled! Reset in ${throttleStatus.resetIn} seconds`);
+   * } else {
+   *   console.log(`OK - ${throttleStatus.remaining} requests remaining`);
+   * }
+   * ```
+   */
+  async amIThrottled(request?: AmIThrottledRequest): Promise<AmIThrottledResponse> {
+    console.log(`\n🚦 [${new Date().toISOString()}] Checking Throttle Status`);
+    console.log(`   Endpoint: POST /keys/am-i-throttled`);
+
+    const requestBody: any = {};
+    if (request?.apiKey) {
+      requestBody.apiKey = request.apiKey;
+      console.log(`   Checking custom API key`);
+    } else {
+      console.log(`   Checking default API key from client config`);
+    }
+
+    const result = await this.request<AmIThrottledResponse>('/keys/am-i-throttled', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Throttle Status Retrieved`);
+    console.log(`   Throttled: ${result.throttled}`);
+    if (result.throttled) {
+      console.log(`   Reset In: ${result.resetIn} seconds`);
+    } else {
+      console.log(`   Remaining: ${result.remaining ?? 'N/A'} requests`);
+    }
+    if (result.rateLimit) {
+      console.log(`   Rate Limit: ${result.rateLimit.limit} requests per ${result.rateLimit.window}s`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get usage statistics for the current API key
+   *
+   * @returns Usage statistics including execution counts and language usage
+   *
+   * @example
+   * ```typescript
+   * const stats = await client.getStats();
+   * console.log(`Total executions: ${stats.totalExecutions}`);
+   * console.log(`Success rate: ${(stats.successfulExecutions / stats.totalExecutions * 100).toFixed(1)}%`);
+   * ```
+   */
+  async getStats(): Promise<StatsResponse> {
+    console.log(`\n📈 [${new Date().toISOString()}] Fetching Usage Statistics`);
+    console.log(`   Querying /stats endpoint...`);
+
+    const stats = await this.request<StatsResponse>('/stats', {
+      method: 'GET',
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Statistics Retrieved`);
+    console.log(`   Total Executions: ${stats.totalExecutions}`);
+    console.log(`   Successful: ${stats.successfulExecutions}`);
+    console.log(`   Failed: ${stats.failedExecutions}`);
+    console.log(`   Timed Out: ${stats.timedOutExecutions}`);
+    console.log(`   Total Execution Time: ${stats.totalExecutionTime}ms`);
+    if (stats.languageUsage) {
+      const topLanguages = Object.entries(stats.languageUsage)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5);
+      console.log(`   Top Languages: ${topLanguages.map(([lang, count]) => `${lang}(${count})`).join(', ')}`);
+    }
+    if (stats.periodStart && stats.periodEnd) {
+      console.log(`   Period: ${stats.periodStart} to ${stats.periodEnd}`);
+    }
+
+    return stats;
+  }
+
+  /**
+   * Validate code syntax without executing it
+   * Useful for checking code before submission or providing user feedback
+   *
+   * @param request - Code validation request with language and code
+   * @returns Validation result with any errors or warnings
+   *
+   * @example
+   * ```typescript
+   * const validation = await client.validateCode({
+   *   language: 'python',
+   *   code: 'print("Hello, World!"'  // Missing closing parenthesis
+   * });
+   *
+   * if (!validation.valid) {
+   *   validation.errors?.forEach(err => {
+   *     console.log(`Line ${err.line}: ${err.message}`);
+   *   });
+   * }
+   * ```
+   */
+  async validateCode(request: ValidateCodeRequest): Promise<ValidateCodeResponse> {
+    console.log(`\n✓ [${new Date().toISOString()}] Validating Code`);
+    console.log(`   Language: ${request.language}`);
+    console.log(`   Code Length: ${request.code.length} characters`);
+
+    const result = await this.request<ValidateCodeResponse>('/validate', {
+      method: 'POST',
+      body: JSON.stringify({
+        language: request.language,
+        code: request.code,
+      }),
+    });
+
+    console.log(`\n📋 [${new Date().toISOString()}] Validation Result`);
+    console.log(`   Valid: ${result.valid}`);
+    if (result.errors && result.errors.length > 0) {
+      console.log(`   Errors: ${result.errors.length}`);
+      result.errors.forEach((err, idx) => {
+        console.log(`      ${idx + 1}. Line ${err.line ?? '?'}:${err.column ?? '?'} - ${err.message}`);
+      });
+    }
+    if (result.warnings && result.warnings.length > 0) {
+      console.log(`   Warnings: ${result.warnings.length}`);
+      result.warnings.forEach((warn, idx) => {
+        console.log(`      ${idx + 1}. Line ${warn.line ?? '?'}:${warn.column ?? '?'} - ${warn.message}`);
+      });
+    }
+
+    return result;
   }
 
   /**

@@ -4,12 +4,15 @@ Comprehensive TypeScript SDK for the Unsandbox API - a safe code execution platf
 
 ## Features
 
-- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, health, languages)
+- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, health, languages, throttle check, stats, validate)
 - ✅ **Type-Safe**: Complete TypeScript definitions for all requests and responses
 - ✅ **Error Handling**: Custom error class with detailed error information
 - ✅ **Timeout Management**: Configurable timeouts with automatic abort
 - ✅ **Dynamic Language List**: Fetches supported languages from API with caching
 - ✅ **Language Mapping**: User-friendly language names mapped to runtime identifiers
+- ✅ **Rate Limit Monitoring**: Check throttle status and remaining quota
+- ✅ **Usage Statistics**: Track execution counts, success rates, and language usage
+- ✅ **Code Validation**: Syntax checking without execution
 - ✅ **Retry Logic**: Built-in retry capabilities for failed requests (future enhancement)
 
 ## API Documentation
@@ -196,6 +199,81 @@ const fresh = await getUnsandboxLanguages(true);
 
 The language list is cached in-memory for 24 hours to minimize API calls.
 
+### Check Throttle Status
+
+Check if your API key is being rate-limited:
+
+```typescript
+const throttleStatus = await client.amIThrottled();
+
+if (throttleStatus.throttled) {
+  console.log(`⚠️ Throttled! Reset in ${throttleStatus.resetIn} seconds`);
+} else {
+  console.log(`✅ OK - ${throttleStatus.remaining} requests remaining`);
+}
+
+// Check rate limit info
+if (throttleStatus.rateLimit) {
+  console.log(`Rate limit: ${throttleStatus.rateLimit.limit} requests per ${throttleStatus.rateLimit.window}s`);
+}
+```
+
+### Get Usage Statistics
+
+Retrieve statistics about your API usage:
+
+```typescript
+const stats = await client.getStats();
+
+console.log(`Total executions: ${stats.totalExecutions}`);
+console.log(`Successful: ${stats.successfulExecutions}`);
+console.log(`Failed: ${stats.failedExecutions}`);
+console.log(`Timed out: ${stats.timedOutExecutions}`);
+
+// Success rate
+const successRate = (stats.successfulExecutions / stats.totalExecutions * 100).toFixed(1);
+console.log(`Success rate: ${successRate}%`);
+
+// Language usage breakdown
+if (stats.languageUsage) {
+  console.log('Most used languages:');
+  Object.entries(stats.languageUsage)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .forEach(([lang, count]) => {
+      console.log(`  ${lang}: ${count} executions`);
+    });
+}
+```
+
+### Validate Code Syntax
+
+Check code syntax without executing it:
+
+```typescript
+const validation = await client.validateCode({
+  language: 'python',
+  code: 'print("Hello, World!"'  // Missing closing parenthesis
+});
+
+if (!validation.valid) {
+  console.log('❌ Code has syntax errors:');
+  validation.errors?.forEach(err => {
+    console.log(`  Line ${err.line}:${err.column} - ${err.message}`);
+  });
+} else {
+  console.log('✅ Code is syntactically valid');
+}
+
+// Check for warnings
+if (validation.warnings && validation.warnings.length > 0) {
+  console.log('⚠️ Warnings:');
+  validation.warnings.forEach(warn => {
+    console.log(`  Line ${warn.line}:${warn.column} - ${warn.message}`);
+  });
+}
+```
+
 ### Health Check
 
 Verify API connectivity:
@@ -309,9 +387,19 @@ apps/bot/src/agent/tools/
 
 The Unsandbox API uses the following endpoints:
 
+### Code Execution
 - **Submit Job**: `POST /execute/async` - Submit code for async execution
 - **Check Status**: `GET /jobs/{job_id}` - Poll job status until completion
 - **Cancel Job**: `POST /jobs/{job_id}/cancel` - Cancel a running job
+
+### Key Management & Monitoring
+- **Throttle Check**: `POST /keys/am-i-throttled` - Check if API key is rate-limited
+- **Usage Stats**: `GET /stats` - Get execution statistics and usage metrics
+
+### Utilities
+- **Validate Code**: `POST /validate` - Validate code syntax without execution
+- **Languages**: `GET /languages` - Get list of supported programming languages
+- **Health Check**: `GET /health` - Verify API availability
 
 ## Migration from Old Implementation
 
