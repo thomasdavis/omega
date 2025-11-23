@@ -59,6 +59,25 @@ export async function handleMessage(message: Message): Promise<void> {
     return;
   }
 
+  // If this is an error/deployment failure, trigger CONCERN feeling
+  const isErrorDetected = decision.reason.includes('Error or deployment failure detected');
+  if (isErrorDetected) {
+    console.log('   🧠 Triggering CONCERN feeling for error/deployment failure');
+    feelingsService.updateMetrics({
+      performance: {
+        averageResponseTime: 0,
+        errorRate: 0.8, // High error rate to trigger concern
+        successRate: 0.2,
+      },
+      interaction: {
+        messagesProcessed: 1,
+        positiveSignals: 0,
+        negativeSignals: 1,
+        ambiguousQueries: 0,
+      },
+    });
+  }
+
   // Check if a minimal acknowledgment is sufficient (when directly mentioned)
   // This avoids verbose responses for simple greetings, thanks, etc.
   const botMentioned = message.mentions.users.has(message.client.user!.id);

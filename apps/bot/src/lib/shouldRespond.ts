@@ -30,6 +30,70 @@ const DecisionSchema = z.object({
   reason: z.string().describe('Brief explanation of why this decision was made'),
 });
 
+/**
+ * Detects error messages and deployment failures in message content
+ * Returns true if the message contains error indicators that should trigger concern
+ */
+function detectErrorOrDeploymentFailure(content: string): boolean {
+  const lowerContent = content.toLowerCase();
+
+  // Deployment failure patterns
+  const deploymentPatterns = [
+    'deployment failed',
+    'deploy failed',
+    'deployment error',
+    'build failed',
+    'build error',
+    'vercel error',
+    'railway error',
+    'deployment crash',
+    'failed to deploy',
+    'deployment unsuccessful',
+  ];
+
+  // Runtime error patterns
+  const runtimeErrorPatterns = [
+    'error:',
+    'exception:',
+    'uncaught',
+    'unhandled',
+    'stack trace',
+    'traceback',
+    'fatal error',
+    'critical error',
+    'crash',
+    'crashed',
+    'exit code',
+    'process exited',
+  ];
+
+  // System/service failure patterns
+  const systemFailurePatterns = [
+    'service down',
+    'service unavailable',
+    'connection refused',
+    'timeout',
+    'out of memory',
+    'oom',
+    'health check failed',
+    '500 error',
+    '502 error',
+    '503 error',
+    '504 error',
+  ];
+
+  // Check if message contains any error/failure patterns
+  const hasDeploymentError = deploymentPatterns.some(pattern => lowerContent.includes(pattern));
+  const hasRuntimeError = runtimeErrorPatterns.some(pattern => lowerContent.includes(pattern));
+  const hasSystemFailure = systemFailurePatterns.some(pattern => lowerContent.includes(pattern));
+
+  // Also check for common error format indicators
+  const hasErrorFormatting = /\b(err|error|exception|fail|failed|failure)\b.*[:=]/i.test(content);
+  const hasStackTrace = /at\s+.*\(.*:\d+:\d+\)/i.test(content);
+
+  return hasDeploymentError || hasRuntimeError || hasSystemFailure || hasErrorFormatting || hasStackTrace;
+}
+
 export async function shouldRespond(
   message: Message,
   messageHistory: MessageHistoryItem[] = []
@@ -62,6 +126,18 @@ export async function shouldRespond(
     } catch {
       // Couldn't fetch reference, ignore
     }
+  }
+
+  // CRITICAL: Detect error messages and deployment failures
+  // Omega should respond with concern and initiate debugging when errors are detected
+  const isErrorMessage = detectErrorOrDeploymentFailure(message.content);
+  if (isErrorMessage) {
+    console.log('   ⚠️ ERROR/DEPLOYMENT FAILURE DETECTED - Responding with concern');
+    return {
+      shouldRespond: true,
+      confidence: 95,
+      reason: 'Error or deployment failure detected - initiating debugging response'
+    };
   }
 
   // Use AI to decide if the message is interesting enough to respond to
