@@ -93,6 +93,21 @@ async function downloadFile(url: string): Promise<Buffer> {
 }
 
 /**
+ * Decode base64 file content
+ */
+function decodeBase64File(base64Content: string): Buffer {
+  // Remove data URL prefix if present (e.g., "data:image/png;base64,")
+  const base64Data = base64Content.replace(/^data:[^;]+;base64,/, '');
+
+  // Validate base64 format
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)) {
+    throw new Error('Invalid base64 content');
+  }
+
+  return Buffer.from(base64Data, 'base64');
+}
+
+/**
  * Get current file index from GitHub
  */
 async function getFileIndex(): Promise<FileIndexEntry[]> {
@@ -378,10 +393,12 @@ async function uploadAndCommit(
 }
 
 export const uploadAndCommitFileTool = tool({
-  description: `Upload files from Discord attachments to GitHub repository with automatic commit.
+  description: `Upload files to GitHub repository with automatic commit from URL or base64 content.
 
   This tool provides a streamlined workflow for uploading files and committing them to the repository:
-  1. Downloads file from Discord attachment URL
+  1. Gets file content from either:
+     - Discord attachment URL (fileUrl parameter)
+     - Base64-encoded content (fileContent parameter)
   2. Validates file type and size
   3. Uploads to ${GITHUB_STORAGE_PATH}/ directory
   4. Updates file index (${GITHUB_STORAGE_PATH}/index.json)
@@ -395,34 +412,53 @@ export const uploadAndCommitFileTool = tool({
   - Automatic filename sanitization
   - Metadata tracking (uploader, description, tags)
   - Collision-proof filenames (UUID-based)
+  - Base64 content support (no external URL needed)
 
   Security:
   - Whitelist-based file type validation
   - File size limits (${MAX_FILE_SIZE / 1024 / 1024}MB max)
   - Filename sanitization
+  - Base64 validation
   - No code execution risk
 
   Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}
 
-  Use this tool when a user uploads a file to Discord and you want to:
-  - Save it permanently in the GitHub repository
-  - Make it shareable via GitHub URLs
-  - Track it in the file index for later retrieval`,
+  Use this tool when you want to:
+  - Save Discord attachments permanently in the GitHub repository
+  - Commit base64-encoded file content (text files, generated content, etc.)
+  - Make files shareable via GitHub URLs
+  - Track files in the file index for later retrieval`,
   inputSchema: z.object({
-    fileUrl: z.string().describe('Discord attachment URL to download the file from'),
+    fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL). Use either fileUrl or fileContent, not both.'),
+    fileContent: z.string().optional().describe('Base64-encoded file content. Use this for text files or generated content without an external URL. Use either fileUrl or fileContent, not both.'),
     originalName: z.string().describe('Original filename with extension'),
-    mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
+    mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf, text/plain)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
     description: z.string().optional().describe('Description of the file (what it contains, its purpose, etc.)'),
     tags: z.array(z.string()).optional().describe('Tags/keywords for categorizing the file'),
   }),
-  execute: async ({ fileUrl, originalName, mimeType, uploadedBy, description, tags }) => {
+  execute: async ({ fileUrl, fileContent, originalName, mimeType, uploadedBy, description, tags }) => {
     try {
       // Validate GitHub token
       if (!GITHUB_TOKEN) {
         return {
           success: false,
           error: 'GitHub token not configured. File uploads require GitHub integration.',
+        };
+      }
+
+      // Validate that exactly one of fileUrl or fileContent is provided
+      if (!fileUrl && !fileContent) {
+        return {
+          success: false,
+          error: 'Either fileUrl or fileContent must be provided',
+        };
+      }
+
+      if (fileUrl && fileContent) {
+        return {
+          success: false,
+          error: 'Cannot provide both fileUrl and fileContent. Use only one.',
         };
       }
 
@@ -434,10 +470,27 @@ export const uploadAndCommitFileTool = tool({
         };
       }
 
-      // Download file
-      console.log(`📥 Downloading file from: ${fileUrl}`);
-      const fileBuffer = await downloadFile(fileUrl);
-      console.log(`✅ Downloaded ${fileBuffer.length} bytes`);
+      // Get file buffer from either URL or base64 content
+      let fileBuffer: Buffer;
+      if (fileUrl) {
+        console.log(`📥 Downloading file from: ${fileUrl}`);
+        fileBuffer = await downloadFile(fileUrl);
+        console.log(`✅ Downloaded ${fileBuffer.length} bytes`);
+      } else if (fileContent) {
+        console.log(`🔓 Decoding base64 file content...`);
+        try {
+          fileBuffer = decodeBase64File(fileContent);
+          console.log(`✅ Decoded ${fileBuffer.length} bytes from base64`);
+        } catch (error) {
+          return {
+            success: false,
+            error: `Invalid base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          };
+        }
+      } else {
+        // This should never happen due to validation above, but TypeScript needs it
+        throw new Error('No file source provided');
+      }
 
       // Check file size
       if (fileBuffer.length > MAX_FILE_SIZE) {
