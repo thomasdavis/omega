@@ -21,6 +21,11 @@ export async function saveHumanMessage(params: {
   messageContent: string;
   messageId: string;
   sessionId?: string;
+  responseDecision?: {
+    shouldRespond: boolean;
+    confidence: number;
+    reason: string;
+  };
 }): Promise<string> {
   const db = getDatabase();
   const id = randomUUID();
@@ -67,12 +72,18 @@ export async function saveHumanMessage(params: {
     // Continue saving the message even if analysis fails
   }
 
+  // Serialize response decision if provided
+  let responseDecisionJson = '';
+  if (params.responseDecision) {
+    responseDecisionJson = JSON.stringify(params.responseDecision);
+  }
+
   await db.execute({
     sql: `INSERT INTO messages (
       id, timestamp, sender_type, user_id, username,
       channel_id, channel_name, guild_id, message_content, session_id,
-      ai_summary, sentiment_analysis
-    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ai_summary, sentiment_analysis, response_decision
+    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       timestamp,
@@ -85,6 +96,7 @@ export async function saveHumanMessage(params: {
       params.sessionId || null,
       aiSummary || null,
       sentimentAnalysisJson || null,
+      responseDecisionJson || null,
     ],
   });
 
