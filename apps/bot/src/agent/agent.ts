@@ -49,6 +49,7 @@ import { uploadAndCommitFileTool } from './tools/uploadAndCommitFile.js';
 import { summarizeCommitsTool } from './tools/summarizeCommits.js';
 import { introspectFeelingsTool } from './tools/introspectFeelings.js';
 import { createLiveDocumentTool } from './tools/createLiveDocument.js';
+import { analyzeDocumentAndCreateIssueTool } from './tools/analyzeDocumentAndCreateIssue.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -160,6 +161,7 @@ export async function runAgent(
         summarizeCommits: summarizeCommitsTool,
         introspectFeelings: introspectFeelingsTool,
         createLiveDocument: createLiveDocumentTool,
+        analyzeDocumentAndCreateIssue: analyzeDocumentAndCreateIssueTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
