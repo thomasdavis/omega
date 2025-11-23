@@ -40,7 +40,7 @@ Uses model: gpt-image-1 (or any newer model)`,
   inputSchema: z.object({
     imageUrl: z.string().describe('URL of the image to edit (e.g., Discord attachment URL like https://cdn.discordapp.com/...)'),
     prompt: z.string().describe('Description of the edits to make. Be specific about what you want to add, change, or modify. Example: "add a rainbow in the sky" or "make the background a starry night"'),
-    size: z.enum(['1024x1024', '1792x1024', '1024x1792']).optional().describe('Output image dimensions. Options: "1024x1024" (square, default), "1792x1024" (landscape), "1024x1792" (portrait)'),
+    size: z.enum(['256x256', '512x512', '1024x1024']).optional().describe('Output image dimensions. Options: "256x256", "512x512", "1024x1024" (default)'),
   }),
   execute: async ({ imageUrl, prompt, size = '1024x1024' }) => {
     try {
@@ -70,11 +70,15 @@ Uses model: gpt-image-1 (or any newer model)`,
 
       // Edit the image using GPT-Image-1
       console.log('   🎨 Editing image with GPT-Image-1...');
+
+      // Convert Buffer to File for OpenAI API
+      const imageFile = new File([imageBuffer], 'image.png', { type: 'image/png' });
+
       const result = await client.images.edit({
         model: 'gpt-image-1', // new hotness
-        image: imageBuffer, // JPG/PNG works
+        image: imageFile as any, // TypeScript doesn't recognize File as Uploadable, but it works at runtime
         prompt,
-        size,
+        size: size as '256x256' | '512x512' | '1024x1024',
         n: 1,
       });
 

@@ -74,7 +74,7 @@ async function fetchCommits(hours: number): Promise<Commit[]> {
       throw new Error(`Failed to fetch commits: ${response.status} ${response.statusText}`);
     }
 
-    const data: any[] = await response.json();
+    const data = await response.json() as any[];
 
     // Transform to simplified commit objects
     const commits: Commit[] = data.map(commit => ({

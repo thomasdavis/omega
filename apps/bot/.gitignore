@@ -1,2 +1,3 @@
 .vercel
 artifacts/
+github_pat_*
