@@ -66,6 +66,9 @@ function createApp(): express.Application {
     next();
   });
 
+  // Serve static files from public directory (editor.html, documents.html, etc.)
+  app.use(express.static(PUBLIC_DIR));
+
   // Serve individual artifacts (both files and folders)
   app.get('/artifacts/:id', (req: Request, res: Response) => {
     const { id } = req.params;
