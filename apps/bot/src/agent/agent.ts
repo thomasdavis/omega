@@ -47,9 +47,11 @@ import { triggerDailyBlogTool } from './tools/triggerDailyBlog.js';
 import { commitFileTool } from './tools/commitFile.js';
 import { uploadAndCommitFileTool } from './tools/uploadAndCommitFile.js';
 import { summarizeCommitsTool } from './tools/summarizeCommits.js';
+import { introspectFeelingsTool } from './tools/introspectFeelings.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
+import { feelingsService } from '../lib/feelings/index.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -102,9 +104,12 @@ export async function runAgent(
     console.log('🔍 DEBUG: Model =', model);
     console.log('🔍 DEBUG: stopWhen condition = stepCountIs(10)');
 
+    // Get feelings context to include in system prompt
+    const feelingsContext = feelingsService.getContextForPrompt();
+
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(context.username),
+      system: buildSystemPrompt(context.username) + feelingsContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
         search: searchTool,
@@ -152,6 +157,7 @@ export async function runAgent(
         commitFile: commitFileTool,
         uploadAndCommitFile: uploadAndCommitFileTool,
         summarizeCommits: summarizeCommitsTool,
+        introspectFeelings: introspectFeelingsTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
