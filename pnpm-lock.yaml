@@ -47,6 +47,9 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.21.2
+      lib0:
+        specifier: ^0.2.114
+        version: 0.2.114
       minimatch:
         specifier: ^10.1.1
         version: 10.1.1
