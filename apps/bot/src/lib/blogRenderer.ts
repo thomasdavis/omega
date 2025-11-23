@@ -66,6 +66,9 @@ function parseFrontmatter(content: string): {
 function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   let html = markdown;
 
+  // Blockquotes (must be processed before paragraphs)
+  html = html.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
   // Headers with TTS support
   if (ttsEnabled) {
     html = html.replace(/^### (.*$)/gim, (match, text) => {
@@ -132,13 +135,25 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   // Inline code
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
+  // Unordered lists
+  html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
+
+  // Ordered lists
+  html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+  // Note: This simple implementation groups consecutive <li> tags into lists
+  // For more complex cases, a proper parser would be better
+
   // Paragraphs - split into paragraphs first
   const paragraphs = html.split(/\n\n/);
   if (ttsEnabled) {
     html = paragraphs.map(para => {
-      // Skip if it's a heading, code block, or other special element
+      // Skip if it's a heading, code block, list, blockquote, or other special element
       if (para.trim().startsWith('<h') || para.trim().startsWith('<pre') ||
-          para.trim().startsWith('<figure') || para.trim().length === 0) {
+          para.trim().startsWith('<figure') || para.trim().startsWith('<ul') ||
+          para.trim().startsWith('<ol') || para.trim().startsWith('<blockquote') ||
+          para.trim().length === 0) {
         return para;
       }
       // Extract text content for TTS (strip HTML tags for the data-tts attribute)
@@ -154,7 +169,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
     html = '<p>' + html + '</p>';
   }
 
-  // Clean up empty paragraphs
+  // Clean up empty paragraphs and wrapping issues
   html = html.replace(/<p><\/p>/g, '');
   html = html.replace(/<p>(<h[1-6]>)/g, '$1');
   html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
@@ -162,6 +177,12 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   html = html.replace(/(<\/figure>)<\/p>/g, '$1');
   html = html.replace(/<p>(<pre>)/g, '$1');
   html = html.replace(/(<\/pre>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<ul>)/g, '$1');
+  html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<ol>)/g, '$1');
+  html = html.replace(/(<\/ol>)<\/p>/g, '$1');
+  html = html.replace(/<p>(<blockquote>)/g, '$1');
+  html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
 
   return html;
 }
@@ -259,79 +280,136 @@ export function renderBlogPost(post: BlogPost): string {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      max-width: 800px;
+      line-height: 1.75;
+      color: #1a1a1a;
+      max-width: 720px;
       margin: 0 auto;
       padding: 40px 20px;
-      background: #f9f9f9;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+      min-height: 100vh;
     }
     article {
       background: white;
       padding: 60px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
     }
     h1 {
-      font-size: 2.5em;
-      margin-bottom: 0.5em;
-      color: #222;
+      font-size: 2.75em;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 0.3em;
+      color: #0f172a;
+      letter-spacing: -0.02em;
     }
     h2 {
       font-size: 2em;
-      margin-top: 1.5em;
-      margin-bottom: 0.5em;
-      color: #333;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-top: 2em;
+      margin-bottom: 0.75em;
+      color: #1e293b;
+      letter-spacing: -0.01em;
+      padding-bottom: 0.3em;
+      border-bottom: 2px solid #e2e8f0;
     }
     h3 {
       font-size: 1.5em;
-      margin-top: 1.5em;
-      margin-bottom: 0.5em;
-      color: #444;
+      font-weight: 600;
+      line-height: 1.4;
+      margin-top: 1.75em;
+      margin-bottom: 0.75em;
+      color: #334155;
+      letter-spacing: -0.005em;
     }
     p {
-      margin-bottom: 1.2em;
+      margin-bottom: 1.5em;
+      font-size: 1.05em;
+      color: #334155;
     }
     img {
       max-width: 100%;
       height: auto;
-      border-radius: 8px;
-      margin: 1.5em 0;
+      border-radius: 12px;
+      margin: 2em 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     figure {
-      margin: 2em 0;
+      margin: 2.5em 0;
     }
     figcaption {
-      margin-top: 0.5em;
+      margin-top: 0.75em;
       font-style: italic;
-      color: #666;
+      color: #64748b;
       text-align: center;
+      font-size: 0.95em;
     }
     code {
-      background: #f4f4f4;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
+      background: #f1f5f9;
+      color: #e11d48;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.88em;
+      font-weight: 500;
     }
     pre {
-      background: #2d2d2d;
-      color: #f8f8f2;
-      padding: 20px;
-      border-radius: 8px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #e2e8f0;
+      padding: 24px;
+      border-radius: 10px;
       overflow-x: auto;
-      margin: 1.5em 0;
+      margin: 2em 0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      border: 1px solid rgba(255,255,255,0.05);
     }
     pre code {
       background: none;
       padding: 0;
       color: inherit;
+      font-weight: 400;
+    }
+    ul, ol {
+      margin: 1.5em 0;
+      padding-left: 1.75em;
+    }
+    ul li, ol li {
+      margin-bottom: 0.75em;
+      color: #334155;
+      font-size: 1.05em;
+      line-height: 1.7;
+    }
+    ul li::marker {
+      color: #3b82f6;
+    }
+    ol li::marker {
+      color: #3b82f6;
+      font-weight: 600;
+    }
+    blockquote {
+      margin: 2em 0;
+      padding: 1.5em 1.5em 1.5em 2em;
+      background: linear-gradient(to right, #eff6ff 0%, #f8fafc 100%);
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #1e293b;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.08);
+    }
+    strong {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    em {
+      font-style: italic;
+      color: #475569;
     }
     .meta {
-      color: #666;
-      margin-bottom: 2em;
-      padding-bottom: 1em;
-      border-bottom: 1px solid #eee;
+      color: #64748b;
+      margin-bottom: 2.5em;
+      padding-bottom: 1.5em;
+      border-bottom: 2px solid #f1f5f9;
+      font-size: 0.95em;
     }
     .tts-notice {
       background: #e7f3ff;
@@ -395,18 +473,38 @@ export function renderBlogPost(post: BlogPost): string {
       margin-left: -16px;
     }
     a {
-      color: #2196F3;
+      color: #3b82f6;
       text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px solid transparent;
+      transition: all 0.2s ease;
     }
     a:hover {
-      text-decoration: underline;
+      color: #2563eb;
+      border-bottom-color: #3b82f6;
+    }
+    hr {
+      margin: 3em 0;
+      border: none;
+      height: 2px;
+      background: linear-gradient(to right, transparent, #cbd5e1, transparent);
     }
     @media (max-width: 768px) {
+      body {
+        padding: 20px 16px;
+      }
       article {
-        padding: 30px 20px;
+        padding: 40px 24px;
+        border-radius: 8px;
       }
       h1 {
-        font-size: 2em;
+        font-size: 2.25em;
+      }
+      h2 {
+        font-size: 1.75em;
+      }
+      h3 {
+        font-size: 1.35em;
       }
     }
   </style>
@@ -506,54 +604,74 @@ export function renderBlogIndex(posts: BlogPost[]): string {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
-      color: #333;
+      line-height: 1.75;
+      color: #1a1a1a;
       max-width: 800px;
       margin: 0 auto;
       padding: 40px 20px;
-      background: #f9f9f9;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+      min-height: 100vh;
     }
     h1 {
-      font-size: 3em;
-      margin-bottom: 1em;
-      color: #222;
+      font-size: 3.5em;
+      font-weight: 800;
+      margin-bottom: 1.2em;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      text-align: center;
     }
     .post-preview {
       background: white;
-      padding: 30px;
-      margin-bottom: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      padding: 36px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.03);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(0,0,0,0.04);
     }
     .post-preview:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+      border-color: #3b82f6;
     }
     .post-preview h2 {
-      margin-bottom: 0.5em;
+      margin-bottom: 0.65em;
+      font-size: 1.75em;
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
     }
     .post-preview h2 a {
-      color: #222;
+      color: #1e293b;
       text-decoration: none;
+      transition: color 0.2s ease;
     }
     .post-preview h2 a:hover {
-      color: #2196F3;
+      color: #3b82f6;
     }
     .meta {
-      color: #666;
-      font-size: 0.9em;
+      color: #64748b;
+      font-size: 0.95em;
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
     }
     .tts-badge {
-      background: #e7f3ff;
-      color: #1976D2;
-      padding: 4px 8px;
-      border-radius: 4px;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      color: #1e40af;
+      padding: 6px 12px;
+      border-radius: 6px;
       font-size: 0.85em;
       font-weight: 600;
+      border: 1px solid #bfdbfe;
+    }
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2.5em;
+      }
+      .post-preview {
+        padding: 28px;
+      }
     }
   </style>
 </head>
