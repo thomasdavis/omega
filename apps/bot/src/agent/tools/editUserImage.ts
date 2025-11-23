@@ -19,6 +19,10 @@ import OpenAI from 'openai';
 async function downloadImage(url: string): Promise<Buffer> {
   const response = await fetch(url);
   if (!response.ok) {
+    console.error('❌ Failed to download image:');
+    console.error(`   URL: ${url}`);
+    console.error(`   Status: ${response.status} ${response.statusText}`);
+    console.error(`   Headers:`, JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
     throw new Error(`Failed to download image: HTTP ${response.status}`);
   }
   const arrayBuffer = await response.arrayBuffer();
@@ -82,9 +86,16 @@ Uses model: gpt-image-1 (or any newer model)`,
         n: 1,
       });
 
+      console.log('   📊 OpenAI API Response Details:');
+      console.log(`   Result Object:`, JSON.stringify(result, null, 2));
+
       const edited = result.data?.[0]?.url;
 
       if (!edited) {
+        console.error('❌ No edited image returned from OpenAI API:');
+        console.error(`   Full API Response:`, JSON.stringify(result, null, 2));
+        console.error(`   Result.data:`, result.data);
+        console.error(`   Result.data[0]:`, result.data?.[0]);
         throw new Error('No edited image returned from API');
       }
 
@@ -100,7 +111,26 @@ Uses model: gpt-image-1 (or any newer model)`,
         message: 'Image edited successfully using GPT-Image-1',
       };
     } catch (error) {
-      console.error('Error in editUserImage tool:', error);
+      console.error('❌ Error in editUserImage tool:');
+      console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   Error Message:`, error instanceof Error ? error.message : String(error));
+      console.error(`   Full Error Object:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      if (error instanceof Error && error.stack) {
+        console.error(`   Stack Trace:`, error.stack);
+      }
+
+      // Log OpenAI-specific error details if available
+      if (error && typeof error === 'object' && 'response' in error) {
+        console.error('   OpenAI API Error Details:');
+        const apiError = error as any;
+        if (apiError.response) {
+          console.error(`   Response Status:`, apiError.response.status);
+          console.error(`   Response Data:`, JSON.stringify(apiError.response.data, null, 2));
+        }
+        if (apiError.error) {
+          console.error(`   Error Object:`, JSON.stringify(apiError.error, null, 2));
+        }
+      }
 
       // Provide helpful error messages based on common issues
       let errorMessage = 'Failed to edit image. ';
