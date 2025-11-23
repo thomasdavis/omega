@@ -65,6 +65,26 @@ Omega automatically generates daily blog posts at **9 AM UTC** combining:
 
 See `apps/bot/docs/DAILY_BLOG_FEATURE.md` for technical details.
 
+### 🚨 Railway Error Monitoring & Auto-Issue Creation
+
+Omega includes an automated Railway error detection system with AI-powered analysis:
+
+**What it does:**
+- Monitors Railway runtime errors automatically
+- Uses GPT-4.1-mini to summarize errors and analyze environment issues
+- Checks for duplicate issues before creating new ones
+- Auto-creates GitHub issues with @claude tag for automated fixes
+- Provides intelligent analysis of missing/misconfigured environment variables
+
+**Key Features:**
+- Smart deduplication (5-minute cooldown to prevent spam)
+- AI-powered duplicate detection (semantic similarity, not just string matching)
+- Environment variable analysis and recommendations
+- Webhook endpoint for external error reporting
+- Auto-tags @claude in issues for automated investigation
+
+See `apps/bot/docs/RAILWAY-ERROR-MONITORING.md` for setup and usage details.
+
 ## How It Works
 
 ### The Self-Coding Loop

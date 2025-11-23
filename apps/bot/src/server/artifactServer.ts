@@ -363,6 +363,43 @@ function createApp(): express.Application {
     }
   });
 
+  // Railway Error Webhook - POST /api/railway-webhook
+  app.post('/api/railway-webhook', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { error, stackTrace, timestamp, environment, service, logContext } = req.body;
+
+      if (!error) {
+        return res.status(400).json({ error: 'Missing error field in webhook payload' });
+      }
+
+      console.log('🔔 Received Railway error webhook:', error);
+
+      // Import dynamically to avoid circular dependencies
+      const { captureError } = await import('../services/errorMonitoringService.js');
+
+      // Process error asynchronously (don't block webhook response)
+      captureError(error, {
+        railwayService: service,
+        environment,
+        logContext,
+      }).catch(err => {
+        console.error('Failed to process Railway webhook error:', err);
+      });
+
+      // Respond quickly to Railway
+      res.json({
+        success: true,
+        message: 'Error captured, processing asynchronously',
+      });
+    } catch (error) {
+      console.error('Railway webhook error:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // Document API endpoints
   // Get Pusher config for frontend
   app.get('/api/documents/pusher-config', (req: Request, res: Response) => {
