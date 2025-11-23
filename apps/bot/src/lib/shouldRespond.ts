@@ -140,6 +140,26 @@ export async function shouldRespond(
     };
   }
 
+  // Pre-filter: Check for indirect addressing patterns that should trigger response
+  const indirectAddressingPatterns = [
+    /\b(can|could|would)\s+(anyone|someone|somebody|the bot)\s+/i,
+    /\b(anyone|someone|somebody)\s+(know|help|explain)/i,
+    /^(hey|hi|hello)\s*[,!]?\s*$/i, // Standalone greetings in #omega
+    /\bbot[,!]?\s+/i, // Generic "bot" reference
+    /\?(.*omega|.*bot)/i, // Questions mentioning omega/bot anywhere
+  ];
+
+  const lowerContent = message.content.toLowerCase();
+  const hasIndirectAddress = indirectAddressingPatterns.some(pattern => pattern.test(message.content));
+
+  // Enhanced casual feature suggestion detection
+  const casualFeatureSuggestions = [
+    /\b(would be|could be|should be|might be)\s+(nice|cool|great|good|useful|helpful)/i,
+    /\b(why (not|don't|doesn't)|what if|how about)\b/i,
+    /\b(imagine if|wish|hope)\b/i,
+  ];
+  const hasCasualSuggestion = casualFeatureSuggestions.some(pattern => pattern.test(message.content));
+
   // Use AI to decide if the message is interesting enough to respond to
   // Uses structured output (generateObject) for reliable, type-safe decisions
   try {
@@ -151,6 +171,15 @@ export async function shouldRespond(
       const recentMessages = messageHistory.slice(-20);
       historyContext = '\n\nRecent conversation:\n' +
         recentMessages.map(msg => `${msg.username}: ${msg.content}`).join('\n') + '\n';
+    }
+
+    // Add context flags to help AI make better decisions
+    let contextFlags = '\n\n**Context Flags:**\n';
+    if (hasIndirectAddress) {
+      contextFlags += '- ⚠️ Message contains indirect addressing pattern (e.g., "can someone help", "bot, do X")\n';
+    }
+    if (hasCasualSuggestion) {
+      contextFlags += '- ⚠️ Message contains casual feature suggestion pattern (e.g., "would be nice if...")\n';
     }
 
     const result = await generateObject({
@@ -185,6 +214,9 @@ Questions ABOUT Omega ≠ Questions TO Omega
 - Direct reply: message is a reply to Omega's previous message
 - Explicit invitation: "omega can you...", "bot, help me..."
 - Second-person directed: "can you [action]" when Omega is the clear referent
+- **INDIRECT ADDRESSING (NEW)**: "can anyone help with X?", "someone explain Y", "hey!" (standalone greeting in #omega)
+- **GENERIC BOT REFERENCE**: "bot, do X" or "bot help me" (treating any bot as addressee)
+- **IMPLIED QUESTIONS**: Questions in #omega channel that relate to Omega's capabilities without explicit mention
 
 **Being MENTIONED (respond "no"):**
 - Third-person reference: "what can omega do?", "does the bot understand X?"
@@ -194,8 +226,9 @@ Questions ABOUT Omega ≠ Questions TO Omega
 **Key distinction**:
 - TO Omega: "Omega, what's 2+2?" → Respond (directly addressed)
 - ABOUT Omega: "Can omega do math?" → Don't respond (asking others about you)
+- INDIRECT TO OMEGA: "Can anyone help me with math?" in #omega → Respond (seeking help in dedicated channel)
 
-**Observable rule**: If the message talks ABOUT Omega in third-person without direct address, it's not an invitation to speak.
+**Observable rule**: If the message talks ABOUT Omega in third-person without direct address, it's not an invitation to speak. However, indirect requests for help in #omega channel should be treated as addressing Omega.
 
 ---
 
@@ -209,6 +242,8 @@ What is the speaker's actual goal?
 - "I wish omega could..." → Goal: feature desire → Respond
 - "create an issue for..." → Goal: explicit issue creation → Respond
 - "fix the bug where..." → Goal: bug report → Respond
+- **CASUAL SUGGESTIONS (NEW)**: "would be nice if...", "could be cool if...", "why not...", "what if...", "how about..." → Goal: casual feature idea → Respond
+- **IMPLICIT IMPROVEMENT**: "wish this worked differently", "hope this changes" → Goal: improvement desire → Respond
 - Even if phrased casually, feature/bug/improvement suggestions should be acknowledged and processed
 
 **Speaker seeking human connection:**
@@ -250,7 +285,7 @@ Am I an active participant or an observer?
 ## YOUR ANALYSIS
 
 Channel: #${channelName}
-${historyContext}
+${historyContext}${contextFlags}
 User: ${message.author.username}
 Message: "${message.content}"
 
@@ -262,10 +297,13 @@ Analyze this message through the 4-level framework:
 
 **Remember the core teaching**: Like a well-mannered child, Omega should:
 - Respect explicit "no" signals immediately
-- Only speak when invited (directly addressed)
+- Only speak when invited (directly addressed OR indirectly in #omega channel)
 - Understand the difference between being discussed vs being included
 - Read the room and understand speaker intent
-- Know when silence is the appropriate response`,
+- Know when silence is the appropriate response
+- **PAY SPECIAL ATTENTION to context flags** - they indicate patterns that often result in false negatives
+
+**IMPORTANT**: If context flags indicate indirect addressing or casual suggestions, give strong weight to responding unless there are clear rejection signals. These patterns historically result in missed opportunities to help users.`,
     });
 
     const shouldRespond = result.object.decision === 'yes';
