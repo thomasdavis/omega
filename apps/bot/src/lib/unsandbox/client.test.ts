@@ -718,4 +718,139 @@ describe('UnsandboxClient', () => {
       });
     });
   });
+
+  describe('Key Management Endpoints', () => {
+    describe('amIThrottled', () => {
+      it('should check throttle status successfully', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'application/json']]),
+          text: async () => JSON.stringify({
+            requests_last_60s: 42,
+            active_executions: 3,
+            throttled: false,
+          }),
+        });
+
+        const result = await client.amIThrottled();
+
+        expect(result.requests_last_60s).toBe(42);
+        expect(result.active_executions).toBe(3);
+        expect(result.throttled).toBe(false);
+        expect(mockFetch).toHaveBeenCalledWith(
+          'https://api.unsandbox.com/keys/am-i-throttled',
+          expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({
+              'Authorization': 'Bearer open-says-me',
+            }),
+          })
+        );
+      });
+
+      it('should indicate when throttled', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'application/json']]),
+          text: async () => JSON.stringify({
+            requests_last_60s: 100,
+            active_executions: 10,
+            throttled: true,
+          }),
+        });
+
+        const result = await client.amIThrottled();
+
+        expect(result.throttled).toBe(true);
+        expect(result.requests_last_60s).toBe(100);
+      });
+    });
+
+    describe('getKeyStats', () => {
+      it('should retrieve key statistics successfully', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'application/json']]),
+          text: async () => JSON.stringify({
+            total_requests: 1234,
+            total_execution_time_ms: 567890,
+          }),
+        });
+
+        const result = await client.getKeyStats();
+
+        expect(result.total_requests).toBe(1234);
+        expect(result.total_execution_time_ms).toBe(567890);
+        expect(mockFetch).toHaveBeenCalledWith(
+          'https://api.unsandbox.com/keys/stats',
+          expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({
+              'Authorization': 'Bearer open-says-me',
+            }),
+          })
+        );
+      });
+    });
+
+    describe('validateKey', () => {
+      it('should validate key successfully with config', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'application/json']]),
+          text: async () => JSON.stringify({
+            valid: true,
+            config: {
+              max_ttl: 300,
+              rate_limit: {
+                requests_per_window: 100,
+                window_seconds: 60,
+              },
+            },
+          }),
+        });
+
+        const result = await client.validateKey();
+
+        expect(result.valid).toBe(true);
+        expect(result.config?.max_ttl).toBe(300);
+        expect(result.config?.rate_limit?.requests_per_window).toBe(100);
+        expect(result.config?.rate_limit?.window_seconds).toBe(60);
+        expect(mockFetch).toHaveBeenCalledWith(
+          'https://api.unsandbox.com/keys/validate',
+          expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({
+              'Authorization': 'Bearer open-says-me',
+            }),
+          })
+        );
+      });
+
+      it('should handle invalid key', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          headers: new Map([['content-type', 'application/json']]),
+          text: async () => JSON.stringify({
+            valid: false,
+          }),
+        });
+
+        const result = await client.validateKey();
+
+        expect(result.valid).toBe(false);
+        expect(result.config).toBeUndefined();
+      });
+    });
+  });
 });
