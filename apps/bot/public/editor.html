@@ -292,7 +292,7 @@
     const username = localStorage.getItem('omega-username') || 'Anonymous';
 
     // State
-    let document = null;
+    let docData = null;
     let pusher = null;
     let channel = null;
     let isSaving = false;
@@ -307,12 +307,12 @@
           throw new Error('Document not found');
         }
 
-        document = await response.json();
+        docData = await response.json();
 
         // Update UI
-        document.getElementById('title').value = document.title;
+        document.getElementById('title').value = docData.title;
         document.getElementById('editor-container').innerHTML = `
-          <textarea id="content" placeholder="Start typing...">${escapeHtml(document.content)}</textarea>
+          <textarea id="content" placeholder="Start typing...">${escapeHtml(docData.content)}</textarea>
         `;
 
         // Set up auto-save
@@ -549,7 +549,7 @@
     // Update title
     document.getElementById('title').addEventListener('blur', async function() {
       const newTitle = this.value.trim();
-      if (!newTitle || newTitle === document.title) return;
+      if (!newTitle || newTitle === docData.title) return;
 
       try {
         await fetch(`/api/documents/${documentId}/title`, {
