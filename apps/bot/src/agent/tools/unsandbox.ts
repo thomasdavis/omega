@@ -148,6 +148,13 @@ export const unsandboxTool = tool({
     console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
     console.log(`   Network Mode: ${network_mode}`);
 
+    // Log all environment variables for debugging
+    console.log(`\n📋 Environment Variables:`);
+    console.log(`   UNSANDBOX_API_KEY: ${process.env.UNSANDBOX_API_KEY ? `${process.env.UNSANDBOX_API_KEY.substring(0, 10)}...` : 'NOT SET'}`);
+    console.log(`   UNSANDBOX_ENABLE_SEMITRUST: ${process.env.UNSANDBOX_ENABLE_SEMITRUST || 'NOT SET'}`);
+    console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT SET'}`);
+    console.log(`   All process.env keys: ${Object.keys(process.env).sort().join(', ')}`);
+
     try {
       // TypeScript validation: Run linting and type checking before execution
       if (language.toLowerCase() === 'typescript') {
