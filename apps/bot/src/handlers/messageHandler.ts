@@ -24,7 +24,10 @@ export async function handleMessage(message: Message): Promise<void> {
 
   if ('messages' in message.channel) {
     try {
+      // Fetch messages from the appropriate channel/thread
       const messages = await message.channel.messages.fetch({ limit: 20, before: message.id });
+
+      // Build basic message history
       messageHistory = messages
         .reverse()
         .map(msg => ({
@@ -32,6 +35,45 @@ export async function handleMessage(message: Message): Promise<void> {
           content: msg.content,
         }))
         .filter(msg => msg.content.length > 0); // Filter out empty messages
+
+      // If this message is in a thread, also include the thread starter message for context
+      if (message.channel.isThread() && message.channel.ownerId) {
+        try {
+          const starterMessage = await message.channel.fetchStarterMessage();
+          if (starterMessage && starterMessage.content.length > 0) {
+            // Add the thread starter at the beginning for context
+            messageHistory.unshift({
+              username: starterMessage.author.username,
+              content: `[Thread Starter] ${starterMessage.content}`,
+            });
+          }
+        } catch (starterError) {
+          console.log('   ⚠️ Could not fetch thread starter message - continuing without it');
+        }
+      }
+
+      // If this message is a reply, include the referenced message for context
+      if (message.reference?.messageId) {
+        try {
+          const referencedMessage = await message.channel.messages.fetch(message.reference.messageId);
+          if (referencedMessage && referencedMessage.content.length > 0) {
+            // Add the referenced message to history if not already present
+            const alreadyInHistory = messageHistory.some(msg =>
+              msg.username === referencedMessage.author.username &&
+              msg.content === referencedMessage.content
+            );
+
+            if (!alreadyInHistory) {
+              messageHistory.push({
+                username: referencedMessage.author.username,
+                content: `[Replied to] ${referencedMessage.content}`,
+              });
+            }
+          }
+        } catch (refError) {
+          console.log('   ⚠️ Could not fetch referenced message - continuing without it');
+        }
+      }
     } catch (error) {
       logError(error, {
         operation: 'Fetch message history',
