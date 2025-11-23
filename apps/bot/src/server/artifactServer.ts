@@ -846,7 +846,11 @@ function createApp(): express.Application {
       }
 
       // Execute the tool to analyze and create issue
-      const result = await analyzeDocumentAndCreateIssueTool.execute({ documentId: id });
+      // AI SDK v6 tools expect (params, context) signature
+      const toolResult = await analyzeDocumentAndCreateIssueTool.execute({ documentId: id }, {} as any);
+
+      // Type assertion: this tool doesn't use streaming, so result is not AsyncIterable
+      const result = toolResult as { success: boolean; error?: string; issueNumber?: number; issueUrl?: string; issueTitle?: string; priority?: string; labels?: string[]; message?: string };
 
       console.log('✅ Analysis complete:', result);
 
