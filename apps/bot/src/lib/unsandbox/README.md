@@ -4,12 +4,15 @@ Comprehensive TypeScript SDK for the Unsandbox API - a safe code execution platf
 
 ## Features
 
-- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, health, languages)
+- ✅ **Full API Coverage**: All endpoints (execute, status, artifacts, cancel, validate, throttle check, stats, health, languages)
 - ✅ **Type-Safe**: Complete TypeScript definitions for all requests and responses
 - ✅ **Error Handling**: Custom error class with detailed error information
 - ✅ **Timeout Management**: Configurable timeouts with automatic abort
 - ✅ **Dynamic Language List**: Fetches supported languages from API with caching
 - ✅ **Language Mapping**: User-friendly language names mapped to runtime identifiers
+- ✅ **Rate Limiting**: Check throttle status and rate limits via POST /keys/am-i-throttled
+- ✅ **Usage Statistics**: Track execution metrics and language-specific stats
+- ✅ **Code Validation**: Validate syntax before execution to save quota
 - ✅ **Retry Logic**: Built-in retry capabilities for failed requests (future enhancement)
 
 ## API Documentation
@@ -205,6 +208,75 @@ const isHealthy = await client.healthCheck();
 console.log(isHealthy); // true or false
 ```
 
+### Check Throttle Status
+
+Check if your API key is throttled and get rate limit information:
+
+```typescript
+const status = await client.amIThrottled();
+
+if (status.throttled) {
+  console.log(`Throttled until: ${status.throttled_until}`);
+  console.log(`Reason: ${status.reason}`);
+} else {
+  console.log(`Not throttled`);
+  if (status.rate_limit) {
+    console.log(`Rate limit: ${status.rate_limit.remaining}/${status.rate_limit.limit}`);
+    console.log(`Resets at: ${status.rate_limit.reset}`);
+  }
+}
+```
+
+### Get Usage Statistics
+
+Fetch statistics about your code executions:
+
+```typescript
+const stats = await client.getStats();
+
+console.log(`Total executions: ${stats.total_executions}`);
+console.log(`Successful: ${stats.successful_executions}`);
+console.log(`Failed: ${stats.failed_executions}`);
+console.log(`Average execution time: ${stats.avg_execution_time_ms}ms`);
+
+// Language-specific statistics
+if (stats.by_language) {
+  Object.entries(stats.by_language).forEach(([lang, langStats]) => {
+    console.log(`${lang}: ${langStats.count} executions, ${(langStats.success_rate * 100).toFixed(1)}% success rate`);
+  });
+}
+```
+
+### Validate Code
+
+Validate code syntax before execution (helps catch errors without consuming execution quota):
+
+```typescript
+const validation = await client.validateCode({
+  language: 'python',
+  code: 'print("Hello, World!")'
+});
+
+if (validation.valid) {
+  console.log('Code is valid!');
+  // Proceed with execution
+  const result = await client.executeCode({
+    language: 'python',
+    code: 'print("Hello, World!")'
+  });
+} else {
+  // Show validation errors
+  validation.errors?.forEach(err => {
+    console.error(`Line ${err.line}: ${err.message}`);
+  });
+}
+
+// Show warnings even if valid
+validation.warnings?.forEach(warn => {
+  console.warn(`Line ${warn.line}: ${warn.message}`);
+});
+```
+
 ## Error Handling
 
 The SDK provides detailed error information:
@@ -309,9 +381,19 @@ apps/bot/src/agent/tools/
 
 The Unsandbox API uses the following endpoints:
 
+### Code Execution
 - **Submit Job**: `POST /execute/async` - Submit code for async execution
 - **Check Status**: `GET /jobs/{job_id}` - Poll job status until completion
 - **Cancel Job**: `POST /jobs/{job_id}/cancel` - Cancel a running job
+
+### Validation & Monitoring
+- **Validate Code**: `POST /validate` - Validate code syntax before execution
+- **Check Throttle**: `POST /keys/am-i-throttled` - Check if API key is throttled
+- **Get Statistics**: `GET /stats` - Get usage statistics for the API key
+
+### Metadata
+- **List Languages**: `GET /languages` - Get list of supported languages
+- **Health Check**: `GET /health` - Verify API availability
 
 ## Migration from Old Implementation
 

@@ -191,3 +191,97 @@ export interface LanguageInfo {
  * Response from /languages endpoint
  */
 export type LanguagesResponse = LanguageInfo[];
+
+/**
+ * Request to check if API key is throttled
+ */
+export interface AmIThrottledRequest {
+  /** API key to check (optional - uses authenticated key if not provided) */
+  apiKey?: string;
+}
+
+/**
+ * Response from /keys/am-i-throttled endpoint
+ */
+export interface AmIThrottledResponse {
+  /** Whether the API key is currently throttled */
+  throttled: boolean;
+  /** Reason for throttling (if throttled) */
+  reason?: string;
+  /** When throttling will be lifted (ISO timestamp) */
+  throttled_until?: string;
+  /** Current rate limit information */
+  rate_limit?: {
+    /** Requests allowed per time window */
+    limit: number;
+    /** Requests remaining in current window */
+    remaining: number;
+    /** When the rate limit window resets (ISO timestamp) */
+    reset: string;
+  };
+}
+
+/**
+ * Response from /stats endpoint
+ */
+export interface StatsResponse {
+  /** Total executions */
+  total_executions?: number;
+  /** Successful executions */
+  successful_executions?: number;
+  /** Failed executions */
+  failed_executions?: number;
+  /** Average execution time in milliseconds */
+  avg_execution_time_ms?: number;
+  /** Total execution time in milliseconds */
+  total_execution_time_ms?: number;
+  /** Statistics by language */
+  by_language?: Record<string, {
+    count: number;
+    success_rate: number;
+    avg_time_ms: number;
+  }>;
+  /** Time period for these stats */
+  period?: {
+    start: string;
+    end: string;
+  };
+}
+
+/**
+ * Request to validate code before execution
+ */
+export interface ValidateRequest {
+  /** The runtime/language to validate for */
+  language: UnsandboxLanguage;
+  /** The code to validate */
+  code: string;
+}
+
+/**
+ * Response from /validate endpoint
+ */
+export interface ValidateResponse {
+  /** Whether the code is valid */
+  valid: boolean;
+  /** Validation errors (if invalid) */
+  errors?: Array<{
+    /** Error message */
+    message: string;
+    /** Line number (if applicable) */
+    line?: number;
+    /** Column number (if applicable) */
+    column?: number;
+    /** Error severity */
+    severity?: 'error' | 'warning';
+  }>;
+  /** Validation warnings (even if valid) */
+  warnings?: Array<{
+    /** Warning message */
+    message: string;
+    /** Line number (if applicable) */
+    line?: number;
+    /** Column number (if applicable) */
+    column?: number;
+  }>;
+}

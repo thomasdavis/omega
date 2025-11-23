@@ -17,6 +17,11 @@ import type {
   ListArtifactsResponse,
   UnsandboxError,
   LanguagesResponse,
+  AmIThrottledRequest,
+  AmIThrottledResponse,
+  StatsResponse,
+  ValidateRequest,
+  ValidateResponse,
 } from './types.js';
 
 /**
@@ -518,6 +523,132 @@ export class UnsandboxClient {
       }
       return false;
     }
+  }
+
+  /**
+   * Check if the API key is throttled
+   * Uses POST method as per the official Unsandbox API specification
+   *
+   * @param request - Optional request with API key to check
+   * @returns Throttling status and rate limit information
+   *
+   * @example
+   * ```typescript
+   * const status = await client.amIThrottled();
+   * if (status.throttled) {
+   *   console.log(`Throttled until: ${status.throttled_until}`);
+   *   console.log(`Reason: ${status.reason}`);
+   * } else {
+   *   console.log(`Rate limit: ${status.rate_limit?.remaining}/${status.rate_limit?.limit}`);
+   * }
+   * ```
+   */
+  async amIThrottled(request?: AmIThrottledRequest): Promise<AmIThrottledResponse> {
+    console.log(`\n🚦 [${new Date().toISOString()}] Checking Throttle Status`);
+    console.log(`   Endpoint: POST /keys/am-i-throttled`);
+
+    const result = await this.request<AmIThrottledResponse>('/keys/am-i-throttled', {
+      method: 'POST',
+      body: request ? JSON.stringify(request) : undefined,
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Throttle Status Retrieved`);
+    console.log(`   Throttled: ${result.throttled}`);
+    if (result.throttled) {
+      console.log(`   Reason: ${result.reason}`);
+      console.log(`   Throttled Until: ${result.throttled_until}`);
+    }
+    if (result.rate_limit) {
+      console.log(`   Rate Limit: ${result.rate_limit.remaining}/${result.rate_limit.limit}`);
+      console.log(`   Reset At: ${result.rate_limit.reset}`);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get usage statistics for the authenticated API key
+   *
+   * @returns Statistics about code executions
+   *
+   * @example
+   * ```typescript
+   * const stats = await client.getStats();
+   * console.log(`Total executions: ${stats.total_executions}`);
+   * console.log(`Success rate: ${(stats.successful_executions / stats.total_executions * 100).toFixed(1)}%`);
+   * console.log(`Average execution time: ${stats.avg_execution_time_ms}ms`);
+   * ```
+   */
+  async getStats(): Promise<StatsResponse> {
+    console.log(`\n📈 [${new Date().toISOString()}] Fetching Usage Statistics`);
+    console.log(`   Querying /stats endpoint...`);
+
+    const stats = await this.request<StatsResponse>('/stats', {
+      method: 'GET',
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Statistics Retrieved`);
+    console.log(`   Total Executions: ${stats.total_executions ?? 'N/A'}`);
+    console.log(`   Successful: ${stats.successful_executions ?? 'N/A'}`);
+    console.log(`   Failed: ${stats.failed_executions ?? 'N/A'}`);
+    console.log(`   Avg Execution Time: ${stats.avg_execution_time_ms ?? 'N/A'}ms`);
+    if (stats.period) {
+      console.log(`   Period: ${stats.period.start} to ${stats.period.end}`);
+    }
+    if (stats.by_language) {
+      console.log(`   Languages Used: ${Object.keys(stats.by_language).join(', ')}`);
+    }
+
+    return stats;
+  }
+
+  /**
+   * Validate code syntax before execution
+   * Useful for catching syntax errors without consuming execution quota
+   *
+   * @param request - Validation request with language and code
+   * @returns Validation result with errors and warnings
+   *
+   * @example
+   * ```typescript
+   * const validation = await client.validateCode({
+   *   language: 'python',
+   *   code: 'print("Hello, World!")'
+   * });
+   *
+   * if (!validation.valid) {
+   *   validation.errors?.forEach(err => {
+   *     console.log(`Line ${err.line}: ${err.message}`);
+   *   });
+   * }
+   * ```
+   */
+  async validateCode(request: ValidateRequest): Promise<ValidateResponse> {
+    console.log(`\n✅ [${new Date().toISOString()}] Validating Code`);
+    console.log(`   Language: ${request.language}`);
+    console.log(`   Code Length: ${request.code.length} characters`);
+
+    const result = await this.request<ValidateResponse>('/validate', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+
+    console.log(`\n📋 [${new Date().toISOString()}] Validation Complete`);
+    console.log(`   Valid: ${result.valid}`);
+    if (result.errors && result.errors.length > 0) {
+      console.log(`   Errors: ${result.errors.length}`);
+      result.errors.forEach((err, index) => {
+        console.log(`      ${index + 1}. ${err.message}${err.line ? ` (line ${err.line})` : ''}`);
+      });
+    }
+    if (result.warnings && result.warnings.length > 0) {
+      console.log(`   Warnings: ${result.warnings.length}`);
+      result.warnings.forEach((warn, index) => {
+        console.log(`      ${index + 1}. ${warn.message}${warn.line ? ` (line ${warn.line})` : ''}`);
+      });
+    }
+
+    return result;
   }
 }
 
