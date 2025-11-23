@@ -42,6 +42,7 @@ import { queryMessagesTool } from './tools/queryMessages.js';
 import { translateToSpanishTool } from './tools/translateToSpanish.js';
 import { generateUserImageTool } from './tools/generateUserImage.js';
 import { editUserImageTool } from './tools/editUserImage.js';
+import { imageEditorTool } from './tools/imageEditor.js';
 import { marketPredictionTool } from './tools/marketPrediction.js';
 import { triggerDailyBlogTool } from './tools/triggerDailyBlog.js';
 import { commitFileTool } from './tools/commitFile.js';
@@ -155,6 +156,7 @@ export async function runAgent(
         translateToSpanish: translateToSpanishTool,
         generateUserImage: generateUserImageTool,
         editUserImage: editUserImageTool,
+        imageEditor: imageEditorTool,
         marketPrediction: marketPredictionTool,
         triggerDailyBlog: triggerDailyBlogTool,
         commitFile: commitFileTool,
