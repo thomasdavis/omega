@@ -12,6 +12,7 @@ import { initializeDatabase, closeDatabase } from './database/client.js';
 import { initializeSchema } from './database/schema.js';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
+import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
 
 dotenv.config();
 
@@ -51,6 +52,9 @@ const client = new Client({
 
 // Initialize Pusher for real-time collaboration
 initializePusher();
+
+// Initialize error monitoring and GitHub issue automation
+initializeErrorMonitoring();
 
 // Start artifact preview server
 // Railway requires listening on PORT env var for healthchecks
