@@ -719,7 +719,13 @@ function createApp(): express.Application {
       const { id } = req.params;
       const { update, clientId } = req.body;
 
+      console.log('📡 Yjs update received');
+      console.log('   Document ID:', id);
+      console.log('   Client ID:', clientId);
+      console.log('   Update size (base64):', update ? update.length : 0, 'chars');
+
       if (!update || !clientId) {
+        console.error('   ❌ Missing update or clientId');
         return res.status(400).json({
           error: 'Missing update or clientId',
           message: 'Both update and clientId are required',
@@ -728,20 +734,25 @@ function createApp(): express.Application {
 
       // Convert base64 to Uint8Array
       const updateBytes = new Uint8Array(Buffer.from(update, 'base64'));
+      console.log('   Update size (bytes):', updateBytes.length);
 
       // Apply update and broadcast to other clients
+      console.log('   📤 Applying update and broadcasting...');
       await applyYjsUpdate(id, updateBytes, clientId);
+      console.log('   ✅ Update applied and broadcast complete');
 
       // Periodically sync to database (every 10th update or so)
       // In production, use a debounced/throttled approach
       if (Math.random() < 0.1) {
+        console.log('   💾 Syncing to database (periodic)...');
         const content = syncYjsToDatabase(id);
         await updateDocumentContent(id, content);
+        console.log('   ✅ Synced to database');
       }
 
-      res.json({ success: true });
+      res.json({ success: true, message: 'Update applied' });
     } catch (error) {
-      console.error('Error applying Yjs update:', error);
+      console.error('❌ Error applying Yjs update:', error);
       res.status(500).json({
         error: 'Failed to apply update',
         message: error instanceof Error ? error.message : 'Unknown error',

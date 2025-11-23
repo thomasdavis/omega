@@ -64,29 +64,42 @@ export async function applyYjsUpdate(
   update: Uint8Array,
   clientId: string
 ): Promise<void> {
+  console.log('🔄 applyYjsUpdate called');
+  console.log('   Document ID:', documentId);
+  console.log('   Client ID:', clientId);
+  console.log('   Update size:', update.length, 'bytes');
+
   const doc = getYjsDocument(documentId);
 
   // Apply the update to the document
+  console.log('   📝 Applying update to Yjs document...');
   Y.applyUpdate(doc, update);
+  console.log('   ✅ Update applied to server-side Yjs doc');
 
   // Broadcast the update via Pusher to all other clients
   const pusher = getPusher();
   if (!pusher) {
-    console.warn('Pusher not configured, skipping broadcast');
+    console.warn('   ⚠️  Pusher not configured, skipping broadcast');
     return;
   }
 
   try {
     // Convert Uint8Array to base64 for JSON transport
     const updateBase64 = Buffer.from(update).toString('base64');
+    const channel = `document-${documentId}`;
 
-    await pusher.trigger(`document-${documentId}`, 'yjs-update', {
+    console.log('   📡 Broadcasting to Pusher channel:', channel);
+    console.log('   Excluding client:', clientId);
+
+    await pusher.trigger(channel, 'yjs-update', {
       update: updateBase64,
       clientId,
       timestamp: Date.now(),
     });
+
+    console.log('   ✅ Broadcast successful!');
   } catch (error) {
-    console.error('Error broadcasting Yjs update:', error);
+    console.error('   ❌ Error broadcasting Yjs update:', error);
   }
 }
 

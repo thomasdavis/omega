@@ -418,10 +418,20 @@
 
     // Handle local Yjs updates (send to server)
     function handleLocalUpdate(update, origin) {
-      if (origin === 'remote') return; // Don't echo remote updates
+      console.log('📝 handleLocalUpdate called');
+      console.log('   Origin:', origin);
+      console.log('   Update size:', update.length, 'bytes');
+
+      if (origin === 'remote') {
+        console.log('   ⏭️  Skipping remote update (no echo)');
+        return; // Don't echo remote updates
+      }
 
       // Convert update to base64
       const updateBase64 = btoa(String.fromCharCode.apply(null, update));
+      console.log('   📤 Sending local update to server...');
+      console.log('   Base64 size:', updateBase64.length);
+      console.log('   Client ID:', clientId);
 
       // Send to server
       fetch(`/api/documents/${documentId}/yjs-update`, {
@@ -431,39 +441,83 @@
           update: updateBase64,
           clientId,
         }),
-      }).catch(err => console.error('Error sending update:', err));
+      })
+        .then(response => {
+          console.log('   ✅ Update sent successfully! Status:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('   📡 Server response:', data);
+        })
+        .catch(err => {
+          console.error('   ❌ Error sending update:', err);
+        });
     }
 
     // Handle Yjs text changes (update textarea)
     function handleYjsChange(event, transaction) {
-      if (transaction.origin === 'local') return; // Already updated by user
+      console.log('📥 handleYjsChange called');
+      console.log('   Transaction origin:', transaction.origin);
+      console.log('   Event:', event);
+
+      if (transaction.origin === 'local') {
+        console.log('   ⏭️  Skipping local transaction (already updated by user)');
+        return; // Already updated by user
+      }
+
+      const oldContent = document.getElementById('content')?.value || '';
+      const oldLength = oldContent.length;
 
       isRemoteUpdate = true;
       const contentEl = document.getElementById('content');
       const cursorPos = contentEl.selectionStart;
       const scrollTop = contentEl.scrollTop;
 
+      console.log('   📝 Applying remote update to textarea...');
+      console.log('   Old content length:', oldLength);
+
       // Update textarea with new content
       contentEl.value = ytext.toString();
+
+      const newLength = contentEl.value.length;
+      console.log('   New content length:', newLength);
+      console.log('   Delta:', newLength - oldLength, 'chars');
 
       // Restore cursor and scroll position (approximate)
       contentEl.setSelectionRange(cursorPos, cursorPos);
       contentEl.scrollTop = scrollTop;
 
+      console.log('   ✅ Remote update applied!');
       isRemoteUpdate = false;
     }
 
     // Handle textarea input (update Yjs)
     function handleYjsInput(e) {
-      if (isRemoteUpdate) return; // Don't process remote updates
-      if (!ytext || !ydoc) return; // Skip if Yjs not initialized
+      console.log('⌨️  handleYjsInput called');
+
+      if (isRemoteUpdate) {
+        console.log('   ⏭️  Skipping (remote update in progress)');
+        return; // Don't process remote updates
+      }
+      if (!ytext || !ydoc) {
+        console.log('   ⚠️  Skipping (Yjs not initialized)');
+        return; // Skip if Yjs not initialized
+      }
 
       const contentEl = e.target;
       const cursorPos = contentEl.selectionStart;
       const newText = contentEl.value;
       const oldText = ytext.toString();
 
-      if (newText === oldText) return;
+      console.log('   Old text length:', oldText.length);
+      console.log('   New text length:', newText.length);
+
+      if (newText === oldText) {
+        console.log('   ⏭️  No changes detected');
+        return;
+      }
+
+      console.log('   📝 Calculating diff...');
 
       // Calculate diff and apply to Yjs
       ydoc.transact(() => {
@@ -487,12 +541,18 @@
         const deleteLength = oldText.length - commonPrefixLength - commonSuffixLength;
         const insertText = newText.substring(commonPrefixLength, newText.length - commonSuffixLength);
 
+        console.log('   Position:', commonPrefixLength);
+        console.log('   Deleted:', deleteLength, 'chars');
+        console.log('   Inserted:', insertText.length, 'chars', insertText ? `("${insertText.substring(0, 20)}...")` : '');
+
         if (deleteLength > 0) {
           ytext.delete(commonPrefixLength, deleteLength);
         }
         if (insertText.length > 0) {
           ytext.insert(commonPrefixLength, insertText);
         }
+
+        console.log('   ✅ Yjs transaction applied (origin: local)');
       }, 'local');
 
       // Trigger auto-save
@@ -551,33 +611,76 @@
           return;
         }
 
+        console.log('📡 Initializing Pusher client...');
+        console.log('   Cluster:', config.cluster);
+        console.log('   Document ID:', documentId);
+
         pusher = new Pusher(config.key, {
           cluster: config.cluster,
           forceTLS: true,
         });
 
-        channel = pusher.subscribe(`document-${documentId}`);
+        // Log connection state changes
+        pusher.connection.bind('connected', () => {
+          console.log('✅ Pusher connected!');
+        });
+
+        pusher.connection.bind('disconnected', () => {
+          console.log('❌ Pusher disconnected');
+        });
+
+        pusher.connection.bind('error', (err) => {
+          console.error('❌ Pusher error:', err);
+        });
+
+        const channelName = `document-${documentId}`;
+        console.log('📡 Subscribing to channel:', channelName);
+        channel = pusher.subscribe(channelName);
+
+        channel.bind('pusher:subscription_succeeded', () => {
+          console.log('✅ Successfully subscribed to channel:', channelName);
+        });
+
+        channel.bind('pusher:subscription_error', (status) => {
+          console.error('❌ Subscription error:', status);
+        });
 
         // Listen for Yjs updates
+        console.log('👂 Binding to yjs-update events...');
         channel.bind('yjs-update', (data) => {
+          console.log('📥 Received yjs-update event from Pusher');
+          console.log('   From client:', data.clientId);
+          console.log('   Our client:', clientId);
+          console.log('   Timestamp:', new Date(data.timestamp).toISOString());
+          console.log('   Update size:', data.update ? data.update.length : 0, 'chars');
+
           if (data.clientId !== clientId) {
+            console.log('   ✅ Processing remote update (different client)');
             handleRemoteYjsUpdate(data);
+          } else {
+            console.log('   ⏭️  Skipping (our own update)');
           }
         });
 
         // Listen for Yjs awareness updates
+        console.log('👂 Binding to yjs-awareness events...');
         channel.bind('yjs-awareness', (data) => {
+          console.log('📥 Received yjs-awareness event');
           if (data.clientId !== clientId) {
             // Handle awareness updates (cursor positions, etc.)
             // For now, we'll skip this as it requires more complex UI
+            console.log('   ⏭️  Awareness updates not implemented yet');
           }
         });
 
         // Listen for presence updates
+        console.log('👂 Binding to presence events...');
         channel.bind('presence', (data) => {
+          console.log('📥 Received presence event:', data.action);
           handlePresenceUpdate(data);
         });
 
+        console.log('✅ All Pusher event listeners bound');
         document.getElementById('status').textContent = 'Connected';
       } catch (error) {
         console.error('Error initializing Pusher:', error);
@@ -587,16 +690,24 @@
 
     // Handle remote Yjs updates from Pusher
     function handleRemoteYjsUpdate(data) {
+      console.log('🔄 handleRemoteYjsUpdate called');
+      console.log('   Data:', data);
+
       try {
         // Convert base64 to Uint8Array
+        console.log('   📝 Converting base64 to Uint8Array...');
         const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
+        console.log('   Update size:', updateBytes.length, 'bytes');
 
         // Apply update to local Yjs document
+        console.log('   📝 Applying update to local Yjs doc (origin: remote)...');
         Y.applyUpdate(ydoc, updateBytes, 'remote');
+        console.log('   ✅ Remote update applied successfully!');
 
         showNotification('Document updated by collaborator');
       } catch (error) {
-        console.error('Error applying remote update:', error);
+        console.error('   ❌ Error applying remote update:', error);
+        console.error('   Error stack:', error.stack);
       }
     }
 
