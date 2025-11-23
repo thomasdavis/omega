@@ -64,7 +64,6 @@ export async function generateMessageSummary(messageContent: string): Promise<st
 Message: "${messageContent}"
 
 Summary (max 2 sentences):`,
-      maxTokens: 100,
     });
 
     return result.text.trim();
@@ -140,7 +139,6 @@ Respond in the following JSON format:
     const result = await generateText({
       model: openai.chat(OMEGA_MODEL),
       prompt,
-      maxTokens: 500,
     });
 
     // Parse the JSON response
