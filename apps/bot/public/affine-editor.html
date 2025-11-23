@@ -184,6 +184,9 @@
       />
     </div>
     <div class="header-right">
+      <button id="send-to-omega-btn" style="padding: 8px 16px; background: #f97316; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;" title="Send to Omega for AI analysis and GitHub issue creation">
+        🤖 Send to Omega
+      </button>
       <div class="status">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">Connecting...</span>
@@ -419,6 +422,88 @@
     function getUsername() {
       return localStorage.getItem('username') || 'Anonymous';
     }
+
+    // Send to Omega button handler
+    document.getElementById('send-to-omega-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('send-to-omega-btn');
+      if (!btn) return;
+
+      // Get document ID from URL
+      const params = new URLSearchParams(window.location.search);
+      const documentId = params.get('id');
+
+      if (!documentId) {
+        alert('No document ID found');
+        return;
+      }
+
+      // Confirm action
+      if (!confirm('Send this document to Omega for AI analysis?\n\nOmega will:\n- Analyze the document content\n- Infer your intent\n- Create a GitHub issue with actionable tasks')) {
+        return;
+      }
+
+      try {
+        // Visual feedback - processing
+        const originalText = btn.textContent;
+        const originalBg = btn.style.background;
+        btn.textContent = '🤖 Analyzing...';
+        btn.disabled = true;
+        btn.style.background = '#9ca3af';
+
+        console.log('🤖 Sending document to Omega for analysis...');
+
+        // Send to Omega endpoint
+        const response = await fetch(`/api/documents/${documentId}/send-to-omega`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          // Success!
+          btn.textContent = '✅ Issue Created!';
+          btn.style.background = '#43e97b';
+
+          // Open issue in new tab
+          window.open(result.issueUrl, '_blank');
+
+          // Reset button after delay
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = originalBg;
+            btn.disabled = false;
+          }, 3000);
+
+          console.log('✅ Issue created:', result);
+        } else {
+          // Error
+          btn.textContent = '❌ Failed';
+          btn.style.background = '#ef4444';
+
+          alert(`Failed to create issue:\n${result.error || 'Unknown error'}`);
+
+          // Reset button
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = originalBg;
+            btn.disabled = false;
+          }, 3000);
+
+          console.error('❌ Failed to create issue:', result.error);
+        }
+      } catch (error) {
+        console.error('Failed to send to Omega:', error);
+        alert('Failed to send to Omega. Please try again.');
+
+        // Reset button
+        const originalText = '🤖 Send to Omega';
+        const originalBg = '#f97316';
+        btn.textContent = originalText;
+        btn.style.background = originalBg;
+        btn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>

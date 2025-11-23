@@ -38,6 +38,7 @@ import {
   getYjsState,
   syncYjsToDatabase,
 } from '../lib/yjsService.js';
+import { analyzeDocumentAndCreateIssueTool } from '../agent/tools/analyzeDocumentAndCreateIssue.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -825,6 +826,51 @@ function createApp(): express.Application {
       console.error('Error syncing document:', error);
       res.status(500).json({
         error: 'Failed to sync document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Send document to Omega for analysis and GitHub issue creation
+  app.post('/api/documents/:id/send-to-omega', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      console.log('🚀 Send to Omega request received for document:', id);
+
+      // First, sync any pending Yjs changes to database
+      const content = syncYjsToDatabase(id);
+      if (content) {
+        await updateDocumentContent(id, content);
+        console.log('✅ Synced Yjs changes to database before analysis');
+      }
+
+      // Execute the tool to analyze and create issue
+      const result = await analyzeDocumentAndCreateIssueTool.execute({ documentId: id });
+
+      console.log('✅ Analysis complete:', result);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          issueNumber: result.issueNumber,
+          issueUrl: result.issueUrl,
+          issueTitle: result.issueTitle,
+          priority: result.priority,
+          labels: result.labels,
+          message: result.message,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending document to Omega:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to analyze document and create issue',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
