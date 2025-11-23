@@ -110,6 +110,40 @@ async function sendDiscordUpdate(content: string): Promise<void> {
 }
 
 /**
+ * Get environment variables from process.env, filtering out sensitive ones
+ * This allows code execution to access environment context safely
+ */
+function getSafeEnvironmentVariables(): Record<string, string> {
+  const sensitivePatterns = [
+    /key/i,
+    /secret/i,
+    /token/i,
+    /password/i,
+    /auth/i,
+    /credential/i,
+    /api/i,
+  ];
+
+  const safeEnv: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(process.env)) {
+    // Skip undefined values
+    if (value === undefined) continue;
+
+    // Check if key matches any sensitive pattern
+    const isSensitive = sensitivePatterns.some(pattern => pattern.test(key));
+
+    if (!isSensitive) {
+      safeEnv[key] = value;
+    }
+  }
+
+  console.log(`   📋 Filtered env vars: ${Object.keys(safeEnv).length} safe variables passed (${Object.keys(process.env).length - Object.keys(safeEnv).length} sensitive filtered)`);
+
+  return safeEnv;
+}
+
+/**
  * Check if semitrust mode is enabled
  * Semitrust mode allows network access in unsandbox executions
  * Must be explicitly enabled via UNSANDBOX_ENABLE_SEMITRUST environment variable
@@ -124,18 +158,17 @@ function isSemitrustEnabled(): boolean {
  * Main unsandbox tool - Full workflow with automatic polling and progress updates
  */
 export const unsandboxTool = tool({
-  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for code execution up to 300s (5 minutes). Accepts any language string - the API will report errors for unsupported languages. FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
+  description: 'Execute code in a sandboxed environment with automatic polling and progress updates. Supports multiple programming languages. Returns stdout, stderr, exit code, execution time, and artifacts. Use this for code execution up to 300s (5 minutes). Accepts any language string - the API will report errors for unsupported languages. Environment variables are automatically passed from the bot process (sensitive vars filtered). FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
   inputSchema: z.object({
     language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
     ttl: z.number().int().min(1).max(300).optional().default(30).describe('Time to live (TTL) in seconds for the execution (default: 30s, max: 300s)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
-    env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
     network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
     user_message: z.string().optional().describe('The original user message/request context (used to detect bypass keywords like "skip checks")'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust', user_message }) => {
+  execute: async ({ language, code, ttl, stdin, args, network_mode = 'zerotrust', user_message }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
 
@@ -144,7 +177,7 @@ export const unsandboxTool = tool({
     console.log(`   Code Length: ${code.length} characters`);
     console.log(`   TTL: ${ttl}s`);
     console.log(`   Has Stdin: ${stdin ? 'yes' : 'no'}`);
-    console.log(`   Has Env Vars: ${env ? 'yes' : 'no'}`);
+    console.log(`   Env Vars: Using process.env (filtered)`);
     console.log(`   Has Args: ${args ? `yes (${args.length} args)` : 'no'}`);
     console.log(`   Network Mode: ${network_mode}`);
 
@@ -223,7 +256,7 @@ export const unsandboxTool = tool({
         language: language,
         code,
         ttl: ttl || 30,
-        env,
+        env: getSafeEnvironmentVariables(), // Use process.env with sensitive vars filtered
         stdin,
         args,
         network: network_mode, // Always include network mode (zerotrust by default)
@@ -361,18 +394,17 @@ export const unsandboxTool = tool({
  * Submit tool - Submit code for async execution without waiting
  */
 export const unsandboxSubmitTool = tool({
-  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus. Accepts any language string - the API will report errors for unsupported languages. FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
+  description: 'Advanced: Submit code for async execution and return immediately with a job ID. Use this for long-running code (> 30s) or when you want manual control over polling. Returns job_id that can be checked with unsandboxStatus. Accepts any language string - the API will report errors for unsupported languages. Environment variables are automatically passed from the bot process (sensitive vars filtered). FOR TYPESCRIPT: Mandatory linting and type checking are performed before execution unless user explicitly requests to skip checks (e.g., "skip checks", "bypass validation").',
   inputSchema: z.object({
     language: z.string().describe('The programming language to execute (e.g., javascript, python, typescript, ruby, go, rust, java, cpp, c, php, bash, etc.). Any language supported by the upstream API can be used.'),
     code: z.string().describe('The code to execute'),
     ttl: z.number().int().min(1).max(300).optional().default(60).describe('Time to live (TTL) in seconds for the execution (default: 60s, max: 300s for long jobs)'),
     stdin: z.string().optional().describe('Standard input to provide to the program'),
-    env: z.record(z.string()).optional().describe('Environment variables to set for the execution'),
     args: z.array(z.string()).optional().describe('Command-line arguments to pass to the program (e.g., sys.argv in Python, process.argv in Node.js). For example: ["arg1", "arg2"]'),
     network_mode: z.enum(['zerotrust', 'semitrust']).optional().default('zerotrust').describe('Network access mode: "zerotrust" (no network, fully isolated - DEFAULT) or "semitrust" (network access enabled). Use zerotrust unless user explicitly requests network access.'),
     user_message: z.string().optional().describe('The original user message/request context (used to detect bypass keywords like "skip checks")'),
   }),
-  execute: async ({ language, code, ttl, stdin, env, args, network_mode = 'zerotrust', user_message }) => {
+  execute: async ({ language, code, ttl, stdin, args, network_mode = 'zerotrust', user_message }) => {
     const timestamp = new Date().toISOString();
     const emoji = getLanguageEmoji(language);
 
@@ -444,7 +476,7 @@ export const unsandboxSubmitTool = tool({
         language: language,
         code,
         ttl: ttl || 60,
-        env,
+        env: getSafeEnvironmentVariables(), // Use process.env with sensitive vars filtered
         stdin,
         args,
         network: network_mode, // Always include network mode (zerotrust by default)
