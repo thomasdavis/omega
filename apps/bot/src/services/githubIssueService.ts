@@ -53,7 +53,7 @@ async function fetchExistingIssues(): Promise<GitHubIssue[]> {
     throw new Error(`Failed to fetch issues: ${response.status} ${response.statusText}`);
   }
 
-  return await response.json();
+  return await response.json() as GitHubIssue[];
 }
 
 /**
@@ -225,7 +225,7 @@ async function createIssue(
     throw new Error(`Failed to create issue: ${response.status} ${error}`);
   }
 
-  return await response.json();
+  return await response.json() as GitHubIssue;
 }
 
 /**

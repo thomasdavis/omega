@@ -50,7 +50,7 @@ export async function fetchExistingIssues(
       return [];
     }
 
-    const issues = await response.json();
+    const issues = await response.json() as any[];
     return issues.map((issue: any) => ({
       number: issue.number,
       title: issue.title,
@@ -252,7 +252,7 @@ export async function createGitHubIssue(
       return null;
     }
 
-    const issue = await response.json();
+    const issue = await response.json() as any;
     return {
       number: issue.number,
       title: issue.title,
