@@ -644,13 +644,7 @@ function createApp(): express.Application {
       const { id } = req.params;
       const { userId, username } = req.body;
 
-      console.log('👤 User joining document');
-      console.log('   Document ID:', id);
-      console.log('   User ID:', userId);
-      console.log('   Username:', username);
-
       if (!userId) {
-        console.error('   ❌ Missing userId');
         return res.status(400).json({
           error: 'Missing userId',
           message: 'userId is required',
@@ -658,7 +652,6 @@ function createApp(): express.Application {
       }
 
       // Broadcast presence
-      console.log('   📡 Broadcasting join event...');
       await broadcastPresence(id, {
         userId,
         username,
@@ -666,10 +659,9 @@ function createApp(): express.Application {
         timestamp: Date.now(),
       });
 
-      console.log('   ✅ Join broadcast complete');
       res.json({ success: true });
     } catch (error) {
-      console.error('   ❌ Error joining document:', error);
+      console.error('Error joining document:', error);
       res.status(500).json({
         error: 'Failed to join document',
         message: error instanceof Error ? error.message : 'Unknown error',

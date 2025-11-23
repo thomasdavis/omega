@@ -108,28 +108,15 @@ export async function broadcastPresence(
     timestamp: number;
   }
 ): Promise<void> {
-  console.log('📡 broadcastPresence called');
-  console.log('   Document ID:', documentId);
-  console.log('   Action:', data.action);
-  console.log('   User ID:', data.userId);
-  console.log('   Username:', data.username);
-
   const pusher = getPusher();
   if (!pusher) {
-    console.warn('   ⚠️  Pusher not configured, skipping broadcast');
     return;
   }
 
   try {
-    const channel = `document-${documentId}`;
-    console.log('   📡 Triggering event on channel:', channel);
-    console.log('   Event name: presence');
-
-    await pusher.trigger(channel, 'presence', data);
-
-    console.log('   ✅ Presence broadcast successful!');
+    await pusher.trigger(`document-${documentId}`, 'presence', data);
   } catch (error) {
-    console.error('   ❌ Error broadcasting presence:', error);
+    console.error('Error broadcasting presence:', error);
   }
 }
 
