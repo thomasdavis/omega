@@ -10,9 +10,11 @@ The Omega bot now includes a Google Docs-like collaborative document editing fea
 - ✅ Real-time editing with Pusher WebSockets
 - ✅ **CRDT-based conflict resolution using Yjs**
 - ✅ **Operational transformation for multi-user editing**
+- ✅ **Two editor options:**
+  - **Affine Editor (BlockSuite)**: Rich block-based editor with advanced formatting (Recommended)
+  - **Basic Editor**: Simple markdown-based text editor
 - ✅ User presence indicators
 - ✅ Auto-save functionality
-- ✅ Simple markdown-based formatting
 - ✅ Document listing and management
 - ✅ Persistent storage in database
 
@@ -68,14 +70,19 @@ Navigate to `/documents.html` on your deployed URL:
 ### Editing a Document
 
 1. Click on any document card from the documents list
-2. Start typing in the editor
-3. Changes are auto-saved every second after you stop typing
-4. Use the toolbar for basic formatting:
-   - **Bold**: Select text and click B
-   - *Italic*: Select text and click I
-   - Underline: Select text and click U
-   - Lists: Click bullet list button
-   - Links: Select text and click link button
+2. Choose your editor:
+   - **Affine Editor (Recommended)**: Rich block-based editor with advanced formatting, similar to Notion
+   - **Basic Editor**: Simple markdown-based text editor
+3. Start typing in the editor
+4. Changes are auto-saved automatically
+5. **Affine Editor features:**
+   - Block-based document structure
+   - Rich text formatting
+   - Advanced layout options
+   - Visual editing experience
+6. **Basic Editor features:**
+   - Markdown support
+   - Simple toolbar for basic formatting (Bold, Italic, Underline, Lists, Links)
 
 ### Real-Time Collaboration
 
@@ -257,16 +264,48 @@ Each document is stored in SQLite/Turso with minimal storage footprint:
 3. Ensure browser is not blocking WebSocket connections
 4. Check for CORS issues in browser console
 
+## Affine/BlockSuite Editor Integration
+
+The project now includes **BlockSuite**, the open-source editor framework that powers [Affine](https://affine.pro/), providing a modern, block-based editing experience.
+
+### What is BlockSuite?
+
+BlockSuite is a modular framework for building collaborative applications. It powers Affine, a privacy-focused, local-first collaborative knowledge base.
+
+### Features Provided by BlockSuite
+
+- **Block-based architecture**: Documents are composed of blocks (paragraphs, headings, lists, etc.)
+- **Rich formatting**: Full WYSIWYG editing experience
+- **Native Yjs integration**: Built-in CRDT support for collaboration
+- **Extensible**: Can be customized with custom blocks and plugins
+- **Modern UI**: Notion-like user experience
+
+### How It Works
+
+1. **Document Structure**: BlockSuite organizes content into blocks (pages, notes, paragraphs)
+2. **Yjs Backend**: Uses the existing Yjs infrastructure for real-time sync
+3. **Pusher Integration**: Broadcasts Yjs updates via Pusher to all collaborators
+4. **Database Persistence**: Syncs final state to SQLite/Turso for persistence
+
+### Accessing the Affine Editor
+
+When you click on a document in the documents list, you'll see two options:
+
+1. **Affine Editor** (`/affine-editor.html`): Rich block-based editor (Recommended)
+2. **Basic Editor** (`/editor.html`): Simple markdown text editor
+
+Both editors use the same backend (Yjs + Pusher) and can collaborate with each other on the same document.
+
 ## Future Enhancements
 
 Potential improvements for the future:
 
-- [ ] Rich text editor (WYSIWYG)
+- [x] ~~Rich text editor (WYSIWYG)~~ **IMPLEMENTED with BlockSuite/Affine Editor**
 - [x] ~~Operational Transformation (OT) for conflict resolution~~ **IMPLEMENTED with Yjs CRDT**
 - [ ] Document versioning and history (Yjs supports snapshots)
 - [ ] Comment threads
 - [ ] Document permissions and sharing
-- [ ] Export to PDF/Word
+- [ ] Export to PDF/Word (BlockSuite supports this)
 - [ ] Document templates
 - [ ] Search functionality
 - [ ] Folders/organization
