@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document Editor - Omega</title>
   <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
-  <!-- Yjs CRDT library - using cdnjs for reliable browser delivery -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/yjs/13.6.20/yjs.min.js"></script>
-  <script>
-    // Debug: Check if Yjs loaded immediately after script
-    console.log('🔍 DEBUG: Checking Yjs load status...');
-    console.log('🔍 DEBUG: typeof Y =', typeof Y);
-    console.log('🔍 DEBUG: typeof window.Y =', typeof window.Y);
+  <!-- Yjs CRDT library - Load as ES module and expose globally -->
+  <script type="module">
+    // Import Yjs from esm.sh (CDN that serves ES modules)
+    console.log('🔍 DEBUG: Loading Yjs from esm.sh...');
+    import * as YjsModule from 'https://esm.sh/yjs@13.6.20';
+
+    // Expose Y globally for the rest of the code
+    window.Y = YjsModule;
+    console.log('✅ Yjs loaded and exposed globally!');
     console.log('🔍 DEBUG: window.Y =', window.Y);
-    if (typeof Y !== 'undefined') {
-      console.log('✅ Yjs loaded successfully! Y.Doc:', Y.Doc);
-    } else {
-      console.error('❌ Yjs NOT loaded - Y is undefined');
-    }
+    console.log('🔍 DEBUG: window.Y.Doc =', window.Y.Doc);
+
+    // Dispatch event to signal Yjs is ready
+    window.dispatchEvent(new Event('yjs-loaded'));
   </script>
   <style>
     * {
@@ -783,8 +784,24 @@
       }
     });
 
+    // Wait for Yjs to load before initializing document
+    async function initializeApp() {
+      console.log('🔍 DEBUG: Waiting for Yjs to load...');
+
+      // Wait for the yjs-loaded event
+      if (typeof window.Y === 'undefined') {
+        console.log('🔍 DEBUG: Y not ready yet, waiting for event...');
+        await new Promise(resolve => {
+          window.addEventListener('yjs-loaded', resolve, { once: true });
+        });
+      }
+
+      console.log('✅ Yjs ready, loading document...');
+      await loadDocument();
+    }
+
     // Initial load
-    loadDocument();
+    initializeApp();
   </script>
 </body>
 </html>
