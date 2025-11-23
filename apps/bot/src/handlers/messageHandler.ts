@@ -11,6 +11,7 @@ import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../age
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { messageAdapter, type ToolCallInfo } from '../utils/discordMessageAdapter.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
+import { feelingsService } from '../lib/feelings/index.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -104,7 +105,10 @@ export async function handleMessage(message: Message): Promise<void> {
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
     // Run the AI agent with tools and conversation history
+    const startTime = Date.now();
     let result;
+    let hadError = false;
+
     try {
       result = await runAgent(enrichedContent, {
         username: message.author.username,
@@ -115,7 +119,49 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('🔍 DEBUG: runAgent completed successfully');
     } catch (agentError) {
       console.error('🔍 DEBUG: runAgent threw an error:', agentError);
+      hadError = true;
       throw agentError;
+    } finally {
+      const duration = Date.now() - startTime;
+
+      // Update feelings subsystem with interaction metrics
+      const isAmbiguous = message.content.length < 10 || !message.content.includes(' ');
+      const hasPositiveSignal = message.content.toLowerCase().includes('thank') ||
+                               message.content.toLowerCase().includes('great') ||
+                               message.content.toLowerCase().includes('awesome') ||
+                               message.content.toLowerCase().includes('nice');
+
+      feelingsService.updateMetrics({
+        performance: {
+          averageResponseTime: duration,
+          errorRate: hadError ? 1.0 : 0.0,
+          successRate: hadError ? 0.0 : 1.0,
+        },
+        resources: {
+          toolCallsCount: result?.toolCalls?.length || 0,
+          tokensUsed: 0, // TODO: Track actual tokens when available
+          contextWindowUsage: messageHistory.length / 100, // Rough estimate
+        },
+        interaction: {
+          messagesProcessed: 1,
+          positiveSignals: hasPositiveSignal ? 1 : 0,
+          negativeSignals: hadError ? 1 : 0,
+          ambiguousQueries: isAmbiguous ? 1 : 0,
+        },
+        temporal: {
+          conversationDuration: duration / 1000,
+          messageFrequency: messageHistory.length > 0 ? messageHistory.length / 10 : 0,
+          lastActivityTime: new Date(),
+        },
+      });
+
+      // Log feelings state in omega channel
+      if (channelName === 'omega') {
+        const feelingsSummary = feelingsService.getSummary();
+        if (feelingsSummary !== 'No current feelings') {
+          console.log('🧠 Feelings:', feelingsSummary);
+        }
+      }
     }
 
     // Clear message context after agent execution
