@@ -12,6 +12,10 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import OpenAI from 'openai';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+import { randomUUID } from 'crypto';
+import { getUploadsDir } from '../../utils/storage.js';
 
 /**
  * Download image from URL
@@ -95,10 +99,30 @@ Uses model: gpt-image-1 (or any newer model)`,
       let edited: string;
 
       if (firstResult?.url) {
+        // URL returned directly from API
         edited = firstResult.url;
+        console.log(`   ✅ Image edited successfully (URL)`);
+        console.log(`   🔗 URL: ${edited}`);
       } else if (firstResult?.b64_json) {
-        // Convert base64 to data URL
-        edited = `data:image/png;base64,${firstResult.b64_json}`;
+        // Save base64 image to uploads directory and return shareable URL
+        console.log(`   💾 Saving base64 image to uploads directory...`);
+
+        const uploadsDir = getUploadsDir();
+        const filename = `edited-${randomUUID()}.png`;
+        const filepath = join(uploadsDir, filename);
+
+        // Convert base64 to buffer and save
+        const imageBuffer = Buffer.from(firstResult.b64_json, 'base64');
+        writeFileSync(filepath, imageBuffer);
+
+        // Generate public URL
+        const serverUrl = process.env.ARTIFACT_SERVER_URL
+          || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
+        edited = `${serverUrl}/uploads/${filename}`;
+
+        console.log(`   ✅ Image edited successfully (saved to disk)`);
+        console.log(`   📁 Saved: ${filepath}`);
+        console.log(`   🔗 Public URL: ${edited}`);
       } else {
         console.error('❌ No edited image returned from OpenAI API:');
         console.error(`   Full API Response:`, JSON.stringify(result, null, 2));
@@ -106,9 +130,6 @@ Uses model: gpt-image-1 (or any newer model)`,
         console.error(`   Result.data[0]:`, result.data?.[0]);
         throw new Error('No edited image returned from API');
       }
-
-      console.log(`   ✅ Image edited successfully`);
-      console.log(`   🔗 URL/Format: ${edited.startsWith('data:') ? 'base64 data URL' : edited}`);
 
       return {
         success: true,
