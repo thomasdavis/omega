@@ -17,6 +17,9 @@ import type {
   ListArtifactsResponse,
   UnsandboxError,
   LanguagesResponse,
+  ValidateResponse,
+  ThrottleStatusResponse,
+  StatsResponse,
 } from './types.js';
 
 /**
@@ -262,10 +265,39 @@ export class UnsandboxClient {
       requestBody.network = request.network;
     }
 
-    const executeResponse = await this.request<ExecuteCodeResponse>('/execute/async', {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
+    let executeResponse: ExecuteCodeResponse;
+    try {
+      executeResponse = await this.request<ExecuteCodeResponse>('/execute/async', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+    } catch (error) {
+      // Enhanced error handling: check for throttling on 429 errors
+      if (error instanceof UnsandboxApiError && error.status === 429) {
+        console.log(`\n⚠️ [${new Date().toISOString()}] Rate limit detected, checking throttle status...`);
+        try {
+          const throttleStatus = await this.checkThrottleStatus();
+          if (throttleStatus.throttled) {
+            throw new UnsandboxApiError(
+              429,
+              'RATE_LIMITED',
+              `API key is throttled: ${throttleStatus.reason || 'Rate limit exceeded'}. ${
+                throttleStatus.retry_after ? `Retry after: ${throttleStatus.retry_after}` : ''
+              }`,
+              { throttleStatus }
+            );
+          }
+        } catch (throttleError) {
+          // If throttle check fails, rethrow original error
+          if (!(throttleError instanceof UnsandboxApiError && throttleError.code === 'RATE_LIMITED')) {
+            console.log(`   ⚠️ Throttle status check failed, using original error`);
+          } else {
+            throw throttleError;
+          }
+        }
+      }
+      throw error;
+    }
 
     console.log(`\n✅ [${new Date().toISOString()}] Job submitted successfully`);
     console.log(`   Job ID: ${executeResponse.job_id}`);
@@ -517,6 +549,181 @@ export class UnsandboxClient {
         console.log(`   Error: ${error.message}`);
       }
       return false;
+    }
+  }
+
+  /**
+   * Validate API key
+   * Checks if the current API key is valid and returns account information
+   *
+   * @returns Validation result with account details
+   * @throws UnsandboxApiError if API key is invalid or request fails
+   *
+   * @example
+   * ```typescript
+   * try {
+   *   const result = await client.validate();
+   *   if (result.valid) {
+   *     console.log(`API key is valid for ${result.email}`);
+   *     console.log(`Account tier: ${result.tier}`);
+   *   }
+   * } catch (error) {
+   *   console.error('API key validation failed:', error.message);
+   * }
+   * ```
+   */
+  async validate(): Promise<ValidateResponse> {
+    console.log(`\n🔑 [${new Date().toISOString()}] Validating API Key`);
+    console.log(`   Checking API key validity...`);
+
+    try {
+      const result = await this.request<ValidateResponse>('/validate', {
+        method: 'GET',
+      });
+
+      console.log(`\n✅ [${new Date().toISOString()}] API Key Validation Complete`);
+      console.log(`   Valid: ${result.valid}`);
+      if (result.valid) {
+        console.log(`   Email: ${result.email || 'N/A'}`);
+        console.log(`   Tier: ${result.tier || 'N/A'}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.log(`\n❌ [${new Date().toISOString()}] API Key Validation Failed`);
+      if (error instanceof UnsandboxApiError) {
+        console.log(`   Status: ${error.status}`);
+        console.log(`   Message: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check throttle status
+   * Determines if the current API key is being rate-limited
+   *
+   * @returns Throttle status with rate limit information
+   * @throws UnsandboxApiError if request fails
+   *
+   * @example
+   * ```typescript
+   * const status = await client.checkThrottleStatus();
+   * if (status.throttled) {
+   *   console.log(`Throttled: ${status.reason}`);
+   *   console.log(`Retry after: ${status.retry_after}`);
+   *   if (status.rate_limit) {
+   *     console.log(`Rate limit: ${status.rate_limit.remaining}/${status.rate_limit.limit}`);
+   *   }
+   * } else {
+   *   console.log('Not throttled - safe to proceed');
+   * }
+   * ```
+   */
+  async checkThrottleStatus(): Promise<ThrottleStatusResponse> {
+    console.log(`\n🚦 [${new Date().toISOString()}] Checking Throttle Status`);
+    console.log(`   Querying /im-i-throttled endpoint...`);
+
+    try {
+      const result = await this.request<ThrottleStatusResponse>('/im-i-throttled', {
+        method: 'GET',
+      });
+
+      console.log(`\n📊 [${new Date().toISOString()}] Throttle Status Retrieved`);
+      console.log(`   Throttled: ${result.throttled}`);
+      if (result.throttled) {
+        console.log(`   Reason: ${result.reason || 'N/A'}`);
+        console.log(`   Retry After: ${result.retry_after || 'N/A'}`);
+      }
+      if (result.rate_limit) {
+        console.log(`   Rate Limit: ${result.rate_limit.remaining || 'N/A'}/${result.rate_limit.limit || 'N/A'}`);
+        console.log(`   Resets: ${result.rate_limit.reset || 'N/A'}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.log(`\n❌ [${new Date().toISOString()}] Throttle Status Check Failed`);
+      if (error instanceof UnsandboxApiError) {
+        console.log(`   Status: ${error.status}`);
+        console.log(`   Message: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get API usage statistics
+   * Retrieves detailed usage statistics for the account
+   *
+   * @returns Usage statistics including execution counts, timing, and limits
+   * @throws UnsandboxApiError if request fails
+   *
+   * @example
+   * ```typescript
+   * const stats = await client.getStats();
+   * console.log(`Total executions: ${stats.total_executions}`);
+   * console.log(`Period executions: ${stats.period_executions}`);
+   * if (stats.by_language) {
+   *   console.log('Executions by language:', stats.by_language);
+   * }
+   * if (stats.limits) {
+   *   const usage = (stats.period_executions || 0) / (stats.limits.max_executions || 1) * 100;
+   *   console.log(`Usage: ${usage.toFixed(1)}% of limit`);
+   * }
+   * ```
+   */
+  async getStats(): Promise<StatsResponse> {
+    console.log(`\n📈 [${new Date().toISOString()}] Fetching API Statistics`);
+    console.log(`   Querying /stats endpoint...`);
+
+    try {
+      const result = await this.request<StatsResponse>('/stats', {
+        method: 'GET',
+      });
+
+      console.log(`\n📊 [${new Date().toISOString()}] Statistics Retrieved`);
+      console.log(`   Total Executions: ${result.total_executions || 'N/A'}`);
+      console.log(`   Period Executions: ${result.period_executions || 'N/A'}`);
+      console.log(`   Total Execution Time: ${result.total_execution_time_ms || 'N/A'}ms`);
+
+      if (result.by_language) {
+        console.log(`   Top Languages: ${Object.entries(result.by_language)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([lang, count]) => `${lang}(${count})`)
+          .join(', ')}`);
+      }
+
+      if (result.by_status) {
+        console.log(`   By Status:`);
+        console.log(`      Completed: ${result.by_status.completed || 0}`);
+        console.log(`      Failed: ${result.by_status.failed || 0}`);
+        console.log(`      Timeout: ${result.by_status.timeout || 0}`);
+        console.log(`      Cancelled: ${result.by_status.cancelled || 0}`);
+      }
+
+      if (result.limits) {
+        console.log(`   Limits:`);
+        console.log(`      Max Executions: ${result.limits.max_executions || 'N/A'}`);
+        console.log(`      Max Execution Time: ${result.limits.max_execution_time_ms || 'N/A'}ms`);
+        if (result.period_executions !== undefined && result.limits.max_executions) {
+          const usage = (result.period_executions / result.limits.max_executions * 100).toFixed(1);
+          console.log(`      Current Usage: ${usage}%`);
+        }
+      }
+
+      if (result.period_start || result.period_end) {
+        console.log(`   Billing Period: ${result.period_start || 'N/A'} to ${result.period_end || 'N/A'}`);
+      }
+
+      return result;
+    } catch (error) {
+      console.log(`\n❌ [${new Date().toISOString()}] Statistics Retrieval Failed`);
+      if (error instanceof UnsandboxApiError) {
+        console.log(`   Status: ${error.status}`);
+        console.log(`   Message: ${error.message}`);
+      }
+      throw error;
     }
   }
 }

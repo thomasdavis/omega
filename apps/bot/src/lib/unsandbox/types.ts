@@ -191,3 +191,77 @@ export interface LanguageInfo {
  * Response from /languages endpoint
  */
 export type LanguagesResponse = LanguageInfo[];
+
+/**
+ * Response from /validate endpoint
+ * Validates if the API key is valid and returns account information
+ */
+export interface ValidateResponse {
+  /** Whether the API key is valid */
+  valid: boolean;
+  /** Account email (if valid) */
+  email?: string;
+  /** Account tier/plan (if valid) */
+  tier?: string;
+  /** Additional account metadata */
+  [key: string]: any;
+}
+
+/**
+ * Response from /im-i-throttled endpoint
+ * Checks if the current API key is being rate-limited
+ */
+export interface ThrottleStatusResponse {
+  /** Whether the API key is currently throttled */
+  throttled: boolean;
+  /** Reason for throttling (if throttled) */
+  reason?: string;
+  /** Retry after timestamp or duration (if throttled) */
+  retry_after?: string | number;
+  /** Rate limit information */
+  rate_limit?: {
+    /** Maximum requests allowed in the window */
+    limit?: number;
+    /** Remaining requests in current window */
+    remaining?: number;
+    /** When the rate limit window resets */
+    reset?: string | number;
+  };
+  /** Additional throttle metadata */
+  [key: string]: any;
+}
+
+/**
+ * Response from /stats endpoint
+ * Returns API usage statistics for the account
+ */
+export interface StatsResponse {
+  /** Total number of executions */
+  total_executions?: number;
+  /** Executions in current billing period */
+  period_executions?: number;
+  /** Total execution time in milliseconds */
+  total_execution_time_ms?: number;
+  /** Executions by language */
+  by_language?: Record<string, number>;
+  /** Executions by status */
+  by_status?: {
+    completed?: number;
+    failed?: number;
+    timeout?: number;
+    cancelled?: number;
+  };
+  /** Current billing period start */
+  period_start?: string;
+  /** Current billing period end */
+  period_end?: string;
+  /** Account usage limits */
+  limits?: {
+    /** Maximum executions per period */
+    max_executions?: number;
+    /** Maximum execution time per period */
+    max_execution_time_ms?: number;
+  };
+  /** Additional statistics metadata */
+  [key: string]: any;
+}
