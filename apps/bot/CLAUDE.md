@@ -73,7 +73,7 @@ Unlike basic chatbots, Omega:
 
 #### Development & Code Execution
 1. **calculator** - Mathematical calculations and expressions
-2. **unsandbox** - Execute code in 11 languages (JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash)
+2. **unsandbox** - Execute code in 42+ languages (dynamically fetched from Unsandbox API - including JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash, and many more)
    - Configurable timeout and network isolation
    - Returns stdout, stderr, exit codes, execution time
 
