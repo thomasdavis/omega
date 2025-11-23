@@ -29,6 +29,15 @@ import {
   broadcastPresence,
   getPusherConfig,
 } from '../lib/pusher.js';
+import {
+  getYjsDocument,
+  initializeYjsDocument,
+  getYjsContent,
+  applyYjsUpdate,
+  broadcastAwareness,
+  getYjsState,
+  syncYjsToDatabase,
+} from '../lib/yjsService.js';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -666,6 +675,125 @@ function createApp(): express.Application {
       console.error('Error leaving document:', error);
       res.status(500).json({
         error: 'Failed to leave document',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Yjs sync: Get initial document state
+  app.get('/api/documents/:id/yjs-state', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // Check if document exists
+      const document = await getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      // Initialize Yjs document with database content
+      initializeYjsDocument(id, document.content);
+
+      // Get the full Yjs state
+      const state = getYjsState(id);
+
+      // Convert to base64 for JSON transport
+      const stateBase64 = Buffer.from(state).toString('base64');
+
+      res.json({
+        state: stateBase64,
+        content: document.content,
+      });
+    } catch (error) {
+      console.error('Error getting Yjs state:', error);
+      res.status(500).json({
+        error: 'Failed to get document state',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Yjs sync: Apply update from client
+  app.post('/api/documents/:id/yjs-update', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { update, clientId } = req.body;
+
+      if (!update || !clientId) {
+        return res.status(400).json({
+          error: 'Missing update or clientId',
+          message: 'Both update and clientId are required',
+        });
+      }
+
+      // Convert base64 to Uint8Array
+      const updateBytes = new Uint8Array(Buffer.from(update, 'base64'));
+
+      // Apply update and broadcast to other clients
+      await applyYjsUpdate(id, updateBytes, clientId);
+
+      // Periodically sync to database (every 10th update or so)
+      // In production, use a debounced/throttled approach
+      if (Math.random() < 0.1) {
+        const content = syncYjsToDatabase(id);
+        await updateDocumentContent(id, content);
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error applying Yjs update:', error);
+      res.status(500).json({
+        error: 'Failed to apply update',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Yjs awareness: Broadcast cursor/selection updates
+  app.post('/api/documents/:id/yjs-awareness', express.json(), async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { update, clientId } = req.body;
+
+      if (!update || !clientId) {
+        return res.status(400).json({
+          error: 'Missing update or clientId',
+          message: 'Both update and clientId are required',
+        });
+      }
+
+      // Convert base64 to Uint8Array
+      const updateBytes = new Uint8Array(Buffer.from(update, 'base64'));
+
+      // Broadcast awareness update
+      await broadcastAwareness(id, updateBytes, clientId);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error broadcasting awareness:', error);
+      res.status(500).json({
+        error: 'Failed to broadcast awareness',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // Yjs sync: Force sync to database
+  app.post('/api/documents/:id/yjs-sync', async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+
+      // Sync Yjs state to database
+      const content = syncYjsToDatabase(id);
+      if (content) {
+        await updateDocumentContent(id, content);
+      }
+
+      res.json({ success: true, synced: !!content });
+    } catch (error) {
+      console.error('Error syncing document:', error);
+      res.status(500).json({
+        error: 'Failed to sync document',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
