@@ -366,6 +366,51 @@ export class DiscordMessageAdapter {
   }
 
   /**
+   * Build an embed for AI response with better visual hierarchy
+   */
+  buildResponseEmbed(response: string, context?: { username?: string; toolCount?: number }): EmbedBuilder {
+    const embed = new EmbedBuilder()
+      .setColor(Colors.Blue)
+      .setTimestamp();
+
+    // Set title if we have context
+    if (context?.username) {
+      const toolInfo = context.toolCount ? ` • ${context.toolCount} tool${context.toolCount > 1 ? 's' : ''} used` : '';
+      embed.setTitle(`💬 Response${toolInfo}`);
+    }
+
+    // Handle long responses by chunking
+    if (response.length <= EMBED_DESCRIPTION_LIMIT) {
+      embed.setDescription(response);
+    } else {
+      // Chunk the response and use first chunk as description, rest as field
+      const chunks = this.chunkText(response, {
+        maxLength: EMBED_DESCRIPTION_LIMIT,
+        addContinuationMarkers: false
+      });
+
+      embed.setDescription(chunks[0]);
+
+      if (chunks.length > 1) {
+        // Add remaining chunks as fields
+        for (let i = 1; i < chunks.length && i < 3; i++) { // Max 3 additional chunks to avoid hitting total limit
+          embed.addFields({
+            name: `Continued (${i})`,
+            value: chunks[i].substring(0, EMBED_FIELD_LIMIT),
+            inline: false
+          });
+        }
+
+        if (chunks.length > 3) {
+          embed.setFooter({ text: `Response truncated (${chunks.length - 3} more chunks not shown)` });
+        }
+      }
+    }
+
+    return embed;
+  }
+
+  /**
    * Send a message with automatic chunking if needed
    */
   async sendMessage(

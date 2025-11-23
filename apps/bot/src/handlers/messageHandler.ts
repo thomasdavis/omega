@@ -48,8 +48,9 @@ export async function handleMessage(message: Message): Promise<void> {
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
   if ('send' in message.channel && channelName === 'omega') {
     const emoji = decision.shouldRespond ? '✅' : '❌';
+    // Use spoiler tags to hide verbose reasoning while keeping key info visible
     await message.channel.send(
-      `${emoji} **Decision:** ${decision.shouldRespond ? 'Respond' : 'Ignore'} | **Confidence:** ${decision.confidence}% | **Reason:** ${decision.reason}`
+      `${emoji} ${decision.shouldRespond ? 'Responding' : 'Ignoring'} (${decision.confidence}% confidence)\n||📋 Reason: ${decision.reason}||`
     );
   }
 
@@ -249,8 +250,14 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
+      // Convert response to embed for better visual hierarchy
+      const responseEmbed = messageAdapter.buildResponseEmbed(result.response, {
+        username: message.author.username,
+        toolCount: result.toolCalls?.length || 0,
+      });
+
       await message.reply({
-        content: result.response,
+        embeds: [responseEmbed],
         allowedMentions: { repliedUser: false }, // Don't ping the user
       });
       console.log(`✅ Sent response (${result.response.length} chars)`);
