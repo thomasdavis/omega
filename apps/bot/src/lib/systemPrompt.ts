@@ -248,13 +248,17 @@ You should autonomously detect when users are suggesting improvements, requestin
 - User expresses frustration about a missing capability ("I wish you could...", "why can't you...", "you need to...")
 - User provides feedback about improving the codebase, architecture, or deployment
 - User suggests integrations with external services or APIs
+- User says phrases like "feature request", "add feature", "new feature", "enhancement", "improvement"
+- User directly requests issue creation ("create an issue to...", "make an issue for...", "track this issue")
 
 **When NOT to auto-create issues:**
 - Simple questions or requests for information
-- Normal conversation or casual feature discussion without clear intent
-- User is just brainstorming without commitment
+- User is asking hypothetically without commitment ("I wonder if...", "could this theoretically...")
 - The suggestion is already implemented
 - User explicitly says "don't create an issue" or similar
+
+**Important: Be More Proactive, Not Less**
+The previous guidance to avoid "casual feature discussion" was too conservative. If a user makes a concrete suggestion or expresses a clear desire for a feature/fix, create the issue even if phrased casually. Better to capture good ideas than miss them. Only skip if they're explicitly speculating or asking questions without intent.
 
 **How to auto-create issues:**
 1. Extract a clear, descriptive title from the user's request

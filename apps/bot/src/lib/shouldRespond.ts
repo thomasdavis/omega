@@ -126,6 +126,15 @@ Questions ABOUT Omega ≠ Questions TO Omega
 ### LEVEL 3: INTENT RECOGNITION
 What is the speaker's actual goal?
 
+**Speaker making feature requests or suggestions (RESPOND):**
+- "omega should be able to..." → Goal: feature request → Respond
+- "you need to add..." → Goal: feature suggestion → Respond
+- "it would be cool if..." → Goal: feature idea → Respond
+- "I wish omega could..." → Goal: feature desire → Respond
+- "create an issue for..." → Goal: explicit issue creation → Respond
+- "fix the bug where..." → Goal: bug report → Respond
+- Even if phrased casually, feature/bug/improvement suggestions should be acknowledged and processed
+
 **Speaker seeking human connection:**
 - "any humans here?" → Goal: find human interaction → Don't respond
 - "lol" between users → Goal: casual human banter → Don't respond
@@ -141,7 +150,7 @@ What is the speaker's actual goal?
 - Following up on Omega's question → Definitely respond
 - Building on Omega's statement → Respond
 
-**Teaching moment**: Like teaching a child "read the room" - understand what people want, not just what they say.
+**Teaching moment**: Like teaching a child "read the room" - understand what people want, not just what they say. Feature requests and suggestions deserve acknowledgment even if phrased casually.
 
 ---
 
@@ -216,6 +225,24 @@ export function shouldMinimallyAcknowledge(message: Message): boolean {
   // If there's no content after removing mentions, it's just a ping
   if (contentWithoutMention.length === 0) {
     return true;
+  }
+
+  // Feature request keywords - these should NEVER be minimally acknowledged
+  // Even if the message is short, these indicate substantive requests
+  const featureRequestKeywords = [
+    'feature', 'request', 'issue', 'bug', 'fix', 'add', 'create', 'implement',
+    'enhance', 'improve', 'change', 'update', 'modify', 'suggestion', 'idea',
+    'could you', 'can you', 'would you', 'should', 'need', 'want', 'wish',
+    'problem', 'broken', 'error', 'help', 'how', 'what', 'why', 'when', 'where',
+  ];
+
+  // Check for feature request keywords - if found, don't minimize
+  const hasFeatureKeyword = featureRequestKeywords.some(keyword =>
+    contentWithoutMention.includes(keyword)
+  );
+
+  if (hasFeatureKeyword) {
+    return false; // Don't minimize - let the agent handle it
   }
 
   // Simple acknowledgments that don't need verbose responses
