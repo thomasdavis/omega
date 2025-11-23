@@ -43,6 +43,9 @@ async function generateImage(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('❌ OpenAI Image Generation API Error:');
+      console.error(`   Status: ${response.status} ${response.statusText}`);
+      console.error(`   Full Error Response:`, JSON.stringify(errorData, null, 2));
       throw new Error(`OpenAI API error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 
@@ -54,6 +57,8 @@ async function generateImage(
     };
 
     if (!data.data || !data.data[0] || !data.data[0].url) {
+      console.error('❌ Invalid OpenAI API Response:');
+      console.error(`   Full Response:`, JSON.stringify(data, null, 2));
       throw new Error('Invalid response from OpenAI API: missing image URL');
     }
 
@@ -62,7 +67,13 @@ async function generateImage(
       revisedPrompt: data.data[0].revised_prompt,
     };
   } catch (error) {
-    console.error('Error generating image:', error);
+    console.error('❌ Error generating image:');
+    console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+    console.error(`   Error Message:`, error instanceof Error ? error.message : String(error));
+    console.error(`   Full Error Object:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    if (error instanceof Error && error.stack) {
+      console.error(`   Stack Trace:`, error.stack);
+    }
     throw new Error(`Failed to generate image: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
@@ -99,7 +110,13 @@ export const generateUserImageTool = tool({
         message: `Image generated successfully! You can view it at: ${result.imageUrl}`,
       };
     } catch (error) {
-      console.error('Error in generateUserImage tool:', error);
+      console.error('❌ Error in generateUserImage tool:');
+      console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
+      console.error(`   Error Message:`, error instanceof Error ? error.message : String(error));
+      console.error(`   Full Error Object:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      if (error instanceof Error && error.stack) {
+        console.error(`   Stack Trace:`, error.stack);
+      }
       return {
         error: error instanceof Error ? error.message : 'Failed to generate image',
         success: false,
