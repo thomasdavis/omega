@@ -12,15 +12,8 @@ import { getBlogDir } from '../../utils/storage.js';
 // Blog content directory - uses persistent storage in production
 const BLOG_DIR = getBlogDir();
 
-// Available TTS voices from UncloseAI
-const TTS_VOICES = [
-  'alloy',
-  'echo',
-  'fable',
-  'onyx',
-  'nova',
-  'shimmer',
-] as const;
+// Default voice for TTS
+const DEFAULT_TTS_VOICE = 'bm_fable';
 
 interface BlogPostMetadata {
   title: string;
@@ -148,7 +141,8 @@ export const createBlogPostTool = tool({
   - Image captions in italics (*caption text*)
   - Lists, links, code blocks, etc.
 
-  Available TTS voices: ${TTS_VOICES.join(', ')}
+  Available TTS voices: 227+ voices from UncloseAI API including alloy, echo, fable, onyx, nova, shimmer,
+  bm_fable (default - natural clear voice), and many more. The voice list is dynamically fetched from the API.
 
   Example usage:
   - "Create a blog post about TypeScript best practices"
@@ -159,7 +153,7 @@ export const createBlogPostTool = tool({
     title: z.string().describe('The title of the blog post'),
     content: z.string().describe('The markdown content of the blog post (without frontmatter - that will be added automatically)'),
     tts: z.boolean().default(true).describe('Enable text-to-speech for this post (default: true)'),
-    ttsVoice: z.enum(TTS_VOICES).default('bm_fable').describe('Voice to use for TTS playback (default: bm_fable)'),
+    ttsVoice: z.string().default(DEFAULT_TTS_VOICE).describe(`Voice to use for TTS playback (default: ${DEFAULT_TTS_VOICE}). Supports 227+ voices from UncloseAI.`),
   }),
 
   execute: async ({ title, content, tts, ttsVoice }) => {

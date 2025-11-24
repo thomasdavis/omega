@@ -13,7 +13,6 @@ import {
   parseRailwayWebhook,
   summarizeError,
   analyzeEnvironmentVariables,
-  type RailwayError,
   type ErrorSummary,
 } from './railwayErrorDetector.js';
 import {
@@ -21,7 +20,6 @@ import {
   findDuplicateIssue,
   createGitHubIssue,
   updateGitHubIssue,
-  type GitHubIssue,
 } from './githubIssueManager.js';
 
 export interface ErrorProcessingResult {

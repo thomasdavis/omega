@@ -12,16 +12,6 @@ import { getBlogDir } from '../../utils/storage.js';
 // Blog content directory - uses persistent storage in production
 const BLOG_DIR = getBlogDir();
 
-// Available TTS voices (examples - expand as needed)
-const TTS_VOICES = [
-  'bm_fable',
-  'bm_alloy',
-  'bm_echo',
-  'bm_onyx',
-  'bm_nova',
-  'bm_shimmer',
-] as const;
-
 interface BlogPostMetadata {
   title: string;
   date: string;
@@ -269,11 +259,12 @@ export const updateBlogPostTool = tool({
   - Date format is YYYY-MM-DD
   - TTS settings are valid
 
-  Available TTS voices: ${TTS_VOICES.join(', ')}
+  Available TTS voices: 227+ voices from UncloseAI API including alloy, echo, fable, onyx, nova, shimmer,
+  bm_fable (recommended), and many more. The voice list is dynamically fetched from the API.
 
   Example usage:
   - "Update the blog post 2025-11-20-example-post with new content"
-  - "Change the TTS voice to bm_nova for the post about TypeScript"
+  - "Change the TTS voice to bm_fable for the post about TypeScript"
   - "Update the title and enable TTS for yesterday's blog post"`,
 
   inputSchema: z.object({
@@ -282,7 +273,7 @@ export const updateBlogPostTool = tool({
     content: z.string().optional().describe('Updated markdown content (without frontmatter)'),
     date: z.string().optional().describe('Updated publication date (YYYY-MM-DD format)'),
     tts: z.boolean().optional().describe('Enable/disable text-to-speech'),
-    ttsVoice: z.enum(TTS_VOICES).optional().describe('Voice to use for TTS playback'),
+    ttsVoice: z.string().optional().describe('Voice to use for TTS playback. Supports 227+ voices from UncloseAI.'),
   }),
 
   execute: async ({ slug, title, content, date, tts, ttsVoice }) => {

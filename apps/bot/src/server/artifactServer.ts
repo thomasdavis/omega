@@ -22,7 +22,6 @@ import {
   getDocumentCount,
   addCollaborator,
   getDocumentCollaborators,
-  hasDocumentAccess,
 } from '../database/documentService.js';
 import {
   broadcastDocumentUpdate,
@@ -30,9 +29,7 @@ import {
   getPusherConfig,
 } from '../lib/pusher.js';
 import {
-  getYjsDocument,
   initializeYjsDocument,
-  getYjsContent,
   applyYjsUpdate,
   broadcastAwareness,
   getYjsState,
@@ -342,7 +339,7 @@ function createApp(): express.Application {
       }
 
       // Validate request
-      const validation = validateTTSRequest(ttsRequest);
+      const validation = await validateTTSRequest(ttsRequest);
       if (!validation.valid) {
         return res.status(400).json({
           error: 'Invalid request',
@@ -376,7 +373,7 @@ function createApp(): express.Application {
   // Railway Error Webhook - POST /api/railway-webhook
   app.post('/api/railway-webhook', express.json(), async (req: Request, res: Response) => {
     try {
-      const { error, stackTrace, timestamp, environment, service, logContext } = req.body;
+      const { error, environment, service, logContext } = req.body;
 
       if (!error) {
         return res.status(400).json({ error: 'Missing error field in webhook payload' });
