@@ -58,7 +58,7 @@ interface FileIndexEntry {
  * Sanitize filename to prevent directory traversal
  */
 function sanitizeFilename(filename: string): string {
-  const basename = filename.replace(/^.*[\\\/]/, '');
+  const basename = filename.replace(/^.*[\\/ ]/, '');
   return basename.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 

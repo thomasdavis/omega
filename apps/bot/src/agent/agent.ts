@@ -4,8 +4,7 @@
  */
 
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool, stepCountIs } from 'ai';
-import { z } from 'zod';
+import { streamText, stepCountIs } from 'ai';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
@@ -175,28 +174,19 @@ export async function runAgent(
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
       stopWhen: stepCountIs(10),
-      // @ts-ignore - onStepFinish callback types differ in beta
       onStepFinish: (step) => {
         // Track tool calls - step.content contains an array of tool-call and tool-result objects
-        // @ts-ignore - content property exists at runtime
         if (step.content && Array.isArray(step.content)) {
-          // @ts-ignore
           const toolCallItems = step.content.filter(item => item.type === 'tool-call');
-          // @ts-ignore
           const toolResultItems = step.content.filter(item => item.type === 'tool-result');
 
           for (const toolCallItem of toolCallItems) {
-            // @ts-ignore
             const toolName = toolCallItem.toolName;
-            // @ts-ignore
             const toolCallId = toolCallItem.toolCallId;
-            // @ts-ignore - input contains the arguments
             const args = toolCallItem.input || {};
 
             // Find the corresponding result
-            // @ts-ignore
             const resultItem = toolResultItems.find(r => r.toolCallId === toolCallId);
-            // @ts-ignore - output contains the result
             const result = resultItem?.output;
 
             console.log(`   🔧 Tool called: ${toolName} with args:`, args);

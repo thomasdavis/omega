@@ -215,7 +215,7 @@ function isAllowedExtension(filename: string): boolean {
  */
 function sanitizeFilename(filename: string): string {
   // Remove any path components
-  const basename = filename.replace(/^.*[\\\/]/, '');
+  const basename = filename.replace(/^.*[\\/ ]/, '');
 
   // Remove dangerous characters but keep extension
   return basename.replace(/[^a-zA-Z0-9._-]/g, '_');
