@@ -62,70 +62,70 @@ describe('TTS Library', () => {
   });
 
   describe('validateTTSRequest', () => {
-    it('should accept valid request', () => {
+    it('should accept valid request', async () => {
       const request: TTSRequest = {
         text: 'Hello world',
         voice: 'bm_fable',
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
     });
 
-    it('should reject empty text', () => {
+    it('should reject empty text', async () => {
       const request: TTSRequest = {
         text: '',
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
     });
 
-    it('should reject whitespace-only text', () => {
+    it('should reject whitespace-only text', async () => {
       const request: TTSRequest = {
         text: '   ',
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(false);
     });
 
-    it('should reject text that is too long', () => {
+    it('should reject text that is too long', async () => {
       const request: TTSRequest = {
         text: 'a'.repeat(5000),
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('maximum length');
     });
 
-    it('should reject invalid voice', () => {
+    it('should reject invalid voice', async () => {
       const request: TTSRequest = {
         text: 'Hello',
-        voice: 'invalid_voice',
+        voice: 'invalid_voice_that_does_not_exist_in_api',
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(false);
       expect(result.error).toContain('Invalid voice');
     });
 
-    it('should accept request without voice (uses default)', () => {
+    it('should accept request without voice (uses default)', async () => {
       const request: TTSRequest = {
         text: 'Hello world',
       };
-      const result = validateTTSRequest(request);
+      const result = await validateTTSRequest(request);
       expect(result.valid).toBe(true);
     });
 
-    it('should accept valid alternative voices', () => {
+    it('should accept valid alternative voices', async () => {
       const voices = ['alloy', 'echo', 'shimmer', 'onyx', 'nova'];
-      voices.forEach(voice => {
+      for (const voice of voices) {
         const request: TTSRequest = {
           text: 'Hello',
           voice,
         };
-        const result = validateTTSRequest(request);
+        const result = await validateTTSRequest(request);
         expect(result.valid).toBe(true);
-      });
+      }
     });
   });
 });

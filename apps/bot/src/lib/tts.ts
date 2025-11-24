@@ -23,31 +23,140 @@ export interface TTSResponse {
 }
 
 /**
- * Available TTS voices from UncloseAI
- * bm_fable is the recommended default (natural, clear voice)
+ * Available TTS voices - dynamically fetched from UncloseAI
+ * This will be populated from the API
  */
-export const TTS_VOICES = [
-  'alloy',
-  'echo',
-  'fable',
-  'shimmer',
-  'onyx',
-  'nova',
-  'bm_fable',
-  // Add more voices as needed from UncloseAI's 227+ voice library
-] as const;
+let CACHED_VOICES: string[] = [];
+const VOICES_CACHE_FILE = 'tts-voices-cache.json';
+const VOICES_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-export type TTSVoice = typeof TTS_VOICES[number];
+export type TTSVoice = string;
 
-const DEFAULT_VOICE: TTSVoice = 'bm_fable';
+const DEFAULT_VOICE = 'bm_fable';
 const MAX_TEXT_LENGTH = 4096; // Maximum characters for TTS
 const TTS_API_ENDPOINT = 'https://speech.ai.unturf.com/v1/audio/speech';
+const TTS_VOICES_ENDPOINT = 'https://speech.ai.unturf.com/v1/voices';
+
+interface VoiceModel {
+  id: string;
+  voices: string[];
+}
+
+interface VoicesApiResponse {
+  data: VoiceModel[];
+}
 
 /**
  * Get the TTS cache directory
  */
 function getTTSCacheDir(): string {
   return getDataDir('tts-cache');
+}
+
+/**
+ * Get cached voices from file system
+ */
+function getCachedVoicesFromFile(): { voices: string[]; timestamp: number } | null {
+  const cacheDir = getTTSCacheDir();
+  const cachePath = join(cacheDir, VOICES_CACHE_FILE);
+
+  if (existsSync(cachePath)) {
+    try {
+      const data = readFileSync(cachePath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Error reading cached voices:', error);
+      return null;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Save voices to file system cache
+ */
+function saveVoicesToCache(voices: string[]): void {
+  const cacheDir = getTTSCacheDir();
+  const cachePath = join(cacheDir, VOICES_CACHE_FILE);
+
+  try {
+    const data = {
+      voices,
+      timestamp: Date.now(),
+    };
+    writeFileSync(cachePath, JSON.stringify(data, null, 2), 'utf-8');
+    console.log(`✅ Cached ${voices.length} TTS voices`);
+  } catch (error) {
+    console.error('Error caching voices:', error);
+  }
+}
+
+/**
+ * Fetch available voices from UncloseAI API
+ */
+async function fetchVoicesFromApi(): Promise<string[]> {
+  try {
+    console.log('🎤 Fetching TTS voices from API...');
+    const response = await fetch(TTS_VOICES_ENDPOINT);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch voices: ${response.status} ${response.statusText}`);
+    }
+
+    const data: VoicesApiResponse = await response.json();
+
+    // Flatten all voices from all models
+    const allVoices = data.data.flatMap((model) => model.voices);
+
+    // Remove duplicates and sort
+    const uniqueVoices = [...new Set(allVoices)].sort();
+
+    console.log(`✅ Fetched ${uniqueVoices.length} unique voices from ${data.data.length} models`);
+
+    return uniqueVoices;
+  } catch (error) {
+    console.error('Error fetching voices from API:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get available TTS voices (with caching)
+ * This function fetches voices from the API and caches them for 24 hours
+ */
+export async function getAvailableVoices(): Promise<string[]> {
+  // Return cached voices if available
+  if (CACHED_VOICES.length > 0) {
+    return CACHED_VOICES;
+  }
+
+  // Check file cache
+  const cachedData = getCachedVoicesFromFile();
+  if (cachedData) {
+    const age = Date.now() - cachedData.timestamp;
+    if (age < VOICES_CACHE_DURATION) {
+      console.log(`📦 Using cached voices (age: ${Math.round(age / 1000 / 60)} minutes)`);
+      CACHED_VOICES = cachedData.voices;
+      return CACHED_VOICES;
+    }
+  }
+
+  // Fetch fresh voices from API
+  try {
+    const voices = await fetchVoicesFromApi();
+    CACHED_VOICES = voices;
+    saveVoicesToCache(voices);
+    return voices;
+  } catch (error) {
+    // If API fetch fails and we have stale cache, use it as fallback
+    if (cachedData && cachedData.voices.length > 0) {
+      console.warn('⚠️ API fetch failed, using stale cache as fallback');
+      CACHED_VOICES = cachedData.voices;
+      return CACHED_VOICES;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -61,11 +170,12 @@ export function generateTTSHash(text: string, voice: string): string {
 
 /**
  * Validate TTS request
+ * Note: Voice validation is now lenient since we fetch voices dynamically
  */
-export function validateTTSRequest(request: TTSRequest): {
+export async function validateTTSRequest(request: TTSRequest): Promise<{
   valid: boolean;
   error?: string;
-} {
+}> {
   const { text, voice } = request;
 
   // Check text length
@@ -80,9 +190,17 @@ export function validateTTSRequest(request: TTSRequest): {
     };
   }
 
-  // Validate voice if provided
-  if (voice && !TTS_VOICES.includes(voice as TTSVoice)) {
-    return { valid: false, error: `Invalid voice: ${voice}` };
+  // Validate voice if provided (check against dynamic list)
+  if (voice) {
+    try {
+      const availableVoices = await getAvailableVoices();
+      if (!availableVoices.includes(voice)) {
+        return { valid: false, error: `Invalid voice: ${voice}. Use getAvailableVoices() to see available voices.` };
+      }
+    } catch (error) {
+      // If we can't fetch voices, allow any voice (lenient mode)
+      console.warn('⚠️ Could not validate voice against API, allowing voice:', voice);
+    }
   }
 
   return { valid: true };
@@ -150,8 +268,6 @@ export async function synthesizeSpeech(
   console.log('🎤 [TTS] Text preview:', sanitized.substring(0, 100) + '...');
   console.log('🎤 [TTS] Voice:', voice);
   console.log('🎤 [TTS] Voice type:', typeof voice);
-  console.log('🎤 [TTS] Valid voices:', TTS_VOICES);
-  console.log('🎤 [TTS] Is voice in valid list?', TTS_VOICES.includes(voice as TTSVoice));
 
   const requestBody = {
     input: sanitized,
@@ -220,7 +336,7 @@ export async function generateTTS(request: TTSRequest): Promise<TTSResponse> {
   const { text, voice = DEFAULT_VOICE } = request;
 
   // Validate request
-  const validation = validateTTSRequest(request);
+  const validation = await validateTTSRequest(request);
   if (!validation.valid) {
     throw new Error(validation.error);
   }
