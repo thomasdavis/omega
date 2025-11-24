@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
-import { githubCreateIssueTool, githubUpdateIssueTool, githubCloseIssueTool } from './tools/github.js';
+import { githubCreateIssueTool, githubUpdateIssueTool, githubCloseIssueTool, githubMergePRTool } from './tools/github.js';
 import { listRepositoryFilesTool } from './tools/listRepositoryFiles.js';
 import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool, unsandboxSubmitTool, unsandboxStatusTool } from './tools/unsandbox.js';
@@ -42,12 +42,18 @@ import { queryMessagesTool } from './tools/queryMessages.js';
 import { translateToSpanishTool } from './tools/translateToSpanish.js';
 import { generateUserImageTool } from './tools/generateUserImage.js';
 import { editUserImageTool } from './tools/editUserImage.js';
+import { imageEditorTool } from './tools/imageEditor.js';
+import { advancedImageEditingWithContextTool } from './tools/advancedImageEditingWithContext.js';
 import { marketPredictionTool } from './tools/marketPrediction.js';
 import { triggerDailyBlogTool } from './tools/triggerDailyBlog.js';
 import { commitFileTool } from './tools/commitFile.js';
 import { uploadAndCommitFileTool } from './tools/uploadAndCommitFile.js';
 import { summarizeCommitsTool } from './tools/summarizeCommits.js';
 import { introspectFeelingsTool } from './tools/introspectFeelings.js';
+import { createLiveDocumentTool } from './tools/createLiveDocument.js';
+import { readLiveDocumentTool } from './tools/readLiveDocument.js';
+import { reportMissingToolTool } from './tools/reportMissingTool.js';
+import { inspectToolTool } from './tools/inspectTool.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -118,6 +124,7 @@ export async function runAgent(
         githubCreateIssue: githubCreateIssueTool,
         githubUpdateIssue: githubUpdateIssueTool,
         githubCloseIssue: githubCloseIssueTool,
+        githubMergePR: githubMergePRTool,
         listRepositoryFiles: listRepositoryFilesTool,
         webFetch: webFetchTool,
         unsandbox: unsandboxTool,
@@ -152,12 +159,18 @@ export async function runAgent(
         translateToSpanish: translateToSpanishTool,
         generateUserImage: generateUserImageTool,
         editUserImage: editUserImageTool,
+        imageEditor: imageEditorTool,
+        advancedImageEditingWithContext: advancedImageEditingWithContextTool,
         marketPrediction: marketPredictionTool,
         triggerDailyBlog: triggerDailyBlogTool,
         commitFile: commitFileTool,
         uploadAndCommitFile: uploadAndCommitFileTool,
         summarizeCommits: summarizeCommitsTool,
         introspectFeelings: introspectFeelingsTool,
+        createLiveDocument: createLiveDocumentTool,
+        readLiveDocument: readLiveDocumentTool,
+        reportMissingTool: reportMissingToolTool,
+        inspectTool: inspectToolTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary

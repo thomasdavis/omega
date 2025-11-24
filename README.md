@@ -33,9 +33,10 @@ Through conversations, Omega has built itself these tools:
 - **triggerDailyBlog** - Generate daily blog combining HN philosophy & market predictions
 - **marketPrediction** - Realpolitik-based global market analysis and forecasting
 
-### File Management
+### File Management & Data
 - **fileUpload** - Download and host Discord attachments permanently
 - **exportConversation** - Export Discord conversations as Markdown
+- **queryMessages** - Search message history using natural language queries
 
 ### GitHub Integration
 - **githubCreateIssue** - Create GitHub issues with context
@@ -107,6 +108,8 @@ User: *uses the new feature*
 
 ### Architecture
 
+📐 **[View Full Architecture Diagram](architecture.svg)** | **[Documentation](ARCHITECTURE.md)**
+
 The bot has:
 - **Full file system access** - Can read/write any file in the codebase
 - **Git integration** - Commits and pushes changes
@@ -115,6 +118,12 @@ The bot has:
 - **Auto-deployment** - GitHub Actions deploys every commit
 
 This creates a feedback loop where the bot continuously improves itself.
+
+The architecture diagram provides a complete visual overview of:
+- Monorepo structure and components
+- External service integrations (Discord, OpenAI, GitHub, Unsandbox)
+- 18+ self-built agent tools
+- Data flow and automated features
 
 ## Quick Start
 

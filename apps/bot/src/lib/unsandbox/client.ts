@@ -17,6 +17,9 @@ import type {
   ListArtifactsResponse,
   UnsandboxError,
   LanguagesResponse,
+  AmIThrottledResponse,
+  KeyStatsResponse,
+  ValidateKeyResponse,
 } from './types.js';
 
 /**
@@ -518,6 +521,102 @@ export class UnsandboxClient {
       }
       return false;
     }
+  }
+
+  /**
+   * Check if API key is currently throttled
+   * Fast throttle check that returns last 60s requests and active executions
+   * No expensive usage calculations
+   *
+   * @returns Throttle status with request counts and active executions
+   *
+   * @example
+   * ```typescript
+   * const throttleStatus = await client.amIThrottled();
+   * console.log(`Requests in last 60s: ${throttleStatus.requests_last_60s}`);
+   * console.log(`Active executions: ${throttleStatus.active_executions}`);
+   * console.log(`Throttled: ${throttleStatus.throttled}`);
+   * ```
+   */
+  async amIThrottled(): Promise<AmIThrottledResponse> {
+    console.log(`\n🚦 [${new Date().toISOString()}] Checking Throttle Status`);
+    console.log(`   Endpoint: POST /keys/am-i-throttled`);
+
+    const result = await this.request<AmIThrottledResponse>('/keys/am-i-throttled', {
+      method: 'POST',
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Throttle Status Retrieved`);
+    console.log(`   Requests (last 60s): ${result.requests_last_60s ?? 'N/A'}`);
+    console.log(`   Active Executions: ${result.active_executions ?? 'N/A'}`);
+    console.log(`   Throttled: ${result.throttled ?? 'N/A'}`);
+
+    return result;
+  }
+
+  /**
+   * Get detailed usage statistics for the API key
+   * Returns comprehensive usage data for analytics dashboards
+   *
+   * @returns Detailed usage statistics and quotas
+   *
+   * @example
+   * ```typescript
+   * const stats = await client.getKeyStats();
+   * console.log(`Total requests: ${stats.total_requests}`);
+   * console.log(`Total execution time: ${stats.total_execution_time_ms}ms`);
+   * ```
+   */
+  async getKeyStats(): Promise<KeyStatsResponse> {
+    console.log(`\n📈 [${new Date().toISOString()}] Fetching Key Statistics`);
+    console.log(`   Endpoint: POST /keys/stats`);
+
+    const result = await this.request<KeyStatsResponse>('/keys/stats', {
+      method: 'POST',
+    });
+
+    console.log(`\n📊 [${new Date().toISOString()}] Key Statistics Retrieved`);
+    console.log(`   Total Requests: ${result.total_requests ?? 'N/A'}`);
+    console.log(`   Total Execution Time: ${result.total_execution_time_ms ?? 'N/A'}ms`);
+
+    return result;
+  }
+
+  /**
+   * Validate API key and retrieve its configuration
+   * Responses are cacheable for hours as key configuration rarely changes
+   *
+   * @returns Validation status and key configuration
+   *
+   * @example
+   * ```typescript
+   * const validation = await client.validateKey();
+   * if (validation.valid) {
+   *   console.log(`Max TTL: ${validation.config?.max_ttl}s`);
+   *   console.log(`Rate limit: ${validation.config?.rate_limit?.requests_per_window} requests per ${validation.config?.rate_limit?.window_seconds}s`);
+   * } else {
+   *   console.log('Invalid API key');
+   * }
+   * ```
+   */
+  async validateKey(): Promise<ValidateKeyResponse> {
+    console.log(`\n🔑 [${new Date().toISOString()}] Validating API Key`);
+    console.log(`   Endpoint: POST /keys/validate`);
+
+    const result = await this.request<ValidateKeyResponse>('/keys/validate', {
+      method: 'POST',
+    });
+
+    console.log(`\n✅ [${new Date().toISOString()}] Key Validation Result`);
+    console.log(`   Valid: ${result.valid}`);
+    if (result.config) {
+      console.log(`   Max TTL: ${result.config.max_ttl ?? 'N/A'}s`);
+      if (result.config.rate_limit) {
+        console.log(`   Rate Limit: ${result.config.rate_limit.requests_per_window ?? 'N/A'} requests per ${result.config.rate_limit.window_seconds ?? 'N/A'}s`);
+      }
+    }
+
+    return result;
   }
 }
 

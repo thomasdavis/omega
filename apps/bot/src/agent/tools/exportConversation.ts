@@ -81,6 +81,23 @@ export const exportConversationTool = tool({
         }))
         .reverse();
 
+      // If in a thread, include the thread starter message for context
+      if (channel.isThread()) {
+        try {
+          const starterMessage = await channel.fetchStarterMessage();
+          if (starterMessage) {
+            messages.unshift({
+              username: starterMessage.author.username,
+              content: `[Thread Starter] ${starterMessage.content}`,
+              timestamp: starterMessage.createdAt.toISOString(),
+              id: starterMessage.id,
+            });
+          }
+        } catch (error) {
+          console.log('   ⚠️ Could not fetch thread starter message for export');
+        }
+      }
+
       // Apply filters
       if (username) {
         messages = messages.filter(msg =>

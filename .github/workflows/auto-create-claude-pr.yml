@@ -201,9 +201,10 @@ jobs:
 
           ### Next Steps
 
-          - ✅ Auto-merge will be enabled
-          - ✅ PR will be automatically merged once checks pass
-          - ✅ Deployment will trigger after merge
+          - ⏳ CI checks will run (type check, lint, build)
+          - ✅ Auto-merge will be enabled automatically if all checks pass
+          - 🔧 If checks fail, @claude will be tagged to fix the issues
+          - 🚀 Deployment will trigger after merge
 
           ---
 
@@ -223,34 +224,8 @@ jobs:
           echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
           echo "✅ Created PR #$PR_NUMBER: $PR_URL"
 
-      - name: Enable auto-merge
-        if: steps.check-pr.outputs.exists == 'false' && steps.create-pr.outputs.number != ''
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER="${{ steps.create-pr.outputs.number }}"
-
-          echo "Enabling auto-merge for PR #$PR_NUMBER..."
-
-          # Retry logic for enabling auto-merge (sometimes takes a moment for PR to be ready)
-          MAX_RETRIES=10
-          RETRY_COUNT=0
-
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if gh pr merge "$PR_NUMBER" --auto --squash --delete-branch 2>&1; then
-              echo "✅ Auto-merge enabled successfully"
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⚠️  Failed to enable auto-merge (attempt $RETRY_COUNT/$MAX_RETRIES), retrying in 3s..."
-                sleep 3
-              else
-                echo "❌ Failed to enable auto-merge after $MAX_RETRIES attempts"
-                exit 1
-              fi
-            fi
-          done
+      # Auto-merge is now handled by auto-merge-claude.yml after CI passes
+      # This ensures we only merge if type checks, lints, and builds succeed
 
       - name: Notify Discord of PR creation
         if: steps.check-pr.outputs.exists == 'false' && steps.create-pr.outputs.url != ''
@@ -286,7 +261,7 @@ jobs:
                 $FIELDS
                 \"fields\": [
                   {\"name\": \"Pull Request\", \"value\": \"[#$PR_NUMBER]($PR_URL)\", \"inline\": true},
-                  {\"name\": \"Status\", \"value\": \"Auto-merge enabled ✅\", \"inline\": true}
+                  {\"name\": \"Status\", \"value\": \"CI checks running ⏳\", \"inline\": true}
                 ],
                 \"footer\": {\"text\": \"Omega Bot\"},
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
@@ -314,9 +289,10 @@ jobs:
 
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-            echo "1. ✅ Auto-merge enabled - PR will merge when checks pass" >> $GITHUB_STEP_SUMMARY
-            echo "2. ⏳ Waiting for CI checks to complete" >> $GITHUB_STEP_SUMMARY
-            echo "3. 🚀 Deployment will trigger automatically after merge" >> $GITHUB_STEP_SUMMARY
+            echo "1. ⏳ CI checks will run (type check, lint, build)" >> $GITHUB_STEP_SUMMARY
+            echo "2. ✅ If checks pass, auto-merge will be enabled automatically" >> $GITHUB_STEP_SUMMARY
+            echo "3. 🔧 If checks fail, @claude will be tagged to fix issues" >> $GITHUB_STEP_SUMMARY
+            echo "4. 🚀 Deployment will trigger automatically after merge" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **PR Creation Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY

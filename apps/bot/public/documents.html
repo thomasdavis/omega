@@ -253,7 +253,10 @@
         <label>Your Name:</label>
         <input type="text" id="username" placeholder="Enter your name" />
       </div>
-      <button class="create-btn" onclick="openCreateModal()">+ New Document</button>
+      <div style="display: flex; gap: 12px;">
+        <button class="create-btn" onclick="openCreateModal()">+ New Document</button>
+        <button class="create-btn" onclick="createQADocument()" style="background: #764ba2;">+ Q&A Template</button>
+      </div>
     </div>
 
     <div class="stats" id="stats">
@@ -274,9 +277,15 @@
     <div class="modal-content">
       <h2>Create New Document</h2>
       <input type="text" id="doc-title" placeholder="Document Title" />
+      <div style="margin: 20px 0;">
+        <label style="display: block; margin-bottom: 8px; color: #666; font-size: 14px;">
+          <input type="checkbox" id="use-qa-template" style="width: auto; margin-right: 8px;" />
+          Use Q&A Template (prepopulate with questions for Lisa and Ajax)
+        </label>
+      </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
-        <button class="btn-submit" onclick="createDocument()">Create</button>
+        <button class="btn-submit" onclick="createDocumentFromModal()">Create</button>
       </div>
     </div>
   </div>
@@ -374,8 +383,37 @@
       }
     }
 
+    // Q&A template content
+    function getQATemplate() {
+      return `# Questions for Lisa and Ajax
+
+Please answer the following questions by adding your responses below each question.
+
+**Question 1:** [Enter your first question here]
+- **Lisa's response:**
+- **Ajax's response:**
+
+**Question 2:** [Enter your second question here]
+- **Lisa's response:**
+- **Ajax's response:**
+
+**Question 3:** [Enter your third question here]
+- **Lisa's response:**
+- **Ajax's response:**
+
+---
+*Add more questions as needed using the same format*`;
+    }
+
+    // Create document from modal
+    async function createDocumentFromModal() {
+      const useTemplate = document.getElementById('use-qa-template').checked;
+      const templateContent = useTemplate ? getQATemplate() : '';
+      await createDocument(templateContent);
+    }
+
     // Create document
-    async function createDocument() {
+    async function createDocument(templateContent = '') {
       const title = document.getElementById('doc-title').value.trim();
       const username = usernameInput.value.trim();
 
@@ -390,7 +428,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             title,
-            content: '',
+            content: templateContent,
             userId,
             username: username || 'Anonymous',
           }),
@@ -402,6 +440,31 @@
       } catch (error) {
         console.error('Error creating document:', error);
         alert('Failed to create document');
+      }
+    }
+
+    // Create Q&A document directly
+    async function createQADocument() {
+      const username = usernameInput.value.trim();
+      const title = 'Q&A Session - ' + new Date().toLocaleDateString();
+
+      try {
+        const response = await fetch('/api/documents', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title,
+            content: getQATemplate(),
+            userId,
+            username: username || 'Anonymous',
+          }),
+        });
+
+        const document = await response.json();
+        openDocument(document.id);
+      } catch (error) {
+        console.error('Error creating Q&A document:', error);
+        alert('Failed to create Q&A document');
       }
     }
 
@@ -471,9 +534,21 @@
       }
     });
 
+    // Check for URL parameters to auto-create document
+    function checkURLParameters() {
+      const params = new URLSearchParams(window.location.search);
+      const template = params.get('template');
+
+      if (template === 'qa') {
+        // Auto-create Q&A document
+        createQADocument();
+      }
+    }
+
     // Initial load
     loadDocuments();
     loadBuildFooter();
+    checkURLParameters();
   </script>
 </body>
 </html>

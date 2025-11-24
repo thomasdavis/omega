@@ -1,0 +1,235 @@
+title: Omega - Self-Coding AI Discord Bot Architecture {
+  near: top-center
+  shape: text
+  style: {
+    font-size: 24
+    bold: true
+  }
+}
+
+# External Services
+discord: Discord API {
+  shape: cloud
+  style.fill: "#5865F2"
+}
+
+openai: OpenAI GPT-4.1-mini {
+  shape: cloud
+  style.fill: "#10A37F"
+}
+
+github: GitHub API {
+  shape: cloud
+  style.fill: "#181717"
+}
+
+unsandbox_api: Unsandbox API\n(Code Execution) {
+  shape: cloud
+  style.fill: "#FF6B6B"
+}
+
+railway: Railway\n(Hosting) {
+  shape: cloud
+  style.fill: "#0B0D0E"
+}
+
+# Main Application (Monorepo)
+omega: Omega Monorepo {
+  shape: package
+
+  # Apps
+  bot: apps/bot {
+    shape: package
+    style.fill: "#E3F2FD"
+
+    # API Layer
+    api: API Layer {
+      interactions: api/interactions.ts\n(Discord Webhooks)
+      register: api/register-commands.ts
+
+      interactions -> register: registers commands
+    }
+
+    # Core Services
+    core: Core Services {
+      agent: agent/agent.ts\n(AI Orchestration)
+      message_handler: handlers/messageHandler.ts
+      artifact_server: server/artifactServer.ts\n(Port 3001)
+
+      message_handler -> agent: processes messages
+    }
+
+    # Tools (18+ self-built)
+    tools: Agent Tools {
+      shape: package
+
+      code: Code Tools {
+        calculator: calculator
+        unsandbox: unsandbox\n(11 languages)
+      }
+
+      web: Web Tools {
+        webFetch: webFetch
+        research: researchEssay
+        hackerNews: hackerNewsPhilosophy
+      }
+
+      content: Content Tools {
+        artifact: artifact
+        blog: createBlogPost
+        daily_blog: triggerDailyBlog
+        market: marketPrediction
+      }
+
+      files: File Tools {
+        upload: fileUpload
+        export: exportConversation
+      }
+
+      github_tool: GitHub Tools {
+        create_issue: githubCreateIssue
+      }
+
+      other: Other Tools {
+        whoami: whoami
+        mood: moodUplifter
+      }
+    }
+
+    # Database
+    db: Database {
+      sqlite: SQLite\n(artifacts, blogs,\nconversations)
+      style.fill: "#90CAF9"
+    }
+
+    # Public Files
+    public: public/ {
+      shape: folder
+      documents_html: documents.html
+      editor_html: editor.html
+      uploads: uploads/\n(user files)
+      build_timestamp: BUILD-TIMESTAMP.txt
+    }
+
+    # Connections within bot
+    api.interactions -> core.message_handler
+    core.agent -> tools: uses all tools
+    core.agent -> db: stores data
+    core.artifact_server -> public: serves files
+    tools.files.upload -> public.uploads: saves files
+  }
+
+  # Shared Package
+  shared: packages/shared {
+    shape: package
+    style.fill: "#FFF3E0"
+    common: Common utilities\nand types
+  }
+
+  # Dependencies
+  bot -> shared: imports
+}
+
+# External Connections
+discord -> omega.bot.api.interactions: Webhook POST
+omega.bot.core.agent -> openai: AI requests
+omega.bot.tools.code.unsandbox -> unsandbox_api: Code execution
+omega.bot.tools.github_tool.create_issue -> github: Create issues
+railway -> omega.bot: Hosts application
+
+# Automated Features
+automation: Automated Features {
+  shape: package
+  style.fill: "#E8F5E9"
+
+  daily_blog: Daily Blog\n(9 AM UTC) {
+    style.fill: "#C8E6C9"
+  }
+
+  error_monitor: Railway Error Monitor\n(Auto GitHub Issues) {
+    style.fill: "#FFCCBC"
+  }
+
+  self_coding: Self-Coding Loop\n(Git commits) {
+    style.fill: "#D1C4E9"
+  }
+}
+
+omega.bot.tools.content.daily_blog -> automation.daily_blog: triggers
+railway -> automation.error_monitor: error webhooks
+automation.error_monitor -> github: creates issues
+omega.bot.core.agent -> automation.self_coding: writes code
+automation.self_coding -> github: commits changes
+
+# User Access
+users: Users\n(Discord) {
+  shape: person
+  style.fill: "#FFE0B2"
+}
+
+web_users: Web Users {
+  shape: person
+  style.fill: "#FFE0B2"
+}
+
+users -> discord: /commands
+web_users -> omega.bot.core.artifact_server: HTTP :3001
+web_users -> omega.bot.public: View artifacts/blogs
+
+# Technology Stack
+tech_stack: Technology Stack {
+  near: bottom-left
+  shape: text
+  style: {
+    font-size: 12
+  }
+}
+
+runtime: Runtime: Node.js 18+ {
+  near: bottom-left
+  shape: text
+}
+
+framework: Framework: TypeScript 5.x {
+  near: bottom-left
+  shape: text
+}
+
+build: Build: Turborepo + pnpm 9 {
+  near: bottom-left
+  shape: text
+}
+
+deployment: Deployment: Railway (serverless) {
+  near: bottom-left
+  shape: text
+}
+
+# Legend
+legend: Key Features {
+  near: bottom-right
+  shape: text
+  style: {
+    font-size: 12
+  }
+}
+
+feature1: • Self-modifying codebase {
+  near: bottom-right
+  shape: text
+}
+
+feature2: • 18+ self-built tools {
+  near: bottom-right
+  shape: text
+}
+
+feature3: • Automated daily blog {
+  near: bottom-right
+  shape: text
+}
+
+feature4: • Multi-language code execution {
+  near: bottom-right
+  shape: text
+}

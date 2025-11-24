@@ -191,3 +191,58 @@ export interface LanguageInfo {
  * Response from /languages endpoint
  */
 export type LanguagesResponse = LanguageInfo[];
+
+/**
+ * Response from POST /keys/am-i-throttled endpoint
+ * Fast throttle check that returns last 60s requests and active executions
+ * No expensive usage calculations
+ */
+export interface AmIThrottledResponse {
+  /** Number of requests in the last 60 seconds */
+  requests_last_60s?: number;
+  /** Number of currently active executions */
+  active_executions?: number;
+  /** Whether the key is currently throttled */
+  throttled?: boolean;
+  /** Additional metadata from the API */
+  [key: string]: any;
+}
+
+/**
+ * Response from POST /keys/stats endpoint
+ * Returns detailed usage statistics for analytics dashboards
+ */
+export interface KeyStatsResponse {
+  /** Total number of requests made with this key */
+  total_requests?: number;
+  /** Total execution time in milliseconds */
+  total_execution_time_ms?: number;
+  /** Usage statistics and quotas */
+  [key: string]: any;
+}
+
+/**
+ * Response from POST /keys/validate endpoint
+ * Validates API key and returns configuration
+ * Responses are cacheable for hours
+ */
+export interface ValidateKeyResponse {
+  /** Whether the API key is valid */
+  valid: boolean;
+  /** Key configuration and permissions */
+  config?: {
+    /** Maximum execution time in seconds */
+    max_ttl?: number;
+    /** Rate limit information */
+    rate_limit?: {
+      /** Requests per time window */
+      requests_per_window?: number;
+      /** Time window in seconds */
+      window_seconds?: number;
+    };
+    /** Additional configuration fields */
+    [key: string]: any;
+  };
+  /** Additional metadata from the API */
+  [key: string]: any;
+}
