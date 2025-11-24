@@ -48,7 +48,9 @@ export class UnsandboxClient {
 
   constructor(config: UnsandboxConfig) {
     // Use API key from config, environment variable, or default to empty string
-    this.apiKey = config.apiKey || process.env.UNSANDBOX_API_KEY || '';
+    // DEMONSTRATION MODE: API key commented out, using empty bearer token
+    // this.apiKey = config.apiKey || process.env.UNSANDBOX_API_KEY || '';
+    this.apiKey = ''; // Empty bearer token for demonstration mode
     this.baseUrl = config.baseUrl || 'https://api.unsandbox.com';
     this.timeout = config.timeout || 30000; // Default: 30000ms timeout for HTTP requests
   }
