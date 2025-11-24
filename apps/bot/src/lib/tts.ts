@@ -104,7 +104,12 @@ async function fetchVoicesFromApi(): Promise<string[]> {
       throw new Error(`Failed to fetch voices: ${response.status} ${response.statusText}`);
     }
 
-    const data: VoicesApiResponse = await response.json();
+    const data = await response.json() as VoicesApiResponse;
+
+    // Validate response structure
+    if (!data || !data.data || !Array.isArray(data.data)) {
+      throw new Error('Invalid response format from voices API');
+    }
 
     // Flatten all voices from all models
     const allVoices = data.data.flatMap((model) => model.voices);

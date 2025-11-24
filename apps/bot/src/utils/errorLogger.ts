@@ -134,7 +134,7 @@ export function generateUserErrorMessage(error: unknown, context: ErrorContext =
  */
 function sanitizeErrorForUser(message: string): string {
   // Remove file paths
-  let sanitized = message.replace(/\/[\w\-_.\/]+/g, '[path]');
+  let sanitized = message.replace(/\/[\w\-_./]+/g, '[path]');
 
   // Remove tokens and API keys
   sanitized = sanitized.replace(/[a-zA-Z0-9]{20,}/g, '[token]');

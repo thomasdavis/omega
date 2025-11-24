@@ -342,7 +342,7 @@ function createApp(): express.Application {
       }
 
       // Validate request
-      const validation = validateTTSRequest(ttsRequest);
+      const validation = await validateTTSRequest(ttsRequest);
       if (!validation.valid) {
         return res.status(400).json({
           error: 'Invalid request',
