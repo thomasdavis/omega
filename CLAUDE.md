@@ -278,6 +278,37 @@ echo '<!DOCTYPE html><html><body><h1>API</h1></body></html>' > apps/bot/public/i
 
 ---
 
+### Issue: TypeScript type check failures blocking deployment
+
+**Error:** TypeScript compilation errors like:
+```
+Type 'string' is not assignable to type 'enum_value'
+Argument of type 'X' is not assignable to parameter of type 'Y'
+```
+
+**Cause:** Invalid values assigned to typed variables, incorrect enum usage, or type mismatches in code
+
+**Fix:**
+1. Run type checking locally:
+   ```bash
+   pnpm type-check
+   ```
+2. Review the error messages carefully
+3. Fix the type errors in the source code
+4. Verify the fix:
+   ```bash
+   pnpm type-check  # Should pass with no errors
+   ```
+5. Only commit and deploy after type checking passes
+
+**Prevention:**
+- Always run `pnpm type-check` before committing
+- Set up pre-commit hooks to enforce type checking
+- Enable strict mode in tsconfig.json
+- Never use `@ts-ignore` to bypass type errors - fix the root cause
+
+---
+
 ### Issue: "Cannot use import statement outside a module" in deployed functions
 
 **Error:**
@@ -338,18 +369,57 @@ Warning: Failed to load the ES module. Make sure to set "type": "module" in the 
 
 ### Regular Deployment Workflow
 
+**CRITICAL: Always run TypeScript type checking before deployment!**
+
 ```bash
 # 1. Make changes locally
 # 2. Test with vercel dev (optional)
 
-# 3. Commit and push
+# 3. REQUIRED: Run TypeScript type check
+pnpm type-check
+
+# If type check fails, fix errors before proceeding
+# DO NOT commit or deploy with type errors
+
+# 4. Commit and push only after type check passes
 git add .
 git commit -m "Your changes"
 git push
 
-# 4. Vercel auto-deploys from GitHub
-# 5. Check deployment status in dashboard
+# 5. Vercel auto-deploys from GitHub
+# 6. Check deployment status in dashboard
 ```
+
+**TypeScript Type Checking Enforcement:**
+
+Before every commit and deployment, you MUST verify that TypeScript type checking passes:
+
+```bash
+# Run type check for all packages
+pnpm type-check
+
+# Or for specific package (e.g., bot)
+pnpm --filter=bot type-check
+```
+
+**Why This Matters:**
+- Type errors cause Railway deployment failures
+- Prevents runtime errors from type mismatches
+- Catches issues before they reach production
+- Maintains code quality and type safety
+
+**Automated Type Checking:**
+- The project should have a pre-commit hook or CI check to enforce this
+- Type checking is part of the build process
+- Railway deployments will fail if type errors exist
+
+**Key Points:**
+- ✅ DO: Run `pnpm type-check` before every commit
+- ✅ DO: Fix all type errors before pushing
+- ✅ DO: Verify green status in CI/CD pipeline
+- ❌ DON'T: Commit code with type errors
+- ❌ DON'T: Use `@ts-ignore` or `@ts-expect-error` as shortcuts
+- ❌ DON'T: Deploy without verifying type safety
 
 ### Build Timestamp Management
 
@@ -437,6 +507,10 @@ omega/
 ---
 
 ## Common Pitfalls
+
+### ❌ Don't: Skip TypeScript type checking before deployment
+**Why:** Type errors cause Railway deployment failures and runtime bugs
+**Do:** Always run `pnpm type-check` before committing and deploying
 
 ### ❌ Don't: Use pnpm 8.x
 **Why:** Broken on Vercel servers

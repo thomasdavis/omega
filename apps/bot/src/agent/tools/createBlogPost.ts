@@ -153,13 +153,13 @@ export const createBlogPostTool = tool({
   Example usage:
   - "Create a blog post about TypeScript best practices"
   - "Write a TTS-enabled post about web accessibility"
-  - "Generate a blog post with voice bm_fable about React hooks"`,
+  - "Generate a blog post with voice fable about React hooks"`,
 
   inputSchema: z.object({
     title: z.string().describe('The title of the blog post'),
     content: z.string().describe('The markdown content of the blog post (without frontmatter - that will be added automatically)'),
     tts: z.boolean().default(true).describe('Enable text-to-speech for this post (default: true)'),
-    ttsVoice: z.enum(TTS_VOICES).default('bm_fable').describe('Voice to use for TTS playback (default: bm_fable)'),
+    ttsVoice: z.enum(TTS_VOICES).default('fable').describe('Voice to use for TTS playback (default: fable)'),
   }),
 
   execute: async ({ title, content, tts, ttsVoice }) => {
