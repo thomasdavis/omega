@@ -12,10 +12,6 @@ import { getBlogDir } from '../../utils/storage.js';
 // Blog content directory - uses persistent storage in production
 const BLOG_DIR = getBlogDir();
 
-// TTS voices are dynamically fetched from the API
-// Import the function to get available voices
-import { getAvailableVoices } from '../../lib/tts.js';
-
 // Default voice for TTS
 const DEFAULT_TTS_VOICE = 'bm_fable';
 

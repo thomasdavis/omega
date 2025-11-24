@@ -12,9 +12,6 @@ import { getBlogDir } from '../../utils/storage.js';
 // Blog content directory - uses persistent storage in production
 const BLOG_DIR = getBlogDir();
 
-// TTS voices are dynamically fetched from the API
-import { getAvailableVoices } from '../../lib/tts.js';
-
 interface BlogPostMetadata {
   title: string;
   date: string;
