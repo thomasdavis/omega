@@ -57,7 +57,7 @@ function saveBlogPost(title: string, content: string, date: string): string {
 title: "${title}"
 date: "${date}"
 tts: true
-ttsVoice: "alloy"
+ttsVoice: "bm_fable"
 ---`;
 
   // Combine frontmatter and content

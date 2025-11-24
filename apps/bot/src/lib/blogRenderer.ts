@@ -216,7 +216,7 @@ export function getBlogPosts(contentDir?: string): BlogPost[] {
         content: body,
         frontmatter,
         ttsEnabled: frontmatter.tts === true,
-        ttsVoice: frontmatter.ttsVoice || 'alloy',
+        ttsVoice: frontmatter.ttsVoice || 'bm_fable',
       });
     } catch (error) {
       console.error(`Error reading blog post ${filename}:`, error);
@@ -251,7 +251,7 @@ export function getBlogPost(slug: string, contentDir?: string): BlogPost | null 
       content: body,
       frontmatter,
       ttsEnabled: frontmatter.tts === true,
-      ttsVoice: frontmatter.ttsVoice || 'alloy',
+      ttsVoice: frontmatter.ttsVoice || 'bm_fable',
     };
   } catch (error) {
     console.error(`Error reading blog post ${slug}:`, error);
