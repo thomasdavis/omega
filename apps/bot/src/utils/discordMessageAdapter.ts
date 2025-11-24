@@ -21,7 +21,6 @@ import { EmbedBuilder, Colors, type TextBasedChannel, type ColorResolvable } fro
 const MESSAGE_CHAR_LIMIT = 1990; // Discord limit: 2000
 const EMBED_DESCRIPTION_LIMIT = 4000; // Discord limit: 4096
 const EMBED_FIELD_LIMIT = 1000; // Discord limit: 1024
-// const EMBED_TOTAL_LIMIT = 5900; // Discord limit: 6000
 
 /**
  * Options for chunking text

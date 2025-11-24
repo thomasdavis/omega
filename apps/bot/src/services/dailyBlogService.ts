@@ -14,12 +14,6 @@ import { getBlogDir } from '../utils/storage.js';
 import { hackerNewsPhilosophyTool } from '../agent/tools/hackerNewsPhilosophy.js';
 import { marketPredictionTool } from '../agent/tools/marketPrediction.js';
 
-// interface DailyBlogContent {
-//   title: string;
-//   content: string;
-//   date: string;
-// }
-
 /**
  * Generate URL-friendly slug from title
  */

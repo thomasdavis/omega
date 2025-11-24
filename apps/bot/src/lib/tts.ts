@@ -93,33 +93,50 @@ function saveVoicesToCache(voices: string[]): void {
 }
 
 /**
- * Fetch available voices from UncloseAI API
+ * Fetch available voices from UncloseAI API with timeout
  */
 async function fetchVoicesFromApi(): Promise<string[]> {
   try {
     console.log('🎤 Fetching TTS voices from API...');
-    const response = await fetch(TTS_VOICES_ENDPOINT);
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch voices: ${response.status} ${response.statusText}`);
+    // Create abort controller for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+    try {
+      const response = await fetch(TTS_VOICES_ENDPOINT, {
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch voices: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as VoicesApiResponse;
+
+      // Validate response structure
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        throw new Error('Invalid response format from voices API');
+      }
+
+      // Flatten all voices from all models
+      const allVoices = data.data.flatMap((model) => model.voices);
+
+      // Remove duplicates and sort
+      const uniqueVoices = [...new Set(allVoices)].sort();
+
+      console.log(`✅ Fetched ${uniqueVoices.length} unique voices from ${data.data.length} models`);
+
+      return uniqueVoices;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Voice API fetch timed out after 5 seconds');
+      }
+      throw error;
     }
-
-    const data = await response.json() as VoicesApiResponse;
-
-    // Validate response structure
-    if (!data || !data.data || !Array.isArray(data.data)) {
-      throw new Error('Invalid response format from voices API');
-    }
-
-    // Flatten all voices from all models
-    const allVoices = data.data.flatMap((model) => model.voices);
-
-    // Remove duplicates and sort
-    const uniqueVoices = [...new Set(allVoices)].sort();
-
-    console.log(`✅ Fetched ${uniqueVoices.length} unique voices from ${data.data.length} models`);
-
-    return uniqueVoices;
   } catch (error) {
     console.error('Error fetching voices from API:', error);
     throw error;
@@ -129,9 +146,10 @@ async function fetchVoicesFromApi(): Promise<string[]> {
 /**
  * Get available TTS voices (with caching)
  * This function fetches voices from the API and caches them for 24 hours
+ * Stale cache is always kept in memory as fallback if upstream is down
  */
 export async function getAvailableVoices(): Promise<string[]> {
-  // Return cached voices if available
+  // Return in-memory cached voices if available and fresh
   if (CACHED_VOICES.length > 0) {
     return CACHED_VOICES;
   }
@@ -140,26 +158,35 @@ export async function getAvailableVoices(): Promise<string[]> {
   const cachedData = getCachedVoicesFromFile();
   if (cachedData) {
     const age = Date.now() - cachedData.timestamp;
+
+    // Load stale cache into memory immediately as fallback
+    if (cachedData.voices.length > 0) {
+      CACHED_VOICES = cachedData.voices;
+    }
+
     if (age < VOICES_CACHE_DURATION) {
       console.log(`📦 Using cached voices (age: ${Math.round(age / 1000 / 60)} minutes)`);
-      CACHED_VOICES = cachedData.voices;
       return CACHED_VOICES;
     }
+
+    // Cache is stale, try to refresh but keep stale data as fallback
+    console.log('⏰ Voice cache is stale, refreshing...');
   }
 
-  // Fetch fresh voices from API
+  // Fetch fresh voices from API (stale cache already in memory as fallback)
   try {
     const voices = await fetchVoicesFromApi();
-    CACHED_VOICES = voices;
+    CACHED_VOICES = voices; // Only update on success
     saveVoicesToCache(voices);
     return voices;
   } catch (error) {
-    // If API fetch fails and we have stale cache, use it as fallback
-    if (cachedData && cachedData.voices.length > 0) {
-      console.warn('⚠️ API fetch failed, using stale cache as fallback');
-      CACHED_VOICES = cachedData.voices;
+    // If API fetch fails and we have stale cache in memory, use it
+    if (CACHED_VOICES.length > 0) {
+      console.warn('⚠️ API fetch failed, using stale cache from memory as fallback');
       return CACHED_VOICES;
     }
+    // No fallback available
+    console.error('❌ Failed to fetch voices and no cached fallback available');
     throw error;
   }
 }
