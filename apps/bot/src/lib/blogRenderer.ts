@@ -97,10 +97,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
         const sanitizedCaption = caption.trim()
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
-        return `<figure>
-          <img src="${src}" alt="${alt}" data-tts="${sanitizedCaption}" />
-          <figcaption>${caption}</figcaption>
-        </figure>`;
+        return `<figure><img src="${src}" alt="${alt}" data-tts="${sanitizedCaption}" /><figcaption>${caption}</figcaption></figure>`;
       }
     );
 
@@ -136,28 +133,47 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
   // Unordered lists
-  html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
-  html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  if (ttsEnabled) {
+    html = html.replace(/^\* (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
+    });
+    html = html.replace(/^- (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
+    });
+  } else {
+    html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+    html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  }
   html = html.replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`);
 
   // Ordered lists
-  html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+  if (ttsEnabled) {
+    html = html.replace(/^\d+\. (.*$)/gim, (match, text) => {
+      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
+    });
+  } else {
+    html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+  }
   // Note: This simple implementation groups consecutive <li> tags into lists
   // For more complex cases, a proper parser would be better
 
   // Paragraphs - split into paragraphs first
-  const paragraphs = html.split(/\n\n/);
+  const paragraphs = html.split(/\n\n+/); // Use + to match one or more blank lines
   if (ttsEnabled) {
     html = paragraphs.map(para => {
+      const trimmed = para.trim();
       // Skip if it's a heading, code block, list, blockquote, or other special element
-      if (para.trim().startsWith('<h') || para.trim().startsWith('<pre') ||
-          para.trim().startsWith('<figure') || para.trim().startsWith('<ul') ||
-          para.trim().startsWith('<ol') || para.trim().startsWith('<blockquote') ||
-          para.trim().length === 0) {
+      if (trimmed.startsWith('<h') || trimmed.startsWith('<pre') ||
+          trimmed.startsWith('<figure') || trimmed.startsWith('<ul') ||
+          trimmed.startsWith('<ol') || trimmed.startsWith('<blockquote') ||
+          trimmed.startsWith('<li') || trimmed.length === 0) {
         return para;
       }
       // Extract text content for TTS (strip HTML tags for the data-tts attribute)
-      const textContent = para.replace(/<[^>]+>/g, '').trim();
+      const textContent = trimmed.replace(/<[^>]+>/g, '').trim();
       if (textContent.length > 0) {
         const sanitized = textContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         return `<p data-tts="${sanitized}" class="tts-text">${para}</p>`;
@@ -165,7 +181,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
       return `<p>${para}</p>`;
     }).join('');
   } else {
-    html = html.replace(/\n\n/g, '</p><p>');
+    html = html.replace(/\n\n+/g, '</p><p>');
     html = '<p>' + html + '</p>';
   }
 
