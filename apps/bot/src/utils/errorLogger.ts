@@ -93,7 +93,6 @@ export function logError(error: unknown, context: ErrorContext = {}): LoggedErro
  */
 export function generateUserErrorMessage(error: unknown, context: ErrorContext = {}): string {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  const errorType = error?.constructor?.name || 'Unknown';
 
   // Handle specific error types with helpful messages
   if (errorMessage.includes('fetch') || errorMessage.includes('network')) {
