@@ -263,14 +263,17 @@ export const unsandboxTool = tool({
       };
 
       // Submit job to Unsandbox (pass language directly to API)
+      // DEMO MODE: Use empty bearer token if no API key is set
+      const apiKey = process.env.UNSANDBOX_API_KEY || '';
       console.log(`   📤 Submitting code for execution...`);
       console.log(`   Language: ${language}`);
       console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
+      console.log(`   Auth Mode: ${apiKey ? 'authenticated' : 'demo mode (empty token)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer open-says-me',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -483,12 +486,15 @@ export const unsandboxSubmitTool = tool({
       };
 
       // Submit job (pass language directly to API)
+      // DEMO MODE: Use empty bearer token if no API key is set
+      const apiKey = process.env.UNSANDBOX_API_KEY || '';
       console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
+      console.log(`   Auth Mode: ${apiKey ? 'authenticated' : 'demo mode (empty token)'}`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer open-says-me',
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
