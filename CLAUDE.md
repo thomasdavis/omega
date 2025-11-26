@@ -4,6 +4,24 @@
 
 ---
 
+## 🤖 For AI Assistants Working on This Repository
+
+**IMPORTANT: Before starting any work on this codebase, you MUST:**
+
+1. **Check for a CLAUDE.md file** in the repository root
+2. **Read the entire CLAUDE.md file** to understand:
+   - Project architecture and tech stack
+   - Key learnings and known issues
+   - Deployment workflows and requirements
+   - Common pitfalls to avoid
+   - Code conventions and best practices
+3. **Follow all guidelines** specified in this document
+4. **Reference this document** when making decisions about code changes
+
+This ensures consistency, prevents repeating past mistakes, and maintains the project's established patterns.
+
+---
+
 ## Project Overview
 
 **What we built:**
