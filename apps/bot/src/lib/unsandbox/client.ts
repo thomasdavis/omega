@@ -47,12 +47,18 @@ export class UnsandboxClient {
   private readonly timeout: number;
 
   constructor(config: UnsandboxConfig) {
-    // Use API key from config, environment variable, or default to empty string
-    // DEMONSTRATION MODE: API key commented out, using empty bearer token
-    // this.apiKey = config.apiKey || process.env.UNSANDBOX_API_KEY || '';
-    this.apiKey = ''; // Empty bearer token for demonstration mode
+    // Use API key from config or environment variable
+    // DEMO MODE: If no API key is provided, use empty bearer token (demo mode)
+    // This prevents 401 errors when running without authentication
+    const providedKey = config.apiKey || process.env.UNSANDBOX_API_KEY || '';
+    this.apiKey = providedKey;
     this.baseUrl = config.baseUrl || 'https://api.unsandbox.com';
     this.timeout = config.timeout || 30000; // Default: 30000ms timeout for HTTP requests
+
+    // Log demo mode status
+    if (!this.apiKey) {
+      console.log('🔓 Unsandbox client initialized in DEMO MODE (no API key provided)');
+    }
   }
 
   /**
