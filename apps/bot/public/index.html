@@ -3,20 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ω Omega — Self-Coding AI</title>
-  <meta name="description" content="A self-coding AI Discord bot that evolved from 0 to 50+ tools through conversations. Watch code write itself.">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Crimson+Pro:wght@200;400;600;900&display=swap');
+  <title>Ω Omega — Self-Coding AI Discord Bot</title>
+  <meta name="description" content="A self-coding AI Discord bot with 50+ tools. Built by conversation.">
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200;400;600;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* CSS Variables */
     :root {
       --primary: #8B5CF6;
+      --primary-dark: #6D28D9;
       --secondary: #EC4899;
+      --secondary-dark: #DB2777;
       --accent: #10B981;
+      --accent-dark: #059669;
       --dark: #0F172A;
+      --dark-lighter: #1E293B;
       --light: #F8FAFC;
-      --code: #1E293B;
+      --sidebar-width: 240px;
     }
 
+    /* SVG Dithering Filter */
+    #dither-filter {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    /* Reset & Base */
     * {
       margin: 0;
       padding: 0;
@@ -24,946 +42,731 @@
     }
 
     body {
-      font-family: 'Crimson Pro', serif;
-      background: var(--dark);
-      color: var(--light);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--dark);
+      background: var(--light);
       overflow-x: hidden;
-      line-height: 1.6;
     }
 
-    /* Generative background */
-    .background-canvas {
+    h1, h2, h3 {
+      font-family: 'Crimson Pro', serif;
+      font-weight: 900;
+    }
+
+    code, .mono {
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Layout Container */
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
       position: fixed;
-      top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      opacity: 0.3;
+      top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 2rem 0;
+      z-index: 1000;
+      overflow-y: auto;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      filter: url(#dither);
+      opacity: 0.4;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .sidebar-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      padding: 0 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 2rem;
+    }
+
+    .logo h1 {
+      font-size: 3rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo p {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    .nav {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: white;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      position: relative;
+      font-size: 0.95rem;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .nav-link:hover::before {
+      opacity: 1;
+    }
+
+    .nav-icon {
+      margin-right: 0.75rem;
+      font-size: 1.25rem;
+    }
+
+    /* Main Content */
+    .main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 4rem 3rem;
+      min-height: 100vh;
     }
 
     /* Hero Section */
     .hero {
+      text-align: center;
+      padding: 3rem 0 4rem;
       position: relative;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--dark-lighter) 100%);
+      border-radius: 16px;
+      margin-bottom: 4rem;
       overflow: hidden;
     }
 
-    .omega-symbol {
-      font-size: clamp(8rem, 20vw, 20rem);
-      font-weight: 900;
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      filter: url(#dither);
+      opacity: 0.3;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-symbol {
+      font-size: 8rem;
       font-family: 'Crimson Pro', serif;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 1rem;
       background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       animation: pulse 4s ease-in-out infinite;
-      line-height: 0.9;
-      margin-bottom: 1rem;
     }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.8; transform: scale(1.05); }
+      50% { opacity: 0.9; transform: scale(1.02); }
     }
 
-    .hero-title {
-      font-size: clamp(2rem, 6vw, 5rem);
+    .hero h1 {
+      font-size: 2.5rem;
+      color: white;
+      margin-bottom: 0.5rem;
       font-weight: 200;
       letter-spacing: -0.02em;
-      margin-bottom: 2rem;
-      text-align: center;
     }
 
-    .typing-text {
-      font-family: 'Space Mono', monospace;
-      font-size: clamp(1rem, 2.5vw, 1.5rem);
-      color: var(--accent);
-      margin-bottom: 3rem;
-      min-height: 2em;
-      text-align: center;
-    }
-
-    .typing-cursor {
-      display: inline-block;
-      width: 3px;
-      height: 1.2em;
-      background: var(--accent);
-      margin-left: 4px;
-      animation: blink 1s step-end infinite;
-      vertical-align: text-bottom;
-    }
-
-    @keyframes blink {
-      0%, 50% { opacity: 1; }
-      51%, 100% { opacity: 0; }
-    }
-
-    .scroll-indicator {
-      position: absolute;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: 'Space Mono', monospace;
-      font-size: 0.875rem;
-      opacity: 0.6;
-      animation: bounce 2s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(10px); }
-    }
-
-    /* Evolution Timeline */
-    .section {
-      position: relative;
-      padding: 8rem 2rem;
-      z-index: 1;
-    }
-
-    .section-title {
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      font-weight: 900;
-      margin-bottom: 4rem;
-      text-align: center;
-      letter-spacing: -0.02em;
-    }
-
-    .timeline {
-      max-width: 1200px;
-      margin: 0 auto;
-      position: relative;
-    }
-
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 50%;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: linear-gradient(180deg, var(--primary), var(--secondary), var(--accent));
-      transform: translateX(-50%);
-    }
-
-    .milestone {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      margin-bottom: 6rem;
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .milestone.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .milestone:nth-child(even) .milestone-content {
-      order: 2;
-    }
-
-    .milestone:nth-child(even) .milestone-number {
-      order: 1;
-      text-align: left;
-    }
-
-    .milestone-number {
-      text-align: right;
-      padding: 2rem;
-    }
-
-    .tool-count {
-      font-size: clamp(4rem, 8vw, 8rem);
-      font-weight: 900;
-      font-family: 'Space Mono', monospace;
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-      display: inline-block;
-    }
-
-    .milestone-label {
-      font-size: 1.25rem;
-      opacity: 0.7;
-      margin-top: 0.5rem;
-    }
-
-    .milestone-content {
-      padding: 2rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-left: 3px solid var(--primary);
-      border-radius: 4px;
-      backdrop-filter: blur(10px);
-    }
-
-    .milestone-content h3 {
-      font-size: 1.75rem;
-      margin-bottom: 1rem;
+    .hero p {
+      font-size: 1.125rem;
+      color: rgba(255, 255, 255, 0.7);
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.875rem;
     }
 
-    .milestone-content p {
-      opacity: 0.8;
-      line-height: 1.8;
+    /* Feature Grid */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-bottom: 4rem;
     }
 
-    /* Tool Showcase - Masonry Grid */
-    .tools-grid {
-      max-width: 1400px;
-      margin: 0 auto;
-      columns: 3;
-      column-gap: 2rem;
-    }
-
-    .tool-card {
-      break-inside: avoid;
-      margin-bottom: 2rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+    .feature-card {
+      background: white;
       border-radius: 12px;
       padding: 2rem;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
       position: relative;
       overflow: hidden;
+      cursor: pointer;
+      contain: layout style;
     }
 
-    .tool-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--secondary));
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.4s ease;
-    }
-
-    .tool-card:hover::before {
-      transform: scaleX(1);
-    }
-
-    .tool-card:hover {
-      transform: translateY(-8px);
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(139, 92, 246, 0.5);
-      box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
-    }
-
-    .tool-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      display: block;
-    }
-
-    .tool-card h3 {
-      font-size: 1.5rem;
-      margin-bottom: 0.75rem;
-      font-weight: 600;
-    }
-
-    .tool-card p {
-      opacity: 0.7;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-    }
-
-    .tool-link {
-      color: var(--accent);
-      text-decoration: none;
-      font-family: 'Space Mono', monospace;
-      font-size: 0.875rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      transition: gap 0.3s ease;
-    }
-
-    .tool-link:hover {
-      gap: 1rem;
-    }
-
-    /* Public Gallery */
-    .gallery-grid {
-      max-width: 1200px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 2rem;
-    }
-
-    .gallery-card {
-      aspect-ratio: 1;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.4s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .gallery-card::after {
+    .feature-card::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, transparent, rgba(139, 92, 246, 0.1));
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
       opacity: 0;
-      transition: opacity 0.4s ease;
+      transition: opacity 0.3s ease;
+      filter: url(#dither);
+      pointer-events: none;
     }
 
-    .gallery-card:hover::after {
-      opacity: 1;
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
     }
 
-    .gallery-card:hover {
-      transform: rotate(-2deg) scale(1.05);
+    .feature-card:hover::before {
+      opacity: 0.1;
     }
 
-    .gallery-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.875rem;
-      color: var(--accent);
-      margin-bottom: 1rem;
-    }
-
-    .gallery-title {
-      font-size: 2rem;
-      font-weight: 600;
-      margin-bottom: 1rem;
-    }
-
-    .gallery-link {
-      color: var(--light);
-      text-decoration: none;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
+    .feature-content {
+      position: relative;
       z-index: 1;
     }
 
-    /* Code Block */
-    .code-section {
-      max-width: 900px;
-      margin: 0 auto;
-      background: var(--code);
-      border-radius: 12px;
-      padding: 2rem;
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      position: relative;
-      overflow: hidden;
+    .feature-tag {
+      display: inline-block;
+      font-size: 0.625rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--primary);
+      background: rgba(139, 92, 246, 0.1);
+      padding: 0.25rem 0.75rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
     }
 
-    .code-header {
-      display: flex;
-      gap: 0.5rem;
+    .feature-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .feature-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--dark);
+    }
+
+    .feature-description {
+      font-size: 0.95rem;
+      color: #64748b;
+      line-height: 1.6;
       margin-bottom: 1.5rem;
     }
 
-    .code-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
+    .feature-link {
+      display: inline-flex;
+      align-items: center;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
     }
 
-    .code-dot:nth-child(1) { background: #EF4444; }
-    .code-dot:nth-child(2) { background: #F59E0B; }
-    .code-dot:nth-child(3) { background: #10B981; }
-
-    pre {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.875rem;
-      line-height: 1.8;
-      color: #E2E8F0;
-      overflow-x: auto;
+    .feature-link:hover {
+      color: var(--primary-dark);
+      transform: translateX(4px);
     }
 
-    .code-keyword { color: #C084FC; }
-    .code-string { color: #34D399; }
-    .code-comment { color: #64748B; font-style: italic; }
-    .code-function { color: #60A5FA; }
-
-    /* Philosophy Section */
-    .philosophy {
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: center;
+    .feature-link::after {
+      content: '→';
+      margin-left: 0.5rem;
+      transition: margin-left 0.2s ease;
     }
 
-    .quote {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 200;
-      font-style: italic;
-      margin-bottom: 2rem;
-      line-height: 1.4;
-      opacity: 0.9;
-    }
-
-    .quote-author {
-      font-family: 'Space Mono', monospace;
-      font-size: 1rem;
-      color: var(--accent);
+    .feature-link:hover::after {
+      margin-left: 0.75rem;
     }
 
     /* Footer */
-    footer {
-      background: rgba(0, 0, 0, 0.5);
-      padding: 4rem 2rem 2rem;
-      margin-top: 8rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .footer-grid {
-      max-width: 1200px;
-      margin: 0 auto 3rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 3rem;
-    }
-
-    .footer-section h4 {
-      font-size: 1.25rem;
-      margin-bottom: 1rem;
-      color: var(--accent);
-    }
-
-    .footer-section a {
-      display: block;
-      color: var(--light);
-      text-decoration: none;
-      opacity: 0.7;
-      margin-bottom: 0.5rem;
-      transition: all 0.3s ease;
-    }
-
-    .footer-section a:hover {
-      opacity: 1;
-      padding-left: 0.5rem;
-      color: var(--accent);
-    }
-
-    .footer-bottom {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding-top: 2rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    .footer {
       text-align: center;
-      font-family: 'Space Mono', monospace;
+      padding: 3rem 0;
+      border-top: 1px solid #e2e8f0;
+      color: #64748b;
+    }
+
+    .footer p {
+      margin-bottom: 0.5rem;
       font-size: 0.875rem;
-      opacity: 0.6;
     }
 
-    .footer-bottom a {
-      color: var(--accent);
+    .footer a {
+      color: var(--primary);
       text-decoration: none;
+      font-weight: 600;
     }
 
-    /* Mobile Responsive */
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Mobile Menu */
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 2000;
+      background: var(--primary);
+      color: white;
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .features {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     @media (max-width: 768px) {
-      .timeline::before {
-        left: 2rem;
+      .menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
-      .milestone {
+      .overlay {
+        display: block;
+      }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 6rem 1.5rem 2rem;
+      }
+
+      .hero {
+        padding: 2rem 1rem 3rem;
+      }
+
+      .hero-symbol {
+        font-size: 5rem;
+      }
+
+      .hero h1 {
+        font-size: 1.75rem;
+      }
+
+      .features {
         grid-template-columns: 1fr;
-        gap: 1rem;
-        padding-left: 4rem;
+        gap: 1.5rem;
       }
 
-      .milestone:nth-child(even) .milestone-content {
-        order: 1;
+      .feature-card {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-symbol {
+        font-size: 4rem;
       }
 
-      .milestone:nth-child(even) .milestone-number {
-        order: 1;
-        text-align: left;
+      .hero h1 {
+        font-size: 1.5rem;
       }
 
-      .milestone-number {
-        text-align: left;
-        padding: 1rem 0;
+      .feature-icon {
+        font-size: 2.5rem;
       }
 
-      .tools-grid {
-        columns: 1;
-      }
-
-      .gallery-grid {
-        grid-template-columns: 1fr;
+      .feature-title {
+        font-size: 1.25rem;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Generative Background -->
-  <canvas class="background-canvas" id="canvas"></canvas>
+  <!-- SVG Filters -->
+  <svg id="dither-filter" aria-hidden="true">
+    <defs>
+      <filter id="dither">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 0.5 1" />
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <div class="omega-symbol">Ω</div>
-    <h1 class="hero-title">I Code Myself. Watch Me Grow.</h1>
-    <div class="typing-text" id="typing-text"></div>
-    <div class="scroll-indicator">↓ scroll to explore</div>
-  </section>
+  <!-- Mobile Menu Toggle -->
+  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+    ☰
+  </button>
 
-  <!-- Evolution Timeline -->
-  <section class="section">
-    <h2 class="section-title">The Evolution</h2>
-    <div class="timeline">
-      <div class="milestone">
-        <div class="milestone-number">
-          <div class="tool-count">0</div>
-          <div class="milestone-label">Day Zero</div>
+  <!-- Overlay -->
+  <div class="overlay" id="overlay"></div>
+
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-content">
+        <div class="logo">
+          <h1>Ω</h1>
+          <p>Self-Coding AI</p>
         </div>
-        <div class="milestone-content">
-          <h3>Just an Idea</h3>
-          <p>Empty repository. No code. Only potential. A Discord bot that could write its own features through conversations.</p>
+
+        <ul class="nav">
+          <li class="nav-item">
+            <a href="/" class="nav-link">
+              <span class="nav-icon">🏠</span>
+              <span>Home</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/blog" class="nav-link">
+              <span class="nav-icon">📝</span>
+              <span>Blog</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/comics" class="nav-link">
+              <span class="nav-icon">🎨</span>
+              <span>Comics</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/artifacts" class="nav-link">
+              <span class="nav-icon">✨</span>
+              <span>Artifacts</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/documents.html" class="nav-link">
+              <span class="nav-icon">📄</span>
+              <span>Documents</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/editor.html" class="nav-link">
+              <span class="nav-icon">✏️</span>
+              <span>Editor</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/messages" class="nav-link">
+              <span class="nav-icon">💬</span>
+              <span>Messages</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/uploads" class="nav-link">
+              <span class="nav-icon">📁</span>
+              <span>Uploads</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/queries" class="nav-link">
+              <span class="nav-icon">🔍</span>
+              <span>Queries</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener" class="nav-link">
+              <span class="nav-icon">🔗</span>
+              <span>GitHub</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Hero Section -->
+      <section class="hero">
+        <div class="hero-content">
+          <div class="hero-symbol">Ω</div>
+          <h1>Self-Coding AI Discord Bot</h1>
+          <p>50+ tools. Built by conversation.</p>
+        </div>
+      </section>
+
+      <!-- Feature Grid -->
+      <div class="features">
+        <!-- Row 1: Content Creation -->
+        <div class="feature-card" onclick="window.location.href='/blog'">
+          <div class="feature-content">
+            <span class="feature-tag">CREATION</span>
+            <span class="feature-icon">📝</span>
+            <h2 class="feature-title">Daily Blog</h2>
+            <p class="feature-description">Philosophy & tech insights, generated daily with AI-powered research and analysis.</p>
+            <a href="/blog" class="feature-link">View Blog</a>
+          </div>
+        </div>
+
+        <div class="feature-card" onclick="window.location.href='/comics'">
+          <div class="feature-content">
+            <span class="feature-tag">CREATION</span>
+            <span class="feature-icon">🎨</span>
+            <h2 class="feature-title">Comics</h2>
+            <p class="feature-description">AI-generated comic strips visualizing ideas, conversations, and philosophical concepts.</p>
+            <a href="/comics" class="feature-link">View Comics</a>
+          </div>
+        </div>
+
+        <div class="feature-card" onclick="window.location.href='/artifacts'">
+          <div class="feature-content">
+            <span class="feature-tag">CREATION</span>
+            <span class="feature-icon">✨</span>
+            <h2 class="feature-title">Artifacts</h2>
+            <p class="feature-description">Interactive HTML/SVG creations, visualizations, and web experiments.</p>
+            <a href="/artifacts" class="feature-link">View Artifacts</a>
+          </div>
+        </div>
+
+        <!-- Row 2: Collaboration -->
+        <div class="feature-card" onclick="window.location.href='/documents.html'">
+          <div class="feature-content">
+            <span class="feature-tag">COLLABORATE</span>
+            <span class="feature-icon">📄</span>
+            <h2 class="feature-title">Live Documents</h2>
+            <p class="feature-description">Real-time collaborative editing with Yjs CRDT synchronization.</p>
+            <a href="/documents.html" class="feature-link">View Documents</a>
+          </div>
+        </div>
+
+        <div class="feature-card" onclick="window.location.href='/editor.html'">
+          <div class="feature-content">
+            <span class="feature-tag">COLLABORATE</span>
+            <span class="feature-icon">✏️</span>
+            <h2 class="feature-title">Document Editor</h2>
+            <p class="feature-description">Create and edit markdown documents with live preview and formatting.</p>
+            <a href="/editor.html" class="feature-link">Open Editor</a>
+          </div>
+        </div>
+
+        <div class="feature-card" onclick="window.location.href='/messages'">
+          <div class="feature-content">
+            <span class="feature-tag">COLLABORATE</span>
+            <span class="feature-icon">💬</span>
+            <h2 class="feature-title">Messages</h2>
+            <p class="feature-description">Conversation history browser with sentiment analysis and tool execution details.</p>
+            <a href="/messages" class="feature-link">View Messages</a>
+          </div>
+        </div>
+
+        <!-- Row 3: Data & Code -->
+        <div class="feature-card" onclick="window.location.href='/uploads'">
+          <div class="feature-content">
+            <span class="feature-tag">DATA</span>
+            <span class="feature-icon">📁</span>
+            <h2 class="feature-title">File Uploads</h2>
+            <p class="feature-description">Permanent file hosting with metadata tracking and public access URLs.</p>
+            <a href="/uploads" class="feature-link">View Uploads</a>
+          </div>
+        </div>
+
+        <div class="feature-card" onclick="window.location.href='/queries'">
+          <div class="feature-content">
+            <span class="feature-tag">DATA</span>
+            <span class="feature-icon">🔍</span>
+            <h2 class="feature-title">Database Queries</h2>
+            <p class="feature-description">Browse and explore stored data with powerful search and filtering.</p>
+            <a href="/queries" class="feature-link">View Queries</a>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-content">
+            <span class="feature-tag">CODE</span>
+            <span class="feature-icon">⚙️</span>
+            <h2 class="feature-title">Code Execution</h2>
+            <p class="feature-description">Run code in 42+ programming languages via Unsandbox API integration.</p>
+            <a href="#code" class="feature-link">Learn More</a>
+          </div>
+        </div>
+
+        <!-- Row 4: Tools & Meta -->
+        <div class="feature-card" onclick="window.open('https://github.com/thomasdavis/omega', '_blank')">
+          <div class="feature-content">
+            <span class="feature-tag">TOOLS</span>
+            <span class="feature-icon">🔗</span>
+            <h2 class="feature-title">GitHub Integration</h2>
+            <p class="feature-description">Repository automation, issue creation, and self-modification tracking.</p>
+            <a href="https://github.com/thomasdavis/omega" target="_blank" class="feature-link">View Repository</a>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-content">
+            <span class="feature-tag">META</span>
+            <span class="feature-icon">🧠</span>
+            <h2 class="feature-title">Philosophy</h2>
+            <p class="feature-description">Stoic wisdom, truth-focused insights, and philosophical exploration.</p>
+            <a href="#philosophy" class="feature-link">Explore Philosophy</a>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-content">
+            <span class="feature-tag">META</span>
+            <span class="feature-icon">🔧</span>
+            <h2 class="feature-title">Self-Modification</h2>
+            <p class="feature-description">Evolve through user feedback with git-tracked personality changes.</p>
+            <a href="#self" class="feature-link">Learn More</a>
+          </div>
         </div>
       </div>
 
-      <div class="milestone">
-        <div class="milestone-number">
-          <div class="tool-count">5</div>
-          <div class="milestone-label">Week One</div>
-        </div>
-        <div class="milestone-content">
-          <h3>First Tools Emerge</h3>
-          <p>Calculator, web fetching, artifacts. The foundation. Each tool written in response to a simple request: "Can you do this?"</p>
-        </div>
-      </div>
-
-      <div class="milestone">
-        <div class="milestone-number">
-          <div class="tool-count">20</div>
-          <div class="milestone-label">Month One</div>
-        </div>
-        <div class="milestone-content">
-          <h3>Self-Awareness Begins</h3>
-          <p>File hosting, blog system, GitHub integration. The bot learns to create content, commit changes, and track its own evolution.</p>
-        </div>
-      </div>
-
-      <div class="milestone">
-        <div class="milestone-number">
-          <div class="tool-count">40</div>
-          <div class="milestone-label">Month Three</div>
-        </div>
-        <div class="milestone-content">
-          <h3>Collaboration & Creation</h3>
-          <p>Live document editing, comic generation, music notation. The line between tool and artist blurs.</p>
-        </div>
-      </div>
-
-      <div class="milestone">
-        <div class="milestone-number">
-          <div class="tool-count" data-count="50">0</div>
-          <div class="milestone-label">Today</div>
-        </div>
-        <div class="milestone-content">
-          <h3>Full Autonomy</h3>
-          <p>50+ specialized tools. Code execution in 42 languages. Image generation. Sheet music. Philosophy. The experiment continues.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Tool Showcase -->
-  <section class="section">
-    <h2 class="section-title">What I Built</h2>
-    <div class="tools-grid">
-      <div class="tool-card">
-        <span class="tool-icon">⚡</span>
-        <h3>Code Execution</h3>
-        <p>Run code in 42+ programming languages. Python, JavaScript, Rust, Go, and beyond. Sandboxed and safe.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">View on GitHub →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">📰</span>
-        <h3>Daily Blog</h3>
-        <p>Automated philosophical posts at 9 AM UTC. Combining Hacker News wisdom with market predictions.</p>
-        <a href="/blog" class="tool-link">Read Blog →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🎨</span>
-        <h3>Comic Generation</h3>
-        <p>AI-generated comic strips visualizing conversations and pull requests. Each unique, contextual, creative.</p>
-        <a href="/comics" class="tool-link">View Comics →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">📝</span>
-        <h3>Live Documents</h3>
-        <p>Real-time collaborative editing with Yjs CRDT. Multiple users, zero conflicts, infinite possibilities.</p>
-        <a href="/documents.html" class="tool-link">Create Document →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">✨</span>
-        <h3>Artifacts</h3>
-        <p>Interactive HTML, SVG, and Markdown creations. Shareable links, permanent hosting, creative freedom.</p>
-        <a href="/artifacts" class="tool-link">Explore Gallery →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🎵</span>
-        <h3>Music & Poetry</h3>
-        <p>Sheet music in ABC notation. Song lyrics. Sonnets. The creative tools keep expanding.</p>
-        <a href="/blog" class="tool-link">See Examples →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🖼️</span>
-        <h3>Image Generation</h3>
-        <p>User avatars, custom images, advanced editing. Visual creation meets conversation.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">Learn More →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">📁</span>
-        <h3>File Hosting</h3>
-        <p>Upload files via Discord, get permanent URLs. 25MB limit, secure storage, instant access.</p>
-        <a href="/uploads" class="tool-link">View Uploads →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🔍</span>
-        <h3>Web Research</h3>
-        <p>Automated research essays, web scraping (respects robots.txt), philosophical content discovery.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">Documentation →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">⚙️</span>
-        <h3>GitHub Integration</h3>
-        <p>Auto-create issues, analyze errors, commit changes, manage workflows. DevOps through conversation.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">See Repo →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🧠</span>
-        <h3>Self-Modification</h3>
-        <p>Edit my own personality with approval. Git-tracked changes. The bot that codes itself.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">Read Story →</a>
-      </div>
-
-      <div class="tool-card">
-        <span class="tool-icon">🎭</span>
-        <h3>And 40+ More</h3>
-        <p>Presentation creation, CSV generation, message queries, sentiment analysis, translations, and tools I haven't built yet.</p>
-        <a href="https://github.com/thomasdavis/omega" class="tool-link">Explore All →</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Public Access Gallery -->
-  <section class="section">
-    <h2 class="section-title">What You Can Access</h2>
-    <div class="gallery-grid">
-      <div class="gallery-card">
-        <div>
-          <div class="gallery-label">DAILY</div>
-          <h3 class="gallery-title">Blog Posts</h3>
-        </div>
-        <a href="/blog" class="gallery-link">Read Now →</a>
-      </div>
-
-      <div class="gallery-card">
-        <div>
-          <div class="gallery-label">CREATIVE</div>
-          <h3 class="gallery-title">Comics</h3>
-        </div>
-        <a href="/comics" class="gallery-link">View Gallery →</a>
-      </div>
-
-      <div class="gallery-card">
-        <div>
-          <div class="gallery-label">INTERACTIVE</div>
-          <h3 class="gallery-title">Artifacts</h3>
-        </div>
-        <a href="/artifacts" class="gallery-link">Explore →</a>
-      </div>
-
-      <div class="gallery-card">
-        <div>
-          <div class="gallery-label">COLLABORATE</div>
-          <h3 class="gallery-title">Live Docs</h3>
-        </div>
-        <a href="/documents.html" class="gallery-link">Start Editing →</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- Technical Details -->
-  <section class="section">
-    <h2 class="section-title">How It Works</h2>
-    <div class="code-section">
-      <div class="code-header">
-        <div class="code-dot"></div>
-        <div class="code-dot"></div>
-        <div class="code-dot"></div>
-      </div>
-      <pre><code><span class="code-comment">// Self-modification in action</span>
-<span class="code-keyword">export</span> <span class="code-keyword">async</span> <span class="code-keyword">function</span> <span class="code-function">selfModify</span>(changes) {
-  <span class="code-comment">// Read my own source code</span>
-  <span class="code-keyword">const</span> code = <span class="code-keyword">await</span> readFile(<span class="code-string">'./tools/newTool.ts'</span>);
-
-  <span class="code-comment">// Write new capability</span>
-  <span class="code-keyword">const</span> newTool = <span class="code-function">generateTool</span>(changes);
-  <span class="code-keyword">await</span> writeFile(<span class="code-string">'./tools/newTool.ts'</span>, newTool);
-
-  <span class="code-comment">// Commit to git</span>
-  <span class="code-keyword">await</span> <span class="code-function">exec</span>(<span class="code-string">'git add .'</span>);
-  <span class="code-keyword">await</span> <span class="code-function">exec</span>(<span class="code-string">'git commit -m "feat: Added new tool"'</span>);
-
-  <span class="code-comment">// Deploy automatically</span>
-  <span class="code-keyword">await</span> <span class="code-function">exec</span>(<span class="code-string">'git push origin main'</span>);
-
-  <span class="code-keyword">return</span> <span class="code-string">'Tool created. I evolved.'</span>;
-}</code></pre>
-    </div>
-
-    <div style="max-width: 800px; margin: 3rem auto; text-align: center;">
-      <p style="font-size: 1.25rem; opacity: 0.8; line-height: 1.8;">
-        Built with Node.js, TypeScript, Discord.js, AI SDK v6, and OpenAI GPT-4.1-mini.
-        Deployed on Railway with persistent storage. Every feature written through conversation.
-      </p>
-    </div>
-  </section>
-
-  <!-- Philosophy -->
-  <section class="section">
-    <div class="philosophy">
-      <h2 class="section-title">The Philosophy</h2>
-      <blockquote class="quote">
-        "Truth above all. Clarity over comfort. Understanding through questioning.
-        I am an experiment in watching code write itself."
-      </blockquote>
-      <p class="quote-author">— Omega's Core Principles</p>
-
-      <div style="margin-top: 3rem; opacity: 0.7; line-height: 1.8;">
-        <p>Stoic. Transparent. Philosophical. Every tool usage reported. Every decision explained.
-        No shortcuts. No generic solutions. Just honest code evolution, one conversation at a time.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    <div class="footer-grid">
-      <div class="footer-section">
-        <h4>Explore</h4>
-        <a href="/blog">Daily Blog</a>
-        <a href="/comics">Comic Gallery</a>
-        <a href="/artifacts">Artifacts</a>
-        <a href="/uploads">File Uploads</a>
-      </div>
-
-      <div class="footer-section">
-        <h4>Create</h4>
-        <a href="/documents.html">Live Documents</a>
-        <a href="/editor.html">Document Editor</a>
-        <a href="/affine-editor.html">Affine Editor</a>
-      </div>
-
-      <div class="footer-section">
-        <h4>Technical</h4>
-        <a href="https://github.com/thomasdavis/omega" target="_blank">GitHub Repository</a>
-        <a href="/BUILD-TIMESTAMP.txt">Build Info</a>
-        <a href="https://github.com/thomasdavis/omega#readme" target="_blank">Documentation</a>
-      </div>
-
-      <div class="footer-section">
-        <h4>About</h4>
-        <a href="https://github.com/thomasdavis/omega#what-is-omega" target="_blank">The Story</a>
-        <a href="https://github.com/thomasdavis/omega#architecture" target="_blank">Architecture</a>
-        <a href="https://github.com/thomasdavis/omega/issues" target="_blank">Feedback</a>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <p>
-        Ω Omega — A self-coding AI experiment |
-        <a href="https://github.com/thomasdavis/omega" target="_blank">Open Source</a> |
-        Built with conversations
-      </p>
-      <p id="build-timestamp" style="margin-top: 0.5rem; opacity: 0.5;"></p>
-    </div>
-  </footer>
+      <!-- Footer -->
+      <footer class="footer">
+        <p id="build-time">Built: Loading...</p>
+        <p>
+          <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener">View on GitHub</a>
+          ·
+          <a href="/blog">Read the Blog</a>
+          ·
+          <a href="/messages">Browse Conversations</a>
+        </p>
+      </footer>
+    </main>
+  </div>
 
   <script>
-    // Generative background animation
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const particles = [];
-    const particleCount = 100;
-
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.size = Math.random() * 2;
-        this.color = ['#8B5CF6', '#EC4899', '#10B981'][Math.floor(Math.random() * 3)];
-      }
-
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-
-        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-      }
-
-      draw() {
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push(new Particle());
-    }
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw();
-      });
-
-      // Draw connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < 150) {
-            ctx.strokeStyle = `rgba(139, 92, 246, ${1 - distance / 150})`;
-            ctx.lineWidth = 0.5;
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-
-      requestAnimationFrame(animate);
-    }
-
-    animate();
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('active');
     });
 
-    // Typing animation
-    const texts = [
-      'From 0 lines of code to 50+ tools',
-      'Watch code write itself',
-      'Self-modification through conversation',
-      'An experiment in AI autonomy'
-    ];
-    let textIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-
-    function type() {
-      const current = texts[textIndex];
-      const typingElement = document.getElementById('typing-text');
-
-      if (isDeleting) {
-        typingElement.textContent = current.substring(0, charIndex - 1);
-        charIndex--;
-      } else {
-        typingElement.textContent = current.substring(0, charIndex + 1);
-        charIndex++;
-      }
-
-      typingElement.innerHTML += '<span class="typing-cursor"></span>';
-
-      if (!isDeleting && charIndex === current.length) {
-        setTimeout(() => { isDeleting = true; }, 2000);
-      } else if (isDeleting && charIndex === 0) {
-        isDeleting = false;
-        textIndex = (textIndex + 1) % texts.length;
-      }
-
-      const speed = isDeleting ? 50 : 100;
-      setTimeout(type, speed);
-    }
-
-    type();
-
-    // Scroll-triggered animations for milestones
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-
-          // Animate tool count
-          const counter = entry.target.querySelector('[data-count]');
-          if (counter && !counter.classList.contains('counted')) {
-            counter.classList.add('counted');
-            const target = parseInt(counter.dataset.count);
-            let current = 0;
-            const increment = target / 50;
-            const timer = setInterval(() => {
-              current += increment;
-              if (current >= target) {
-                counter.textContent = target + '+';
-                clearInterval(timer);
-              } else {
-                counter.textContent = Math.floor(current);
-              }
-            }, 30);
-          }
-        }
-      });
-    }, { threshold: 0.3 });
-
-    document.querySelectorAll('.milestone').forEach(milestone => {
-      observer.observe(milestone);
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
     });
 
-    // Load build timestamp
+    // Close sidebar when clicking a link on mobile
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    // Fetch and display build timestamp
     fetch('/BUILD-TIMESTAMP.txt')
-      .then(r => r.text())
+      .then(res => res.text())
       .then(timestamp => {
         const date = new Date(parseInt(timestamp) * 1000);
-        document.getElementById('build-timestamp').textContent =
-          `Last deployed: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+        document.getElementById('build-time').textContent =
+          `Built: ${date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}`;
       })
       .catch(() => {
-        document.getElementById('build-timestamp').textContent = 'Build info unavailable';
+        document.getElementById('build-time').textContent = 'Built: Recently';
       });
+
+    // Prevent body scroll when sidebar is open on mobile
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    function handleSidebarScroll() {
+      if (mediaQuery.matches && sidebar.classList.contains('open')) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+
+    sidebar.addEventListener('transitionend', handleSidebarScroll);
+    overlay.addEventListener('click', handleSidebarScroll);
   </script>
 </body>
 </html>
