@@ -27,33 +27,17 @@ Add the following secret to your GitHub repository:
 
 (Note: `DISCORD_BOT_TOKEN` and `GITHUB_TOKEN` should already be configured)
 
-### 3. Install the GitHub Action Workflow
+### 3. Configure Discord Channel
 
-The workflow file is located at:
+The workflow file is already installed at:
 ```
-apps/bot/scripts/comic-generation-workflow.yml
-```
-
-**Important:** Due to permission restrictions, this file needs to be manually moved to:
-```
-.github/workflows/comic-generation.yml
+.github/workflows/generate-comic-on-merge.yml
 ```
 
-You can do this with:
-```bash
-mv apps/bot/scripts/comic-generation-workflow.yml .github/workflows/comic-generation.yml
-```
+Configure the Discord channel via GitHub Secrets by adding:
+- `DISCORD_CHANNEL_ID`: Your Discord channel ID (e.g., `1438147272855523358`)
 
-Or create the file manually in the `.github/workflows/` directory.
-
-### 4. Configure Discord Channel
-
-The workflow is currently configured to post to Discord channel ID `1438147272855523358`.
-
-To change this:
-1. Open `.github/workflows/comic-generation.yml`
-2. Find the `DISCORD_CHANNEL_ID` environment variable
-3. Replace with your desired channel ID
+**This should be a GitHub Secret**, not hardcoded in the workflow file.
 
 To get a Discord channel ID:
 1. Enable Developer Mode in Discord (User Settings → Advanced → Developer Mode)
@@ -119,7 +103,7 @@ The GitHub Action (`comic-generation.yml`) triggers when:
 ### Script Files
 
 - `apps/bot/scripts/generate-pr-comic.ts`: Main script run by GitHub Action
-- `apps/bot/scripts/comic-generation-workflow.yml`: GitHub Action workflow (needs to be moved)
+- `.github/workflows/generate-comic-on-merge.yml`: GitHub Action workflow
 
 ### Configuration
 

@@ -18,6 +18,7 @@ interface ComicResult {
   success: boolean;
   imageSize?: number;
   discordMessageId?: string;
+  comicPath?: string;
   error?: string;
 }
 
@@ -159,6 +160,7 @@ async function main() {
       success: true,
       imageSize: comicResult.imageData.length,
       discordMessageId: postResult.messageId,
+      comicPath: comicResult.imagePath,
     });
 
     console.log('🎉 PR Comic Generation Complete!');

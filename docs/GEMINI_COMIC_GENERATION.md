@@ -20,17 +20,17 @@ This integration automatically generates humorous comic strips from merged pull 
 └────────┬────────┘
          │
          ▼
-┌─────────────────────────────┐
-│  GitHub Action Workflow     │
-│  (.github/workflows/        │
-│   generate-comic.yml)       │
-└────────┬────────────────────┘
+┌─────────────────────────────────┐
+│  GitHub Action Workflow         │
+│  (.github/workflows/            │
+│   generate-comic-on-merge.yml)  │
+└────────┬────────────────────────┘
          │
          ▼
 ┌──────────────────────────────┐
 │  Comic Generator Script      │
-│  (apps/bot/src/scripts/      │
-│   generate-comic.ts)         │
+│  (apps/bot/scripts/          │
+│   generate-pr-comic.ts)      │
 └────────┬────────────┬────────┘
          │            │
          ▼            ▼
@@ -43,9 +43,10 @@ This integration automatically generates humorous comic strips from merged pull 
          ▼
 ┌─────────────────────────────┐
 │  Outputs:                   │
-│  • Discord post             │
-│  • GitHub issue comment     │
+│  • Discord post (via bot)   │
+│  • GitHub PR comment        │
 │  • Saved comic file         │
+│  • GitHub Actions artifact  │
 └─────────────────────────────┘
 ```
 
@@ -75,7 +76,7 @@ To add secrets:
 
 **IMPORTANT:** Due to permission restrictions, the workflow file must be created manually.
 
-Create the file `.github/workflows/generate-comic.yml` with the following content:
+The workflow file is located at `.github/workflows/generate-comic-on-merge.yml`:
 
 ```yaml
 name: Generate Comic from PR
@@ -126,7 +127,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           cd apps/bot
-          pnpm tsx src/scripts/generate-comic.ts \
+          npx tsx scripts/generate-pr-comic.ts \
             ${{ github.event.pull_request.number }} \
             ${{ steps.extract_issue.outputs.issue_number }} \
             "${{ github.event.pull_request.title }}"
@@ -188,6 +189,9 @@ export DISCORD_WEBHOOK_URL="your-webhook-url"
 
 # Run the script
 cd apps/bot
+npx tsx scripts/generate-pr-comic.ts
+
+# Or use the manual execution script:
 pnpm tsx src/scripts/generate-comic.ts <pr-number> [issue-number] [pr-title]
 
 # Example:
@@ -248,7 +252,7 @@ The generated comic is:
 omega/
 ├── .github/
 │   └── workflows/
-│       └── generate-comic.yml          # GitHub Action workflow (manual creation required)
+│       └── generate-comic-on-merge.yml # GitHub Action workflow
 ├── apps/
 │   └── bot/
 │       ├── src/

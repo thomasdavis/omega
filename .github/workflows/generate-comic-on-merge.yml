@@ -1,4 +1,4 @@
-name: Generate PR Comic
+name: Generate Comic on PR Merge
 
 on:
   pull_request:
@@ -8,12 +8,14 @@ jobs:
   generate-comic:
     # Only run when PR is merged (not just closed)
     if: github.event.pull_request.merged == true
-    name: Generate Comic for Merged PR
+    name: Generate Comic and Post to Discord
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -22,6 +24,8 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -30,15 +34,26 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-          DISCORD_CHANNEL_ID: '1438147272855523358'
         run: |
           cd apps/bot
           npx tsx scripts/generate-pr-comic.ts
+
+      - name: Upload comic as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-${{ github.event.pull_request.number }}-comic
+          path: apps/bot/comics/*.png
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Comment on PR with comic generation result
         if: always()
@@ -55,17 +70,21 @@ jobs:
               const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
 
               if (result.success) {
-                comment += `✅ Successfully generated and posted comic to Discord!\n`;
+                comment += `✅ Successfully generated and posted comic to Discord!\n\n`;
                 comment += `📊 Image size: ${(result.imageSize / 1024).toFixed(2)} KB\n`;
                 if (result.discordMessageId) {
-                  comment += `🔗 [View in Discord](https://discord.com/channels/@me/${process.env.DISCORD_CHANNEL_ID}/${result.discordMessageId})`;
+                  comment += `🔗 Discord Message ID: \`${result.discordMessageId}\`\n`;
+                }
+                if (result.comicPath) {
+                  comment += `📁 Saved to: \`${result.comicPath}\`\n`;
                 }
               } else {
                 comment += `❌ Failed to generate comic: ${result.error}\n\n`;
                 comment += `Please check the workflow logs for more details.`;
               }
             } else {
-              comment += '❌ Comic generation script did not complete properly.';
+              comment += '❌ Comic generation script did not complete properly.\n';
+              comment += 'Check the workflow logs for error details.';
             }
 
             github.rest.issues.createComment({
@@ -74,3 +93,15 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
+
+      - name: Workflow summary
+        if: always()
+        run: |
+          echo "## 🎨 Comic Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "apps/bot/comic-result.json" ]; then
+            cat apps/bot/comic-result.json | jq '.' >> $GITHUB_STEP_SUMMARY || echo "Result file exists but could not be parsed"
+          else
+            echo "❌ No result file generated" >> $GITHUB_STEP_SUMMARY
+          fi
