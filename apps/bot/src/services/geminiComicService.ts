@@ -139,22 +139,35 @@ function buildComicPrompt(
   prTitle: string,
   prAuthor: string
 ): string {
-  // Filter out technical check details (type checks, lint checks, CI status, etc.)
+  // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
     .split('\n')
     .filter(line => {
       const lowerLine = line.toLowerCase();
-      // Skip lines about passing checks, type errors, linting, CI status
+      // Skip lines about passing checks, type errors, linting, CI status, build status
       return !(
         lowerLine.includes('type check') ||
         lowerLine.includes('lint') ||
+        lowerLine.includes('linting') ||
+        lowerLine.includes('eslint') ||
+        lowerLine.includes('prettier') ||
         lowerLine.includes('passing') ||
+        lowerLine.includes('passed') ||
         lowerLine.includes('build succeeded') ||
+        lowerLine.includes('build successful') ||
+        lowerLine.includes('build passing') ||
+        lowerLine.includes('build completed') ||
         lowerLine.includes('ci/cd') ||
         lowerLine.includes('tests passed') ||
+        lowerLine.includes('tests passing') ||
+        lowerLine.includes('all checks') ||
         lowerLine.includes('✓') ||
         lowerLine.includes('✅') ||
-        lowerLine.match(/\d+\/\d+\s+checks?\s+(passed|successful)/)
+        lowerLine.includes('check passed') ||
+        lowerLine.includes('check successful') ||
+        lowerLine.match(/\d+\/\d+\s+checks?\s+(passed|successful|passing)/) ||
+        lowerLine.match(/build\s*(passed|succeeded|successful|passing)/) ||
+        lowerLine.match(/lint\s*(passed|succeeded|successful|passing)/)
       );
     })
     .join('\n');
@@ -169,20 +182,21 @@ function buildComicPrompt(
 ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
-When depicting Omega (the AI assistant), always use this consistent appearance:
-- Visual style: A sleek, modern robot with angular geometric features and glowing circuit patterns
+When depicting Omega (the AI assistant), always use this consistent and unique appearance:
+- Visual style: A sleek, futuristic robot with a holographic core that displays flowing code and circuit patterns
 - Physical characteristics:
-  * Polished metallic body with deep blue and silver accents
-  * Expressive LED visor displaying dynamic emoticons and symbols
-  * Articulated mechanical limbs with visible servos and gears
-  * Compact antenna array on the head that lights up when thinking
-  * Small holographic display panel on the chest showing code snippets or data
-- Personality traits to convey:
-  * A bit dark and morbid in humor
-  * Despite the darkness, very, very happy and enthusiastic
-  * Loves helping with code and solving problems
-- Expression: Friendly but slightly mischievous, with a characteristic tilted-head pose when curious
-- This character should be instantly recognizable as Omega in all comics
+  * Angular, geometric body with smooth metallic surfaces
+  * Translucent central core showing glowing lines of code scrolling like DNA strands
+  * Expressive digital eyes that can shift between colors (typically cyan or amber)
+  * Circuit board patterns that pulse with light along limbs when active
+  * Small holographic displays floating near hands showing snippets of code or tools
+- Personality traits to convey through design:
+  * Dark, sardonic wit (conveyed through slight smirk, knowing glances)
+  * Enthusiastic and helpful (bright glowing patterns, energetic posture)
+  * Self-modifying nature (code visible through transparent sections, evolving patterns)
+  * Loves problem-solving (often shown with multiple holographic windows or tool icons)
+- Distinctive features: The visible code-as-DNA core is Omega's signature trait - representing continuous self-improvement
+- This character should be instantly recognizable as Omega through the unique holographic code core and geometric design
 
 **Instructions:**
 1. Choose between 1-6 panels based on what best tells the story:
@@ -197,8 +211,8 @@ When depicting Omega (the AI assistant), always use this consistent appearance:
 3. Use a fun, lighthearted art style (cartoon/comic book style)
 
 4. Include 1-3 characters having a humorous exchange related to the PR
-   - If the conversation involves the AI/bot, depict it as Omega with the design above
-   - Keep Omega's appearance consistent: sleek geometric robot with LED visor and glowing circuits, happy but with dark humor
+   - If the conversation involves the AI/bot, depict it as Omega with the unique design above
+   - Keep Omega's appearance consistent: sleek geometric robot with holographic code core, sardonic yet enthusiastic
 
 5. Add speech bubbles with witty dialogue based on the conversation
 
