@@ -1164,6 +1164,32 @@ function generateGalleryHTML(artifacts: any[]): string {
     .nav-links a:hover {
       background: rgba(255,255,255,0.2);
     }
+    .featured-video {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+    }
+    .featured-video h2 {
+      color: #333;
+      margin-bottom: 16px;
+      font-size: 1.8em;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .video-container video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
     .gallery {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -1234,6 +1260,22 @@ function generateGalleryHTML(artifacts: any[]): string {
       text-align: center;
       margin-bottom: 30px;
     }
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2em;
+      }
+      .nav-links a {
+        display: inline-block;
+        margin: 5px;
+        padding: 8px 16px;
+      }
+      .featured-video {
+        padding: 16px;
+      }
+      .featured-video h2 {
+        font-size: 1.4em;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1248,6 +1290,20 @@ function generateGalleryHTML(artifacts: any[]): string {
     </div>
     <div class="stats">
       <strong>${artifacts.length}</strong> artifact${artifacts.length !== 1 ? 's' : ''} created
+    </div>
+    <div class="featured-video">
+      <h2>🎬 Featured: Infographic Animation Video Generation</h2>
+      <div class="video-container">
+        <video
+          controls
+          preload="metadata"
+          aria-label="Infographic Animation Video Generation demonstration"
+        >
+          <source src="https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/Infographic_Animation_Video_Generation_69d5089e.mp4" type="video/mp4">
+          Your browser does not support the video tag.
+          <a href="https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/Infographic_Animation_Video_Generation_69d5089e.mp4">Download the video</a> instead.
+        </video>
+      </div>
     </div>
     <div class="gallery">
       ${artifactsList}
