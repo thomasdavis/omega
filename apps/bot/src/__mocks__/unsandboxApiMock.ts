@@ -56,7 +56,7 @@ export class MockUnsandboxApi {
   /**
    * Submit a job for execution (returns first state)
    */
-  async submit(language: string, code: string, ttl: number, env?: any, stdin?: string): Promise<MockJobState> {
+  async submit(language: string, _code: string, _ttl: number, _env?: Record<string, string>, _stdin?: string): Promise<MockJobState> {
     this.submitCount++;
     const job_id = `job_mock_${this.submitCount}`;
 
@@ -141,12 +141,12 @@ export class MockUnsandboxApi {
 /**
  * Create mock fetch responses for testing
  */
-export function createMockFetchResponse(data: any, status: number = 200): Response {
+export function createMockFetchResponse(data: unknown, status: number = 200): Response {
   return {
     ok: status >= 200 && status < 300,
     status,
     statusText: status === 200 ? 'OK' : 'Error',
-    headers: new Map([['content-type', 'application/json']]) as any,
+    headers: new Map([['content-type', 'application/json']]) as unknown as Headers,
     text: async () => JSON.stringify(data),
     json: async () => data,
   } as Response;
@@ -233,7 +233,7 @@ export const SequenceBuilders = {
   /**
    * With artifacts: completed with file outputs
    */
-  withArtifacts(job_id: string, artifacts: any[], stdout: string = ''): MockJobState[] {
+  withArtifacts(job_id: string, artifacts: Array<{ name: string; size: number; mimeType: string; url: string }>, stdout: string = ''): MockJobState[] {
     return [
       { job_id, status: 'pending' },
       {
@@ -260,7 +260,7 @@ export const SequenceBuilders = {
 export function createAsyncWorkflowMock(sequence: MockJobState[]): typeof fetch {
   let callIndex = 0;
 
-  return (async (url: string, options?: any) => {
+  return (async (_url: string, _options?: RequestInit) => {
     callIndex++;
 
     // First call is submit
@@ -271,5 +271,5 @@ export function createAsyncWorkflowMock(sequence: MockJobState[]): typeof fetch 
     // Subsequent calls are status checks
     const stateIndex = Math.min(callIndex - 2, sequence.length - 1);
     return createMockFetchResponse(sequence[stateIndex]);
-  }) as any;
+  }) as typeof fetch;
 }
