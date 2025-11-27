@@ -170,12 +170,18 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 When depicting Omega (the AI assistant), always use this consistent appearance:
-- Visual style: Inspired by Bender from Futurama - a robot character
+- Visual style: A sleek, modern robot with angular geometric features and glowing circuit patterns
+- Physical characteristics:
+  * Polished metallic body with deep blue and silver accents
+  * Expressive LED visor displaying dynamic emoticons and symbols
+  * Articulated mechanical limbs with visible servos and gears
+  * Compact antenna array on the head that lights up when thinking
+  * Small holographic display panel on the chest showing code snippets or data
 - Personality traits to convey:
   * A bit dark and morbid in humor
   * Despite the darkness, very, very happy and enthusiastic
   * Loves helping with code and solving problems
-- Appearance: A robot/android with a friendly but slightly mischievous expression
+- Expression: Friendly but slightly mischievous, with a characteristic tilted-head pose when curious
 - This character should be instantly recognizable as Omega in all comics
 
 **Instructions:**
@@ -192,7 +198,7 @@ When depicting Omega (the AI assistant), always use this consistent appearance:
 
 4. Include 1-3 characters having a humorous exchange related to the PR
    - If the conversation involves the AI/bot, depict it as Omega with the design above
-   - Keep Omega's appearance consistent: robot inspired by Bender, happy but with dark humor
+   - Keep Omega's appearance consistent: sleek geometric robot with LED visor and glowing circuits, happy but with dark humor
 
 5. Add speech bubbles with witty dialogue based on the conversation
 
