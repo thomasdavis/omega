@@ -16,6 +16,7 @@ interface ComicGenerationOptions {
   prNumber: number;
   prTitle: string;
   prAuthor: string;
+  issueNumber?: number;
 }
 
 interface ComicGenerationResult {
@@ -29,7 +30,7 @@ interface ComicGenerationResult {
  * Generate a comic image using Gemini API
  */
 export async function generateComic(options: ComicGenerationOptions): Promise<ComicGenerationResult> {
-  const { conversationContext, prNumber, prTitle, prAuthor } = options;
+  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber } = options;
 
   // Validate API key
   if (!process.env.GEMINI_API_KEY) {
@@ -106,7 +107,10 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     const outputDir = path.join(__dirname, '../../public/comics');
     await fs.mkdir(outputDir, { recursive: true });
 
-    const filename = `pr-${prNumber}-${Date.now()}.png`;
+    // Use issue number if available, otherwise use PR number with timestamp
+    const filename = issueNumber
+      ? `comic_${issueNumber}.png`
+      : `pr-${prNumber}-${Date.now()}.png`;
     const imagePath = path.join(outputDir, filename);
 
     await fs.writeFile(imagePath, imageData);

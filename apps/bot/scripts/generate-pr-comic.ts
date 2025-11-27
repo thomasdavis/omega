@@ -99,6 +99,16 @@ async function main() {
 
     console.log('📝 Conversation context extracted');
 
+    // Extract issue number from PR body
+    let issueNumber: number | undefined;
+    if (pr.body) {
+      const issueMatch = pr.body.match(/(?:fixes|closes|resolves)\s+#(\d+)/i);
+      if (issueMatch) {
+        issueNumber = parseInt(issueMatch[1], 10);
+        console.log(`📌 Found linked issue: #${issueNumber}`);
+      }
+    }
+
     // Generate comic
     console.log('🎨 Generating comic with Gemini API...');
     const comicResult = await generateComic({
@@ -106,6 +116,7 @@ async function main() {
       prNumber,
       prTitle,
       prAuthor,
+      issueNumber,
     });
 
     if (!comicResult.success || !comicResult.imageData) {
