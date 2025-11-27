@@ -58,7 +58,7 @@ export const generateUserAvatarTool = tool({
         args: [userId, limit],
       });
 
-      const messages = result.rows as Array<{
+      const messages = result.rows as unknown as Array<{
         message_content: string;
         timestamp: number;
         channel_name: string;
