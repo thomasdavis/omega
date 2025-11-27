@@ -33,7 +33,7 @@ jobs:
       - name: Check if PR already exists
         id: check-pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
@@ -71,7 +71,7 @@ jobs:
         if: steps.check-pr.outputs.exists == 'false' && steps.extract-issue.outputs.number != ''
         id: issue-details
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
           ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
           ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')
@@ -169,7 +169,7 @@ jobs:
         if: steps.check-pr.outputs.exists == 'false'
         id: create-pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
           BRANCH_NAME="${{ steps.check-pr.outputs.branch }}"
           ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
