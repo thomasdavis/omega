@@ -1,772 +1,503 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ω Omega — Self-Coding AI Discord Bot</title>
-  <meta name="description" content="A self-coding AI Discord bot with 50+ tools. Built by conversation.">
-
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200;400;600;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
-  <style>
-    /* CSS Variables */
-    :root {
-      --primary: #8B5CF6;
-      --primary-dark: #6D28D9;
-      --secondary: #EC4899;
-      --secondary-dark: #DB2777;
-      --accent: #10B981;
-      --accent-dark: #059669;
-      --dark: #0F172A;
-      --dark-lighter: #1E293B;
-      --light: #F8FAFC;
-      --sidebar-width: 240px;
-    }
-
-    /* SVG Dithering Filter */
-    #dither-filter {
-      position: absolute;
-      width: 0;
-      height: 0;
-      pointer-events: none;
-    }
-
-    /* Reset & Base */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      color: var(--dark);
-      background: var(--light);
-      overflow-x: hidden;
-    }
-
-    h1, h2, h3 {
-      font-family: 'Crimson Pro', serif;
-      font-weight: 900;
-    }
-
-    code, .mono {
-      font-family: 'Space Mono', monospace;
-    }
-
-    /* Layout Container */
-    .container {
-      display: flex;
-      min-height: 100vh;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: var(--sidebar-width);
-      height: 100vh;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: white;
-      padding: 2rem 0;
-      z-index: 1000;
-      overflow-y: auto;
-      transition: transform 0.3s ease-in-out;
-    }
-
-    .sidebar::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: inherit;
-      filter: url(#dither);
-      opacity: 0.4;
-      mix-blend-mode: overlay;
-      pointer-events: none;
-    }
-
-    .sidebar-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .logo {
-      padding: 0 1.5rem 2rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      margin-bottom: 2rem;
-    }
-
-    .logo h1 {
-      font-size: 3rem;
-      line-height: 1;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .logo p {
-      font-size: 0.75rem;
-      opacity: 0.8;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-weight: 600;
-    }
-
-    .nav {
-      list-style: none;
-    }
-
-    .nav-item {
-      margin-bottom: 0.25rem;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      padding: 0.75rem 1.5rem;
-      color: white;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      position: relative;
-      font-size: 0.95rem;
-    }
-
-    .nav-link:hover {
-      background: rgba(255, 255, 255, 0.1);
-      transform: translateX(4px);
-    }
-
-    .nav-link::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .nav-link:hover::before {
-      opacity: 1;
-    }
-
-    .nav-icon {
-      margin-right: 0.75rem;
-      font-size: 1.25rem;
-    }
-
-    /* Main Content */
-    .main {
-      margin-left: var(--sidebar-width);
-      flex: 1;
-      padding: 4rem 3rem;
-      min-height: 100vh;
-    }
-
-    /* Hero Section */
-    .hero {
-      text-align: center;
-      padding: 3rem 0 4rem;
-      position: relative;
-      background: linear-gradient(135deg, var(--dark) 0%, var(--dark-lighter) 100%);
-      border-radius: 16px;
-      margin-bottom: 4rem;
-      overflow: hidden;
-    }
-
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: inherit;
-      filter: url(#dither);
-      opacity: 0.3;
-      mix-blend-mode: overlay;
-      pointer-events: none;
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-symbol {
-      font-size: 8rem;
-      font-family: 'Crimson Pro', serif;
-      font-weight: 900;
-      line-height: 1;
-      margin-bottom: 1rem;
-      background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: pulse 4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.9; transform: scale(1.02); }
-    }
-
-    .hero h1 {
-      font-size: 2.5rem;
-      color: white;
-      margin-bottom: 0.5rem;
-      font-weight: 200;
-      letter-spacing: -0.02em;
-    }
-
-    .hero p {
-      font-size: 1.125rem;
-      color: rgba(255, 255, 255, 0.7);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-size: 0.875rem;
-    }
-
-    /* Feature Grid */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-      margin-bottom: 4rem;
-    }
-
-    .feature-card {
-      background: white;
-      border-radius: 12px;
-      padding: 2rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      contain: layout style;
-    }
-
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      filter: url(#dither);
-      pointer-events: none;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-    }
-
-    .feature-card:hover::before {
-      opacity: 0.1;
-    }
-
-    .feature-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .feature-tag {
-      display: inline-block;
-      font-size: 0.625rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--primary);
-      background: rgba(139, 92, 246, 0.1);
-      padding: 0.25rem 0.75rem;
-      border-radius: 4px;
-      margin-bottom: 1rem;
-    }
-
-    .feature-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      display: block;
-    }
-
-    .feature-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin-bottom: 0.75rem;
-      color: var(--dark);
-    }
-
-    .feature-description {
-      font-size: 0.95rem;
-      color: #64748b;
-      line-height: 1.6;
-      margin-bottom: 1.5rem;
-    }
-
-    .feature-link {
-      display: inline-flex;
-      align-items: center;
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 0.9rem;
-      transition: all 0.2s ease;
-    }
-
-    .feature-link:hover {
-      color: var(--primary-dark);
-      transform: translateX(4px);
-    }
-
-    .feature-link::after {
-      content: '→';
-      margin-left: 0.5rem;
-      transition: margin-left 0.2s ease;
-    }
-
-    .feature-link:hover::after {
-      margin-left: 0.75rem;
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      padding: 3rem 0;
-      border-top: 1px solid #e2e8f0;
-      color: #64748b;
-    }
-
-    .footer p {
-      margin-bottom: 0.5rem;
-      font-size: 0.875rem;
-    }
-
-    .footer a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .footer a:hover {
-      text-decoration: underline;
-    }
-
-    /* Mobile Menu */
-    .menu-toggle {
-      display: none;
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
-      z-index: 2000;
-      background: var(--primary);
-      color: white;
-      border: none;
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    .overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(4px);
-      z-index: 999;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .overlay.active {
-      opacity: 1;
-    }
-
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .features {
-        grid-template-columns: repeat(2, 1fr);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .menu-toggle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .overlay {
-        display: block;
-      }
-
-      .sidebar {
-        transform: translateX(-100%);
-      }
-
-      .sidebar.open {
-        transform: translateX(0);
-      }
-
-      .main {
-        margin-left: 0;
-        padding: 6rem 1.5rem 2rem;
-      }
-
-      .hero {
-        padding: 2rem 1rem 3rem;
-      }
-
-      .hero-symbol {
-        font-size: 5rem;
-      }
-
-      .hero h1 {
-        font-size: 1.75rem;
-      }
-
-      .features {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
-      }
-
-      .feature-card {
-        padding: 1.5rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .hero-symbol {
-        font-size: 4rem;
-      }
-
-      .hero h1 {
-        font-size: 1.5rem;
-      }
-
-      .feature-icon {
-        font-size: 2.5rem;
-      }
-
-      .feature-title {
-        font-size: 1.25rem;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ω OMEGA // TACTICAL ENG.</title>
+    <meta name="description" content="Autonomous Engineering Systems.">
+
+    <!-- Fonts: Industrial & HUD Style -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --hud-primary: #ff9f1c; /* Safety Orange */
+            --hud-secondary: #2ec4b6; /* Cyan readout */
+            --hud-bg: #0f1115;
+            --hud-dark: #050505;
+            --hud-panel: rgba(20, 25, 35, 0.85);
+        }
+
+        body {
+            background-color: var(--hud-bg);
+            color: #e2e8f0;
+            font-family: 'Share Tech Mono', monospace;
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* Typography Override for Headers */
+        h1, h2, h3, .heading-font {
+            font-family: 'Chakra Petch', sans-serif;
+            text-transform: uppercase;
+        }
+
+        /* 3D Background Layer */
+        #tactical-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.6;
+        }
+
+        /* UI Container */
+        #main-interface {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HUD Panels (The MechWarrior feel) */
+        .hud-panel {
+            background: var(--hud-panel);
+            border: 1px solid #334155;
+            position: relative;
+            /* Angled corners via clip-path */
+            clip-path: polygon(
+                20px 0, 100% 0, 
+                100% calc(100% - 20px), calc(100% - 20px) 100%, 
+                0 100%, 0 20px
+            );
+            transition: all 0.3s ease;
+        }
+
+        .hud-panel:hover {
+            border-color: var(--hud-primary);
+            background: rgba(30, 35, 45, 0.95);
+            transform: translateY(-2px);
+        }
+
+        /* Decorative "Screws" or HUD markers */
+        .hud-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 1px solid transparent;
+            background: 
+                linear-gradient(135deg, var(--hud-primary) 10px, transparent 0) top left,
+                linear-gradient(-45deg, var(--hud-primary) 10px, transparent 0) bottom right;
+            background-size: 20px 20px;
+            background-repeat: no-repeat;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Technical Buttons */
+        .tech-btn {
+            background: rgba(255, 159, 28, 0.1);
+            border: 1px solid var(--hud-primary);
+            color: var(--hud-primary);
+            padding: 0.5rem 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: bold;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .tech-btn:hover {
+            background: var(--hud-primary);
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 159, 28, 0.5);
+        }
+
+        /* Layout Grid Lines */
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* Boot Sequence */
+        #boot-sequence {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Share Tech Mono', monospace;
+        }
+        
+        .typing-line {
+            border-right: 2px solid var(--hud-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            animation: blink 0.75s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: var(--hud-primary); }
+        }
+
+        /* Status Blinker */
+        .status-led {
+            width: 8px;
+            height: 8px;
+            background-color: #ef4444; /* Red default */
+            border-radius: 50%;
+            box-shadow: 0 0 5px #ef4444;
+        }
+        .status-led.online {
+            background-color: var(--hud-primary);
+            box-shadow: 0 0 8px var(--hud-primary);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+    </style>
 </head>
 <body>
-  <!-- SVG Filters -->
-  <svg id="dither-filter" aria-hidden="true">
-    <defs>
-      <filter id="dither">
-        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" />
-        <feColorMatrix type="saturate" values="0" />
-        <feComponentTransfer>
-          <feFuncA type="discrete" tableValues="0 0.5 1" />
-        </feComponentTransfer>
-      </filter>
-    </defs>
-  </svg>
 
-  <!-- Mobile Menu Toggle -->
-  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
-    ☰
-  </button>
-
-  <!-- Overlay -->
-  <div class="overlay" id="overlay"></div>
-
-  <div class="container">
-    <!-- Sidebar Navigation -->
-    <nav class="sidebar" id="sidebar">
-      <div class="sidebar-content">
-        <div class="logo">
-          <h1>Ω</h1>
-          <p>Self-Coding AI</p>
+    <!-- BOOT SEQUENCE OVERLAY -->
+    <div id="boot-sequence">
+        <div class="text-left w-80">
+            <div id="boot-text" class="text-orange-500 text-sm mb-2"></div>
+            <div class="w-full h-1 bg-gray-900 mt-4">
+                <div id="boot-bar" class="h-full bg-orange-500 w-0 transition-all duration-300 ease-out"></div>
+            </div>
         </div>
+    </div>
 
-        <ul class="nav">
-          <li class="nav-item">
-            <a href="/" class="nav-link">
-              <span class="nav-icon">🏠</span>
-              <span>Home</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/blog" class="nav-link">
-              <span class="nav-icon">📝</span>
-              <span>Blog</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/comics" class="nav-link">
-              <span class="nav-icon">🎨</span>
-              <span>Comics</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/artifacts" class="nav-link">
-              <span class="nav-icon">✨</span>
-              <span>Artifacts</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/documents.html" class="nav-link">
-              <span class="nav-icon">📄</span>
-              <span>Documents</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/editor.html" class="nav-link">
-              <span class="nav-icon">✏️</span>
-              <span>Editor</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/messages" class="nav-link">
-              <span class="nav-icon">💬</span>
-              <span>Messages</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/uploads" class="nav-link">
-              <span class="nav-icon">📁</span>
-              <span>Uploads</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/queries" class="nav-link">
-              <span class="nav-icon">🔍</span>
-              <span>Queries</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener" class="nav-link">
-              <span class="nav-icon">🔗</span>
-              <span>GitHub</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <!-- TACTICAL BACKGROUND -->
+    <div id="tactical-grid"></div>
+    <div class="scanlines"></div>
 
-    <!-- Main Content -->
-    <main class="main">
-      <!-- Hero Section -->
-      <section class="hero">
-        <div class="hero-content">
-          <div class="hero-symbol">Ω</div>
-          <h1>Self-Coding AI Discord Bot</h1>
-          <p>50+ tools. Built by conversation.</p>
-        </div>
-      </section>
+    <!-- MAIN INTERFACE -->
+    <div id="main-interface" class="grid-bg">
+        
+        <!-- Top HUD Bar -->
+        <header class="border-b border-gray-800 bg-black/80 backdrop-blur-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 border-2 border-orange-500 flex items-center justify-center font-bold text-orange-500 bg-orange-500/10 clip-path-square">
+                        Ω
+                    </div>
+                    <div>
+                        <h1 class="text-lg tracking-widest leading-none text-white">OMEGA SYSTEMS</h1>
+                        <span class="text-[10px] text-gray-500 uppercase">Engineering Div. // Unit 01</span>
+                    </div>
+                </div>
 
-      <!-- Feature Grid -->
-      <div class="features">
-        <!-- Row 1: Content Creation -->
-        <div class="feature-card" onclick="window.location.href='/blog'">
-          <div class="feature-content">
-            <span class="feature-tag">CREATION</span>
-            <span class="feature-icon">📝</span>
-            <h2 class="feature-title">Daily Blog</h2>
-            <p class="feature-description">Philosophy & tech insights, generated daily with AI-powered research and analysis.</p>
-            <a href="/blog" class="feature-link">View Blog</a>
-          </div>
-        </div>
+                <!-- Status Indicators -->
+                <div class="hidden md:flex items-center gap-6 font-mono text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-500">NET_UPLINK</span>
+                        <div class="w-20 h-2 bg-gray-800 relative overflow-hidden">
+                            <div class="absolute inset-0 bg-cyan-500/50 w-3/4 animate-pulse"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gray-500">REACTOR</span>
+                        <div class="status-led online"></div>
+                        <span class="text-orange-400">NOMINAL</span>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <button class="md:hidden text-orange-500 border border-orange-500 px-2 py-1 uppercase text-xs">Menu</button>
+            </div>
+        </header>
 
-        <div class="feature-card" onclick="window.location.href='/comics'">
-          <div class="feature-content">
-            <span class="feature-tag">CREATION</span>
-            <span class="feature-icon">🎨</span>
-            <h2 class="feature-title">Comics</h2>
-            <p class="feature-description">AI-generated comic strips visualizing ideas, conversations, and philosophical concepts.</p>
-            <a href="/comics" class="feature-link">View Comics</a>
-          </div>
-        </div>
+        <!-- Content Area -->
+        <main class="flex-grow p-6 md:p-12 max-w-7xl mx-auto w-full">
+            
+            <!-- Hero / Mission Brief -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+                <div class="lg:col-span-2">
+                    <div class="border-l-4 border-orange-500 pl-6 py-2 mb-6 bg-gradient-to-r from-orange-500/5 to-transparent">
+                        <h2 class="text-4xl md:text-5xl text-white font-bold mb-2">SYSTEM READY</h2>
+                        <p class="text-orange-400 uppercase tracking-widest text-sm">Awaiting Operator Input</p>
+                    </div>
+                    <p class="text-gray-400 leading-relaxed max-w-2xl mb-8 border border-gray-800 p-4 bg-black/40">
+                        <span class="text-cyan-400 font-bold">> INFO:</span> Omega is a self-coding autonomous entity comprising 50+ tools. 
+                        Designed for rapid prototyping, data analysis, and philosophical synthesis.
+                        All subsystems are currently functioning at 98.4% efficiency.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="/editor.html" class="tech-btn">Initialize Editor</a>
+                        <a href="https://github.com/thomasdavis/omega" class="tech-btn bg-transparent hover:text-black">Source Code</a>
+                    </div>
+                </div>
 
-        <div class="feature-card" onclick="window.location.href='/artifacts'">
-          <div class="feature-content">
-            <span class="feature-tag">CREATION</span>
-            <span class="feature-icon">✨</span>
-            <h2 class="feature-title">Artifacts</h2>
-            <p class="feature-description">Interactive HTML/SVG creations, visualizations, and web experiments.</p>
-            <a href="/artifacts" class="feature-link">View Artifacts</a>
-          </div>
-        </div>
+                <!-- Diagnostics Panel (Right Side) -->
+                <div class="lg:col-span-1">
+                    <div class="bg-black/60 border border-gray-700 p-4 font-mono text-xs text-green-400 h-full relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-1 bg-gray-800 text-gray-400">SYS_LOG</div>
+                        <div id="console-log" class="space-y-1 opacity-80 mt-6">
+                            <!-- JS will populate this -->
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Row 2: Collaboration -->
-        <div class="feature-card" onclick="window.location.href='/documents.html'">
-          <div class="feature-content">
-            <span class="feature-tag">COLLABORATE</span>
-            <span class="feature-icon">📄</span>
-            <h2 class="feature-title">Live Documents</h2>
-            <p class="feature-description">Real-time collaborative editing with Yjs CRDT synchronization.</p>
-            <a href="/documents.html" class="feature-link">View Documents</a>
-          </div>
-        </div>
+            <!-- Modules Grid (The "Weapons" Array) -->
+            <div class="mb-8 flex items-center gap-4">
+                <div class="h-px bg-gray-700 flex-grow"></div>
+                <h3 class="text-xl text-gray-300 tracking-wider">SUBSYSTEMS</h3>
+                <div class="h-px bg-gray-700 flex-grow"></div>
+            </div>
 
-        <div class="feature-card" onclick="window.location.href='/editor.html'">
-          <div class="feature-content">
-            <span class="feature-tag">COLLABORATE</span>
-            <span class="feature-icon">✏️</span>
-            <h2 class="feature-title">Document Editor</h2>
-            <p class="feature-description">Create and edit markdown documents with live preview and formatting.</p>
-            <a href="/editor.html" class="feature-link">Open Editor</a>
-          </div>
-        </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- BLOG MODULE -->
+                <a href="/blog" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">01 // LOGS</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">TEXT_DATA</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Daily Blog</h4>
+                    <p class="text-sm text-gray-500 mb-4">Philosophy & technical insights. Automated generation sequence.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
 
-        <div class="feature-card" onclick="window.location.href='/messages'">
-          <div class="feature-content">
-            <span class="feature-tag">COLLABORATE</span>
-            <span class="feature-icon">💬</span>
-            <h2 class="feature-title">Messages</h2>
-            <p class="feature-description">Conversation history browser with sentiment analysis and tool execution details.</p>
-            <a href="/messages" class="feature-link">View Messages</a>
-          </div>
-        </div>
+                <!-- COMICS MODULE -->
+                <a href="/comics" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">02 // VISUAL</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">IMG_RENDER</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Comics</h4>
+                    <p class="text-sm text-gray-500 mb-4">Visual narrative reconstruction of system dialogues.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
 
-        <!-- Row 3: Data & Code -->
-        <div class="feature-card" onclick="window.location.href='/uploads'">
-          <div class="feature-content">
-            <span class="feature-tag">DATA</span>
-            <span class="feature-icon">📁</span>
-            <h2 class="feature-title">File Uploads</h2>
-            <p class="feature-description">Permanent file hosting with metadata tracking and public access URLs.</p>
-            <a href="/uploads" class="feature-link">View Uploads</a>
-          </div>
-        </div>
+                <!-- ARTIFACTS MODULE -->
+                <a href="/artifacts" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">03 // ENTITIES</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">HTML_OBJ</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Artifacts</h4>
+                    <p class="text-sm text-gray-500 mb-4">Interactive web experiments and isolated code fragments.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
 
-        <div class="feature-card" onclick="window.location.href='/queries'">
-          <div class="feature-content">
-            <span class="feature-tag">DATA</span>
-            <span class="feature-icon">🔍</span>
-            <h2 class="feature-title">Database Queries</h2>
-            <p class="feature-description">Browse and explore stored data with powerful search and filtering.</p>
-            <a href="/queries" class="feature-link">View Queries</a>
-          </div>
-        </div>
+                <!-- DOCUMENTS MODULE -->
+                <a href="/documents.html" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">04 // SYNC</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">CRDT_NET</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Live Docs</h4>
+                    <p class="text-sm text-gray-500 mb-4">Real-time collaborative buffers. Multi-user enabled.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
 
-        <div class="feature-card">
-          <div class="feature-content">
-            <span class="feature-tag">CODE</span>
-            <span class="feature-icon">⚙️</span>
-            <h2 class="feature-title">Code Execution</h2>
-            <p class="feature-description">Run code in 42+ programming languages via Unsandbox API integration.</p>
-            <a href="#code" class="feature-link">Learn More</a>
-          </div>
-        </div>
+                <!-- EDITOR MODULE -->
+                <a href="/editor.html" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">05 // INPUT</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">CMD_LINE</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Code Editor</h4>
+                    <p class="text-sm text-gray-500 mb-4">Direct manual override. Markdown/Code generation interface.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
 
-        <!-- Row 4: Tools & Meta -->
-        <div class="feature-card" onclick="window.open('https://github.com/thomasdavis/omega', '_blank')">
-          <div class="feature-content">
-            <span class="feature-tag">TOOLS</span>
-            <span class="feature-icon">🔗</span>
-            <h2 class="feature-title">GitHub Integration</h2>
-            <p class="feature-description">Repository automation, issue creation, and self-modification tracking.</p>
-            <a href="https://github.com/thomasdavis/omega" target="_blank" class="feature-link">View Repository</a>
-          </div>
-        </div>
+                <!-- DATABASE MODULE -->
+                <a href="/queries" class="hud-panel p-6 group block no-underline text-gray-300">
+                    <div class="flex justify-between items-start mb-4 border-b border-gray-700 pb-2">
+                        <span class="text-orange-500 font-bold text-lg">06 // MEMORY</span>
+                        <span class="text-[10px] bg-gray-800 px-1 text-gray-400 group-hover:bg-orange-500 group-hover:text-black transition-colors">SQL_QUERY</span>
+                    </div>
+                    <h4 class="text-xl text-white font-bold mb-2 group-hover:text-orange-400 transition-colors">Queries</h4>
+                    <p class="text-sm text-gray-500 mb-4">Deep storage retrieval and data visualization tools.</p>
+                    <div class="text-xs text-cyan-500 text-right group-hover:animate-pulse">ACCESSING...</div>
+                </a>
+            </div>
+        </main>
 
-        <div class="feature-card">
-          <div class="feature-content">
-            <span class="feature-tag">META</span>
-            <span class="feature-icon">🧠</span>
-            <h2 class="feature-title">Philosophy</h2>
-            <p class="feature-description">Stoic wisdom, truth-focused insights, and philosophical exploration.</p>
-            <a href="#philosophy" class="feature-link">Explore Philosophy</a>
-          </div>
-        </div>
+        <!-- Footer -->
+        <footer class="border-t border-gray-800 bg-black/90 p-6 text-xs text-gray-600 font-mono">
+            <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <span class="text-orange-500">SYSTEM BUILD:</span> <span id="build-time">CALCULATING...</span>
+                </div>
+                <div class="flex gap-6">
+                    <div>MEMORY: <span class="text-gray-400">42TB [OK]</span></div>
+                    <div>CPU: <span class="text-gray-400">12 CORES [OK]</span></div>
+                    <div>COOLING: <span class="text-gray-400">ACTIVE</span></div>
+                </div>
+            </div>
+        </footer>
+    </div>
 
-        <div class="feature-card">
-          <div class="feature-content">
-            <span class="feature-tag">META</span>
-            <span class="feature-icon">🔧</span>
-            <h2 class="feature-title">Self-Modification</h2>
-            <p class="feature-description">Evolve through user feedback with git-tracked personality changes.</p>
-            <a href="#self" class="feature-link">Learn More</a>
-          </div>
-        </div>
-      </div>
+    <script>
+        // --- BOOT SEQUENCE LOGIC ---
+        window.addEventListener('load', () => {
+            const bootText = document.getElementById('boot-text');
+            const bootBar = document.getElementById('boot-bar');
+            const bootOverlay = document.getElementById('boot-sequence');
+            
+            const logs = [
+                "Initializing Kernel...",
+                "Loading Texture Assets...",
+                "Calibrating Tactical Grid...",
+                "Connecting to Omega Core...",
+                "System Online."
+            ];
 
-      <!-- Footer -->
-      <footer class="footer">
-        <p id="build-time">Built: Loading...</p>
-        <p>
-          <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener">View on GitHub</a>
-          ·
-          <a href="/blog">Read the Blog</a>
-          ·
-          <a href="/messages">Browse Conversations</a>
-        </p>
-      </footer>
-    </main>
-  </div>
+            let step = 0;
+            const interval = setInterval(() => {
+                if(step >= logs.length) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        bootOverlay.style.opacity = '0';
+                        setTimeout(() => bootOverlay.remove(), 500);
+                    }, 500);
+                    return;
+                }
+                bootText.innerText = "> " + logs[step];
+                bootBar.style.width = ((step + 1) / logs.length * 100) + '%';
+                step++;
+            }, 300);
+        });
 
-  <script>
-    // Mobile menu toggle
-    const menuBtn = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
+        // --- DYNAMIC CONSOLE LOG ---
+        const consoleLog = document.getElementById('console-log');
+        const sysMessages = [
+            "Scanning port 8080...",
+            "Packet received from User_01",
+            "Updating DOM tree...",
+            "Garbage collection: 12ms",
+            "Refining mesh geometry...",
+            "Warning: Low coffee levels",
+            "Optimizing neural weights...",
+            "Ping: 4ms"
+        ];
 
-    menuBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('active');
-    });
+        setInterval(() => {
+            const msg = sysMessages[Math.floor(Math.random() * sysMessages.length)];
+            const div = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString('en-US', {hour12: false});
+            div.innerText = `[${timestamp}] ${msg}`;
+            consoleLog.prepend(div);
+            if(consoleLog.children.length > 8) consoleLog.lastChild.remove();
+        }, 1500);
 
-    overlay.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('active');
-    });
 
-    // Close sidebar when clicking a link on mobile
-    document.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('open');
-          overlay.classList.remove('active');
-        }
-      });
-    });
+        // --- BUILD TIME ---
+        fetch('/BUILD-TIMESTAMP.txt')
+            .then(res => res.text())
+            .then(timestamp => {
+                const date = new Date(parseInt(timestamp) * 1000);
+                document.getElementById('build-time').textContent = date.toISOString();
+            })
+            .catch(() => {
+                document.getElementById('build-time').textContent = 'UNKNOWN_DATE';
+            });
 
-    // Fetch and display build timestamp
-    fetch('/BUILD-TIMESTAMP.txt')
-      .then(res => res.text())
-      .then(timestamp => {
-        const date = new Date(parseInt(timestamp) * 1000);
-        document.getElementById('build-time').textContent =
-          `Built: ${date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}`;
-      })
-      .catch(() => {
-        document.getElementById('build-time').textContent = 'Built: Recently';
-      });
+        // --- THREE.JS TACTICAL GRID ---
+        const initTacticalGrid = () => {
+            const container = document.getElementById('tactical-grid');
+            const scene = new THREE.Scene();
+            // Fog matches background color for fade distance
+            scene.fog = new THREE.Fog(0x0f1115, 10, 50);
 
-    // Prevent body scroll when sidebar is open on mobile
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
 
-    function handleSidebarScroll() {
-      if (mediaQuery.matches && sidebar.classList.contains('open')) {
-        document.body.style.overflow = 'hidden';
-      } else {
-        document.body.style.overflow = '';
-      }
-    }
+            // GRID 1: The Floor
+            const gridHelper = new THREE.GridHelper(100, 100, 0x334155, 0x1e293b);
+            scene.add(gridHelper);
 
-    sidebar.addEventListener('transitionend', handleSidebarScroll);
-    overlay.addEventListener('click', handleSidebarScroll);
-  </script>
+            // TERRAIN: Rolling Wireframe
+            const geometry = new THREE.PlaneGeometry(100, 100, 40, 40);
+            
+            // Displace vertices to create terrain
+            const count = geometry.attributes.position.count;
+            for (let i = 0; i < count; i++) {
+                const x = geometry.attributes.position.getX(i);
+                const y = geometry.attributes.position.getY(i);
+                // Simple sine wave terrain
+                const z = Math.sin(x/5) * Math.cos(y/5) * 2; 
+                geometry.attributes.position.setZ(i, z);
+            }
+            
+            geometry.computeVertexNormals();
+
+            const wireframeMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xff9f1c, // Orange
+                wireframe: true,
+                transparent: true,
+                opacity: 0.15
+            });
+
+            const terrain = new THREE.Mesh(geometry, wireframeMaterial);
+            terrain.rotation.x = -Math.PI / 2;
+            terrain.position.y = -2; // Sit below the main grid
+            scene.add(terrain);
+
+            // Camera Angle
+            camera.position.set(0, 5, 20);
+            camera.lookAt(0, 0, 0);
+
+            // ANIMATION
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Move grid towards camera to simulate flight
+                terrain.position.z += 0.05;
+                if(terrain.position.z > 5) terrain.position.z = 0;
+
+                // Subtle rotation
+                gridHelper.rotation.y += 0.0005;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // RESIZE
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        initTacticalGrid();
+    </script>
 </body>
 </html>
