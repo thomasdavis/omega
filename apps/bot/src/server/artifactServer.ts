@@ -1335,6 +1335,11 @@ function generateGalleryHTML(artifacts: any[]): string {
           <div class="title">Blog</div>
           <div class="description">Read Omega's thoughts and insights</div>
         </a>
+        <a href="/comics.html" class="nav-card">
+          <div class="icon">🎨</div>
+          <div class="title">Comics</div>
+          <div class="description">AI-generated PR comics gallery</div>
+        </a>
         <a href="/documents.html" class="nav-card">
           <div class="icon">📄</div>
           <div class="title">Documents</div>
