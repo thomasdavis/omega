@@ -1,0 +1,76 @@
+name: Generate PR Comic
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  generate-comic:
+    # Only run when PR is merged (not just closed)
+    if: github.event.pull_request.merged == true
+    name: Generate Comic for Merged PR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate comic and post to Discord
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          DISCORD_CHANNEL_ID: '1438147272855523358'
+        run: |
+          cd apps/bot
+          npx tsx scripts/generate-pr-comic.ts
+
+      - name: Comment on PR with comic generation result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const resultPath = 'apps/bot/comic-result.json';
+
+            let comment = '🎨 **Comic Generation Complete**\n\n';
+
+            if (fs.existsSync(resultPath)) {
+              const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
+
+              if (result.success) {
+                comment += `✅ Successfully generated and posted comic to Discord!\n`;
+                comment += `📊 Image size: ${(result.imageSize / 1024).toFixed(2)} KB\n`;
+                if (result.discordMessageId) {
+                  comment += `🔗 [View in Discord](https://discord.com/channels/@me/${process.env.DISCORD_CHANNEL_ID}/${result.discordMessageId})`;
+                }
+              } else {
+                comment += `❌ Failed to generate comic: ${result.error}\n\n`;
+                comment += `Please check the workflow logs for more details.`;
+              }
+            } else {
+              comment += '❌ Comic generation script did not complete properly.';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
