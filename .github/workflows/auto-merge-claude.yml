@@ -55,8 +55,9 @@ jobs:
       - name: Check if PR is linked to an issue
         id: check_issue
         if: steps.check_claude.outputs.is_claude == 'true'
+        env:
+          PR_BODY: ${{ steps.pr.outputs.body }}
         run: |
-          PR_BODY="${{ steps.pr.outputs.body }}"
           if echo "$PR_BODY" | grep -qiE "(fixes|closes|resolves) #[0-9]+"; then
             echo "linked=true" >> $GITHUB_OUTPUT
           else
