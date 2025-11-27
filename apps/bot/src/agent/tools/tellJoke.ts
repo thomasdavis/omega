@@ -27,9 +27,13 @@ const JOKE_CATEGORIES = [
 type JokeCategory = typeof JOKE_CATEGORIES[number];
 
 /**
- * Generate a joke using AI based on category
+ * Generate a joke using AI based on category and optional context
  */
-async function generateJoke(category?: string): Promise<{
+async function generateJoke(
+  category?: string,
+  channelName?: string,
+  recentTopics?: string
+): Promise<{
   setup: string;
   punchline: string;
   category: string;
@@ -50,9 +54,22 @@ async function generateJoke(category?: string): Promise<{
     oneliners: 'Create a witty one-liner or observational joke. No setup needed - just a clever, punchy statement. Can be tech-related.',
   };
 
+  // Build context-aware guidance
+  let contextGuidance = '';
+  if (channelName || recentTopics) {
+    contextGuidance = '\n\nContext for making the joke more relevant:';
+    if (channelName) {
+      contextGuidance += `\n- Channel: #${channelName}`;
+    }
+    if (recentTopics) {
+      contextGuidance += `\n- Recent conversation topics: ${recentTopics}`;
+      contextGuidance += '\n- TRY to incorporate or reference these topics if it makes the joke funnier and more contextually relevant. However, if forcing the context would make the joke worse, prioritize humor over context.';
+    }
+  }
+
   const prompt = `Generate a ${selectedCategory} joke following these guidelines:
 
-${categoryGuidance[selectedCategory]}
+${categoryGuidance[selectedCategory]}${contextGuidance}
 
 Requirements:
 - Be original and creative (avoid overused jokes)
@@ -61,6 +78,7 @@ Requirements:
 - For setup-punchline jokes: create clear separation
 - For one-liners: make it punchy and self-contained
 - Length: setup should be 5-20 words, punchline 5-15 words (or empty for one-liners)
+- If context is provided, use it to make the joke more relevant, but only if it enhances the humor
 
 Respond in JSON format:
 {
@@ -104,15 +122,23 @@ function formatJoke(setup: string, punchline: string): string {
 }
 
 export const tellJokeTool = tool({
-  description: 'Generate and tell an AI-powered joke from various categories (tech, classic, puns, dad, programming, oneliners). Each joke is uniquely generated for fresh, original humor. Use this when users want to hear a joke or need some lighthearted fun.',
+  description: 'Generate and tell an AI-powered joke from various categories (tech, classic, puns, dad, programming, oneliners). Each joke is uniquely generated for fresh, original humor. Can incorporate context from the current conversation to make jokes more relevant and engaging. Use this when users want to hear a joke or need some lighthearted fun.',
   inputSchema: z.object({
     category: z.string().optional().describe('Optional category: tech, classic, puns, dad, programming, or oneliners. If not specified, a random category will be chosen.'),
+    channelName: z.string().optional().describe('Optional name of the current channel/room. Helps contextualize the joke.'),
+    recentTopics: z.string().optional().describe('Optional brief summary of recent conversation topics (e.g., "discussing TypeScript and deployment issues"). Helps make the joke contextually relevant.'),
   }),
-  execute: async ({ category }) => {
+  execute: async ({ category, channelName, recentTopics }) => {
     try {
       console.log('😄 Tell Joke: Generating an AI-powered joke...');
+      if (channelName) {
+        console.log(`   📍 Channel: #${channelName}`);
+      }
+      if (recentTopics) {
+        console.log(`   💬 Context: ${recentTopics}`);
+      }
 
-      const jokeData = await generateJoke(category);
+      const jokeData = await generateJoke(category, channelName, recentTopics);
       const formattedJoke = formatJoke(jokeData.setup, jokeData.punchline);
 
       console.log(`   📂 Category: ${jokeData.category}`);
@@ -123,6 +149,7 @@ export const tellJokeTool = tool({
         category: jokeData.category,
         setup: jokeData.setup,
         punchline: jokeData.punchline || null,
+        contextUsed: !!(channelName || recentTopics),
         availableCategories: Array.from(JOKE_CATEGORIES),
         success: true,
       };
