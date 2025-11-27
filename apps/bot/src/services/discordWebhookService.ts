@@ -4,7 +4,7 @@
  * Utilities for posting messages and images to Discord via webhooks
  */
 
-import { FormData, File } from 'undici';
+import { FormData } from 'undici';
 
 export interface DiscordWebhookMessage {
   content?: string;
@@ -50,7 +50,7 @@ export async function sendDiscordWebhook(
     if (message.files && message.files.length > 0) {
       for (let i = 0; i < message.files.length; i++) {
         const file = message.files[i];
-        const blob = new File([file.data], file.name, {
+        const blob = new Blob([file.data], {
           type: 'image/png',
         });
         formData.append(`files[${i}]`, blob, file.name);
@@ -60,7 +60,7 @@ export async function sendDiscordWebhook(
     // Send webhook request
     const response = await fetch(webhookUrl, {
       method: 'POST',
-      body: formData,
+      body: formData as any,
     });
 
     if (!response.ok) {

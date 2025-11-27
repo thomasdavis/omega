@@ -14,10 +14,10 @@
  *   GITHUB_REPO - Repository in format "owner/repo"
  */
 
-import { GoogleGenerativeAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { lookup } from 'mime';
+import mime from 'mime';
 
 interface PRContext {
   number: number;
@@ -61,11 +61,11 @@ async function fetchPRContext(prNumber: number): Promise<PRContext> {
   if (!prResponse.ok) {
     throw new Error(`Failed to fetch PR: ${prResponse.statusText}`);
   }
-  const pr = await prResponse.json();
+  const pr: any = await prResponse.json();
 
   // Fetch PR comments
   const commentsResponse = await fetch(`https://api.github.com/repos/${repo}/issues/${prNumber}/comments`, { headers });
-  const commentsData = await commentsResponse.json();
+  const commentsData: any = await commentsResponse.json();
   const comments = commentsData.map((c: any) => ({
     author: c.user.login,
     body: c.body,
@@ -74,7 +74,7 @@ async function fetchPRContext(prNumber: number): Promise<PRContext> {
 
   // Fetch PR commits
   const commitsResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/commits`, { headers });
-  const commitsData = await commitsResponse.json();
+  const commitsData: any = await commitsResponse.json();
   const commits = commitsData.map((c: any) => ({
     sha: c.sha.substring(0, 7),
     message: c.commit.message,
@@ -83,7 +83,7 @@ async function fetchPRContext(prNumber: number): Promise<PRContext> {
 
   // Fetch PR files
   const filesResponse = await fetch(`https://api.github.com/repos/${repo}/pulls/${prNumber}/files`, { headers });
-  const filesData = await filesResponse.json();
+  const filesData: any = await filesResponse.json();
   const filesChanged = filesData.map((f: any) => ({
     filename: f.filename,
     additions: f.additions,
@@ -168,9 +168,6 @@ async function generateComic(context: PRContext): Promise<Buffer> {
       role: 'user',
       parts: [{ text: prompt }],
     }],
-    generationConfig: {
-      responseModalities: ['image'],
-    },
   });
 
   const response = result.response;
