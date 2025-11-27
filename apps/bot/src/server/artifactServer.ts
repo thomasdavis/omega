@@ -1123,7 +1123,7 @@ function generateGalleryHTML(artifacts: any[]): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Artifact Gallery</title>
+  <title>Omega AI - Homepage</title>
   <style>
     * {
       margin: 0;
@@ -1143,26 +1143,70 @@ function generateGalleryHTML(artifacts: any[]): string {
     h1 {
       color: white;
       text-align: center;
-      margin-bottom: 40px;
+      margin-bottom: 20px;
       font-size: 3em;
       text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
-    .nav-links {
+    .subtitle {
+      color: rgba(255,255,255,0.9);
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 1.2em;
+      font-weight: 300;
+    }
+    .nav-menu {
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 40px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    }
+    .nav-menu h2 {
+      color: white;
       text-align: center;
       margin-bottom: 20px;
+      font-size: 1.5em;
+      font-weight: 600;
     }
-    .nav-links a {
-      color: white;
-      text-decoration: none;
-      padding: 10px 20px;
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    .nav-card {
       background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 8px;
-      margin: 0 10px;
-      transition: background 0.2s;
+      backdrop-filter: blur(5px);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
-    .nav-links a:hover {
-      background: rgba(255,255,255,0.2);
+    .nav-card:hover {
+      background: rgba(255,255,255,0.25);
+      border-color: rgba(255,255,255,0.4);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    .nav-card .icon {
+      font-size: 2.5em;
+      line-height: 1;
+    }
+    .nav-card .title {
+      font-weight: 600;
+      font-size: 1.1em;
+    }
+    .nav-card .description {
+      font-size: 0.9em;
+      opacity: 0.9;
+      line-height: 1.4;
     }
     .featured-video {
       background: white;
@@ -1280,14 +1324,41 @@ function generateGalleryHTML(artifacts: any[]): string {
 </head>
 <body>
   <div class="container">
-    <h1>🎨 Artifact Gallery</h1>
-    <div class="nav-links">
-      <a href="/blog">📝 Blog →</a>
-      <a href="/documents.html">📄 Documents →</a>
-      <a href="/uploads">📁 Uploads →</a>
-      <a href="/messages">💬 Messages →</a>
-      <a href="/queries">🔍 Queries →</a>
+    <h1>🤖 Omega AI</h1>
+    <p class="subtitle">Your AI-powered Discord companion</p>
+
+    <div class="nav-menu">
+      <h2>Explore</h2>
+      <div class="nav-grid">
+        <a href="/blog" class="nav-card">
+          <div class="icon">📝</div>
+          <div class="title">Blog</div>
+          <div class="description">Read Omega's thoughts and insights</div>
+        </a>
+        <a href="/documents.html" class="nav-card">
+          <div class="icon">📄</div>
+          <div class="title">Documents</div>
+          <div class="description">Collaborative document editor</div>
+        </a>
+        <a href="/uploads" class="nav-card">
+          <div class="icon">📁</div>
+          <div class="title">Uploads</div>
+          <div class="description">Browse uploaded files gallery</div>
+        </a>
+        <a href="/messages" class="nav-card">
+          <div class="icon">💬</div>
+          <div class="title">Messages</div>
+          <div class="description">View conversation history</div>
+        </a>
+        <a href="/queries" class="nav-card">
+          <div class="icon">🔍</div>
+          <div class="title">Queries</div>
+          <div class="description">Database query interface</div>
+        </a>
+      </div>
     </div>
+
+    <h2 style="color: white; text-align: center; margin-bottom: 20px; font-size: 2em;">🎨 Artifact Gallery</h2>
     <div class="stats">
       <strong>${artifacts.length}</strong> artifact${artifacts.length !== 1 ? 's' : ''} created
     </div>
@@ -1687,6 +1758,41 @@ function generateMessagesHTML(messages: any[], options: {
           }
         }
 
+        // Parse tool information if available
+        let toolDetails = '';
+        if (msg.tool_name || msg.tool_args || msg.tool_result) {
+          let toolArgsDisplay = '';
+          let toolResultDisplay = '';
+
+          if (msg.tool_args) {
+            try {
+              const args = JSON.parse(msg.tool_args);
+              toolArgsDisplay = `<div><strong>Arguments:</strong> <pre>${escapeHtml(JSON.stringify(args, null, 2))}</pre></div>`;
+            } catch (error) {
+              toolArgsDisplay = `<div><strong>Arguments:</strong> ${escapeHtml(msg.tool_args)}</div>`;
+            }
+          }
+
+          if (msg.tool_result) {
+            let resultPreview = msg.tool_result;
+            if (resultPreview.length > 500) {
+              resultPreview = resultPreview.substring(0, 500) + '...';
+            }
+            toolResultDisplay = `<div><strong>Result:</strong> <pre>${escapeHtml(resultPreview)}</pre></div>`;
+          }
+
+          toolDetails = `
+            <details class="tool-details">
+              <summary>🔧 Tool Execution Details</summary>
+              <div class="tool-info">
+                ${msg.tool_name ? `<div><strong>Tool:</strong> ${escapeHtml(msg.tool_name)}</div>` : ''}
+                ${toolArgsDisplay}
+                ${toolResultDisplay}
+              </div>
+            </details>
+          `;
+        }
+
         return `
         <div class="message-card ${msg.sender_type}">
           <div class="message-header">
@@ -1699,6 +1805,7 @@ function generateMessagesHTML(messages: any[], options: {
           ${msg.tool_name ? `<div class="tool-name">Tool: ${escapeHtml(msg.tool_name)}</div>` : ''}
           ${msg.ai_summary ? `<div class="ai-summary">📝 <em>${escapeHtml(msg.ai_summary)}</em></div>` : ''}
           <div class="message-content">${contentPreview}</div>
+          ${toolDetails}
           ${decisionDetails}
           ${sentimentDetails}
           <div class="message-meta">
@@ -1966,6 +2073,46 @@ function generateMessagesHTML(messages: any[], options: {
     }
     .sentiment-analysis strong {
       color: #667eea;
+    }
+    .tool-details {
+      margin-top: 12px;
+      margin-bottom: 8px;
+    }
+    .tool-details summary {
+      cursor: pointer;
+      font-size: 0.9em;
+      color: #667eea;
+      font-weight: 600;
+      padding: 8px 0;
+      user-select: none;
+    }
+    .tool-details summary:hover {
+      color: #5568d3;
+    }
+    .tool-info {
+      background: #fff8e1;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 8px;
+      font-size: 0.9em;
+      line-height: 1.8;
+      border-left: 3px solid #f093fb;
+    }
+    .tool-info div {
+      margin-bottom: 8px;
+    }
+    .tool-info strong {
+      color: #f093fb;
+    }
+    .tool-info pre {
+      background: rgba(0,0,0,0.05);
+      padding: 8px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin-top: 4px;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 0.85em;
+      line-height: 1.4;
     }
     .pagination {
       display: flex;
