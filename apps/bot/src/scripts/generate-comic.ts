@@ -116,7 +116,7 @@ function createComicPrompt(context: PRContext): string {
     `${f.filename} (+${f.additions}/-${f.deletions})`
   ).join('\n');
 
-  return `Create a humorous 4-panel comic strip about this pull request. Make it lighthearted and fun!
+  return `Create a humorous comic strip about this pull request. Make it lighthearted and fun!
 
 PR Title: ${context.title}
 
@@ -133,12 +133,19 @@ Files Changed:
 ${filesSummary}
 
 The comic should:
-- Be a 4-panel comic strip layout
+- Choose between 1-6 panels based on what best tells the story:
+  * 1 panel: Simple, single joke or concept
+  * 2 panels: Setup and punchline
+  * 3 panels: Beginning, middle, end
+  * 4 panels: Classic comic strip format (most common)
+  * 6 panels: Complex story or multiple perspectives
+- Arrange panels in a clear grid layout (e.g., 2x2 for 4 panels, 2x3 for 6 panels)
 - Feature cartoon characters representing the developers
 - Show the journey from problem to solution
 - Include speech bubbles with witty dialogue
 - Be colorful and visually appealing
 - Capture the essence of the changes in a humorous way
+- Each panel should have clear borders and good visual flow
 
 Style: Modern web comic style, clean lines, vibrant colors, expressive characters.`;
 }

@@ -135,7 +135,7 @@ function buildComicPrompt(
   prTitle: string,
   prAuthor: string
 ): string {
-  return `You are a creative comic artist. Generate a single-panel comic image that humorously illustrates the following pull request conversation.
+  return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
 - PR #${prNumber}: ${prTitle}
@@ -145,15 +145,30 @@ function buildComicPrompt(
 ${conversationContext}
 
 **Instructions:**
-1. Create a single-panel comic that captures the essence of this PR conversation
-2. Use a fun, lighthearted art style (cartoon/comic book style)
-3. Include 1-3 characters having a humorous exchange related to the PR
-4. Add speech bubbles with witty dialogue based on the conversation
-5. Keep it family-friendly and professional
-6. The comic should be visually clear and easy to understand
-7. Include visual references to coding/GitHub if appropriate (laptops, code screens, etc.)
+1. Choose between 1-6 panels based on what best tells the story:
+   - 1 panel: Simple, single joke or concept
+   - 2 panels: Setup and punchline
+   - 3 panels: Beginning, middle, end
+   - 4 panels: Classic comic strip format (most common)
+   - 6 panels: Complex story or multiple perspectives
 
-Generate the comic image now.`;
+2. Arrange panels in a clear grid layout (e.g., 2x2 for 4 panels, 2x3 for 6 panels)
+
+3. Use a fun, lighthearted art style (cartoon/comic book style)
+
+4. Include 1-3 characters having a humorous exchange related to the PR
+
+5. Add speech bubbles with witty dialogue based on the conversation
+
+6. Keep it family-friendly and professional
+
+7. The comic should be visually clear and easy to understand
+
+8. Include visual references to coding/GitHub if appropriate (laptops, code screens, git branches, etc.)
+
+9. Make sure each panel has a clear border and the overall comic has good visual flow
+
+Generate the comic strip image now.`;
 }
 
 /**
