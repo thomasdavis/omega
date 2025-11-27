@@ -75,8 +75,8 @@ PASS                 FAIL
 - Finds the PR for the branch
 - Verifies it's a `claude/**` PR
 - Verifies it's linked to an issue
-- **Enables auto-merge** with squash and delete-branch
-- Comments that auto-merge is enabled
+- **Merges the PR immediately** with squash and delete-branch
+- Comments that PR has been merged
 
 **Does NOT run if:**
 - CI checks failed
@@ -101,8 +101,8 @@ PASS                 FAIL
 - No human intervention needed for simple issues
 
 ### ✅ Safe by Design
-- Auto-merge only enables AFTER CI passes
-- If CI fails again, auto-merge is not re-enabled
+- PR merges immediately AFTER CI passes (not before)
+- If CI fails, the merge workflow doesn't run
 - Claude must fix all issues before merge proceeds
 
 ## Understanding `workflow_run`
@@ -123,9 +123,10 @@ on:
 - It only runs if conclusion == 'success'
 
 **Why this is better than `pull_request`:**
-- We don't enable auto-merge prematurely
+- We don't merge prematurely
 - We wait for actual validation before merging
-- No race conditions between CI and auto-merge
+- No race conditions between CI and merge
+- No need to configure branch protection rules
 
 ## Testing the System
 
@@ -137,8 +138,8 @@ on:
 4. Watch the workflows:
    - PR created ✅
    - CI checks run ✅
-   - Auto-merge enabled ✅
-   - PR merges ✅
+   - PR merges immediately ✅
+   - Branch deleted ✅
 
 ### Test a Failing PR
 
@@ -149,21 +150,22 @@ on:
    - PR created ✅
    - CI checks run ❌
    - @claude tagged with errors ✅
-   - Auto-merge NOT enabled ✅
+   - Merge workflow does NOT run ✅
 5. Fix the error and push
 6. CI runs again ✅
-7. Auto-merge enables ✅
-8. PR merges ✅
+7. Merge workflow runs ✅
+8. PR merges immediately ✅
 
 ## Troubleshooting
 
-### Auto-merge isn't happening
+### PR isn't merging automatically
 
 **Check:**
 1. Did CI checks pass? (All three: type, lint, build)
 2. Is it a `claude/**` branch?
 3. Is the PR linked to an issue? (Must have "Fixes #123")
-4. Check the auto-merge workflow logs
+4. Check the auto-merge workflow logs for errors
+5. Verify the `auto-merge-claude.yml` workflow ran (not just CI checks)
 
 ### @claude isn't being tagged
 
@@ -210,14 +212,13 @@ if [ "${{ steps.newcheck.outcome }}" != "success" ]; then
 fi
 ```
 
-### Changing Auto-Merge Strategy
+### Changing Merge Strategy
 
 Edit `auto-merge-claude.yml`:
 
 ```yaml
 gh pr merge "$PR_NUMBER" \
   --repo ${{ github.repository }} \
-  --auto \
   --squash \        # Change to --merge or --rebase
   --delete-branch   # Remove to keep branches
 ```
@@ -226,10 +227,11 @@ gh pr merge "$PR_NUMBER" \
 
 ### Why This is Safe
 
-1. **Auto-merge only after validation:** CI must pass first
+1. **Merge only after validation:** CI must pass first
 2. **Isolated workflows:** Each workflow has specific permissions
 3. **Audit trail:** All merges logged in GitHub
 4. **Rollback capability:** Can revert any merged PR
+5. **No race conditions:** Merge happens only after CI completes successfully
 
 ### Permissions Required
 
@@ -250,11 +252,11 @@ A: Yes! Auto-merge just provides automation. You can always merge manually.
 **Q: What if Claude can't fix the errors?**
 A: A human can push fixes or merge manually after reviewing.
 
-**Q: Can I disable auto-merge for specific PRs?**
+**Q: Can I disable automatic merging for specific PRs?**
 A: Yes, just don't link it to an issue, or use a branch name that doesn't start with `claude/`.
 
 **Q: Does this work for non-Claude PRs?**
-A: CI checks run on ALL PRs. Auto-merge only works for `claude/**` branches.
+A: CI checks run on ALL PRs. Automatic merging only works for `claude/**` branches.
 
 **Q: What about rate limits?**
 A: GitHub Actions has generous limits. This workflow uses minimal API calls.

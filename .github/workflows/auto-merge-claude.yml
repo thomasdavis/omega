@@ -63,22 +63,21 @@ jobs:
             echo "linked=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Enable auto-merge
+      - name: Merge PR
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           PR_NUMBER="${{ steps.pr.outputs.number }}"
 
-          echo "✅ CI checks passed! Enabling auto-merge for PR #$PR_NUMBER..."
+          echo "✅ CI checks passed! Merging PR #$PR_NUMBER..."
 
           gh pr merge "$PR_NUMBER" \
             --repo ${{ github.repository }} \
-            --auto \
             --squash \
             --delete-branch
 
-          echo "✅ Auto-merge enabled for PR #$PR_NUMBER"
+          echo "✅ PR #$PR_NUMBER merged successfully!"
 
       - name: Comment on PR
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
@@ -89,5 +88,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: ${{ steps.pr.outputs.number }},
-              body: '✅ **CI checks passed!** Auto-merge has been enabled. This PR will merge automatically.'
+              body: '✅ **CI checks passed!** This PR has been automatically merged and deployed.'
             });
