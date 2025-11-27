@@ -7,17 +7,20 @@ on:
     types: [created]
   issues:
     types: [opened]
+  pull_request:
+    types: [labeled]
 
 jobs:
   claude:
     name: Run Claude Code
     runs-on: ubuntu-latest
 
-    # Run if comment contains @claude OR issue body contains @claude
+    # Run if comment contains @claude OR issue body contains @claude OR label is claude-fix-needed
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'claude-fix-needed')
 
     permissions:
       contents: write

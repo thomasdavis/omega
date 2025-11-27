@@ -96,7 +96,7 @@ jobs:
       - name: Tag Claude to fix failures
         if: steps.status.outputs.all_passed == 'false' && startsWith(github.event.pull_request.head.ref, 'claude/')
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
 
@@ -105,7 +105,7 @@ jobs:
 
           if [ "${{ steps.typecheck.outcome }}" != "success" ]; then
             ERRORS="${ERRORS}### 🔴 Type Check Failed\n\n"
-            ERRORS="${ERRORS}\`\`\`\n$(cat apps/bot/typecheck-output.txt | tail -50)\n\`\`\`\n\n"
+            ERRORS="${ERRORS}\`\`\`\n$(cat apps/bot/typecheck-output.txt | tail-50)\n\`\`\`\n\n"
           fi
 
           if [ "${{ steps.lint.outcome }}" != "success" ]; then
@@ -118,7 +118,7 @@ jobs:
             ERRORS="${ERRORS}\`\`\`\n$(cat apps/bot/build-output.txt | tail -50)\n\`\`\`\n\n"
           fi
 
-          # Create comment tagging Claude
+          # Create comment tagging Claude (using PAT so it counts as user, not bot)
           COMMENT_BODY="@claude The CI checks have failed. Please fix the following issues:
 
           ${ERRORS}
@@ -132,6 +132,9 @@ jobs:
           Once all checks pass, this PR will automatically merge."
 
           gh pr comment "$PR_NUMBER" --body "$COMMENT_BODY"
+
+          # Also add a label to trigger workflows
+          gh pr edit "$PR_NUMBER" --add-label "claude-fix-needed"
 
           echo "✅ Tagged @claude to fix CI failures"
 
