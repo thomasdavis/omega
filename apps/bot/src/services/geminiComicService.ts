@@ -131,6 +131,43 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
 }
 
 /**
+ * Determine optimal number of comic frames based on context complexity
+ * Returns a value between 3 and 7
+ */
+function determineFrameCount(conversationContext: string): number {
+  // Count various aspects of the conversation
+  const lines = conversationContext.split('\n').filter(line => line.trim().length > 0);
+  const words = conversationContext.split(/\s+/).length;
+  const commentCount = (conversationContext.match(/^-\s/gm) || []).length;
+
+  // Calculate complexity score based on multiple factors
+  let complexity = 0;
+
+  // Factor 1: Length of conversation (0-2 points)
+  if (words > 500) complexity += 2;
+  else if (words > 200) complexity += 1;
+
+  // Factor 2: Number of distinct comments/commits (0-2 points)
+  if (commentCount > 5) complexity += 2;
+  else if (commentCount > 2) complexity += 1;
+
+  // Factor 3: Line count (0-1 point)
+  if (lines.length > 15) complexity += 1;
+
+  // Map complexity (0-5) to frame count (3-7)
+  // 0-1: 3 frames (simple)
+  // 2: 4 frames
+  // 3: 5 frames (moderate)
+  // 4: 6 frames
+  // 5+: 7 frames (complex)
+  const frameCount = Math.min(7, Math.max(3, 3 + complexity));
+
+  console.log(`📊 Frame count analysis: ${words} words, ${commentCount} comments, ${lines.length} lines → ${complexity} complexity → ${frameCount} frames`);
+
+  return frameCount;
+}
+
+/**
  * Build the prompt for comic generation
  */
 function buildComicPrompt(
@@ -172,6 +209,31 @@ function buildComicPrompt(
     })
     .join('\n');
 
+  // Determine optimal frame count based on context
+  const frameCount = determineFrameCount(conversationContext);
+
+  // Build panel layout description based on frame count
+  let layoutDescription = '';
+  switch (frameCount) {
+    case 3:
+      layoutDescription = '3 panels in a horizontal strip or single column';
+      break;
+    case 4:
+      layoutDescription = '4 panels in a 2x2 grid';
+      break;
+    case 5:
+      layoutDescription = '5 panels (2 on top, 3 on bottom, or vice versa)';
+      break;
+    case 6:
+      layoutDescription = '6 panels in a 2x3 or 3x2 grid';
+      break;
+    case 7:
+      layoutDescription = '7 panels (3 on top, 4 on bottom, or vice versa)';
+      break;
+    default:
+      layoutDescription = `${frameCount} panels in a clear grid layout`;
+  }
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -202,14 +264,15 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
 
 **Instructions:**
-1. Choose between 1-6 panels based on what best tells the story:
-   - 1 panel: Simple, single joke or concept
-   - 2 panels: Setup and punchline
-   - 3 panels: Beginning, middle, end
-   - 4 panels: Classic comic strip format (most common)
-   - 6 panels: Complex story or multiple perspectives
+1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
+   Layout: ${layoutDescription}
 
-2. Arrange panels in a clear grid layout (e.g., 2x2 for 4 panels, 2x3 for 6 panels)
+2. Panel distribution guide for ${frameCount} panels:
+   ${frameCount === 3 ? '- Beginning, middle, end structure' : ''}
+   ${frameCount === 4 ? '- Introduction, development, climax, conclusion' : ''}
+   ${frameCount === 5 ? '- Extended story with setup, development, twist, climax, resolution' : ''}
+   ${frameCount === 6 ? '- Complex narrative with multiple perspectives or parallel storylines' : ''}
+   ${frameCount === 7 ? '- Rich story with detailed progression and multiple character interactions' : ''}
 
 3. Use a fun, lighthearted art style (cartoon/comic book style)
 
@@ -227,7 +290,9 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
 
 9. Make sure each panel has a clear border and the overall comic has good visual flow
 
-Generate the comic strip image now.`;
+10. IMPORTANT: Use all ${frameCount} panels to tell a complete story. Don't leave panels empty.
+
+Generate the comic strip image now with EXACTLY ${frameCount} panels.`;
 }
 
 /**
