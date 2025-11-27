@@ -6,6 +6,7 @@ import { Message, AttachmentBuilder } from 'discord.js';
 import { runAgent } from '../agent/agent.js';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
+import { setConversationDiagramContext, clearConversationDiagramContext } from '../agent/tools/conversationDiagram.js';
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
@@ -202,8 +203,9 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('   Attachment details added to message context');
     }
 
-    // Set message context for export, slidev, and unsandbox tools
+    // Set message context for export, conversation diagram, slidev, and unsandbox tools
     setExportMessageContext(message);
+    setConversationDiagramContext(message);
     setSlidevMessageContext(message);
     setUnsandboxMessageContext(message);
 
@@ -271,6 +273,7 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Clear message context after agent execution
     clearExportMessageContext();
+    clearConversationDiagramContext();
     clearSlidevMessageContext();
     clearUnsandboxMessageContext();
 

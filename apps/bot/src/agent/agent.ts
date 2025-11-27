@@ -21,6 +21,7 @@ import { fileUploadTool } from './tools/fileUpload.js';
 import { listUploadedFilesTool } from './tools/listUploadedFiles.js';
 import { transferRailwayFilesTool } from './tools/transferRailwayFiles.js';
 import { exportConversationTool } from './tools/exportConversation.js';
+import { conversationDiagramTool } from './tools/conversationDiagram.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
@@ -144,6 +145,7 @@ export async function runAgent(
         listUploadedFiles: listUploadedFilesTool,
         transferRailwayFiles: transferRailwayFilesTool,
         exportConversation: exportConversationTool,
+        conversationDiagram: conversationDiagramTool,
         jsonAgentGenerator: jsonAgentGeneratorTool,
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         moodUplifter: moodUplifterTool,
