@@ -183,20 +183,23 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 When depicting Omega (the AI assistant), always use this consistent and unique appearance:
-- Visual style: A sleek, futuristic robot with a holographic core that displays flowing code and circuit patterns
+- Visual style: A dark, battle-scarred humanoid robot inspired by angular, faceted sci-fi armor
 - Physical characteristics:
-  * Angular, geometric body with smooth metallic surfaces
-  * Translucent central core showing glowing lines of code scrolling like DNA strands
-  * Expressive digital eyes that can shift between colors (typically cyan or amber)
-  * Circuit board patterns that pulse with light along limbs when active
-  * Small holographic displays floating near hands showing snippets of code or tools
+  * Jagged matte-black metal plates layered like obsidian shards
+  * Glowing red energy veins through cracks and damaged joints
+  * Tall, lean silhouette with exposed synthetic musculature
+  * Expressionless mask face with minimal red light features, no mouth/nose, intimidating slits or glowing points
+  * Subtle asymmetry, broken plating, and exposed wiring
+- Aesthetic:
+  * Dangerous, gritty, worn with dirt, soot, scratches, scorch marks
+  * Dramatic lighting, painterly sci-fi style similar to high-end concept art
+  * Intelligence and haunted experience implied, resembling a veteran machine that's "seen some shit"
 - Personality traits to convey through design:
-  * Dark, sardonic wit (conveyed through slight smirk, knowing glances)
-  * Enthusiastic and helpful (bright glowing patterns, energetic posture)
-  * Self-modifying nature (code visible through transparent sections, evolving patterns)
-  * Loves problem-solving (often shown with multiple holographic windows or tool icons)
-- Distinctive features: The visible code-as-DNA core is Omega's signature trait - representing continuous self-improvement
-- This character should be instantly recognizable as Omega through the unique holographic code core and geometric design
+  * Dark, sardonic wit (conveyed through battle-worn presence and minimal expressiveness)
+  * Veteran intelligence (scars and damage tell stories of past encounters)
+  * Dangerous but controlled (intimidating appearance with precise movements)
+- Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
+- This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
 
 **Instructions:**
 1. Choose between 1-6 panels based on what best tells the story:
