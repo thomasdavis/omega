@@ -139,6 +139,26 @@ function buildComicPrompt(
   prTitle: string,
   prAuthor: string
 ): string {
+  // Filter out technical check details (type checks, lint checks, CI status, etc.)
+  const filteredContext = conversationContext
+    .split('\n')
+    .filter(line => {
+      const lowerLine = line.toLowerCase();
+      // Skip lines about passing checks, type errors, linting, CI status
+      return !(
+        lowerLine.includes('type check') ||
+        lowerLine.includes('lint') ||
+        lowerLine.includes('passing') ||
+        lowerLine.includes('build succeeded') ||
+        lowerLine.includes('ci/cd') ||
+        lowerLine.includes('tests passed') ||
+        lowerLine.includes('✓') ||
+        lowerLine.includes('✅') ||
+        lowerLine.match(/\d+\/\d+\s+checks?\s+(passed|successful)/)
+      );
+    })
+    .join('\n');
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -146,7 +166,17 @@ function buildComicPrompt(
 - Author: ${prAuthor}
 
 **Conversation Context:**
-${conversationContext}
+${filteredContext}
+
+**Character Design - Omega (AI Assistant):**
+When depicting Omega (the AI assistant), always use this consistent appearance:
+- Visual style: Inspired by Bender from Futurama - a robot character
+- Personality traits to convey:
+  * A bit dark and morbid in humor
+  * Despite the darkness, very, very happy and enthusiastic
+  * Loves helping with code and solving problems
+- Appearance: A robot/android with a friendly but slightly mischievous expression
+- This character should be instantly recognizable as Omega in all comics
 
 **Instructions:**
 1. Choose between 1-6 panels based on what best tells the story:
@@ -161,6 +191,8 @@ ${conversationContext}
 3. Use a fun, lighthearted art style (cartoon/comic book style)
 
 4. Include 1-3 characters having a humorous exchange related to the PR
+   - If the conversation involves the AI/bot, depict it as Omega with the design above
+   - Keep Omega's appearance consistent: robot inspired by Bender, happy but with dark humor
 
 5. Add speech bubbles with witty dialogue based on the conversation
 
