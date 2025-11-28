@@ -331,22 +331,53 @@ export function extractConversationContext(prData: any): string {
   }
 
   if (prData.body) {
-    parts.push(`Description: ${prData.body.substring(0, 500)}`);
+    // Expanded from 500 to 1000 characters to capture more context
+    parts.push(`Description: ${prData.body.substring(0, 1000)}`);
   }
 
   if (prData.commits && prData.commits.length > 0) {
     parts.push(`Commits (${prData.commits.length}):`);
-    prData.commits.slice(0, 5).forEach((commit: any) => {
+    // Expanded from 5 to 10 commits
+    prData.commits.slice(0, 10).forEach((commit: any) => {
       parts.push(`- ${commit.message || commit.commit?.message || 'Unnamed commit'}`);
     });
   }
 
   if (prData.comments && prData.comments.length > 0) {
     parts.push(`Comments (${prData.comments.length}):`);
-    prData.comments.slice(0, 3).forEach((comment: any) => {
+    // Expanded from 3 to 10 comments and from 200 to 500 characters per comment
+    prData.comments.slice(0, 10).forEach((comment: any) => {
       const body = comment.body || '';
-      parts.push(`- ${comment.user?.login || 'Unknown'}: ${body.substring(0, 200)}`);
+      parts.push(`- ${comment.user?.login || 'Unknown'}: ${body.substring(0, 500)}`);
     });
+  }
+
+  // Include Discord messages if provided
+  if (prData.discordMessages && prData.discordMessages.length > 0) {
+    parts.push('');
+    parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
+
+    // Group by user to show diverse perspectives
+    const messagesByUser = new Map<string, any[]>();
+    for (const msg of prData.discordMessages) {
+      if (!messagesByUser.has(msg.username)) {
+        messagesByUser.set(msg.username, []);
+      }
+      messagesByUser.get(msg.username)!.push(msg);
+    }
+
+    // Include up to 3 messages per user
+    for (const [username, messages] of messagesByUser) {
+      const messagesToInclude = messages.slice(0, 3);
+      for (const msg of messagesToInclude) {
+        const content = msg.content.length > 500
+          ? msg.content.substring(0, 500) + '...'
+          : msg.content;
+
+        const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
+        parts.push(`- ${username}${channelInfo}: ${content}`);
+      }
+    }
   }
 
   return parts.join('\n');
