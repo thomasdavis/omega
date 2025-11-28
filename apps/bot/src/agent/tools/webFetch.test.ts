@@ -140,20 +140,43 @@ describe('Web Fetch Tool with Metadata', () => {
     it('should handle redirects correctly', async () => {
       const { robotsChecker } = await import('../../utils/robotsChecker.js');
 
+      // Mock robots.txt to allow both original and final URLs
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
         reason: 'URL is allowed',
         matchedRules: [],
       });
 
-      (global.fetch as any).mockResolvedValue({
-        ok: true,
-        status: 200,
-        url: 'https://example.com/final-page', // Different from requested URL
-        headers: {
-          get: () => 'text/html',
-        },
-        text: async () => '<html><title>Final Page</title><body>Content</body></html>',
+      // Mock fetch to return a redirect first, then the final page
+      let callCount = 0;
+      (global.fetch as any).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: return redirect
+          return Promise.resolve({
+            ok: false,
+            status: 302,
+            headers: {
+              get: (name: string) => {
+                if (name === 'location') return 'https://example.com/final-page';
+                return null;
+              },
+            },
+          });
+        } else {
+          // Second call: return final page
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            headers: {
+              get: (name: string) => {
+                if (name === 'content-type') return 'text/html';
+                return null;
+              },
+            },
+            text: async () => '<html><title>Final Page</title><body>Content</body></html>',
+          });
+        }
       });
 
       const result = await webFetchTool.execute({
@@ -161,8 +184,162 @@ describe('Web Fetch Tool with Metadata', () => {
         userAgent: 'TestBot/1.0',
       });
 
+      expect(result.success).toBe(true);
       expect(result.metadata.requestedUrl).toBe('https://example.com/original');
       expect(result.metadata.finalUrl).toBe('https://example.com/final-page');
+      expect(result.metadata.redirectChain).toBeDefined();
+      expect(result.metadata.redirectChain?.length).toBe(1);
+      expect(result.metadata.redirectChain?.[0]).toEqual({
+        from: 'https://example.com/original',
+        to: 'https://example.com/final-page',
+        status: 302,
+      });
+      expect(result.metadata.redirectCount).toBe(1);
+    });
+
+    it('should enforce max redirects limit', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      (robotsChecker.isAllowed as any).mockResolvedValue({
+        allowed: true,
+        reason: 'URL is allowed',
+        matchedRules: [],
+      });
+
+      // Mock fetch to always return redirects (infinite loop)
+      let callCount = 0;
+      (global.fetch as any).mockImplementation(() => {
+        callCount++;
+        return Promise.resolve({
+          ok: false,
+          status: 302,
+          headers: {
+            get: (name: string) => {
+              if (name === 'location') return `https://example.com/redirect-${callCount}`;
+              return null;
+            },
+          },
+        });
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/start',
+        userAgent: 'TestBot/1.0',
+        maxRedirects: 3,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('too_many_redirects');
+      expect(result.metadata.redirectCount).toBe(4); // 3 redirects + 1 over the limit
+      expect(result.metadata.redirectChain?.length).toBe(4);
+    });
+
+    it('should check robots.txt on final URL after redirects', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      // First call (initial URL): allowed
+      // Second call (final URL): blocked
+      let robotsCallCount = 0;
+      (robotsChecker.isAllowed as any).mockImplementation((url: string) => {
+        robotsCallCount++;
+        if (robotsCallCount === 1) {
+          return Promise.resolve({
+            allowed: true,
+            reason: 'Initial URL is allowed',
+            matchedRules: [],
+          });
+        } else {
+          return Promise.resolve({
+            allowed: false,
+            reason: 'Final URL is disallowed',
+            robotsUrl: 'https://example.com/robots.txt',
+            matchedRules: ['Disallow: /private'],
+            crawlDelay: 0,
+          });
+        }
+      });
+
+      // Mock fetch to return a redirect
+      let fetchCallCount = 0;
+      (global.fetch as any).mockImplementation(() => {
+        fetchCallCount++;
+        if (fetchCallCount === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 301,
+            headers: {
+              get: (name: string) => {
+                if (name === 'location') return 'https://example.com/private/page';
+                return null;
+              },
+            },
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'text/html' },
+          text: async () => '<html><body>Private</body></html>',
+        });
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/public',
+        userAgent: 'TestBot/1.0',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('final_url_robots_txt_disallowed');
+      expect(result.metadata.requestedUrl).toBe('https://example.com/public');
+      expect(result.metadata.finalUrl).toBe('https://example.com/private/page');
+      expect(result.robotsTxt.allowed).toBe(false);
+    });
+
+    it('should handle relative redirect URLs', async () => {
+      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+
+      (robotsChecker.isAllowed as any).mockResolvedValue({
+        allowed: true,
+        reason: 'URL is allowed',
+        matchedRules: [],
+      });
+
+      let callCount = 0;
+      (global.fetch as any).mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 302,
+            headers: {
+              get: (name: string) => {
+                if (name === 'location') return '/relative/path';
+                return null;
+              },
+            },
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: {
+            get: (name: string) => {
+              if (name === 'content-type') return 'text/html';
+              return null;
+            },
+          },
+          text: async () => '<html><body>Content</body></html>',
+        });
+      });
+
+      const result = await webFetchTool.execute({
+        url: 'https://example.com/original',
+        userAgent: 'TestBot/1.0',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.metadata.finalUrl).toBe('https://example.com/relative/path');
+      expect(result.metadata.redirectChain?.[0].to).toBe('https://example.com/relative/path');
     });
   });
 
