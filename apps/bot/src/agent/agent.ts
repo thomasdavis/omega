@@ -53,6 +53,7 @@ import { introspectFeelingsTool } from './tools/introspectFeelings.js';
 import { createLiveDocumentTool } from './tools/createLiveDocument.js';
 import { readLiveDocumentTool } from './tools/readLiveDocument.js';
 import { reportMissingToolTool } from './tools/reportMissingTool.js';
+import { reportMessageAsIssueTool } from './tools/reportMessageAsIssue.js';
 import { inspectToolTool } from './tools/inspectTool.js';
 import { generateComicTool } from './tools/generateComic.js';
 import { generateSonnetTool } from './tools/generateSonnet.js';
@@ -184,6 +185,7 @@ export async function runAgent(
         createLiveDocument: createLiveDocumentTool,
         readLiveDocument: readLiveDocumentTool,
         reportMissingTool: reportMissingToolTool,
+        reportMessageAsIssue: reportMessageAsIssueTool,
         inspectTool: inspectToolTool,
         generateComic: generateComicTool,
         generateSonnet: generateSonnetTool,
