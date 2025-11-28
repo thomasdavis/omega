@@ -20,12 +20,12 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   // Fetch recent message history FIRST (for shouldRespond decision context)
-  let messageHistory: Array<{ username: string; content: string }> = [];
+  let messageHistory: Array<{ username: string; content: string; timestamp?: number }> = [];
 
   if ('messages' in message.channel) {
     try {
       // Fetch messages from the appropriate channel/thread
-      const messages = await message.channel.messages.fetch({ limit: 20, before: message.id });
+      const messages = await message.channel.messages.fetch({ limit: 30, before: message.id });
 
       // Build basic message history
       messageHistory = messages
@@ -33,6 +33,7 @@ export async function handleMessage(message: Message): Promise<void> {
         .map(msg => ({
           username: msg.author.username,
           content: msg.content,
+          timestamp: msg.createdTimestamp,
         }))
         .filter(msg => msg.content.length > 0); // Filter out empty messages
 
@@ -45,6 +46,7 @@ export async function handleMessage(message: Message): Promise<void> {
             messageHistory.unshift({
               username: starterMessage.author.username,
               content: `[Thread Starter] ${starterMessage.content}`,
+              timestamp: starterMessage.createdTimestamp,
             });
           }
         } catch (starterError) {
@@ -67,6 +69,7 @@ export async function handleMessage(message: Message): Promise<void> {
               messageHistory.push({
                 username: referencedMessage.author.username,
                 content: `[Replied to] ${referencedMessage.content}`,
+                timestamp: referencedMessage.createdTimestamp,
               });
             }
           }

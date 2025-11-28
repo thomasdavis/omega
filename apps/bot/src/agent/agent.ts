@@ -75,7 +75,7 @@ export interface AgentContext {
   username: string;
   userId: string;
   channelName: string;
-  messageHistory?: Array<{ username: string; content: string }>;
+  messageHistory?: Array<{ username: string; content: string; timestamp?: number }>;
 }
 
 export interface AgentResult {
@@ -108,7 +108,12 @@ export async function runAgent(
     if (context.messageHistory && context.messageHistory.length > 0) {
       historyContext = '\n\nRecent conversation history:\n' +
         context.messageHistory
-          .map(msg => `${msg.username}: ${msg.content}`)
+          .map(msg => {
+            const timestampStr = msg.timestamp
+              ? `[${new Date(msg.timestamp).toISOString()}] `
+              : '';
+            return `${timestampStr}${msg.username}: ${msg.content}`;
+          })
           .join('\n') +
         '\n\n---\n';
     }
