@@ -53,6 +53,34 @@ export interface SentimentAnalysis {
 }
 
 /**
+ * Interaction metrics analysis result
+ */
+export interface InteractionMetrics {
+  /** Type of interaction */
+  interactionType: 'question' | 'statement' | 'command' | 'feedback' | 'greeting' | 'casual_chat' | 'other';
+
+  /** Detected user intent */
+  userIntent: 'information_seeking' | 'task_completion' | 'casual_conversation' | 'feedback_giving' | 'problem_solving' | 'creative_collaboration' | 'unclear';
+
+  /** How the user perceives the bot */
+  botPerception: 'helpful' | 'confusing' | 'friendly' | 'intelligent' | 'frustrating' | 'neutral' | 'unknown';
+
+  /** Quality assessment of the interaction */
+  conversationQuality: 'productive' | 'unclear' | 'off_topic' | 'engaging' | 'informative' | 'repetitive' | 'normal';
+}
+
+/**
+ * Query metrics analysis result
+ */
+export interface QueryMetrics {
+  /** Complexity of the query */
+  queryComplexity: 'simple' | 'moderate' | 'complex';
+
+  /** Inferred user satisfaction with results */
+  userSatisfaction: 'satisfied' | 'partially_satisfied' | 'unsatisfied' | 'unknown';
+}
+
+/**
  * Generate a concise AI summary of a message
  */
 export async function generateMessageSummary(messageContent: string): Promise<string> {
@@ -169,6 +197,178 @@ Respond in the following JSON format:
 }
 
 /**
+ * Analyze interaction metrics of a message
+ * Determines interaction type, user intent, bot perception, and conversation quality
+ */
+export async function analyzeInteractionMetrics(
+  messageContent: string,
+  username: string,
+  context?: {
+    previousMessages?: Array<{ content: string; sentiment?: string }>;
+    botResponses?: Array<{ content: string }>;
+  }
+): Promise<InteractionMetrics> {
+  try {
+    // Build context from previous messages if available
+    let conversationContext = '';
+    if (context?.previousMessages && context.previousMessages.length > 0) {
+      conversationContext = '\n\n**Recent conversation context:**\n' +
+        context.previousMessages
+          .slice(-3) // Last 3 messages
+          .map((msg, idx) => `${idx + 1}. User: "${msg.content}"`)
+          .join('\n');
+    }
+
+    if (context?.botResponses && context.botResponses.length > 0) {
+      conversationContext += '\n' +
+        context.botResponses
+          .slice(-3)
+          .map((resp, idx) => `   Bot: "${resp.content}"`)
+          .join('\n');
+    }
+
+    const prompt = `You are an expert in conversation analysis and user interaction patterns. Analyze the following message to determine interaction metrics.
+
+**Message from ${username}:**
+"${messageContent}"
+${conversationContext}
+
+**Analysis Task:**
+
+1. **Interaction Type**: Classify the message as one of:
+   - question (asking for information or help)
+   - statement (making a declaration or sharing information)
+   - command (requesting an action or task)
+   - feedback (giving feedback about the bot or its responses)
+   - greeting (hello, goodbye, or social pleasantries)
+   - casual_chat (informal conversation)
+   - other (doesn't fit above categories)
+
+2. **User Intent**: What is the user trying to achieve?
+   - information_seeking (wants to learn or understand something)
+   - task_completion (wants to accomplish a specific task)
+   - casual_conversation (just chatting, building rapport)
+   - feedback_giving (providing feedback or suggestions)
+   - problem_solving (working through a problem or challenge)
+   - creative_collaboration (brainstorming, creating, or exploring ideas)
+   - unclear (intent is ambiguous)
+
+3. **Bot Perception**: Based on the message tone and context, how does the user perceive the bot?
+   - helpful (bot is being useful)
+   - confusing (bot responses are unclear)
+   - friendly (warm, personable interaction)
+   - intelligent (bot demonstrates good understanding)
+   - frustrating (user seems frustrated with bot)
+   - neutral (no strong perception either way)
+   - unknown (cannot determine from this message alone)
+
+4. **Conversation Quality**: Assess the quality of this interaction:
+   - productive (moving towards a goal, making progress)
+   - unclear (message is ambiguous or hard to understand)
+   - off_topic (diverging from previous conversation)
+   - engaging (interesting, thought-provoking)
+   - informative (sharing useful information)
+   - repetitive (covering same ground)
+   - normal (standard, unremarkable interaction)
+
+Respond in the following JSON format:
+{
+  "interactionType": "question",
+  "userIntent": "information_seeking",
+  "botPerception": "helpful",
+  "conversationQuality": "productive"
+}`;
+
+    const result = await generateText({
+      model: openai.chat(OMEGA_MODEL),
+      prompt,
+    });
+
+    // Parse the JSON response
+    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Failed to extract JSON from response');
+    }
+
+    const metrics = JSON.parse(jsonMatch[0]) as InteractionMetrics;
+    return metrics;
+  } catch (error) {
+    console.error('Error analyzing interaction metrics:', error);
+
+    // Return safe fallback
+    return {
+      interactionType: 'other',
+      userIntent: 'unclear',
+      botPerception: 'unknown',
+      conversationQuality: 'normal',
+    };
+  }
+}
+
+/**
+ * Analyze query metrics
+ * Determines query complexity and user satisfaction
+ */
+export async function analyzeQueryMetrics(
+  queryText: string,
+  queryResult?: string,
+  error?: string,
+  resultCount?: number
+): Promise<QueryMetrics> {
+  try {
+    const prompt = `You are an expert in database query analysis and user satisfaction assessment. Analyze the following database query to determine complexity and user satisfaction.
+
+**Natural Language Query:**
+"${queryText}"
+
+**Query Results:**
+${error ? `Error: ${error}` : `Result count: ${resultCount || 0} rows`}
+${queryResult ? `Sample results: ${queryResult.substring(0, 200)}...` : ''}
+
+**Analysis Task:**
+
+1. **Query Complexity**: How complex is this query?
+   - simple (basic lookups, single table, simple conditions)
+   - moderate (joins, aggregations, multiple conditions)
+   - complex (advanced queries, multiple joins, subqueries, complex logic)
+
+2. **User Satisfaction**: Based on the query and results, how satisfied is the user likely to be?
+   - satisfied (got good results, query worked as expected)
+   - partially_satisfied (got some results but maybe not ideal)
+   - unsatisfied (error occurred, no results, or poor results)
+   - unknown (cannot determine from available information)
+
+Respond in the following JSON format:
+{
+  "queryComplexity": "simple",
+  "userSatisfaction": "satisfied"
+}`;
+
+    const result = await generateText({
+      model: openai.chat(OMEGA_MODEL),
+      prompt,
+    });
+
+    // Parse the JSON response
+    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Failed to extract JSON from response');
+    }
+
+    const metrics = JSON.parse(jsonMatch[0]) as QueryMetrics;
+    return metrics;
+  } catch (error) {
+    console.error('Error analyzing query metrics:', error);
+
+    // Return safe fallback
+    return {
+      queryComplexity: 'simple',
+      userSatisfaction: 'unknown',
+    };
+  }
+}
+
+/**
  * Generate both summary and sentiment analysis for a message
  * This is the main function to use when saving messages
  */
@@ -181,15 +381,44 @@ export async function analyzeMessage(
 ): Promise<{
   summary: string;
   sentimentAnalysis: SentimentAnalysis;
+  interactionMetrics: InteractionMetrics;
 }> {
-  // Run both analyses in parallel for efficiency
-  const [summary, sentimentAnalysis] = await Promise.all([
+  // Run all analyses in parallel for efficiency
+  const [summary, sentimentAnalysis, interactionMetrics] = await Promise.all([
     generateMessageSummary(messageContent),
     analyzeSentiment(messageContent, username, context),
+    analyzeInteractionMetrics(messageContent, username, context),
   ]);
 
   return {
     summary,
     sentimentAnalysis,
+    interactionMetrics,
+  };
+}
+
+/**
+ * Analyze a query with sentiment and metrics
+ * This is the main function to use when saving queries
+ */
+export async function analyzeQuery(
+  queryText: string,
+  username: string,
+  queryResult?: string,
+  error?: string,
+  resultCount?: number
+): Promise<{
+  sentimentAnalysis: SentimentAnalysis;
+  queryMetrics: QueryMetrics;
+}> {
+  // Run both analyses in parallel for efficiency
+  const [sentimentAnalysis, queryMetrics] = await Promise.all([
+    analyzeSentiment(queryText, username),
+    analyzeQueryMetrics(queryText, queryResult, error, resultCount),
+  ]);
+
+  return {
+    sentimentAnalysis,
+    queryMetrics,
   };
 }
