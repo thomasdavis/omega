@@ -10,7 +10,6 @@ import { setConversationDiagramContext, clearConversationDiagramContext } from '
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { messageAdapter, type ToolCallInfo } from '../utils/discordMessageAdapter.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
 import { feelingsService } from '../lib/feelings/index.js';
 
@@ -278,21 +277,9 @@ export async function handleMessage(message: Message): Promise<void> {
     clearUnsandboxMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
-    // Using new message adapter with embeds + spoilers for clean, organized output
+    // Using plain text messages instead of embeds
     if (result.toolCalls && result.toolCalls.length > 0 && 'send' in message.channel) {
       console.log(`🔧 Sending ${result.toolCalls.length} tool usage reports...`);
-
-      // Convert tool calls to ToolCallInfo format for adapter
-      const toolCallsInfo: ToolCallInfo[] = result.toolCalls.map((call: any, index: number) => ({
-        toolName: call.toolName,
-        args: call.args,
-        result: call.result,
-        success: call.result?.success !== false, // Assume success unless explicitly false
-        duration: call.duration,
-        jobId: call.result?.job_id || call.result?.jobId,
-        index: index + 1,
-        total: result.toolCalls.length
-      }));
 
       // Persist tool calls to database
       for (const toolCall of result.toolCalls) {
@@ -313,7 +300,7 @@ export async function handleMessage(message: Message): Promise<void> {
         }
       }
 
-      // Special handling for renderChart and generateUserImage tools - display images inline
+      // Special handling for renderChart and generateUserImage tools - display images with plain text
       for (let i = 0; i < result.toolCalls.length; i++) {
         const toolCall = result.toolCalls[i];
 
@@ -326,20 +313,24 @@ export async function handleMessage(message: Message): Promise<void> {
               const buffer = Buffer.from(arrayBuffer);
               const attachment = new AttachmentBuilder(buffer, { name: 'chart.png' });
 
-              // Build embed for chart tool
-              const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
+              // Format as plain text
+              const statusEmoji = toolCall.result?.success !== false ? '✅' : '❌';
+              const statusText = toolCall.result?.success !== false ? 'Success' : 'Failed';
+              const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
+              const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} ${statusText}${durationText}`;
 
-              // Send the embed with the chart image attached
+              // Send plain text with chart image attached
               await message.channel.send({
-                embeds: [embed],
+                content: plainTextReport,
                 files: [attachment],
               });
               console.log(`✅ Sent chart image attachment (${buffer.length} bytes)`);
             } else {
               console.error(`❌ Failed to download chart image: HTTP ${imageResponse.status}`);
-              // Send embed without attachment
-              const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
-              await message.channel.send({ embeds: [embed] });
+              // Send plain text without attachment
+              const statusEmoji = '❌';
+              const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} Failed to download chart`;
+              await message.channel.send({ content: plainTextReport });
             }
           } catch (error) {
             logError(error, {
@@ -349,48 +340,58 @@ export async function handleMessage(message: Message): Promise<void> {
               channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
               additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
             });
-            // Fallback: send embed without attachment
-            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
-            await message.channel.send({ embeds: [embed] });
+            // Fallback: send plain text without attachment
+            const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n❌ Error downloading chart`;
+            await message.channel.send({ content: plainTextReport });
           }
         } else if (toolCall.toolName === 'generateUserImage' && toolCall.result?.success && toolCall.result?.imageUrl) {
           try {
             console.log(`🎨 Displaying generated image from: ${toolCall.result.imageUrl}`);
 
-            // Build embed for image generation tool with image displayed inline
-            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
-            embed.setImage(toolCall.result.imageUrl);
+            // Format as plain text with image URL
+            const statusEmoji = '✅';
+            const statusText = 'Success';
+            const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
+            let plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} ${statusText}${durationText}\n\n${toolCall.result.imageUrl}`;
 
-            // Add revised prompt as a field if available
+            // Add revised prompt if available
             if (toolCall.result.revisedPrompt) {
-              embed.addFields({
-                name: '📝 Revised Prompt',
-                value: toolCall.result.revisedPrompt.substring(0, 1000), // Discord field limit
-                inline: false
-              });
+              plainTextReport += `\n\n📝 Revised Prompt: ${toolCall.result.revisedPrompt.substring(0, 1000)}`;
             }
 
-            // Send the embed with the image displayed inline
+            // Send plain text message
             await message.channel.send({
-              embeds: [embed],
+              content: plainTextReport,
             });
-            console.log(`✅ Sent generated image inline`);
+            console.log(`✅ Sent generated image URL`);
           } catch (error) {
             logError(error, {
-              operation: 'Display generated image inline',
+              operation: 'Display generated image URL',
               toolName: 'generateUserImage',
               username: message.author.username,
               channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
               additionalInfo: { imageUrl: toolCall.result?.imageUrl },
             });
-            // Fallback: send embed without image
-            const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
-            await message.channel.send({ embeds: [embed] });
+            // Fallback: send plain text error
+            const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n❌ Error displaying image`;
+            await message.channel.send({ content: plainTextReport });
           }
         } else {
-          // Regular tool report - send single embed
-          const embed = messageAdapter.buildToolEmbed(toolCallsInfo[i]);
-          await message.channel.send({ embeds: [embed] });
+          // Regular tool report - send as plain text
+          const statusEmoji = toolCall.result?.success !== false ? '✅' : '❌';
+          const statusText = toolCall.result?.success !== false ? 'Success' : 'Failed';
+          const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
+          let plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} ${statusText}${durationText}`;
+
+          // Add result info if available and not too verbose
+          if (toolCall.result && typeof toolCall.result === 'object') {
+            const resultStr = JSON.stringify(toolCall.result, null, 2);
+            if (resultStr.length < 500) {
+              plainTextReport += `\n\`\`\`json\n${resultStr}\n\`\`\``;
+            }
+          }
+
+          await message.channel.send({ content: plainTextReport });
         }
 
         // Add a small delay between messages to avoid rate limiting
@@ -404,14 +405,9 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
-      // Convert response to embed for better visual hierarchy
-      const responseEmbed = messageAdapter.buildResponseEmbed(result.response, {
-        username: message.author.username,
-        toolCount: result.toolCalls?.length || 0,
-      });
-
+      // Send as plain text message
       await message.reply({
-        embeds: [responseEmbed],
+        content: result.response,
         allowedMentions: { repliedUser: false }, // Don't ping the user
       });
       console.log(`✅ Sent response (${result.response.length} chars)`);
