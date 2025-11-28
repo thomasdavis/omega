@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateComic, extractConversationContext } from '../src/services/geminiComicService.js';
 import { postComicToDiscord } from '../src/services/discordComicPoster.js';
+import { extractKeywords, searchDiscordMessages } from '../src/services/discordMessageSearch.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +85,59 @@ async function main() {
       pull_number: prNumber,
     });
 
-    // Build conversation context
+    // Initialize Discord client for message search
+    console.log('🤖 Connecting to Discord for message search...');
+    const client = new Client({
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
+    });
+
+    // Wait for client to be ready
+    await new Promise<void>((resolve, reject) => {
+      client.once('ready', () => {
+        console.log(`✅ Discord bot connected as ${client.user?.tag}`);
+        resolve();
+      });
+
+      client.once('error', (error) => {
+        reject(error);
+      });
+
+      client.login(process.env.DISCORD_BOT_TOKEN);
+    });
+
+    // Extract keywords from PR title and body
+    const keywords = extractKeywords(pr.title, pr.body || '');
+    console.log(`🔍 Extracted keywords: ${keywords.join(', ')}`);
+
+    // Search Discord for relevant messages
+    let discordMessages: any[] = [];
+    if (keywords.length > 0) {
+      try {
+        const searchResults = await searchDiscordMessages(client, keywords, {
+          channelIds: discordChannelId ? [discordChannelId] : undefined,
+          maxMessages: 200, // Search more messages to find relevant ones
+          daysBack: 30,
+        });
+
+        discordMessages = searchResults.map(result => ({
+          username: result.username,
+          content: result.content,
+          channelName: result.channelName,
+          timestamp: result.timestamp,
+        }));
+
+        console.log(`✅ Found ${discordMessages.length} relevant Discord messages`);
+      } catch (error) {
+        console.warn('⚠️ Error searching Discord messages:', error);
+        // Continue without Discord messages if search fails
+      }
+    }
+
+    // Build conversation context with Discord messages
     const conversationContext = extractConversationContext({
       title: pr.title,
       body: pr.body,
@@ -95,9 +148,10 @@ async function main() {
       commits: commits.map((c) => ({
         message: c.commit.message,
       })),
+      discordMessages: discordMessages,
     });
 
-    console.log('📝 Conversation context extracted');
+    console.log('📝 Conversation context extracted (including Discord messages)');
 
     // Extract issue number from PR body
     let issueNumber: number | undefined;
@@ -125,27 +179,7 @@ async function main() {
 
     console.log('✅ Comic generated successfully');
 
-    // Initialize Discord client
-    console.log('🤖 Connecting to Discord...');
-    const client = new Client({
-      intents: [GatewayIntentBits.Guilds],
-    });
-
-    // Wait for client to be ready
-    await new Promise<void>((resolve, reject) => {
-      client.once('ready', () => {
-        console.log(`✅ Discord bot connected as ${client.user?.tag}`);
-        resolve();
-      });
-
-      client.once('error', (error) => {
-        reject(error);
-      });
-
-      client.login(process.env.DISCORD_BOT_TOKEN);
-    });
-
-    // Post comic to Discord
+    // Post comic to Discord (client already connected from search)
     console.log('📤 Posting comic to Discord...');
     const postResult = await postComicToDiscord(client, {
       channelId: discordChannelId,
