@@ -18,6 +18,7 @@ export interface ShouldRespondResult {
 export interface MessageHistoryItem {
   username: string;
   content: string;
+  timestamp?: number;
 }
 
 /**
