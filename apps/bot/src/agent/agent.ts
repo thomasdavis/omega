@@ -60,6 +60,7 @@ import { generateSonnetTool } from './tools/generateSonnet.js';
 import { generateCsvTool } from './tools/generateCsv.js';
 import { generateSongLyricsTool } from './tools/generateSongLyrics.js';
 import { generateSheetMusicTool } from './tools/generateSheetMusic.js';
+import { generateHaikuTool } from './tools/generateHaiku.js';
 import { generateUserAvatarTool } from './tools/generateUserAvatar.js';
 import { grammarInsultTool } from './tools/grammarInsult.js';
 import { uploadMyPhotoTool } from './tools/uploadMyPhoto.js';
@@ -224,6 +225,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         generateCsv: generateCsvTool,
         generateSongLyrics: generateSongLyricsTool,
         generateSheetMusic: generateSheetMusicTool,
+        generateHaiku: generateHaikuTool,
         generateUserAvatar: generateUserAvatarTool,
         grammarInsult: grammarInsultTool,
         uploadMyPhoto: uploadMyPhotoTool,
