@@ -20,7 +20,7 @@ export const queryDatabaseTool = tool({
 
   inputSchema: z.object({
     query: z.string().describe('The SQL SELECT query to execute (SELECT only, no modifications)'),
-    params: z.array(z.any()).optional().describe('Optional query parameters for prepared statements'),
+    params: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional().describe('Optional query parameters for prepared statements'),
   }),
 
   execute: async ({ query, params }) => {
