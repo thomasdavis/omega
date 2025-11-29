@@ -253,6 +253,9 @@ async function runMigrations(): Promise<void> {
   // Migration 5: Create user_profiles and user_analysis_history tables
   await migrationUserProfiles();
 
+  // Migration 6: Add PhD-level profiling fields to existing user_profiles
+  await migrationPhDProfilingFields();
+
   console.log('✅ Migrations completed');
 }
 
@@ -270,23 +273,149 @@ async function migrationUserProfiles(): Promise<void> {
       user_id TEXT NOT NULL UNIQUE,
       username TEXT NOT NULL,
 
-      -- Omega's feelings about this user (JSON)
-      feelings_json TEXT,
+      -- === PSYCHOLOGICAL PROFILE (PhD-Level) ===
 
-      -- Appearance data (hybrid: photo + AI description)
+      -- Jungian Analysis
+      dominant_archetype TEXT,
+      secondary_archetypes TEXT,
+      archetype_confidence REAL,
+      shadow_archetype TEXT,
+
+      -- Big Five Personality (OCEAN)
+      openness_score INTEGER,
+      conscientiousness_score INTEGER,
+      extraversion_score INTEGER,
+      agreeableness_score INTEGER,
+      neuroticism_score INTEGER,
+
+      -- Attachment Theory
+      attachment_style TEXT,
+      attachment_confidence REAL,
+
+      -- Emotional Intelligence
+      emotional_awareness_score INTEGER,
+      empathy_score INTEGER,
+      emotional_regulation_score INTEGER,
+
+      -- Communication Patterns
+      communication_formality TEXT,
+      communication_assertiveness TEXT,
+      communication_engagement TEXT,
+      verbal_fluency_score INTEGER,
+      question_asking_frequency REAL,
+
+      -- Cognitive Style
+      analytical_thinking_score INTEGER,
+      creative_thinking_score INTEGER,
+      abstract_reasoning_score INTEGER,
+      concrete_thinking_score INTEGER,
+
+      -- Social Dynamics
+      social_dominance_score INTEGER,
+      cooperation_score INTEGER,
+      conflict_style TEXT,
+      humor_style TEXT,
+
+      -- Behavioral Patterns
+      message_length_avg REAL,
+      message_length_variance REAL,
+      response_latency_avg REAL,
+      emoji_usage_rate REAL,
+      punctuation_style TEXT,
+      capitalization_pattern TEXT,
+
+      -- Interests & Expertise
+      technical_knowledge_level TEXT,
+      primary_interests TEXT,
+      expertise_areas TEXT,
+
+      -- Relational Dynamics (Omega's Feelings)
+      affinity_score INTEGER,
+      trust_level INTEGER,
+      emotional_bond TEXT,
+      omega_thoughts TEXT,
+      notable_patterns TEXT,
+
+      -- Sentiment Analysis (Aggregated)
+      overall_sentiment TEXT,
+      positive_interaction_ratio REAL,
+      negative_interaction_ratio REAL,
+      dominant_emotions TEXT,
+
+      -- Legacy fields (keep for backward compatibility)
+      feelings_json TEXT,
+      personality_facets TEXT,
+
+      -- === PHYSICAL PHENOTYPE ANALYSIS ===
+
+      -- Photo Data
       uploaded_photo_url TEXT,
       uploaded_photo_metadata TEXT,
       ai_appearance_description TEXT,
       appearance_confidence REAL DEFAULT 0.0,
+
+      -- Gender & Age
       ai_detected_gender TEXT,
+      gender_confidence REAL,
+      estimated_age_range TEXT,
+      age_confidence REAL,
 
-      -- Personality analysis (JSON)
-      personality_facets TEXT,
+      -- Facial Structure
+      face_shape TEXT,
+      facial_symmetry_score INTEGER,
+      jawline_prominence TEXT,
+      cheekbone_prominence TEXT,
 
-      -- Tracking
+      -- Hair Analysis
+      hair_color TEXT,
+      hair_texture TEXT,
+      hair_length TEXT,
+      hair_style TEXT,
+      hair_density TEXT,
+      facial_hair TEXT,
+
+      -- Eyes
+      eye_color TEXT,
+      eye_shape TEXT,
+      eye_spacing TEXT,
+      eyebrow_shape TEXT,
+      eyebrow_thickness TEXT,
+
+      -- Nose
+      nose_shape TEXT,
+      nose_size TEXT,
+
+      -- Mouth & Lips
+      lip_fullness TEXT,
+      smile_type TEXT,
+
+      -- Skin
+      skin_tone TEXT,
+      skin_texture TEXT,
+      complexion_quality TEXT,
+
+      -- Build & Stature
+      body_type TEXT,
+      build_description TEXT,
+      height_estimate TEXT,
+      posture TEXT,
+
+      -- Distinctive Features
+      distinctive_features TEXT,
+      clothing_style TEXT,
+      accessories TEXT,
+
+      -- Overall Impression
+      attractiveness_assessment TEXT,
+      approachability_score INTEGER,
+      perceived_confidence_level TEXT,
+      aesthetic_archetype TEXT,
+
+      -- === TRACKING & METADATA ===
       first_seen_at INTEGER NOT NULL,
       last_interaction_at INTEGER NOT NULL,
       last_analyzed_at INTEGER,
+      last_photo_analyzed_at INTEGER,
       message_count INTEGER DEFAULT 0,
 
       created_at INTEGER DEFAULT (strftime('%s', 'now')),
@@ -332,6 +461,159 @@ async function migrationUserProfiles(): Promise<void> {
   `);
 
   console.log('   ✓ User profiling tables created');
+}
+
+/**
+ * Migration 6: Add PhD-level profiling fields
+ * Adds ~70 new fields to user_profiles for comprehensive psychological and phenotype analysis
+ */
+async function migrationPhDProfilingFields(): Promise<void> {
+  const db = getDatabase();
+
+  console.log('   + Adding PhD-level profiling fields to user_profiles table');
+
+  // Helper function to safely add a column
+  const addColumn = async (columnName: string, columnType: string) => {
+    try {
+      await db.execute(`SELECT ${columnName} FROM user_profiles LIMIT 0`);
+      // Column exists, skip
+    } catch (error) {
+      console.log(`     - Adding column: ${columnName}`);
+      await db.execute(`ALTER TABLE user_profiles ADD COLUMN ${columnName} ${columnType}`);
+    }
+  };
+
+  // === PSYCHOLOGICAL PROFILE FIELDS ===
+
+  // Jungian Analysis
+  await addColumn('dominant_archetype', 'TEXT');
+  await addColumn('secondary_archetypes', 'TEXT');
+  await addColumn('archetype_confidence', 'REAL');
+  await addColumn('shadow_archetype', 'TEXT');
+
+  // Big Five Personality (OCEAN)
+  await addColumn('openness_score', 'INTEGER');
+  await addColumn('conscientiousness_score', 'INTEGER');
+  await addColumn('extraversion_score', 'INTEGER');
+  await addColumn('agreeableness_score', 'INTEGER');
+  await addColumn('neuroticism_score', 'INTEGER');
+
+  // Attachment Theory
+  await addColumn('attachment_style', 'TEXT');
+  await addColumn('attachment_confidence', 'REAL');
+
+  // Emotional Intelligence
+  await addColumn('emotional_awareness_score', 'INTEGER');
+  await addColumn('empathy_score', 'INTEGER');
+  await addColumn('emotional_regulation_score', 'INTEGER');
+
+  // Communication Patterns
+  await addColumn('communication_formality', 'TEXT');
+  await addColumn('communication_assertiveness', 'TEXT');
+  await addColumn('communication_engagement', 'TEXT');
+  await addColumn('verbal_fluency_score', 'INTEGER');
+  await addColumn('question_asking_frequency', 'REAL');
+
+  // Cognitive Style
+  await addColumn('analytical_thinking_score', 'INTEGER');
+  await addColumn('creative_thinking_score', 'INTEGER');
+  await addColumn('abstract_reasoning_score', 'INTEGER');
+  await addColumn('concrete_thinking_score', 'INTEGER');
+
+  // Social Dynamics
+  await addColumn('social_dominance_score', 'INTEGER');
+  await addColumn('cooperation_score', 'INTEGER');
+  await addColumn('conflict_style', 'TEXT');
+  await addColumn('humor_style', 'TEXT');
+
+  // Behavioral Patterns
+  await addColumn('message_length_avg', 'REAL');
+  await addColumn('message_length_variance', 'REAL');
+  await addColumn('response_latency_avg', 'REAL');
+  await addColumn('emoji_usage_rate', 'REAL');
+  await addColumn('punctuation_style', 'TEXT');
+  await addColumn('capitalization_pattern', 'TEXT');
+
+  // Interests & Expertise
+  await addColumn('technical_knowledge_level', 'TEXT');
+  await addColumn('primary_interests', 'TEXT');
+  await addColumn('expertise_areas', 'TEXT');
+
+  // Relational Dynamics (Omega's Feelings)
+  await addColumn('affinity_score', 'INTEGER');
+  await addColumn('trust_level', 'INTEGER');
+  await addColumn('emotional_bond', 'TEXT');
+  await addColumn('omega_thoughts', 'TEXT');
+  await addColumn('notable_patterns', 'TEXT');
+
+  // Sentiment Analysis (Aggregated)
+  await addColumn('overall_sentiment', 'TEXT');
+  await addColumn('positive_interaction_ratio', 'REAL');
+  await addColumn('negative_interaction_ratio', 'REAL');
+  await addColumn('dominant_emotions', 'TEXT');
+
+  // === PHYSICAL PHENOTYPE ANALYSIS FIELDS ===
+
+  // Gender & Age
+  await addColumn('gender_confidence', 'REAL');
+  await addColumn('estimated_age_range', 'TEXT');
+  await addColumn('age_confidence', 'REAL');
+
+  // Facial Structure
+  await addColumn('face_shape', 'TEXT');
+  await addColumn('facial_symmetry_score', 'INTEGER');
+  await addColumn('jawline_prominence', 'TEXT');
+  await addColumn('cheekbone_prominence', 'TEXT');
+
+  // Hair Analysis
+  await addColumn('hair_color', 'TEXT');
+  await addColumn('hair_texture', 'TEXT');
+  await addColumn('hair_length', 'TEXT');
+  await addColumn('hair_style', 'TEXT');
+  await addColumn('hair_density', 'TEXT');
+  await addColumn('facial_hair', 'TEXT');
+
+  // Eyes
+  await addColumn('eye_color', 'TEXT');
+  await addColumn('eye_shape', 'TEXT');
+  await addColumn('eye_spacing', 'TEXT');
+  await addColumn('eyebrow_shape', 'TEXT');
+  await addColumn('eyebrow_thickness', 'TEXT');
+
+  // Nose
+  await addColumn('nose_shape', 'TEXT');
+  await addColumn('nose_size', 'TEXT');
+
+  // Mouth & Lips
+  await addColumn('lip_fullness', 'TEXT');
+  await addColumn('smile_type', 'TEXT');
+
+  // Skin
+  await addColumn('skin_tone', 'TEXT');
+  await addColumn('skin_texture', 'TEXT');
+  await addColumn('complexion_quality', 'TEXT');
+
+  // Build & Stature
+  await addColumn('body_type', 'TEXT');
+  await addColumn('build_description', 'TEXT');
+  await addColumn('height_estimate', 'TEXT');
+  await addColumn('posture', 'TEXT');
+
+  // Distinctive Features
+  await addColumn('distinctive_features', 'TEXT');
+  await addColumn('clothing_style', 'TEXT');
+  await addColumn('accessories', 'TEXT');
+
+  // Overall Impression
+  await addColumn('attractiveness_assessment', 'TEXT');
+  await addColumn('approachability_score', 'INTEGER');
+  await addColumn('perceived_confidence_level', 'TEXT');
+  await addColumn('aesthetic_archetype', 'TEXT');
+
+  // Tracking
+  await addColumn('last_photo_analyzed_at', 'INTEGER');
+
+  console.log('   ✓ PhD-level profiling fields added to user_profiles table');
 }
 
 /**
@@ -411,22 +693,157 @@ export interface DocumentCollaboratorRecord {
 
 /**
  * User profile record interface
- * Stores Omega's understanding of each user
+ * Stores Omega's comprehensive psychological and phenotype understanding of each user
  */
 export interface UserProfileRecord {
+  // Identity
   id: string;
   user_id: string;
   username: string;
+
+  // === PSYCHOLOGICAL PROFILE (PhD-Level) ===
+
+  // Jungian Analysis
+  dominant_archetype?: string;
+  secondary_archetypes?: string; // JSON array
+  archetype_confidence?: number;
+  shadow_archetype?: string;
+
+  // Big Five Personality (OCEAN)
+  openness_score?: number;
+  conscientiousness_score?: number;
+  extraversion_score?: number;
+  agreeableness_score?: number;
+  neuroticism_score?: number;
+
+  // Attachment Theory
+  attachment_style?: string;
+  attachment_confidence?: number;
+
+  // Emotional Intelligence
+  emotional_awareness_score?: number;
+  empathy_score?: number;
+  emotional_regulation_score?: number;
+
+  // Communication Patterns
+  communication_formality?: string;
+  communication_assertiveness?: string;
+  communication_engagement?: string;
+  verbal_fluency_score?: number;
+  question_asking_frequency?: number;
+
+  // Cognitive Style
+  analytical_thinking_score?: number;
+  creative_thinking_score?: number;
+  abstract_reasoning_score?: number;
+  concrete_thinking_score?: number;
+
+  // Social Dynamics
+  social_dominance_score?: number;
+  cooperation_score?: number;
+  conflict_style?: string;
+  humor_style?: string;
+
+  // Behavioral Patterns
+  message_length_avg?: number;
+  message_length_variance?: number;
+  response_latency_avg?: number;
+  emoji_usage_rate?: number;
+  punctuation_style?: string;
+  capitalization_pattern?: string;
+
+  // Interests & Expertise
+  technical_knowledge_level?: string;
+  primary_interests?: string; // JSON array
+  expertise_areas?: string; // JSON array
+
+  // Relational Dynamics (Omega's Feelings)
+  affinity_score?: number;
+  trust_level?: number;
+  emotional_bond?: string;
+  omega_thoughts?: string;
+  notable_patterns?: string; // JSON array
+
+  // Sentiment Analysis (Aggregated)
+  overall_sentiment?: string;
+  positive_interaction_ratio?: number;
+  negative_interaction_ratio?: number;
+  dominant_emotions?: string; // JSON array
+
+  // Legacy fields (backward compatibility)
   feelings_json?: string;
+  personality_facets?: string;
+
+  // === PHYSICAL PHENOTYPE ANALYSIS ===
+
+  // Photo Data
   uploaded_photo_url?: string;
   uploaded_photo_metadata?: string;
   ai_appearance_description?: string;
   appearance_confidence: number;
+
+  // Gender & Age
   ai_detected_gender?: string;
-  personality_facets?: string;
+  gender_confidence?: number;
+  estimated_age_range?: string;
+  age_confidence?: number;
+
+  // Facial Structure
+  face_shape?: string;
+  facial_symmetry_score?: number;
+  jawline_prominence?: string;
+  cheekbone_prominence?: string;
+
+  // Hair Analysis
+  hair_color?: string;
+  hair_texture?: string;
+  hair_length?: string;
+  hair_style?: string;
+  hair_density?: string;
+  facial_hair?: string;
+
+  // Eyes
+  eye_color?: string;
+  eye_shape?: string;
+  eye_spacing?: string;
+  eyebrow_shape?: string;
+  eyebrow_thickness?: string;
+
+  // Nose
+  nose_shape?: string;
+  nose_size?: string;
+
+  // Mouth & Lips
+  lip_fullness?: string;
+  smile_type?: string;
+
+  // Skin
+  skin_tone?: string;
+  skin_texture?: string;
+  complexion_quality?: string;
+
+  // Build & Stature
+  body_type?: string;
+  build_description?: string;
+  height_estimate?: string;
+  posture?: string;
+
+  // Distinctive Features
+  distinctive_features?: string; // JSON array
+  clothing_style?: string;
+  accessories?: string; // JSON array
+
+  // Overall Impression
+  attractiveness_assessment?: string;
+  approachability_score?: number;
+  perceived_confidence_level?: string;
+  aesthetic_archetype?: string;
+
+  // === TRACKING & METADATA ===
   first_seen_at: number;
   last_interaction_at: number;
   last_analyzed_at?: number;
+  last_photo_analyzed_at?: number;
   message_count: number;
   created_at: number;
   updated_at: number;

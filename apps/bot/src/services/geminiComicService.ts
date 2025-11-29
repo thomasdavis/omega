@@ -17,6 +17,7 @@ interface ComicGenerationOptions {
   prTitle: string;
   prAuthor: string;
   issueNumber?: number;
+  userIds?: string[]; // Discord user IDs for character appearance data
 }
 
 interface ComicGenerationResult {
@@ -26,11 +27,89 @@ interface ComicGenerationResult {
   error?: string;
 }
 
+interface CharacterAppearance {
+  userId: string;
+  username: string;
+  description: string;
+  gender?: string;
+  hairColor?: string;
+  hairStyle?: string;
+  hairTexture?: string;
+  eyeColor?: string;
+  skinTone?: string;
+  faceShape?: string;
+  bodyType?: string;
+  buildDescription?: string;
+  heightEstimate?: string;
+  facialHair?: string;
+  clothingStyle?: string;
+  accessories?: string[];
+  distinctiveFeatures?: string[];
+  aestheticArchetype?: string;
+}
+
+/**
+ * Fetch character appearance data from Omega HTTP API
+ */
+async function fetchCharacterAppearances(userIds: string[]): Promise<CharacterAppearance[]> {
+  if (!userIds || userIds.length === 0) {
+    return [];
+  }
+
+  try {
+    // Determine Omega API base URL
+    const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app';
+    const url = `${OMEGA_API_URL}/api/comic-characters?userIds=${userIds.join(',')}`;
+
+    console.log(`🔍 Fetching character appearances for ${userIds.length} users from ${url}`);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.warn(`⚠️ Failed to fetch character appearances: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const data: any = await response.json();
+
+    if (!data.success || !data.characters) {
+      console.warn('⚠️ Invalid response from Omega API:', data);
+      return [];
+    }
+
+    console.log(`✅ Fetched appearance data for ${data.characters.length} characters`);
+
+    return data.characters.map((char: any) => ({
+      userId: char.userId,
+      username: char.username,
+      description: char.description,
+      gender: char.gender,
+      hairColor: char.hairColor,
+      hairStyle: char.hairStyle,
+      hairTexture: char.hairTexture,
+      eyeColor: char.eyeColor,
+      skinTone: char.skinTone,
+      faceShape: char.faceShape,
+      bodyType: char.bodyType,
+      buildDescription: char.buildDescription,
+      heightEstimate: char.heightEstimate,
+      facialHair: char.facialHair,
+      clothingStyle: char.clothingStyle,
+      accessories: char.accessories,
+      distinctiveFeatures: char.distinctiveFeatures,
+      aestheticArchetype: char.aestheticArchetype,
+    }));
+  } catch (error) {
+    console.error('❌ Error fetching character appearances:', error);
+    return [];
+  }
+}
+
 /**
  * Generate a comic image using Gemini API
  */
 export async function generateComic(options: ComicGenerationOptions): Promise<ComicGenerationResult> {
-  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber } = options;
+  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber, userIds } = options;
 
   // Validate API key
   if (!process.env.GEMINI_API_KEY) {
@@ -44,11 +123,17 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
   try {
     console.log(`🎨 Generating comic for PR #${prNumber}: ${prTitle}`);
 
+    // Fetch character appearance data if user IDs provided
+    let characterAppearances: CharacterAppearance[] = [];
+    if (userIds && userIds.length > 0) {
+      characterAppearances = await fetchCharacterAppearances(userIds);
+    }
+
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Build the prompt for comic generation
-    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor);
+    // Build the prompt for comic generation with character data
+    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, characterAppearances);
 
     console.log('📝 Comic generation prompt:', prompt.substring(0, 200) + '...');
 
@@ -168,13 +253,81 @@ function determineFrameCount(conversationContext: string): number {
 }
 
 /**
+ * Build character design sections from appearance data
+ */
+function buildCharacterDesignSections(characters: CharacterAppearance[]): string {
+  if (!characters || characters.length === 0) {
+    return '';
+  }
+
+  const sections = characters.map((char) => {
+    const features: string[] = [];
+
+    // Add gender if known
+    if (char.gender) {
+      features.push(`Gender: ${char.gender}`);
+    }
+
+    // Physical appearance
+    if (char.hairColor && char.hairStyle) {
+      features.push(`Hair: ${char.hairColor}, ${char.hairStyle} style${char.hairTexture ? `, ${char.hairTexture} texture` : ''}`);
+    }
+    if (char.eyeColor) {
+      features.push(`Eyes: ${char.eyeColor}`);
+    }
+    if (char.skinTone) {
+      features.push(`Skin tone: ${char.skinTone}`);
+    }
+    if (char.faceShape) {
+      features.push(`Face shape: ${char.faceShape}`);
+    }
+
+    // Build and stature
+    if (char.heightEstimate && char.buildDescription) {
+      features.push(`Build: ${char.heightEstimate} height, ${char.buildDescription} build`);
+    } else if (char.buildDescription) {
+      features.push(`Build: ${char.buildDescription}`);
+    }
+
+    // Distinctive features
+    if (char.facialHair) {
+      features.push(`Facial hair: ${char.facialHair}`);
+    }
+    if (char.distinctiveFeatures && char.distinctiveFeatures.length > 0) {
+      features.push(`Distinctive features: ${char.distinctiveFeatures.join(', ')}`);
+    }
+
+    // Style and aesthetic
+    if (char.clothingStyle) {
+      features.push(`Clothing style: ${char.clothingStyle}`);
+    }
+    if (char.accessories && char.accessories.length > 0) {
+      features.push(`Accessories: ${char.accessories.join(', ')}`);
+    }
+    if (char.aestheticArchetype) {
+      features.push(`Overall aesthetic: ${char.aestheticArchetype}`);
+    }
+
+    return `**Character Design - ${char.username}:**
+When depicting ${char.username}, use this consistent appearance based on their uploaded photo:
+- ${char.description}
+- Physical characteristics:
+  ${features.map(f => `* ${f}`).join('\n  ')}
+- This character should be recognizable as ${char.username} through these distinctive features`;
+  }).join('\n\n');
+
+  return '\n\n' + sections;
+}
+
+/**
  * Build the prompt for comic generation
  */
 function buildComicPrompt(
   conversationContext: string,
   prNumber: number,
   prTitle: string,
-  prAuthor: string
+  prAuthor: string,
+  characterAppearances: CharacterAppearance[] = []
 ): string {
   // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
@@ -258,6 +411,9 @@ This meta-commentary panel should break the fourth wall in a humorous way, showi
 `
     : '';
 
+  // Build character design sections
+  const characterDesigns = buildCharacterDesignSections(characterAppearances);
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -286,6 +442,7 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
   * Dangerous but controlled (intimidating appearance with precise movements)
 - Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
+${characterDesigns}
 ${superDeformedInstruction}
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.

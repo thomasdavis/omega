@@ -877,6 +877,287 @@ function createApp(): express.Application {
     }
   });
 
+  // ========================================================================
+  // USER PROFILE API ENDPOINTS
+  // External access to Omega's psychological profiling data
+  // ========================================================================
+
+  // GET /api/users - List all users with profiles
+  // Returns ALL users including those with 0 messages (for comic generation)
+  app.get('/api/users', async (req: Request, res: Response) => {
+    try {
+      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const users = await getAllUserProfiles();
+
+      res.json({
+        success: true,
+        count: users.length,
+        users: users.map((u: any) => ({
+          userId: u.user_id,
+          username: u.username,
+          messageCount: u.message_count, // Can be 0
+          hasPhoto: !!u.uploaded_photo_url,
+          lastAnalyzed: u.last_analyzed_at ? new Date(u.last_analyzed_at * 1000).toISOString() : null,
+          firstSeen: new Date(u.first_seen_at * 1000).toISOString(),
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch users',
+      });
+    }
+  });
+
+  // GET /api/users/:userId - Get full profile
+  app.get('/api/users/:userId', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { getUserProfile } = await import('../database/userProfileService.js');
+      const profile = await getUserProfile(userId);
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found',
+        });
+      }
+
+      // Return comprehensive profile with all fields
+      res.json({
+        success: true,
+        profile: {
+          // Identity
+          userId: profile.user_id,
+          username: profile.username,
+          messageCount: profile.message_count,
+          firstSeen: new Date(profile.first_seen_at * 1000).toISOString(),
+          lastInteraction: new Date(profile.last_interaction_at * 1000).toISOString(),
+          lastAnalyzed: profile.last_analyzed_at
+            ? new Date(profile.last_analyzed_at * 1000).toISOString()
+            : null,
+
+          // Jungian Analysis
+          dominantArchetype: profile.dominant_archetype,
+          secondaryArchetypes: profile.secondary_archetypes ? JSON.parse(profile.secondary_archetypes) : [],
+          archetypeConfidence: profile.archetype_confidence,
+
+          // Big Five (OCEAN)
+          bigFive: {
+            openness: profile.openness_score,
+            conscientiousness: profile.conscientiousness_score,
+            extraversion: profile.extraversion_score,
+            agreeableness: profile.agreeableness_score,
+            neuroticism: profile.neuroticism_score,
+          },
+
+          // Attachment Theory
+          attachmentStyle: profile.attachment_style,
+          attachmentConfidence: profile.attachment_confidence,
+
+          // Emotional Intelligence
+          emotionalIntelligence: {
+            awareness: profile.emotional_awareness_score,
+            empathy: profile.empathy_score,
+            regulation: profile.emotional_regulation_score,
+          },
+
+          // Communication
+          communication: {
+            formality: profile.communication_formality,
+            assertiveness: profile.communication_assertiveness,
+            engagement: profile.communication_engagement,
+            verbalFluency: profile.verbal_fluency_score,
+            questionFrequency: profile.question_asking_frequency,
+          },
+
+          // Cognitive Style
+          cognitiveStyle: {
+            analytical: profile.analytical_thinking_score,
+            creative: profile.creative_thinking_score,
+            abstract: profile.abstract_reasoning_score,
+            concrete: profile.concrete_thinking_score,
+          },
+
+          // Social Dynamics
+          socialDynamics: {
+            dominance: profile.social_dominance_score,
+            cooperation: profile.cooperation_score,
+            conflictStyle: profile.conflict_style,
+            humorStyle: profile.humor_style,
+          },
+
+          // Behavioral Patterns
+          behavioral: {
+            messageLengthAvg: profile.message_length_avg,
+            messageLengthVariance: profile.message_length_variance,
+            responseLatencyAvg: profile.response_latency_avg,
+            emojiUsageRate: profile.emoji_usage_rate,
+            punctuationStyle: profile.punctuation_style,
+            capitalizationPattern: profile.capitalization_pattern,
+          },
+
+          // Interests & Expertise
+          technicalKnowledge: profile.technical_knowledge_level,
+          primaryInterests: profile.primary_interests ? JSON.parse(profile.primary_interests) : [],
+          expertiseAreas: profile.expertise_areas ? JSON.parse(profile.expertise_areas) : [],
+
+          // Relational Dynamics (Omega's Feelings)
+          omegaFeelings: {
+            affinityScore: profile.affinity_score,
+            trustLevel: profile.trust_level,
+            emotionalBond: profile.emotional_bond,
+            thoughts: profile.omega_thoughts,
+            notablePatterns: profile.notable_patterns ? JSON.parse(profile.notable_patterns) : [],
+          },
+
+          // Sentiment
+          sentiment: {
+            overall: profile.overall_sentiment,
+            positiveRatio: profile.positive_interaction_ratio,
+            negativeRatio: profile.negative_interaction_ratio,
+            dominantEmotions: profile.dominant_emotions ? JSON.parse(profile.dominant_emotions) : [],
+          },
+
+          // Appearance (if photo uploaded)
+          appearance: profile.uploaded_photo_url ? {
+            photoUrl: profile.uploaded_photo_url,
+            description: profile.ai_appearance_description,
+            confidence: profile.appearance_confidence,
+            gender: profile.ai_detected_gender,
+            ageRange: profile.estimated_age_range,
+            faceShape: profile.face_shape,
+            hairColor: profile.hair_color,
+            hairStyle: profile.hair_style,
+            eyeColor: profile.eye_color,
+            build: profile.build_description,
+            distinctiveFeatures: profile.distinctive_features ? JSON.parse(profile.distinctive_features) : [],
+          } : null,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user profile',
+      });
+    }
+  });
+
+  // GET /api/users/:userId/appearance - Get appearance for comics
+  app.get('/api/users/:userId/appearance', async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { getUserProfile } = await import('../database/userProfileService.js');
+      const profile = await getUserProfile(userId);
+
+      if (!profile) {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found',
+        });
+      }
+
+      res.json({
+        success: true,
+        username: profile.username,
+        appearance: {
+          description: profile.ai_appearance_description || 'No appearance data available',
+          gender: profile.ai_detected_gender || 'person',
+          ageRange: profile.estimated_age_range,
+          hair: {
+            color: profile.hair_color,
+            style: profile.hair_style,
+            length: profile.hair_length,
+          },
+          eyes: {
+            color: profile.eye_color,
+            shape: profile.eye_shape,
+          },
+          face: {
+            shape: profile.face_shape,
+            jawline: profile.jawline_prominence,
+            cheekbones: profile.cheekbone_prominence,
+          },
+          build: profile.build_description,
+          distinctiveFeatures: profile.distinctive_features ? JSON.parse(profile.distinctive_features) : [],
+        },
+        personality: {
+          dominantArchetype: profile.dominant_archetype,
+          traits: [profile.communication_formality, profile.humor_style].filter(Boolean),
+          affinityScore: profile.affinity_score,
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching user appearance:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user appearance',
+      });
+    }
+  });
+
+  // GET /api/comic-characters?userIds=id1,id2,id3
+  app.get('/api/comic-characters', async (req: Request, res: Response) => {
+    try {
+      const userIdsParam = req.query.userIds as string;
+
+      if (!userIdsParam) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing userIds query parameter',
+        });
+      }
+
+      const userIds = userIdsParam.split(',').map((id: string) => id.trim());
+      const { getUserProfile } = await import('../database/userProfileService.js');
+
+      const characters = await Promise.all(
+        userIds.map(async (userId: string) => {
+          const profile = await getUserProfile(userId);
+          if (!profile) return null;
+
+          // Build character description for comic generation
+          const characterDescription = profile.ai_appearance_description ||
+            `${profile.ai_detected_gender || 'person'} with ${profile.hair_color || 'hair'}, ${profile.eye_color || 'eyes'}`;
+
+          return {
+            userId: profile.user_id,
+            username: profile.username,
+            appearance: characterDescription,
+            gender: profile.ai_detected_gender || 'person',
+            ageRange: profile.estimated_age_range,
+            build: profile.build_description,
+            hairStyle: profile.hair_style,
+            personality: {
+              dominantArchetype: profile.dominant_archetype,
+              communicationStyle: profile.communication_formality,
+              humorStyle: profile.humor_style,
+              traits: [
+                profile.dominant_archetype,
+                profile.communication_formality,
+                profile.humor_style,
+              ].filter(Boolean),
+            },
+            omegaFeeling: profile.affinity_score,
+          };
+        })
+      );
+
+      res.json({
+        success: true,
+        characters: characters.filter((c: any) => c !== null),
+      });
+    } catch (error) {
+      console.error('Error fetching comic characters:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch comic characters',
+      });
+    }
+  });
+
   // Blog routes
   // Blog index
   app.get('/blog', (req: Request, res: Response) => {

@@ -115,6 +115,7 @@ async function main() {
 
     // Search Discord for relevant messages
     let discordMessages: any[] = [];
+    let discordUserIds: string[] = [];
     if (keywords.length > 0) {
       try {
         const searchResults = await searchDiscordMessages(client, keywords, {
@@ -130,7 +131,13 @@ async function main() {
           timestamp: result.timestamp,
         }));
 
-        console.log(`✅ Found ${discordMessages.length} relevant Discord messages`);
+        // Extract unique Discord user IDs for character appearance lookups
+        discordUserIds = [...new Set(searchResults
+          .map(result => result.userId)
+          .filter((userId): userId is string => Boolean(userId))
+        )];
+
+        console.log(`✅ Found ${discordMessages.length} relevant Discord messages from ${discordUserIds.length} users`);
       } catch (error) {
         console.warn('⚠️ Error searching Discord messages:', error);
         // Continue without Discord messages if search fails
@@ -163,14 +170,16 @@ async function main() {
       }
     }
 
-    // Generate comic
+    // Generate comic with character appearance data
     console.log('🎨 Generating comic with Gemini API...');
+    console.log(`📸 Including appearance data for ${discordUserIds.length} Discord users`);
     const comicResult = await generateComic({
       conversationContext,
       prNumber,
       prTitle,
       prAuthor,
       issueNumber,
+      userIds: discordUserIds, // Pass Discord user IDs for character appearance lookup
     });
 
     if (!comicResult.success || !comicResult.imageData) {

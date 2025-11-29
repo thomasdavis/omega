@@ -42,6 +42,7 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          OMEGA_API_URL: ${{ secrets.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app' }}
         run: |
           cd apps/bot
           npx tsx scripts/generate-pr-comic.ts
