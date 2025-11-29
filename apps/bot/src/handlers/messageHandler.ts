@@ -233,13 +233,14 @@ export async function handleMessage(message: Message): Promise<void> {
             // Download from REST URL (durable, won't 404)
             const { buffer, mimeType } = await downloadDurableAttachment(restAttachment);
 
-            // Cache using GATEWAY URL as key (so tools can look it up)
-            setCachedAttachment(gatewayAttachment.url, {
+            // Cache using attachment ID as key (stable, unlike URLs which have changing query params)
+            setCachedAttachment(gatewayAttachment.id, {
               buffer,
               mimeType,
               filename: restAttachment.filename,
               size: buffer.length,
               url: gatewayAttachment.url,
+              id: gatewayAttachment.id,
               timestamp: Date.now(),
             });
           } catch (error) {
@@ -260,6 +261,7 @@ export async function handleMessage(message: Message): Promise<void> {
     // Prepare structured attachment data for tools (not just markdown text)
     const structuredAttachments = message.attachments.size > 0
       ? Array.from(message.attachments.values()).map(att => ({
+          id: att.id, // Stable ID for cache lookups
           url: att.url,
           filename: att.name,
           contentType: att.contentType || 'unknown',

@@ -318,9 +318,9 @@ export const uploadMyPhotoTool = tool({
 
 **How to use:**
 When the user uploads an image with intent to save/analyze:
-1. Use the first attachment URL from context.attachments
-2. Pass the attachment URL, userId, and username
-3. The tool will automatically retrieve the cached image buffer
+1. Use the first attachment ID from context.attachments
+2. Pass the attachmentId, userId, and username
+3. The tool will automatically retrieve the cached image buffer by ID
 4. GPT-4o will analyze facial features, hair, build, style, etc.
 5. Results stored in database for future use
 
@@ -330,39 +330,32 @@ When the user uploads an image with intent to save/analyze:
 - Hesitate if the user clearly wants to upload their photo`,
 
   inputSchema: z.object({
-    photoUrl: z.string().describe('Discord attachment URL of the uploaded photo'),
+    attachmentId: z.string().describe('Discord attachment ID (stable identifier, use this instead of URL)'),
     userId: z.string().describe('Discord user ID'),
     username: z.string().describe('Discord username'),
   }),
 
-  execute: async ({ photoUrl, userId, username }) => {
-    console.log(`📸 Uploading photo for ${username} (${userId})`);
+  execute: async ({ attachmentId, userId, username }) => {
+    console.log(`📸 Uploading photo for ${username} (${userId}) [Attachment ID: ${attachmentId}]`);
 
     try {
-      // 1. Get photo from cache (attachment should be pre-downloaded by messageHandler)
+      // 1. Get photo from cache using attachment ID (stable across Discord)
       let buffer: Buffer;
       let mimeType: string;
+      let photoUrl: string;
 
-      const cached = getCachedAttachment(photoUrl);
+      const cached = getCachedAttachment(attachmentId);
       if (cached) {
         console.log('   ✅ Using cached attachment from messageHandler...');
         buffer = cached.buffer;
         mimeType = cached.mimeType;
+        photoUrl = cached.url; // For GitHub upload filename
       } else {
-        // Fallback: direct download if cache missed (shouldn't happen after REST API fix)
-        console.log('   ⚠️  Cache miss - attempting direct download...');
-        const response = await fetch(photoUrl);
-        if (!response.ok) {
-          throw new Error(
-            `Failed to download photo: HTTP ${response.status}. ` +
-            (photoUrl.includes('cdn.discordapp.com')
-              ? 'Discord CDN URL expired. Please re-upload the image.'
-              : 'Please check if the URL is valid.')
-          );
-        }
-        buffer = Buffer.from(await response.arrayBuffer());
-        mimeType = response.headers.get('content-type') || 'image/jpeg';
-        console.log(`   Downloaded ${buffer.length} bytes`);
+        // Cache miss - this shouldn't happen if messageHandler did its job
+        throw new Error(
+          `Photo not found in cache (ID: ${attachmentId}). ` +
+          `This likely means the attachment download failed. Please try uploading again.`
+        );
       }
 
       // 2. Validate it's an image

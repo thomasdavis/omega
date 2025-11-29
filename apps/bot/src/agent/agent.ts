@@ -83,7 +83,7 @@ export interface AgentContext {
   userId: string;
   channelName: string;
   messageHistory?: Array<{ username: string; content: string; timestamp?: number }>;
-  attachments?: Array<{ url: string; filename: string; contentType: string; size: number }>;
+  attachments?: Array<{ id: string; url: string; filename: string; contentType: string; size: number }>;
 }
 
 export interface AgentResult {
@@ -146,11 +146,11 @@ export async function runAgent(
 The user has attached images in this message. If they express ANY intent to upload/save/analyze their photo (e.g., "upload my photo", "this is me", "save this"), you MUST call the uploadMyPhoto tool.
 
 Available images:
-${imageAttachments.map((att, idx) => `${idx + 1}. ${att.filename} (${att.contentType})`).join('\n')}
+${imageAttachments.map((att, idx) => `${idx + 1}. ${att.filename} (${att.contentType}) [ID: ${att.id}]`).join('\n')}
 
 To call uploadMyPhoto, use:
 {
-  "photoUrl": "${imageAttachments[0].url}",
+  "attachmentId": "${imageAttachments[0].id}",
   "userId": "${context.userId}",
   "username": "${context.username}"
 }
