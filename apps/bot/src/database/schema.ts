@@ -278,6 +278,7 @@ async function migrationUserProfiles(): Promise<void> {
       uploaded_photo_metadata TEXT,
       ai_appearance_description TEXT,
       appearance_confidence REAL DEFAULT 0.0,
+      ai_detected_gender TEXT,
 
       -- Personality analysis (JSON)
       personality_facets TEXT,
@@ -421,6 +422,7 @@ export interface UserProfileRecord {
   uploaded_photo_metadata?: string;
   ai_appearance_description?: string;
   appearance_confidence: number;
+  ai_detected_gender?: string;
   personality_facets?: string;
   first_seen_at: number;
   last_interaction_at: number;

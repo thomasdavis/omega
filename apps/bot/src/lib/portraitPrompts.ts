@@ -47,6 +47,15 @@ export function buildPortraitPrompt(
   personality: any,
   style: 'realistic' | 'comic' | 'artistic' | 'abstract'
 ): string {
+  // Gender (explicit to avoid misgendering)
+  const gender = (profile as any).ai_detected_gender || 'person';
+  const genderNote =
+    gender === 'male'
+      ? 'IMPORTANT: This is a MALE person. Use masculine features and characteristics.'
+      : gender === 'female'
+        ? 'IMPORTANT: This is a FEMALE person. Use feminine features and characteristics.'
+        : 'IMPORTANT: This person has an androgynous or neutral presentation.';
+
   // Appearance description
   const baseDescription =
     profile.ai_appearance_description ||
@@ -91,6 +100,8 @@ export function buildPortraitPrompt(
   // Build the complete prompt
   const prompt = `Create a portrait with these characteristics:
 
+**${genderNote}**
+
 **Physical Appearance:**
 ${baseDescription}
 
@@ -107,11 +118,14 @@ ${styleDirective}
 ${backgroundAtmosphere}
 
 **Additional Context:**
+- Gender: ${gender}
 - Trust level: ${feelings.trustLevel}/100 (influences depth of gaze and openness)
 - Affinity: ${feelings.affinityScore}/100 (influences warmth vs distance)
 - Communication engagement: ${personality.communicationStyle?.engagement || 'medium'}
 
-Create a portrait that captures not just how they look, but how Omega perceives their essence based on interactions. The portrait should feel authentic and reflect their personality traits: ${feelings.facets?.slice(0, 3).join(', ') || 'thoughtful individual'}.`;
+Create a portrait that captures not just how they look, but how Omega perceives their essence based on interactions. The portrait should feel authentic and reflect their personality traits: ${feelings.facets?.slice(0, 3).join(', ') || 'thoughtful individual'}.
+
+CRITICAL: Ensure the gender presentation matches "${gender}" accurately.`;
 
   return prompt;
 }

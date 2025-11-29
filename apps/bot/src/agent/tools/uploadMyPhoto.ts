@@ -44,6 +44,7 @@ async function downloadFile(url: string): Promise<{ buffer: Buffer; mimeType: st
 async function analyzeUserAppearance(imageBuffer: Buffer): Promise<{
   description: string;
   confidence: number;
+  gender: string;
 }> {
   const base64Image = imageBuffer.toString('base64');
 
@@ -57,11 +58,14 @@ async function analyzeUserAppearance(imageBuffer: Buffer): Promise<{
             {
               type: 'text',
               text: `Describe this person's physical appearance in detail for use in AI-generated portraits. Focus on:
+- Gender presentation (male, female, androgynous, etc.) - BE EXPLICIT AND ACCURATE
 - Hair (color, style, length)
 - Facial features (eye color, facial structure, distinctive characteristics)
+- Build and stature if visible
 - Overall appearance and impression
 - Any notable features
 
+IMPORTANT: Start your description with gender (e.g., "Male with..." or "Female with..." or "Person with...").
 Be objective and descriptive. Keep it to 2-3 sentences. This will be used to generate artistic portraits that capture their likeness.`,
             },
             {
@@ -73,9 +77,24 @@ Be objective and descriptive. Keep it to 2-3 sentences. This will be used to gen
       ],
     });
 
+    // Extract gender from the description (should be at the start)
+    const description = result.text;
+    let gender = 'person'; // default fallback
+
+    if (description.toLowerCase().startsWith('male')) {
+      gender = 'male';
+    } else if (description.toLowerCase().startsWith('female')) {
+      gender = 'female';
+    } else if (description.toLowerCase().includes('man with')) {
+      gender = 'male';
+    } else if (description.toLowerCase().includes('woman with')) {
+      gender = 'female';
+    }
+
     return {
-      description: result.text,
+      description,
       confidence: 0.9, // High confidence since based on actual photo
+      gender,
     };
   } catch (error) {
     console.error('Failed to analyze appearance with GPT-4o:', error);
@@ -201,6 +220,7 @@ export const uploadMyPhotoTool = tool({
       console.log('   Analyzing appearance with GPT-4o...');
       const appearance = await analyzeUserAppearance(buffer);
       console.log(`   Appearance: ${appearance.description}`);
+      console.log(`   Gender: ${appearance.gender}`);
 
       // 4. Upload to GitHub
       console.log('   Uploading to GitHub...');
@@ -225,6 +245,7 @@ export const uploadMyPhotoTool = tool({
         }),
         ai_appearance_description: appearance.description,
         appearance_confidence: appearance.confidence,
+        ai_detected_gender: appearance.gender,
       });
 
       console.log(`   ✅ Photo uploaded and profile updated!`);
