@@ -10,6 +10,7 @@ import { getUserProfile, getOrCreateUserProfile } from '../../database/userProfi
 import { analyzeUser } from '../../services/userProfileAnalysis.js';
 import { generateImageWithGemini } from '../../services/geminiImageService.js';
 import { buildPortraitPrompt, buildGenericPortraitPrompt } from '../../lib/portraitPrompts.js';
+import { enhancePortraitPrompt } from '../../lib/portraitPromptEnhancer.js';
 import { randomUUID } from 'crypto';
 import { join } from 'path';
 import { getUploadsDir } from '../../utils/storage.js';
@@ -159,18 +160,21 @@ export const generateMyPortraitTool = tool({
       };
 
       // 4. Build portrait prompt
-      let prompt: string;
+      let basePrompt: string;
       if (profile.ai_appearance_description && profile.appearance_confidence > 0.7) {
         // Use photo-based prompt
         console.log('   Using photo-based portrait prompt');
-        prompt = buildPortraitPrompt(profile, feelings, personality, style);
+        basePrompt = buildPortraitPrompt(profile, feelings, personality, style);
       } else {
         // Use generic personality-based prompt
         console.log('   Using generic personality-based portrait prompt');
-        prompt = buildGenericPortraitPrompt(feelings, personality, username, style);
+        basePrompt = buildGenericPortraitPrompt(feelings, personality, username, style);
       }
 
-      console.log(`   Prompt: ${prompt.substring(0, 150)}...`);
+      // 4.5. Enhance prompt with user context analysis (gender, features, style)
+      const prompt = await enhancePortraitPrompt(basePrompt, userId, username, profile);
+
+      console.log(`   Final prompt: ${prompt.substring(0, 200)}...`);
 
       // 5. Generate portrait with Gemini
       console.log('   Generating portrait with Gemini...');
