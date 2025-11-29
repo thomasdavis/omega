@@ -13,7 +13,8 @@ import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '../database/userProfileService.js';
-import { cacheAttachment } from '../utils/attachmentCache.js';
+import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
+import { setCachedAttachment, type CachedAttachment } from '../utils/attachmentCache.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -214,11 +215,39 @@ export async function handleMessage(message: Message): Promise<void> {
     if (message.attachments.size > 0) {
       console.log(`   📎 Message has ${message.attachments.size} attachment(s)`);
 
-      // Cache attachments immediately to prevent CDN URL expiration issues
-      const cachePromises = Array.from(message.attachments.values()).map(att =>
-        cacheAttachment(att.url, att.name || 'unknown')
-      );
-      await Promise.all(cachePromises);
+      // CRITICAL: Gateway attachment URLs can be ephemeral (0-5 second TTL)
+      // Re-fetch via REST API with with_application_state=true for durable URLs
+      const restMessage = await fetchMessageWithDurableAttachments(message.client, message);
+
+      if (restMessage && restMessage.attachments && restMessage.attachments.length > 0) {
+        // Download and cache from DURABLE URLs
+        console.log(`   Downloading ${restMessage.attachments.length} attachment(s) from durable URLs...`);
+
+        for (let i = 0; i < restMessage.attachments.length; i++) {
+          const restAttachment = restMessage.attachments[i];
+          const gatewayAttachment = Array.from(message.attachments.values())[i];
+
+          if (!gatewayAttachment) continue;
+
+          try {
+            // Download from REST URL (durable, won't 404)
+            const { buffer, mimeType } = await downloadDurableAttachment(restAttachment);
+
+            // Cache using GATEWAY URL as key (so tools can look it up)
+            setCachedAttachment(gatewayAttachment.url, {
+              buffer,
+              mimeType,
+              filename: restAttachment.filename,
+              size: buffer.length,
+              url: gatewayAttachment.url,
+              timestamp: Date.now(),
+            });
+          } catch (error) {
+            console.error(`   ❌ Failed to download ${restAttachment.filename}:`, error);
+            // Continue with other attachments
+          }
+        }
+      }
 
       const attachmentInfo = Array.from(message.attachments.values())
         .map(att => `- ${att.name} (${att.contentType || 'unknown type'}, ${(att.size / 1024).toFixed(2)} KB): ${att.url}`)

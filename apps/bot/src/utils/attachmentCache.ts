@@ -4,7 +4,7 @@
  * Prevents issues with expired CDN URLs
  */
 
-interface CachedAttachment {
+export interface CachedAttachment {
   buffer: Buffer;
   mimeType: string;
   filename: string;
@@ -56,6 +56,14 @@ export async function cacheAttachment(url: string, filename: string): Promise<vo
   } catch (error) {
     console.error(`❌ Error caching attachment ${filename}:`, error);
   }
+}
+
+/**
+ * Manually set a cached attachment (for durable URL downloads)
+ */
+export function setCachedAttachment(url: string, cached: CachedAttachment): void {
+  attachmentCache.set(url, cached);
+  console.log(`   ✅ Cached attachment: ${cached.filename} (${(cached.size / 1024).toFixed(2)} KB)`);
 }
 
 /**
