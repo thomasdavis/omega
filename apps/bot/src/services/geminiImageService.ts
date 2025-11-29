@@ -133,6 +133,48 @@ export async function generateImageWithGemini(
 }
 
 /**
+ * Generate comic with user characters included
+ */
+export async function generateComicWithUsers(
+  scenario: string,
+  userProfiles: Array<{
+    username: string;
+    appearance?: string;
+    personality?: any;
+    feelings?: any;
+  }>
+): Promise<GeminiImageResult> {
+  // Build character descriptions for the comic
+  const characterDescriptions = userProfiles
+    .map((profile, index) => {
+      const appearance = profile.appearance || 'a person';
+      const dominantArchetype =
+        profile.personality?.dominantArchetypes?.[0] || 'Everyman';
+      const traits = profile.feelings?.facets?.slice(0, 2).join(', ') || 'friendly';
+
+      return `${index + 1}. ${profile.username} - ${appearance}
+   Personality: ${dominantArchetype}
+   Traits: ${traits}`;
+    })
+    .join('\n\n');
+
+  const comicPrompt = `Create a humorous comic illustration:
+
+Scenario: ${scenario}
+
+Characters:
+${characterDescriptions}
+
+Style: Digital comic art, vibrant colors, expressive cartoon characters, developer/tech humor
+Include: Speech bubbles, character interactions, visual humor, expressive faces
+Ensure: Each character is visually distinct and matches their description
+
+Make it entertaining and capture the personalities!`;
+
+  return generateImageWithGemini({ prompt: comicPrompt });
+}
+
+/**
  * Generate a comic-style image from issue/PR content
  */
 export async function generateComicFromIssue(

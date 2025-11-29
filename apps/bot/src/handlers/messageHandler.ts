@@ -13,6 +13,7 @@ import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { messageAdapter, type ToolCallInfo } from '../utils/discordMessageAdapter.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
 import { feelingsService } from '../lib/feelings/index.js';
+import { getOrCreateUserProfile, incrementMessageCount } from '../database/userProfileService.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -148,6 +149,10 @@ export async function handleMessage(message: Message): Promise<void> {
         responseDecision: decision,
       });
 
+      // Track user interaction in profile
+      await getOrCreateUserProfile(message.author.id, message.author.username);
+      await incrementMessageCount(message.author.id);
+
       await saveAIMessage({
         userId: message.author.id,
         username: message.author.username,
@@ -185,6 +190,10 @@ export async function handleMessage(message: Message): Promise<void> {
       messageId: message.id,
       responseDecision: decision,
     });
+
+    // Track user interaction in profile
+    await getOrCreateUserProfile(message.author.id, message.author.username);
+    await incrementMessageCount(message.author.id);
   } catch (dbError) {
     console.error('⚠️  Failed to persist message to database:', dbError);
     // Continue execution even if database write fails

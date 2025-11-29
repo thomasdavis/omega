@@ -217,7 +217,87 @@ async function runMigrations(): Promise<void> {
     console.log('   ✓ Added response_decision column');
   }
 
+  // Migration 3: Create user_profiles and user_analysis_history tables
+  await migrationUserProfiles();
+
   console.log('✅ Migrations completed');
+}
+
+/**
+ * Migration 3: Add user profiling tables
+ * Creates tables for storing Omega's feelings and personality assessments about users
+ */
+async function migrationUserProfiles(): Promise<void> {
+  const db = getDatabase();
+
+  console.log('   + Creating user_profiles table');
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL UNIQUE,
+      username TEXT NOT NULL,
+
+      -- Omega's feelings about this user (JSON)
+      feelings_json TEXT,
+
+      -- Appearance data (hybrid: photo + AI description)
+      uploaded_photo_url TEXT,
+      uploaded_photo_metadata TEXT,
+      ai_appearance_description TEXT,
+      appearance_confidence REAL DEFAULT 0.0,
+
+      -- Personality analysis (JSON)
+      personality_facets TEXT,
+
+      -- Tracking
+      first_seen_at INTEGER NOT NULL,
+      last_interaction_at INTEGER NOT NULL,
+      last_analyzed_at INTEGER,
+      message_count INTEGER DEFAULT 0,
+
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+    )
+  `);
+
+  // Create indexes for user_profiles
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON user_profiles(user_id)
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_user_profiles_last_analyzed ON user_profiles(last_analyzed_at)
+  `);
+
+  console.log('   + Creating user_analysis_history table');
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS user_analysis_history (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      analysis_timestamp INTEGER NOT NULL,
+
+      -- Snapshots
+      feelings_snapshot TEXT,
+      personality_snapshot TEXT,
+      message_count_at_analysis INTEGER,
+      changes_summary TEXT,
+
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+
+      FOREIGN KEY (user_id) REFERENCES user_profiles(user_id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for user_analysis_history
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_analysis_history_user_id ON user_analysis_history(user_id)
+  `);
+
+  await db.execute(`
+    CREATE INDEX IF NOT EXISTS idx_analysis_history_timestamp ON user_analysis_history(analysis_timestamp DESC)
+  `);
+
+  console.log('   ✓ User profiling tables created');
 }
 
 /**
@@ -286,4 +366,41 @@ export interface DocumentCollaboratorRecord {
   username?: string;
   role: string;
   joined_at: number;
+}
+
+/**
+ * User profile record interface
+ * Stores Omega's understanding of each user
+ */
+export interface UserProfileRecord {
+  id: string;
+  user_id: string;
+  username: string;
+  feelings_json?: string;
+  uploaded_photo_url?: string;
+  uploaded_photo_metadata?: string;
+  ai_appearance_description?: string;
+  appearance_confidence: number;
+  personality_facets?: string;
+  first_seen_at: number;
+  last_interaction_at: number;
+  last_analyzed_at?: number;
+  message_count: number;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * User analysis history record interface
+ * Tracks evolution of Omega's feelings over time
+ */
+export interface UserAnalysisHistoryRecord {
+  id: string;
+  user_id: string;
+  analysis_timestamp: number;
+  feelings_snapshot?: string;
+  personality_snapshot?: string;
+  message_count_at_analysis: number;
+  changes_summary?: string;
+  created_at: number;
 }

@@ -61,6 +61,9 @@ import { generateSongLyricsTool } from './tools/generateSongLyrics.js';
 import { generateSheetMusicTool } from './tools/generateSheetMusic.js';
 import { generateUserAvatarTool } from './tools/generateUserAvatar.js';
 import { grammarInsultTool } from './tools/grammarInsult.js';
+import { uploadMyPhotoTool } from './tools/uploadMyPhoto.js';
+import { generateMyPortraitTool } from './tools/generateMyPortrait.js';
+import { runBatchAnalysisTool } from './tools/runBatchAnalysis.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -186,6 +189,9 @@ export async function runAgent(
         generateSheetMusic: generateSheetMusicTool,
         generateUserAvatar: generateUserAvatarTool,
         grammarInsult: grammarInsultTool,
+        uploadMyPhoto: uploadMyPhotoTool,
+        generateMyPortrait: generateMyPortraitTool,
+        runBatchAnalysis: runBatchAnalysisTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
