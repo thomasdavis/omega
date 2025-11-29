@@ -1346,6 +1346,66 @@ function createApp(): express.Application {
     }
   });
 
+  // POST /api/clean-bad-appearance-data
+  app.post('/api/clean-bad-appearance-data', async (req: Request, res: Response) => {
+    try {
+      const { getAllUserProfiles, updateUserProfile } = await import('../database/userProfileService.js');
+
+      const profiles = await getAllUserProfiles();
+
+      let cleanedCount = 0;
+      const badPatterns = [
+        "I'm sorry",
+        "I cannot",
+        "I can't",
+        "I apologize",
+      ];
+
+      const cleaned: any[] = [];
+
+      for (const profile of profiles) {
+        const description = profile.ai_appearance_description;
+
+        if (description) {
+          // Check if description contains any bad patterns
+          const isBad = badPatterns.some(pattern => description.includes(pattern));
+
+          if (isBad) {
+            console.log(`❌ Found bad data for ${profile.username}: "${description.substring(0, 80)}..."`);
+
+            // Clear the bad data
+            await updateUserProfile(profile.user_id, {
+              ai_appearance_description: null,
+              appearance_confidence: null,
+              ai_detected_gender: null,
+              gender_confidence: null,
+            });
+
+            cleaned.push({
+              userId: profile.user_id,
+              username: profile.username,
+              badData: description.substring(0, 100),
+            });
+
+            cleanedCount++;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Cleaned ${cleanedCount} profile(s) with bad appearance data`,
+        cleaned,
+      });
+    } catch (error) {
+      console.error('Error cleaning bad data:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // GET /api/comic-characters?userIds=id1,id2,id3
   // Returns comprehensive character appearance data for comic generation
   app.get('/api/comic-characters', async (req: Request, res: Response) => {
