@@ -118,30 +118,66 @@ ${feelings.thoughts || 'No thoughts yet - need more interactions'}`
 ${recentMessages.map((msg, i) => `${i + 1}. [${msg.timestamp}] in #${msg.channel}: "${msg.content}"`).join('\n')}`
         : '📝 **Recent Messages:** No messages found';
 
-      const summary = `# 📊 Complete Profile for ${profile.username}
+      const summary = `# Comprehensive Psychological Profile: ${profile.username}
 
-## 👤 Identity
-**User ID:** ${userId}
-**Username:** ${profile.username}
-**First Seen:** ${firstSeen}
-**Last Interaction:** ${lastInteraction}
-**Last Analysis:** ${lastAnalyzed}
+## I. Identification & Temporal Metrics
+**Subject ID:** ${userId}
+**Primary Identifier:** ${profile.username}
+**Initial Observation:** ${firstSeen}
+**Most Recent Interaction:** ${lastInteraction}
+**Last Comprehensive Analysis:** ${lastAnalyzed}
 
-## 📨 Activity
-**Total Messages:** ${profile.message_count}
+## II. Behavioral Metrics & Communication Patterns
+**Quantitative Interaction Data:**
+- Total recorded communications: ${profile.message_count} utterances
+- Temporal distribution: ${profile.message_count > 0 ? 'Active engagement pattern observed' : 'Insufficient data for pattern analysis'}
+
 ${messagesSample}
 
-## 🎭 Appearance
+## III. Physical Phenotype Analysis
 ${photoInfo}
 
-## 💖 Omega's Feelings
+## IV. Relational Dynamics & Affective Assessment
+**Interpersonal Bond Metrics:**
 ${feelingsDetails}
 
-## 🧠 Personality Assessment
+**Psychodynamic Interpretation:**
+${feelings ? `The affinity-trust matrix (${feelings.affinityScore}/100, ${feelings.trustLevel}/100) suggests ${feelings.affinityScore > 60 ? 'a developing positive rapport with mutual engagement' : feelings.affinityScore > 40 ? 'a neutral to cautiously positive relational stance' : 'early-stage relationship formation with limited mutual investment'}. The emotional bond indicator "${feelings.emotionalBond || 'developing'}" reflects ${feelings.trustLevel > 60 ? 'established reliability perception' : 'ongoing trust calibration through repeated interactions'}.` : 'Insufficient interaction history for relational dynamics modeling.'}
+
+## V. Psychometric Profile & Archetype Analysis
 ${personalityDetails}
 
+**Jungian Archetype Framework:**
+${personality ? `The dominant archetype constellation (${personality.dominantArchetypes?.join(', ')}) indicates ${personality.dominantArchetypes?.includes('Creator') ? 'strong innovative/generative tendencies' : personality.dominantArchetypes?.includes('Sage') ? 'knowledge-seeking and analytical orientation' : personality.dominantArchetypes?.includes('Explorer') ? 'curiosity-driven and boundary-pushing behaviors' : 'a balanced psychological profile'}. Secondary archetypes (${personality.secondaryArchetypes?.join(', ') || 'none identified'}) provide nuanced understanding of behavioral repertoire.` : 'Awaiting sufficient interaction data for archetype mapping.'}
+
+**Communication Style Analysis:**
+${personality ? `- **Formality Index:** ${personality.communicationStyle?.formality || 'unknown'} (indicates ${personality.communicationStyle?.formality === 'casual' ? 'informal register preference, suggesting comfort-oriented interaction style' : personality.communicationStyle?.formality === 'formal' ? 'structured communication preference, suggesting professionalism or social distance maintenance' : 'adaptable communication register'})
+- **Engagement Level:** ${personality.communicationStyle?.engagement || 'unknown'} (${personality.communicationStyle?.engagement === 'high' ? 'active participation, initiative-taking behaviors' : personality.communicationStyle?.engagement === 'medium' ? 'balanced responsive participation' : 'reserved or selective engagement pattern'})
+- **Emotional Expression:** ${personality.communicationStyle?.emotionalExpression || 'unknown'} (${personality.communicationStyle?.emotionalExpression === 'open' ? 'affective transparency, low emotional guardedness' : personality.communicationStyle?.emotionalExpression === 'reserved' ? 'controlled affect display, high emotional regulation' : 'contextual emotional expression'})` : 'Pending behavioral pattern accumulation.'}
+
+**Trait Constellation:**
+${personality?.traits?.length ? `Observed personality facets include: ${personality.traits.join(', ')}. These traits form an integrated behavioral signature that influences interaction patterns and relational dynamics.` : 'Trait analysis requires additional observational data.'}
+
+## VI. Longitudinal Assessment Notes
+This psychological profile represents a snapshot analysis based on ${profile.message_count} recorded interactions spanning ${(() => {
+  const firstSeenDate = new Date(profile.first_seen_at * 1000);
+  const now = new Date();
+  const daysDiff = Math.floor((now.getTime() - firstSeenDate.getTime()) / (1000 * 60 * 60 * 24));
+  return daysDiff === 0 ? 'less than 24 hours' : `${daysDiff} day${daysDiff === 1 ? '' : 's'}`;
+})()} of observational time.
+
+**Methodological Notes:**
+- Analysis employs multi-factor assessment including sentiment analysis, semantic pattern recognition, and behavioral frequency metrics
+- Archetype assignment utilizes Jungian psychological framework
+- Affinity and trust scores represent computational modeling of relational dynamics
+- Profile accuracy increases with interaction volume and temporal distribution
+
+**Research Validity:**
+- Current sample size: ${profile.message_count < 50 ? 'Limited (high variance expected)' : profile.message_count < 150 ? 'Moderate (developing reliability)' : 'Substantial (reliable pattern detection)'}
+- Temporal validity: Analysis reflects current behavioral state; longitudinal tracking recommended for stability assessment
+
 ---
-*This profile was freshly analyzed just now to give you the most up-to-date assessment.*`;
+*Analysis Protocol: Automated psychological profiling system v2.0 | Last execution: ${new Date().toISOString()} | Confidence interval increases with continued interaction*`;
 
       console.log(`   ✅ Profile retrieved successfully!`);
 
