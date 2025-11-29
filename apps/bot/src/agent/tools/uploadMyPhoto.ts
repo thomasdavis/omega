@@ -1,19 +1,22 @@
 /**
  * Upload My Photo Tool
- * Allows users to upload their photo so Omega can see what they look like
- * Uses GPT-4o vision to analyze appearance and stores both photo + description
+ * Allows users to upload their photo for avatar recreation and stylized portraits
+ * Uses Gemini Vision to extract visual attributes for artistic rendering
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { updateUserProfile, getOrCreateUserProfile } from '../../database/userProfileService.js';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '../../utils/storage.js';
 import { getCachedAttachment } from '../../utils/attachmentCache.js';
+
+// Initialize Gemini Vision
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const geminiVisionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
 // GitHub configuration
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -125,21 +128,17 @@ interface PhenotypeAnalysis {
 }
 
 /**
- * Analyze user appearance using GPT-4o vision with comprehensive phenotype extraction
+ * Analyze user appearance using Gemini Vision for avatar recreation
+ * Extracts visual attributes needed for stylized portrait generation
  */
 async function analyzeUserAppearance(imageBuffer: Buffer): Promise<PhenotypeAnalysis> {
   const base64Image = imageBuffer.toString('base64');
 
   try {
-    const result = await generateText({
-      model: openai.chat('gpt-4o'),
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Analyze this person's physical appearance comprehensively. Return ONLY valid JSON matching this exact structure:
+    const prompt = `You are a visual appearance analysis model used for avatar recreation and stylized portrait generation.
+Extract ONLY visual attributes that help re-create artistic portraits of this person.
+
+Return ONLY valid JSON matching this exact structure:
 
 {
   "description": "2-3 sentence summary starting with gender (e.g., 'Male with...', 'Female with...')",
@@ -182,36 +181,52 @@ async function analyzeUserAppearance(imageBuffer: Buffer): Promise<PhenotypeAnal
   "aestheticArchetype": "classic|rugged|refined|edgy|bohemian|minimalist|other"
 }
 
-Be objective, detailed, and accurate. Return ONLY the JSON object, no other text.`,
-            },
-            {
-              type: 'image',
-              image: base64Image,
-            },
-          ],
+Be objective, detailed, and accurate. Return ONLY the JSON object, no other text.`;
+
+    // Call Gemini Vision with the image
+    const result = await geminiVisionModel.generateContent([
+      {
+        inlineData: {
+          mimeType: 'image/jpeg',
+          data: base64Image,
         },
-      ],
-    });
+      },
+      { text: prompt },
+    ]);
 
-    // Parse JSON response
-    const jsonText = result.text.trim();
+    const response = await result.response;
+    const jsonText = response.text().trim();
 
-    // Check for OpenAI refusals (safety policy rejections)
+    // Check for Gemini refusals (safety blocks)
     if (jsonText.includes("I'm sorry") || jsonText.includes("I cannot") || jsonText.includes("I can't")) {
-      throw new Error(`OpenAI refused to analyze the photo: "${jsonText.substring(0, 100)}...". This may be due to safety policies. Try a different photo with clear facial features and good lighting.`);
+      throw new Error(`Gemini refused to analyze the photo: "${jsonText.substring(0, 100)}...". This may be due to safety policies. Try a different photo with clear facial features and good lighting.`);
+    }
+
+    // Extract JSON from response (Gemini sometimes wraps it in markdown)
+    let cleanJsonText = jsonText;
+    if (jsonText.includes('```json')) {
+      const jsonMatch = jsonText.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        cleanJsonText = jsonMatch[1];
+      }
+    } else if (jsonText.includes('```')) {
+      const jsonMatch = jsonText.match(/```\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        cleanJsonText = jsonMatch[1];
+      }
     }
 
     let parsed: any;
     try {
-      parsed = JSON.parse(jsonText);
+      parsed = JSON.parse(cleanJsonText);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', jsonText.substring(0, 200));
-      throw new Error(`OpenAI returned invalid JSON. Response: "${jsonText.substring(0, 100)}..."`);
+      console.error('Failed to parse JSON response:', cleanJsonText.substring(0, 200));
+      throw new Error(`Gemini returned invalid JSON. Response: "${cleanJsonText.substring(0, 100)}..."`);
     }
 
     // Validate required fields
     if (!parsed.description || !parsed.gender) {
-      throw new Error('OpenAI response missing required fields (description, gender)');
+      throw new Error('Gemini response missing required fields (description, gender)');
     }
 
     // Add overall confidence based on photo quality
@@ -222,7 +237,7 @@ Be objective, detailed, and accurate. Return ONLY the JSON object, no other text
 
     return analysis;
   } catch (error) {
-    console.error('Failed to analyze appearance with GPT-4o:', error);
+    console.error('Failed to analyze appearance with Gemini Vision:', error);
     throw error;
   }
 }
@@ -304,25 +319,26 @@ async function uploadPhotoToGitHub(
  * Upload My Photo Tool
  */
 export const uploadMyPhotoTool = tool({
-  description: `Upload and analyze a user's photo to create their appearance profile.
+  description: `Upload a user's photo for avatar recreation and stylized portrait generation.
 
 **Call this tool whenever:**
 - The user uploads an image (photo/selfie) AND
-- The user expresses ANY intent related to uploading, saving, storing, or analyzing that image
+- The user expresses ANY intent related to uploading, saving, or storing that image
 - Examples: "upload my photo", "save this", "this is me", "use my picture", "update my appearance"
 
 **What it does:**
-- Analyzes the photo using GPT-4o vision to extract detailed phenotype data (78 fields)
-- Stores photo permanently on GitHub
-- Creates comprehensive appearance profile for accurate portrait generation and comics
+- Stores the uploaded photo permanently on GitHub
+- Generates visual metadata using an external vision model (NOT OpenAI)
+- Creates appearance profile for stylized portrait generation and comic avatar creation
+- This tool does NOT use OpenAI for image analysis
 
 **How to use:**
-When the user uploads an image with intent to save/analyze:
+When the user uploads an image with intent to save:
 1. Use the first attachment ID from context.attachments
 2. Pass the attachmentId, userId, and username
-3. The tool will automatically retrieve the cached image buffer by ID
-4. GPT-4o will analyze facial features, hair, build, style, etc.
-5. Results stored in database for future use
+3. The tool retrieves the cached image and processes it externally
+4. Visual attributes are extracted for avatar recreation purposes
+5. Results stored in database for future artistic rendering
 
 **Do NOT:**
 - Ask the user to re-upload if an attachment is present
@@ -366,8 +382,8 @@ When the user uploads an image with intent to save/analyze:
         };
       }
 
-      // 3. Analyze appearance with GPT-4o vision
-      console.log('   Analyzing appearance with GPT-4o...');
+      // 3. Analyze appearance with Gemini Vision
+      console.log('   Analyzing appearance with Gemini Vision...');
       const appearance = await analyzeUserAppearance(buffer);
       console.log(`   Appearance: ${appearance.description}`);
       console.log(`   Gender: ${appearance.gender}`);
