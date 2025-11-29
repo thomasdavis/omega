@@ -1373,12 +1373,9 @@ function createApp(): express.Application {
           if (isBad) {
             console.log(`❌ Found bad data for ${profile.username}: "${description.substring(0, 80)}..."`);
 
-            // Clear the bad data
+            // Clear the bad data (only description field for backward compatibility)
             await updateUserProfile(profile.user_id, {
               ai_appearance_description: null,
-              appearance_confidence: null,
-              ai_detected_gender: null,
-              gender_confidence: null,
             });
 
             cleaned.push({
