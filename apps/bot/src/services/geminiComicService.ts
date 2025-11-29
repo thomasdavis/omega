@@ -60,7 +60,7 @@ interface CharacterAppearance {
 async function fetchAllUserProfiles(): Promise<string> {
   try {
     // Determine Omega API base URL
-    const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app';
+    const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omegaai.dev';
     const url = `${OMEGA_API_URL}/api/profiles-full`;
 
     console.log(`🔍 Fetching ALL user profiles from ${url}`);
@@ -118,7 +118,14 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     // Build the prompt for comic generation with character data
     const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson);
 
-    console.log('📝 Comic generation prompt:', prompt.substring(0, 200) + '...');
+    console.log('📝 Comic generation prompt (first 200 chars):', prompt.substring(0, 200) + '...');
+    console.log('\n');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📝 FULL COMIC GENERATION PROMPT:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(prompt);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('\n');
 
     // Generate the comic image using gemini-3-pro-image-preview
     // Note: As of the latest SDK, image generation may use Imagen model instead
