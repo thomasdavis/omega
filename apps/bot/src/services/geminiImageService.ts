@@ -52,9 +52,9 @@ export async function generateImageWithGemini(
       ? `${prompt}\n\nNegative prompt: ${negativePrompt}`
       : prompt;
 
-    // Get the generative model
+    // Get the generative model (use same model as comic generation)
     const model = genai.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3-pro-image-preview',
     });
 
     // Generate content
