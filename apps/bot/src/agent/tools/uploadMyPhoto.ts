@@ -175,12 +175,29 @@ Be objective, detailed, and accurate. Return ONLY the JSON object, no other text
 
     // Parse JSON response
     const jsonText = result.text.trim();
-    const parsed = JSON.parse(jsonText);
+
+    // Check for OpenAI refusals (safety policy rejections)
+    if (jsonText.includes("I'm sorry") || jsonText.includes("I cannot") || jsonText.includes("I can't")) {
+      throw new Error(`OpenAI refused to analyze the photo: "${jsonText.substring(0, 100)}...". This may be due to safety policies. Try a different photo with clear facial features and good lighting.`);
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', jsonText.substring(0, 200));
+      throw new Error(`OpenAI returned invalid JSON. Response: "${jsonText.substring(0, 100)}..."`);
+    }
+
+    // Validate required fields
+    if (!parsed.description || !parsed.gender) {
+      throw new Error('OpenAI response missing required fields (description, gender)');
+    }
 
     // Add overall confidence based on photo quality
     const analysis: PhenotypeAnalysis = {
       ...parsed,
-      confidence: 0.9, // High confidence since based on actual photo
+      confidence: parsed.confidence || 0.9, // High confidence since based on actual photo
     };
 
     return analysis;
