@@ -55,9 +55,9 @@ interface CharacterAppearance {
 
 /**
  * Fetch ALL user profiles from Omega HTTP API
- * Returns comprehensive psychological and phenotype data for ALL users
+ * Returns the raw JSON response to dump into prompt
  */
-async function fetchAllUserProfiles(): Promise<CharacterAppearance[]> {
+async function fetchAllUserProfiles(): Promise<string> {
   try {
     // Determine Omega API base URL
     const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app';
@@ -69,48 +69,23 @@ async function fetchAllUserProfiles(): Promise<CharacterAppearance[]> {
 
     if (!response.ok) {
       console.warn(`⚠️ Failed to fetch user profiles: ${response.status} ${response.statusText}`);
-      return [];
+      return '';
     }
 
     const data: any = await response.json();
 
     if (!data.success || !data.profiles) {
       console.warn('⚠️ Invalid response from Omega API:', data);
-      return [];
+      return '';
     }
 
     console.log(`✅ Fetched complete profiles for ${data.profiles.length} users`);
 
-    // Convert profiles-full format to CharacterAppearance format
-    return data.profiles.map((profile: any) => ({
-      userId: profile.userId,
-      username: profile.username,
-      description: profile.aiAppearanceDescription ||
-        `${profile.aiDetectedGender || 'person'} with ${profile.hairColor || 'hair'}, ${profile.eyeColor || 'eyes'}`,
-      gender: profile.aiDetectedGender,
-      hairColor: profile.hairColor,
-      hairStyle: profile.hairStyle,
-      hairTexture: profile.hairTexture,
-      eyeColor: profile.eyeColor,
-      skinTone: profile.skinTone,
-      faceShape: profile.faceShape,
-      bodyType: profile.bodyType,
-      buildDescription: profile.buildDescription,
-      heightEstimate: profile.heightEstimate,
-      facialHair: profile.facialHair,
-      clothingStyle: profile.clothingStyle,
-      accessories: profile.accessories,
-      distinctiveFeatures: profile.distinctiveFeatures,
-      aestheticArchetype: profile.aestheticArchetype,
-      // Include psychological data for richer character portrayal
-      dominantArchetype: profile.dominantArchetype,
-      communicationStyle: profile.communicationFormality,
-      humorStyle: profile.humorStyle,
-      affinityScore: profile.affinityScore,
-    }));
+    // Return raw JSON stringified for direct prompt insertion
+    return JSON.stringify(data.profiles, null, 2);
   } catch (error) {
     console.error('❌ Error fetching user profiles:', error);
-    return [];
+    return '';
   }
 }
 
@@ -132,17 +107,16 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
   try {
     console.log(`🎨 Generating comic for PR #${prNumber}: ${prTitle}`);
 
-    // Fetch ALL user profiles (not just specific users)
+    // Fetch ALL user profiles (raw JSON)
     // This gives Gemini complete context about all Discord community members
-    let characterAppearances: CharacterAppearance[] = [];
     console.log('📊 Fetching complete user profile database for comic context...');
-    characterAppearances = await fetchAllUserProfiles();
+    const profilesJson = await fetchAllUserProfiles();
 
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     // Build the prompt for comic generation with character data
-    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, characterAppearances);
+    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson);
 
     console.log('📝 Comic generation prompt:', prompt.substring(0, 200) + '...');
 
@@ -262,84 +236,37 @@ function determineFrameCount(conversationContext: string): number {
 }
 
 /**
- * Build character design sections from ALL user profile data
- * Includes both phenotype (physical) and psychological characteristics
+ * Build character database section from raw JSON
+ * Simply dumps the full API response into the prompt
  */
-function buildCharacterDesignSections(characters: CharacterAppearance[]): string {
-  if (!characters || characters.length === 0) {
+function buildCharacterDatabaseSection(profilesJson: string): string {
+  if (!profilesJson || profilesJson.trim() === '') {
     return '';
   }
 
-  const header = `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE**
+  return `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE (Raw JSON)**
+
 You have access to comprehensive profiles for ALL Discord community members.
-Choose which characters to include based on the conversation context.
-Each character has detailed physical appearance and psychological traits:
-\n`;
+This is the COMPLETE JSON response from the /api/profiles-full endpoint.
+It includes ALL psychological and phenotype data for every user:
 
-  const sections = characters.map((char) => {
-    const physicalFeatures: string[] = [];
-    const psychologicalTraits: string[] = [];
+- Physical appearance (78+ fields): hair, eyes, skin, face shape, build, height, style, etc.
+- Psychological traits: Jungian archetypes, Big Five, attachment style, communication patterns
+- Behavioral data: message patterns, emoji usage, sentiment, etc.
+- Relational data: affinity scores, emotional bonds, Omega's thoughts about each user
 
-    // Physical appearance
-    if (char.gender) {
-      physicalFeatures.push(`Gender: ${char.gender}`);
-    }
-    if (char.hairColor && char.hairStyle) {
-      physicalFeatures.push(`Hair: ${char.hairColor}, ${char.hairStyle} style${char.hairTexture ? `, ${char.hairTexture} texture` : ''}`);
-    }
-    if (char.eyeColor) {
-      physicalFeatures.push(`Eyes: ${char.eyeColor}`);
-    }
-    if (char.skinTone) {
-      physicalFeatures.push(`Skin tone: ${char.skinTone}`);
-    }
-    if (char.faceShape) {
-      physicalFeatures.push(`Face shape: ${char.faceShape}`);
-    }
-    if (char.heightEstimate && char.buildDescription) {
-      physicalFeatures.push(`Build: ${char.heightEstimate} height, ${char.buildDescription} build`);
-    } else if (char.buildDescription) {
-      physicalFeatures.push(`Build: ${char.buildDescription}`);
-    }
-    if (char.facialHair) {
-      physicalFeatures.push(`Facial hair: ${char.facialHair}`);
-    }
-    if (char.distinctiveFeatures && char.distinctiveFeatures.length > 0) {
-      physicalFeatures.push(`Distinctive: ${char.distinctiveFeatures.join(', ')}`);
-    }
-    if (char.clothingStyle) {
-      physicalFeatures.push(`Style: ${char.clothingStyle}`);
-    }
-    if (char.aestheticArchetype) {
-      physicalFeatures.push(`Aesthetic: ${char.aestheticArchetype}`);
-    }
+**Instructions:**
+- Parse this JSON to find characters mentioned in the PR conversation
+- Include ALL distinct users involved in the conversation
+- Use their EXACT physical descriptions for accurate character depiction
+- Incorporate their psychological traits into dialogue and expressions
+- The more characters involved, the richer the comic should be
 
-    // Psychological characteristics
-    if (char.dominantArchetype) {
-      psychologicalTraits.push(`Archetype: ${char.dominantArchetype}`);
-    }
-    if (char.communicationStyle) {
-      psychologicalTraits.push(`Communication: ${char.communicationStyle}`);
-    }
-    if (char.humorStyle) {
-      psychologicalTraits.push(`Humor: ${char.humorStyle}`);
-    }
-    if (char.affinityScore !== undefined) {
-      psychologicalTraits.push(`Omega affinity: ${char.affinityScore}/100`);
-    }
-
-    const physicalSection = physicalFeatures.length > 0
-      ? `\n  Physical: ${physicalFeatures.join(', ')}`
-      : '';
-
-    const psychSection = psychologicalTraits.length > 0
-      ? `\n  Personality: ${psychologicalTraits.join(', ')}`
-      : '';
-
-    return `${char.username}: ${char.description}${physicalSection}${psychSection}`;
-  }).join('\n\n');
-
-  return header + sections;
+**FULL DATABASE:**
+\`\`\`json
+${profilesJson}
+\`\`\`
+`;
 }
 
 /**
@@ -350,7 +277,7 @@ function buildComicPrompt(
   prNumber: number,
   prTitle: string,
   prAuthor: string,
-  characterAppearances: CharacterAppearance[] = []
+  profilesJson: string = ''
 ): string {
   // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
@@ -434,8 +361,8 @@ This meta-commentary panel should break the fourth wall in a humorous way, showi
 `
     : '';
 
-  // Build character design sections
-  const characterDesigns = buildCharacterDesignSections(characterAppearances);
+  // Build character database section (raw JSON dump)
+  const characterDatabase = buildCharacterDatabaseSection(profilesJson);
 
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
@@ -465,7 +392,7 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
   * Dangerous but controlled (intimidating appearance with precise movements)
 - Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
-${characterDesigns}
+${characterDatabase}
 ${superDeformedInstruction}
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
