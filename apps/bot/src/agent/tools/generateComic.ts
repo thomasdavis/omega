@@ -13,11 +13,38 @@ import {
 } from '../../services/geminiImageService.js';
 import { postComicToDiscord } from '../../services/discordWebhookService.js';
 import { getUserProfile } from '../../database/userProfileService.js';
+import { getDatabase } from '../../database/client.js';
+
+/**
+ * Look up user profiles by usernames
+ */
+async function getUserProfilesByUsernames(usernames: string[]): Promise<string[]> {
+  const db = getDatabase();
+  const userIds: string[] = [];
+
+  for (const username of usernames) {
+    const result = await db.execute({
+      sql: 'SELECT user_id FROM user_profiles WHERE username = ? LIMIT 1',
+      args: [username],
+    });
+
+    if (result.rows.length > 0) {
+      userIds.push((result.rows[0] as any).user_id);
+    }
+  }
+
+  return userIds;
+}
 
 export const generateComicTool = tool({
   description: `Generate a comic-style image using Gemini AI. Can create comics from GitHub issues or custom prompts.
 
-  NEW: Can include real users as characters in the comic based on their profiles and how Omega perceives them!
+  IMPORTANT: This tool automatically includes people from recent conversations as comic characters!
+  - Looks at conversation participants and mentioned users
+  - Loads their profiles from Omega's database (appearance, personality, feelings)
+  - Renders them as characters in the comic based on how Omega perceives them
+
+  When generating comics, consider who is in the recent conversation and mention their usernames in conversationParticipants.
 
   Optionally posts to Discord.`,
   inputSchema: z.object({
@@ -29,11 +56,17 @@ export const generateComicTool = tool({
       .string()
       .optional()
       .describe('Custom prompt for comic generation (if not using an issue)'),
+    conversationParticipants: z
+      .array(z.string())
+      .optional()
+      .describe(
+        'Array of usernames from recent conversation to include as characters (automatically looks up their profiles and how Omega feels about them)'
+      ),
     includeUserIds: z
       .array(z.string())
       .optional()
       .describe(
-        'Array of Discord user IDs to include as characters in the comic (uses their profiles for appearance and personality)'
+        'Array of Discord user IDs to include as characters in the comic (legacy - prefer conversationParticipants)'
       ),
     postToDiscord: z
       .boolean()
@@ -41,7 +74,7 @@ export const generateComicTool = tool({
       .default(true)
       .describe('Whether to post the generated comic to Discord'),
   }),
-  execute: async ({ issueNumber, customPrompt, includeUserIds, postToDiscord }) => {
+  execute: async ({ issueNumber, customPrompt, conversationParticipants, includeUserIds, postToDiscord }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 
@@ -54,6 +87,20 @@ export const generateComicTool = tool({
     }
 
     try {
+      // Merge conversation participants with explicit user IDs
+      let allUserIds = [...(includeUserIds || [])];
+
+      // Look up user IDs from conversation participants (usernames)
+      if (conversationParticipants && conversationParticipants.length > 0) {
+        console.log(`Looking up ${conversationParticipants.length} conversation participants:`, conversationParticipants);
+        const participantUserIds = await getUserProfilesByUsernames(conversationParticipants);
+        console.log(`Found ${participantUserIds.length} user profiles for participants`);
+        allUserIds = [...allUserIds, ...participantUserIds];
+      }
+
+      // Remove duplicates
+      allUserIds = [...new Set(allUserIds)];
+
       let imageResult;
       let issueTitle = '';
       let issueUrl = '';
@@ -90,16 +137,13 @@ export const generateComicTool = tool({
         issueUrl = issue.html_url;
         const issueBody = issue.body || '';
 
-        // Generate comic from issue
-        imageResult = await generateComicFromIssue(issueTitle, issueBody, issueNumber);
-      } else if (customPrompt) {
-        // Check if we should include users
-        if (includeUserIds && includeUserIds.length > 0) {
-          console.log(`Including ${includeUserIds.length} users in comic`);
+        // Check if we should include users in the issue comic
+        if (allUserIds.length > 0) {
+          console.log(`Including ${allUserIds.length} users in issue comic`);
 
           // Fetch user profiles
           const userProfiles = await Promise.all(
-            includeUserIds.map(async (userId) => {
+            allUserIds.map(async (userId) => {
               const profile = await getUserProfile(userId);
               if (!profile) return null;
 
@@ -125,15 +169,69 @@ export const generateComicTool = tool({
             feelings?: any;
           }>;
 
-          if (validProfiles.length === 0) {
-            return {
-              success: false,
-              error: 'No valid user profiles found for the specified user IDs',
-            };
+          if (validProfiles.length > 0) {
+            // Generate comic from issue WITH users
+            const scenario = `GitHub Issue #${issueNumber}: ${issueTitle}\n\n${issueBody}`;
+            imageResult = await generateComicWithUsers(scenario, validProfiles);
+          } else {
+            // Generate comic from issue without users (fallback)
+            imageResult = await generateComicFromIssue(issueTitle, issueBody, issueNumber);
           }
+        } else {
+          // Generate comic from issue without users
+          imageResult = await generateComicFromIssue(issueTitle, issueBody, issueNumber);
+        }
+      } else if (customPrompt) {
+        // Check if we should include users
+        if (allUserIds.length > 0) {
+          console.log(`Including ${allUserIds.length} users in custom prompt comic`);
 
-          // Generate comic with users
-          imageResult = await generateComicWithUsers(customPrompt, validProfiles);
+          // Fetch user profiles
+          const userProfiles = await Promise.all(
+            allUserIds.map(async (userId) => {
+              const profile = await getUserProfile(userId);
+              if (!profile) return null;
+
+              const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
+              const personality = profile.personality_facets
+                ? JSON.parse(profile.personality_facets)
+                : null;
+
+              return {
+                username: profile.username,
+                appearance: profile.ai_appearance_description,
+                personality,
+                feelings,
+              };
+            })
+          );
+
+          // Filter out null profiles
+          const validProfiles = userProfiles.filter((p) => p !== null) as Array<{
+            username: string;
+            appearance?: string;
+            personality?: any;
+            feelings?: any;
+          }>;
+
+          if (validProfiles.length > 0) {
+            // Generate comic with users
+            imageResult = await generateComicWithUsers(customPrompt, validProfiles);
+          } else {
+            // No valid profiles, generate without users
+            const comicPrompt = `Create a humorous comic illustration:
+
+${customPrompt}
+
+Style: Digital comic art, vibrant colors, funny cartoon characters
+Include: Speech bubbles, expressive characters, visual jokes
+
+Make it entertaining!`;
+
+            imageResult = await generateImageWithGemini({
+              prompt: comicPrompt,
+            });
+          }
         } else {
           // Generate from custom prompt without users
           const comicPrompt = `Create a humorous comic illustration:
