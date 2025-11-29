@@ -8,17 +8,6 @@ import { FormData } from 'undici';
 
 export interface DiscordWebhookMessage {
   content?: string;
-  embeds?: Array<{
-    title?: string;
-    description?: string;
-    color?: number;
-    url?: string;
-    fields?: Array<{
-      name: string;
-      value: string;
-      inline?: boolean;
-    }>;
-  }>;
   files?: Array<{
     name: string;
     data: Buffer;
@@ -39,9 +28,6 @@ export async function sendDiscordWebhook(
     const payload: any = {};
     if (message.content) {
       payload.content = message.content;
-    }
-    if (message.embeds) {
-      payload.embeds = message.embeds;
     }
 
     formData.append('payload_json', JSON.stringify(payload));
@@ -102,14 +88,7 @@ export async function postComicToDiscord(
   const filename = `comic-issue-${issueNumber}.png`;
 
   return sendDiscordWebhook(DISCORD_COMIC_WEBHOOK_URL, {
-    embeds: [
-      {
-        title: `🎨 Comic Generated for Issue #${issueNumber}`,
-        description: issueTitle,
-        color: 0x5865f2, // Discord blurple
-        url: issueUrl,
-      },
-    ],
+    content: `🎨 **Comic Generated for Issue #${issueNumber}**\n${issueTitle}\n🔗 ${issueUrl}`,
     files: [
       {
         name: filename,

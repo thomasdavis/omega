@@ -50,9 +50,13 @@ export async function saveHumanMessage(params: {
     console.warn('Could not fetch previous messages for context:', error);
   }
 
-  // Generate AI summary and sentiment analysis
+  // Generate AI summary, sentiment analysis, and interaction metrics
   let aiSummary = '';
   let sentimentAnalysisJson = '';
+  let interactionType = '';
+  let userIntent = '';
+  let botPerception = '';
+  let conversationQuality = '';
 
   try {
     const analysis = await analyzeMessage(params.messageContent, params.username, {
@@ -61,11 +65,19 @@ export async function saveHumanMessage(params: {
 
     aiSummary = analysis.summary;
     sentimentAnalysisJson = JSON.stringify(analysis.sentimentAnalysis);
+    interactionType = analysis.interactionMetrics.interactionType;
+    userIntent = analysis.interactionMetrics.userIntent;
+    botPerception = analysis.interactionMetrics.botPerception;
+    conversationQuality = analysis.interactionMetrics.conversationQuality;
 
     console.log(`📊 Message analysis for ${params.username}:`, {
       summary: aiSummary,
       sentiment: analysis.sentimentAnalysis.sentiment,
       confidence: analysis.sentimentAnalysis.confidence,
+      interactionType,
+      userIntent,
+      botPerception,
+      conversationQuality,
     });
   } catch (error) {
     console.error('Failed to generate message analysis:', error);
@@ -82,8 +94,9 @@ export async function saveHumanMessage(params: {
     sql: `INSERT INTO messages (
       id, timestamp, sender_type, user_id, username,
       channel_id, channel_name, guild_id, message_content, session_id,
-      ai_summary, sentiment_analysis, response_decision
-    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ai_summary, sentiment_analysis, response_decision,
+      interaction_type, user_intent, bot_perception, conversation_quality
+    ) VALUES (?, ?, 'human', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       timestamp,
@@ -97,6 +110,10 @@ export async function saveHumanMessage(params: {
       aiSummary || null,
       sentimentAnalysisJson || null,
       responseDecisionJson || null,
+      interactionType || null,
+      userIntent || null,
+      botPerception || null,
+      conversationQuality || null,
     ],
   });
 

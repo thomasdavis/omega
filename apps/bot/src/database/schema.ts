@@ -34,6 +34,11 @@ export async function initializeSchema(): Promise<void> {
       metadata TEXT,
       ai_summary TEXT,
       sentiment_analysis TEXT,
+      response_decision TEXT,
+      interaction_type TEXT,
+      user_intent TEXT,
+      bot_perception TEXT,
+      conversation_quality TEXT,
       created_at INTEGER DEFAULT (strftime('%s', 'now'))
     )
   `);
@@ -106,6 +111,9 @@ export async function initializeSchema(): Promise<void> {
       result_count INTEGER,
       error TEXT,
       execution_time_ms INTEGER,
+      sentiment_analysis TEXT,
+      query_complexity TEXT,
+      user_satisfaction TEXT,
       created_at INTEGER DEFAULT (strftime('%s', 'now'))
     )
   `);
@@ -217,7 +225,32 @@ async function runMigrations(): Promise<void> {
     console.log('   ✓ Added response_decision column');
   }
 
-  // Migration 3: Create user_profiles and user_analysis_history tables
+  // Migration 3: Add interaction metrics columns to messages table
+  try {
+    await db.execute(`SELECT interaction_type, user_intent, bot_perception, conversation_quality FROM messages LIMIT 0`);
+    console.log('   ✓ Messages table already has interaction metrics columns');
+  } catch (error) {
+    console.log('   + Adding interaction metrics columns to messages table');
+    await db.execute(`ALTER TABLE messages ADD COLUMN interaction_type TEXT`);
+    await db.execute(`ALTER TABLE messages ADD COLUMN user_intent TEXT`);
+    await db.execute(`ALTER TABLE messages ADD COLUMN bot_perception TEXT`);
+    await db.execute(`ALTER TABLE messages ADD COLUMN conversation_quality TEXT`);
+    console.log('   ✓ Added interaction metrics columns');
+  }
+
+  // Migration 4: Add sentiment and quality columns to queries table
+  try {
+    await db.execute(`SELECT sentiment_analysis, query_complexity, user_satisfaction FROM queries LIMIT 0`);
+    console.log('   ✓ Queries table already has sentiment and quality columns');
+  } catch (error) {
+    console.log('   + Adding sentiment and quality columns to queries table');
+    await db.execute(`ALTER TABLE queries ADD COLUMN sentiment_analysis TEXT`);
+    await db.execute(`ALTER TABLE queries ADD COLUMN query_complexity TEXT`);
+    await db.execute(`ALTER TABLE queries ADD COLUMN user_satisfaction TEXT`);
+    console.log('   ✓ Added sentiment and quality columns to queries table');
+  }
+
+  // Migration 5: Create user_profiles and user_analysis_history tables
   await migrationUserProfiles();
 
   console.log('✅ Migrations completed');
@@ -322,6 +355,10 @@ export interface MessageRecord {
   ai_summary?: string;
   sentiment_analysis?: string;
   response_decision?: string;
+  interaction_type?: string;
+  user_intent?: string;
+  bot_perception?: string;
+  conversation_quality?: string;
 }
 
 /**
@@ -339,6 +376,9 @@ export interface QueryRecord {
   result_count?: number;
   error?: string;
   execution_time_ms?: number;
+  sentiment_analysis?: string;
+  query_complexity?: string;
+  user_satisfaction?: string;
 }
 
 /**

@@ -212,6 +212,9 @@ function buildComicPrompt(
   // Determine optimal frame count based on context
   const frameCount = determineFrameCount(conversationContext);
 
+  // 20% chance to include a super-deformed/chibi panel
+  const includeSuperDeformed = Math.random() < 0.2;
+
   // Build panel layout description based on frame count
   let layoutDescription = '';
   switch (frameCount) {
@@ -233,6 +236,27 @@ function buildComicPrompt(
     default:
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
+
+  // Build super-deformed panel instruction if applicable
+  const superDeformedInstruction = includeSuperDeformed
+    ? `
+
+**SPECIAL INSTRUCTION - Super-Deformed Panel:**
+Include ONE panel with a humorous "super-deformed" (SD) or "chibi" style moment where characters are drawn in an exaggerated, cute, simplified form (big heads, tiny bodies). This panel should contain a text box with:
+
+"ChatGPT said:
+
+That effect is usually called 'super-deformed' (SD) or 'chibi.'
+
+💡 What it means
+
+Super-Deformed (SD): The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
+
+Chibi: The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect."
+
+This meta-commentary panel should break the fourth wall in a humorous way, showing the characters in super-deformed style while explaining what super-deformed means.
+`
+    : '';
 
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
@@ -262,7 +286,7 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
   * Dangerous but controlled (intimidating appearance with precise movements)
 - Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
-
+${superDeformedInstruction}
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
    Layout: ${layoutDescription}
@@ -307,22 +331,53 @@ export function extractConversationContext(prData: any): string {
   }
 
   if (prData.body) {
-    parts.push(`Description: ${prData.body.substring(0, 500)}`);
+    // Expanded from 500 to 1000 characters to capture more context
+    parts.push(`Description: ${prData.body.substring(0, 1000)}`);
   }
 
   if (prData.commits && prData.commits.length > 0) {
     parts.push(`Commits (${prData.commits.length}):`);
-    prData.commits.slice(0, 5).forEach((commit: any) => {
+    // Expanded from 5 to 10 commits
+    prData.commits.slice(0, 10).forEach((commit: any) => {
       parts.push(`- ${commit.message || commit.commit?.message || 'Unnamed commit'}`);
     });
   }
 
   if (prData.comments && prData.comments.length > 0) {
     parts.push(`Comments (${prData.comments.length}):`);
-    prData.comments.slice(0, 3).forEach((comment: any) => {
+    // Expanded from 3 to 10 comments and from 200 to 500 characters per comment
+    prData.comments.slice(0, 10).forEach((comment: any) => {
       const body = comment.body || '';
-      parts.push(`- ${comment.user?.login || 'Unknown'}: ${body.substring(0, 200)}`);
+      parts.push(`- ${comment.user?.login || 'Unknown'}: ${body.substring(0, 500)}`);
     });
+  }
+
+  // Include Discord messages if provided
+  if (prData.discordMessages && prData.discordMessages.length > 0) {
+    parts.push('');
+    parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
+
+    // Group by user to show diverse perspectives
+    const messagesByUser = new Map<string, any[]>();
+    for (const msg of prData.discordMessages) {
+      if (!messagesByUser.has(msg.username)) {
+        messagesByUser.set(msg.username, []);
+      }
+      messagesByUser.get(msg.username)!.push(msg);
+    }
+
+    // Include up to 3 messages per user
+    for (const [username, messages] of messagesByUser) {
+      const messagesToInclude = messages.slice(0, 3);
+      for (const msg of messagesToInclude) {
+        const content = msg.content.length > 500
+          ? msg.content.substring(0, 500) + '...'
+          : msg.content;
+
+        const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
+        parts.push(`- ${username}${channelInfo}: ${content}`);
+      }
+    }
   }
 
   return parts.join('\n');

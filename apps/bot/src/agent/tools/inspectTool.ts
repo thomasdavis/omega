@@ -64,6 +64,7 @@ const TOOL_FILE_MAP: Record<string, string> = {
   createLiveDocument: 'createLiveDocument.ts',
   readLiveDocument: 'readLiveDocument.ts',
   reportMissingTool: 'reportMissingTool.ts',
+  reportMessageAsIssue: 'reportMessageAsIssue.ts',
 };
 
 interface ToolAnalysis {

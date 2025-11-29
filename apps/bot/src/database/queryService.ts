@@ -6,6 +6,7 @@
 import { getDatabase } from './client.js';
 import type { QueryRecord } from './schema.js';
 import { randomUUID } from 'crypto';
+import { analyzeQuery } from '../lib/messageAnalysis.js';
 
 /**
  * Save a query execution to the database
@@ -25,12 +26,40 @@ export async function saveQuery(params: {
   const id = randomUUID();
   const timestamp = Date.now();
 
+  // Generate sentiment analysis and query metrics
+  let sentimentAnalysisJson = '';
+  let queryComplexity = '';
+  let userSatisfaction = '';
+
+  try {
+    const analysis = await analyzeQuery(
+      params.queryText,
+      params.username,
+      params.queryResult,
+      params.error,
+      params.resultCount
+    );
+
+    sentimentAnalysisJson = JSON.stringify(analysis.sentimentAnalysis);
+    queryComplexity = analysis.queryMetrics.queryComplexity;
+    userSatisfaction = analysis.queryMetrics.userSatisfaction;
+
+    console.log(`📊 Query analysis for ${params.username}:`, {
+      sentiment: analysis.sentimentAnalysis.sentiment,
+      queryComplexity,
+      userSatisfaction,
+    });
+  } catch (error) {
+    console.error('Failed to generate query analysis:', error);
+    // Continue saving the query even if analysis fails
+  }
+
   await db.execute({
     sql: `INSERT INTO queries (
       id, timestamp, user_id, username, query_text,
       translated_sql, ai_summary, query_result, result_count,
-      error, execution_time_ms
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      error, execution_time_ms, sentiment_analysis, query_complexity, user_satisfaction
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       timestamp,
@@ -43,6 +72,9 @@ export async function saveQuery(params: {
       params.resultCount || null,
       params.error || null,
       params.executionTimeMs || null,
+      sentimentAnalysisJson || null,
+      queryComplexity || null,
+      userSatisfaction || null,
     ],
   });
 

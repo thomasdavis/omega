@@ -105,14 +105,14 @@ async function fetchPRContext(prNumber: number): Promise<PRContext> {
  */
 function createComicPrompt(context: PRContext): string {
   const commentsSummary = context.comments.length > 0
-    ? context.comments.slice(0, 5).map(c => `${c.author}: ${c.body.substring(0, 200)}`).join('\n')
+    ? context.comments.slice(0, 10).map(c => `${c.author}: ${c.body.substring(0, 500)}`).join('\n')
     : 'No comments';
 
-  const commitsSummary = context.commits.slice(0, 5).map(c =>
+  const commitsSummary = context.commits.slice(0, 10).map(c =>
     `${c.author}: ${c.message.split('\n')[0]}`
   ).join('\n');
 
-  const filesSummary = context.filesChanged.slice(0, 10).map(f =>
+  const filesSummary = context.filesChanged.slice(0, 20).map(f =>
     `${f.filename} (+${f.additions}/-${f.deletions})`
   ).join('\n');
 
@@ -121,7 +121,7 @@ function createComicPrompt(context: PRContext): string {
 PR Title: ${context.title}
 
 PR Description:
-${context.body.substring(0, 500)}
+${context.body.substring(0, 1000)}
 
 Recent Comments:
 ${commentsSummary}
