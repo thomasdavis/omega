@@ -10,6 +10,7 @@ import { getUserProfile, getOrCreateUserProfile } from '../../database/userProfi
 import { analyzeUser } from '../../services/userProfileAnalysis.js';
 import { generateImageWithGemini } from '../../services/geminiImageService.js';
 import { buildPortraitPrompt, buildGenericPortraitPrompt } from '../../lib/portraitPrompts.js';
+import { getDetailedCharacterDescription } from '../../lib/userAppearance.js';
 import { randomUUID } from 'crypto';
 import { join } from 'path';
 import { getUploadsDir } from '../../utils/storage.js';
@@ -147,16 +148,8 @@ export const generateMyPortraitTool = tool({
         };
       }
 
-      // 3. Parse feelings and personality (optional - will use defaults if not available)
-      const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : {
-        affinityScore: 50,
-        trustLevel: 50,
-        thoughts: 'A new friend I\'m getting to know',
-      };
-      const personality = profile.personality_facets ? JSON.parse(profile.personality_facets) : {
-        dominantArchetypes: ['Everyman'],
-        communicationStyle: { formality: 'neutral' },
-      };
+      // 3. Parse feelings and personality using shared module
+      const { appearance, personality, feelings } = getDetailedCharacterDescription(profile);
 
       // 4. Build portrait prompt
       let prompt: string;

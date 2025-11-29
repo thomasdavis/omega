@@ -4,6 +4,7 @@
  */
 
 import type { UserProfileRecord } from '../database/schema.js';
+import { getDetailedCharacterDescription } from './userAppearance.js';
 
 /**
  * Visual representations for each Jungian archetype
