@@ -19,13 +19,21 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 /**
  * Download and cache a Discord attachment
+ * Uses bot token for authentication to access potentially expired URLs
  */
 export async function cacheAttachment(url: string, filename: string): Promise<void> {
   try {
-    const response = await fetch(url);
+    // Try with Discord bot token for authentication if it's a Discord CDN URL
+    const headers: HeadersInit = {};
+    if (url.includes('cdn.discordapp.com') && process.env.DISCORD_BOT_TOKEN) {
+      headers['Authorization'] = `Bot ${process.env.DISCORD_BOT_TOKEN}`;
+    }
+
+    const response = await fetch(url, { headers });
 
     if (!response.ok) {
       console.error(`❌ Failed to cache attachment ${filename}: ${response.status} ${response.statusText}`);
+      console.error(`   URL: ${url.substring(0, 100)}...`);
       return;
     }
 
