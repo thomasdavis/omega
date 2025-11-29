@@ -482,11 +482,12 @@ ${superDeformedInstruction}
 
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
-   - Choose 1-3 characters relevant to the PR conversation
+   - Include ALL distinct users mentioned or involved in the PR/issue/conversation
    - Use ACCURATE physical descriptions from their profiles (hair color, eye color, build, style, etc.)
    - Incorporate their personality traits (archetype, humor style, communication style) into dialogue and expressions
    - If the conversation involves the AI/bot, depict it as Omega with the unique design above
    - Keep each character's appearance CONSISTENT with their database profile
+   - The more characters involved in the conversation, the richer and more dynamic the comic should be
 
 5. Add speech bubbles with witty dialogue based on:
    - The PR conversation context
