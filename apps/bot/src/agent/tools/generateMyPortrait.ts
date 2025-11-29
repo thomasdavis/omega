@@ -103,11 +103,12 @@ export const generateMyPortraitTool = tool({
   description: `Generate an artistic portrait of the user based on Omega's perception and feelings about them.
 
   The portrait combines:
-  - Uploaded photo appearance (if user has uploaded a photo)
-  - Omega's feelings about the user (trust level, affinity score, personality assessment)
+  - Uploaded photo appearance (if user has uploaded a photo) - PRIMARY
+  - Omega's feelings about the user (trust level, affinity score, personality assessment) - if available
   - Artistic interpretation of how Omega "sees" the user based on interactions
 
-  Portraits reflect not just physical appearance but the essence of the person as perceived through conversations.
+  Works even with minimal or no interaction history - the portrait will be based primarily on appearance
+  with personality/feelings layered in as they develop over time.
 
   Available styles:
   - realistic: Photorealistic digital portrait
@@ -146,25 +147,16 @@ export const generateMyPortraitTool = tool({
         };
       }
 
-      // Check if user has enough messages for meaningful portrait
-      if (profile.message_count < 10) {
-        return {
-          success: false,
-          error: `I need more interactions to generate a meaningful portrait. You've sent ${profile.message_count} message(s), but I need at least 10 to form an impression.`,
-          message: 'Keep chatting with me, and I\'ll get to know you better!',
-        };
-      }
-
-      // 3. Parse feelings and personality
-      const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
-      const personality = profile.personality_facets ? JSON.parse(profile.personality_facets) : null;
-
-      if (!feelings || !personality) {
-        return {
-          success: false,
-          error: 'Profile exists but lacks analysis data. Try again in a moment.',
-        };
-      }
+      // 3. Parse feelings and personality (optional - will use defaults if not available)
+      const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : {
+        affinityScore: 50,
+        trustLevel: 50,
+        thoughts: 'A new friend I\'m getting to know',
+      };
+      const personality = profile.personality_facets ? JSON.parse(profile.personality_facets) : {
+        dominantArchetypes: ['Everyman'],
+        communicationStyle: { formality: 'neutral' },
+      };
 
       // 4. Build portrait prompt
       let prompt: string;
@@ -217,6 +209,13 @@ export const generateMyPortraitTool = tool({
           ? feelings.thoughts.substring(0, 147) + '...'
           : feelings.thoughts;
 
+      // Customize message based on interaction history
+      const interactionNote = profile.message_count > 10
+        ? `This portrait reflects not just your appearance but how I perceive your essence based on our ${profile.message_count} interactions.`
+        : profile.message_count > 0
+        ? `This portrait is based on your appearance${profile.feelings_json ? ' and my initial impressions of you' : ''}.`
+        : `This portrait is based on your appearance. Chat with me more and I'll develop deeper insights about you!`;
+
       return {
         success: true,
         portraitUrl: rawUrl,
@@ -225,7 +224,7 @@ export const generateMyPortraitTool = tool({
         omegaThoughts: feelings.thoughts,
         affinityScore: feelings.affinityScore,
         trustLevel: feelings.trustLevel,
-        message: `Here's how I see you, ${username}!\n\n**My thoughts about you:**\n"${thoughtsPreview}"\n\n**Trust level:** ${feelings.trustLevel}/100\n**Affinity:** ${feelings.affinityScore}/100\n\n**Portrait:** ${rawUrl}\n\nThis portrait reflects not just your appearance but how I perceive your essence based on our ${profile.message_count} interactions.`,
+        message: `Here's how I see you, ${username}!\n\n**My thoughts about you:**\n"${thoughtsPreview}"\n\n**Trust level:** ${feelings.trustLevel}/100\n**Affinity:** ${feelings.affinityScore}/100\n\n**Portrait:** ${rawUrl}\n\n${interactionNote}`,
       };
     } catch (error) {
       console.error('Failed to generate portrait:', error);
