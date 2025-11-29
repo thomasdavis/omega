@@ -191,6 +191,15 @@ ${body}
 ## Context
 Created from Discord #omega channel`;
 
+    // Add Discord conversation context section if provided
+    if (conversationContext) {
+      formattedBody += `\n\n## Discord Conversation Context
+\`\`\`
+${conversationContext}
+\`\`\`
+_This conversation context includes usernames and messages for comic generation and implementation reference._`;
+    }
+
     // Add links section if any links were found
     if (uniqueLinks.length > 0) {
       formattedBody += `\n\n## Links\n${uniqueLinks.map(link => `- ${link}`).join('\n')}`;
