@@ -13,6 +13,7 @@ import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '../../utils/storage.js';
+import { getCachedAttachment } from '../../utils/attachmentCache.js';
 
 // GitHub configuration
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -328,9 +329,21 @@ export const uploadMyPhotoTool = tool({
     console.log(`📸 Uploading photo for ${username} (${userId})`);
 
     try {
-      // 1. Download photo
-      console.log('   Downloading photo...');
-      const { buffer, mimeType } = await downloadFile(photoUrl);
+      // 1. Get photo (check cache first, then download if needed)
+      let buffer: Buffer;
+      let mimeType: string;
+
+      const cached = getCachedAttachment(photoUrl);
+      if (cached) {
+        console.log('   Using cached attachment...');
+        buffer = cached.buffer;
+        mimeType = cached.mimeType;
+      } else {
+        console.log('   Attachment not in cache, downloading...');
+        const downloaded = await downloadFile(photoUrl);
+        buffer = downloaded.buffer;
+        mimeType = downloaded.mimeType;
+      }
 
       // 2. Validate it's an image
       if (!mimeType.startsWith('image/')) {

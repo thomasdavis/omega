@@ -13,6 +13,7 @@ import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '../database/userProfileService.js';
+import { cacheAttachment } from '../utils/attachmentCache.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -212,6 +213,13 @@ export async function handleMessage(message: Message): Promise<void> {
     let enrichedContent = message.content;
     if (message.attachments.size > 0) {
       console.log(`   📎 Message has ${message.attachments.size} attachment(s)`);
+
+      // Cache attachments immediately to prevent CDN URL expiration issues
+      const cachePromises = Array.from(message.attachments.values()).map(att =>
+        cacheAttachment(att.url, att.name || 'unknown')
+      );
+      await Promise.all(cachePromises);
+
       const attachmentInfo = Array.from(message.attachments.values())
         .map(att => `- ${att.name} (${att.contentType || 'unknown type'}, ${(att.size / 1024).toFixed(2)} KB): ${att.url}`)
         .join('\n');
