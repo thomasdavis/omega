@@ -88,6 +88,16 @@ export async function handleMessage(message: Message): Promise<void> {
     }
   }
 
+  // Track user interaction in profile FIRST (before deciding to respond)
+  // This ensures we track ALL messages, even if we don't respond
+  try {
+    await getOrCreateUserProfile(message.author.id, message.author.username);
+    await incrementMessageCount(message.author.id);
+  } catch (profileError) {
+    console.error('⚠️  Failed to track user profile:', profileError);
+    // Continue anyway - don't let profile tracking errors block message handling
+  }
+
   // Check if we should respond to this message (WITH conversation context)
   const decision = await shouldRespond(message, messageHistory);
 
@@ -151,9 +161,7 @@ export async function handleMessage(message: Message): Promise<void> {
         responseDecision: decision,
       });
 
-      // Track user interaction in profile
-      await getOrCreateUserProfile(message.author.id, message.author.username);
-      await incrementMessageCount(message.author.id);
+      // User profile already tracked at start of function
 
       await saveAIMessage({
         userId: message.author.id,
@@ -193,9 +201,7 @@ export async function handleMessage(message: Message): Promise<void> {
       responseDecision: decision,
     });
 
-    // Track user interaction in profile
-    await getOrCreateUserProfile(message.author.id, message.author.username);
-    await incrementMessageCount(message.author.id);
+    // User profile already tracked at start of function
   } catch (dbError) {
     console.error('⚠️  Failed to persist message to database:', dbError);
     // Continue execution even if database write fails
