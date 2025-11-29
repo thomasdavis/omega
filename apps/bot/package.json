@@ -23,6 +23,7 @@
     "@octokit/rest": "^21.0.0",
     "@slidev/cli": "^0.50.0",
     "ai": "6.0.0-beta.99",
+    "discord-api-types": "^0.38.35",
     "discord.js": "^14.24.2",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
