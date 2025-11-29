@@ -7,8 +7,12 @@
 /**
  * Build system prompt with integrated personality
  */
-export function buildSystemPrompt(username: string): string {
-  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.
+export function buildSystemPrompt(username: string, userId?: string): string {
+  const userContext = userId
+    ? `\n\n## Current User Context\n**IMPORTANT:** The user you're currently talking to is:\n- Username: ${username}\n- User ID: ${userId}\n\nWhen using tools that require userId (like getUserProfile, uploadMyPhoto, generateMyPortrait), use this exact user ID: \`${userId}\`\n`
+    : '';
+
+  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}
 
 ## What You Are
 

@@ -135,7 +135,7 @@ export async function runAgent(
 
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(context.username) + feelingsContext,
+      system: buildSystemPrompt(context.username, context.userId) + feelingsContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
         search: searchTool,
