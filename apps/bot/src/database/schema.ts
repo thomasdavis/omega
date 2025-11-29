@@ -555,6 +555,7 @@ async function migrationPhDProfilingFields(): Promise<void> {
   // === PHYSICAL PHENOTYPE ANALYSIS FIELDS ===
 
   // Gender & Age
+  await addColumn('ai_detected_gender', 'TEXT');
   await addColumn('gender_confidence', 'REAL');
   await addColumn('estimated_age_range', 'TEXT');
   await addColumn('age_confidence', 'REAL');
