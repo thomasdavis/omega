@@ -1098,6 +1098,108 @@ function createApp(): express.Application {
     }
   });
 
+  // POST /api/users/:userId/analyze - Trigger analysis for a specific user
+  app.post('/api/users/:userId/analyze', async (req: Request, res: Response) => {
+    try {
+      const { analyzeUser } = await import('../services/userProfileAnalysis.js');
+      const { getUserProfile } = await import('../database/userProfileService.js');
+
+      const userId = req.params.userId;
+      const { username } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          error: 'userId is required',
+        });
+      }
+
+      // Get username from database if not provided
+      let effectiveUsername = username;
+      if (!effectiveUsername) {
+        const profile = await getUserProfile(userId);
+        if (!profile) {
+          return res.status(404).json({
+            success: false,
+            error: 'User not found',
+          });
+        }
+        effectiveUsername = profile.username;
+      }
+
+      // Run analysis
+      await analyzeUser(userId, effectiveUsername);
+
+      res.json({
+        success: true,
+        message: `Analysis complete for user ${effectiveUsername}`,
+        userId,
+        username: effectiveUsername,
+      });
+    } catch (error) {
+      console.error('Error analyzing user:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // POST /api/analyze-all - Trigger analysis for all users with messages
+  app.post('/api/analyze-all', async (req: Request, res: Response) => {
+    try {
+      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const { analyzeUser } = await import('../services/userProfileAnalysis.js');
+
+      const users = await getAllUserProfiles();
+      const usersWithMessages = users.filter(u => u.message_count > 0);
+
+      console.log(`📊 Analyzing ${usersWithMessages.length} users with messages...`);
+
+      const results = {
+        total: users.length,
+        analyzed: 0,
+        skipped: users.length - usersWithMessages.length,
+        errors: 0,
+        details: [] as any[],
+      };
+
+      for (const user of usersWithMessages) {
+        try {
+          console.log(`   Analyzing ${user.username} (${user.user_id})...`);
+          await analyzeUser(user.user_id, user.username);
+          results.analyzed++;
+          results.details.push({
+            userId: user.user_id,
+            username: user.username,
+            status: 'success',
+          });
+        } catch (error) {
+          console.error(`   Error analyzing ${user.username}:`, error);
+          results.errors++;
+          results.details.push({
+            userId: user.user_id,
+            username: user.username,
+            status: 'error',
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Analyzed ${results.analyzed} users successfully`,
+        results,
+      });
+    } catch (error) {
+      console.error('Error in analyze-all:', error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   // GET /api/comic-characters?userIds=id1,id2,id3
   app.get('/api/comic-characters', async (req: Request, res: Response) => {
     try {
