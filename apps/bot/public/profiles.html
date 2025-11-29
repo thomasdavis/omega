@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profiles - PhD-Level Psychological Analysis</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 1.1rem;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .user-list {
+      display: grid;
+      gap: 20px;
+    }
+
+    .user-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .user-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+    }
+
+    .user-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .user-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: white;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .user-meta {
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .user-meta span {
+      margin-right: 15px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-photo {
+      background: #10b981;
+      color: white;
+    }
+
+    .badge-no-photo {
+      background: #ef4444;
+      color: white;
+    }
+
+    .badge-analyzed {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .data-sections {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .data-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 15px;
+      border-left: 4px solid #667eea;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .data-row:last-child {
+      border-bottom: none;
+    }
+
+    .data-label {
+      font-weight: 600;
+      color: #555;
+      font-size: 0.85rem;
+    }
+
+    .data-value {
+      color: #333;
+      font-weight: 500;
+      text-align: right;
+      font-size: 0.85rem;
+    }
+
+    .null-value {
+      color: #999;
+      font-style: italic;
+    }
+
+    .score-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 5px;
+    }
+
+    .score-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+      font-size: 1.2rem;
+      color: #667eea;
+    }
+
+    .error {
+      text-align: center;
+      padding: 40px 20px;
+      background: #fee;
+      border-radius: 20px;
+      color: #c00;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 20px;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      .data-sections {
+        grid-template-columns: 1fr;
+      }
+
+      .user-header {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧠 User Psychological Profiles</h1>
+      <p class="subtitle">PhD-Level Comprehensive Analysis Dashboard</p>
+    </header>
+
+    <div class="stats" id="stats">
+      <!-- Stats will be inserted here -->
+    </div>
+
+    <div id="content">
+      <div class="loading">Loading user profiles...</div>
+    </div>
+  </div>
+
+  <script>
+    async function loadProfiles() {
+      try {
+        // Fetch all users
+        const usersResponse = await fetch('/api/users');
+        const usersData = await usersResponse.json();
+
+        if (!usersData.success) {
+          throw new Error('Failed to fetch users');
+        }
+
+        // Display stats
+        const analyzed = usersData.users.filter(u => u.lastAnalyzed).length;
+        const withPhotos = usersData.users.filter(u => u.hasPhoto).length;
+
+        document.getElementById('stats').innerHTML = `
+          <div class="stat-card">
+            <div class="stat-value">${usersData.count}</div>
+            <div class="stat-label">Total Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${analyzed}</div>
+            <div class="stat-label">Analyzed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${withPhotos}</div>
+            <div class="stat-label">With Photos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${usersData.users.reduce((sum, u) => sum + u.messageCount, 0)}</div>
+            <div class="stat-label">Total Messages</div>
+          </div>
+        `;
+
+        // Fetch full profiles for users with messages
+        const usersWithMessages = usersData.users.filter(u => u.messageCount > 0);
+
+        if (usersWithMessages.length === 0) {
+          document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <h2>No Users with Messages</h2>
+              <p>No users have sent messages yet. Profiles will appear here once users interact with the bot.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const profiles = await Promise.all(
+          usersWithMessages.map(async (user) => {
+            const response = await fetch(`/api/users/${user.userId}`);
+            const data = await response.json();
+            return data.success ? data.profile : null;
+          })
+        );
+
+        const validProfiles = profiles.filter(p => p !== null);
+
+        // Render profiles
+        document.getElementById('content').innerHTML = `
+          <div class="user-list">
+            ${validProfiles.map(renderProfile).join('')}
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error loading profiles:', error);
+        document.getElementById('content').innerHTML = `
+          <div class="error">
+            <h2>Error Loading Profiles</h2>
+            <p>${error.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    function renderProfile(profile) {
+      const initial = profile.username[0].toUpperCase();
+      const hasPhoto = profile.appearance?.photoUrl;
+      const analyzed = profile.lastAnalyzed;
+
+      return `
+        <div class="user-card">
+          <div class="user-header">
+            <div class="user-avatar">${initial}</div>
+            <div class="user-info">
+              <div class="user-name">${escapeHtml(profile.username)}</div>
+              <div class="user-meta">
+                <span>💬 ${profile.messageCount} messages</span>
+                <span>${hasPhoto ? '<span class="badge badge-photo">📸 Photo</span>' : '<span class="badge badge-no-photo">No Photo</span>'}</span>
+                ${analyzed ? '<span class="badge badge-analyzed">✓ Analyzed</span>' : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="data-sections">
+            ${renderJungianSection(profile)}
+            ${renderBigFiveSection(profile)}
+            ${renderAttachmentSection(profile)}
+            ${renderEmotionalIntelligenceSection(profile)}
+            ${renderCommunicationSection(profile)}
+            ${renderCognitiveSection(profile)}
+            ${renderSocialSection(profile)}
+            ${renderBehavioralSection(profile)}
+            ${renderInterestsSection(profile)}
+            ${renderRelationalSection(profile)}
+            ${renderSentimentSection(profile)}
+            ${renderAppearanceSection(profile)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderJungianSection(profile) {
+      return `
+        <div class="data-section">
+          <div class="section-title">🎭 Jungian Analysis</div>
+          ${renderDataRow('Dominant Archetype', profile.dominantArchetype)}
+          ${renderDataRow('Secondary', profile.secondaryArchetypes?.join(', '))}
+          ${renderDataRow('Confidence', profile.archetypeConfidence ? `${(profile.archetypeConfidence * 100).toFixed(0)}%` : null)}
+        </div>
+      `;
+    }
+
+    function renderBigFiveSection(profile) {
+      const ocean = profile.bigFive || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">📊 Big Five (OCEAN)</div>
+          ${renderScoreRow('Openness', ocean.openness)}
+          ${renderScoreRow('Conscientiousness', ocean.conscientiousness)}
+          ${renderScoreRow('Extraversion', ocean.extraversion)}
+          ${renderScoreRow('Agreeableness', ocean.agreeableness)}
+          ${renderScoreRow('Neuroticism', ocean.neuroticism)}
+        </div>
+      `;
+    }
+
+    function renderAttachmentSection(profile) {
+      return `
+        <div class="data-section">
+          <div class="section-title">🔗 Attachment Theory</div>
+          ${renderDataRow('Style', profile.attachmentStyle)}
+          ${renderDataRow('Confidence', profile.attachmentConfidence ? `${(profile.attachmentConfidence * 100).toFixed(0)}%` : null)}
+        </div>
+      `;
+    }
+
+    function renderEmotionalIntelligenceSection(profile) {
+      const ei = profile.emotionalIntelligence || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">❤️ Emotional Intelligence</div>
+          ${renderScoreRow('Awareness', ei.awareness)}
+          ${renderScoreRow('Empathy', ei.empathy)}
+          ${renderScoreRow('Regulation', ei.regulation)}
+        </div>
+      `;
+    }
+
+    function renderCommunicationSection(profile) {
+      const comm = profile.communication || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">💬 Communication</div>
+          ${renderDataRow('Formality', comm.formality)}
+          ${renderDataRow('Assertiveness', comm.assertiveness)}
+          ${renderDataRow('Engagement', comm.engagement)}
+          ${renderScoreRow('Verbal Fluency', comm.verbalFluency)}
+          ${renderDataRow('Question Freq', comm.questionFrequency ? `${(comm.questionFrequency * 100).toFixed(1)}%` : null)}
+        </div>
+      `;
+    }
+
+    function renderCognitiveSection(profile) {
+      const cog = profile.cognitive || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">🧩 Cognitive Style</div>
+          ${renderScoreRow('Analytical', cog.analytical)}
+          ${renderScoreRow('Creative', cog.creative)}
+          ${renderScoreRow('Abstract', cog.abstract)}
+          ${renderScoreRow('Concrete', cog.concrete)}
+        </div>
+      `;
+    }
+
+    function renderSocialSection(profile) {
+      const social = profile.social || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">👥 Social Dynamics</div>
+          ${renderScoreRow('Dominance', social.dominance)}
+          ${renderScoreRow('Cooperation', social.cooperation)}
+          ${renderDataRow('Conflict Style', social.conflictStyle)}
+          ${renderDataRow('Humor Style', social.humorStyle)}
+        </div>
+      `;
+    }
+
+    function renderBehavioralSection(profile) {
+      const beh = profile.behavioral || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">📈 Behavioral Patterns</div>
+          ${renderDataRow('Avg Message Length', beh.messageLength ? `${beh.messageLength.toFixed(0)} chars` : null)}
+          ${renderDataRow('Response Latency', beh.responseLatency ? `${(beh.responseLatency / 3600).toFixed(1)}h` : null)}
+          ${renderDataRow('Emoji Usage', beh.emojiUsage ? `${beh.emojiUsage.toFixed(2)}/msg` : null)}
+          ${renderDataRow('Punctuation', beh.punctuation)}
+          ${renderDataRow('Capitalization', beh.capitalization)}
+        </div>
+      `;
+    }
+
+    function renderInterestsSection(profile) {
+      const int = profile.interests || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">🎯 Interests & Expertise</div>
+          ${renderDataRow('Tech Level', int.technicalLevel)}
+          ${renderDataRow('Primary Interests', int.primary?.join(', '))}
+          ${renderDataRow('Expertise', int.expertise?.join(', '))}
+        </div>
+      `;
+    }
+
+    function renderRelationalSection(profile) {
+      const rel = profile.relational || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">💫 Relational Dynamics</div>
+          ${renderScoreRow('Affinity', rel.affinity)}
+          ${renderScoreRow('Trust', rel.trust)}
+          ${renderDataRow('Emotional Bond', rel.bond)}
+        </div>
+      `;
+    }
+
+    function renderSentimentSection(profile) {
+      const sent = profile.sentiment || {};
+      return `
+        <div class="data-section">
+          <div class="section-title">😊 Sentiment Analysis</div>
+          ${renderDataRow('Overall', sent.overall)}
+          ${renderDataRow('Positive Ratio', sent.positiveRatio ? `${(sent.positiveRatio * 100).toFixed(1)}%` : null)}
+          ${renderDataRow('Negative Ratio', sent.negativeRatio ? `${(sent.negativeRatio * 100).toFixed(1)}%` : null)}
+          ${renderDataRow('Dominant Emotions', sent.dominantEmotions?.join(', '))}
+        </div>
+      `;
+    }
+
+    function renderAppearanceSection(profile) {
+      const app = profile.appearance || {};
+      if (!app.description) {
+        return `
+          <div class="data-section">
+            <div class="section-title">👤 Physical Appearance</div>
+            <p class="null-value" style="padding: 10px 0;">No photo uploaded</p>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="data-section">
+          <div class="section-title">👤 Physical Appearance</div>
+          ${renderDataRow('Gender', app.gender)}
+          ${renderDataRow('Age Range', app.ageRange)}
+          ${renderDataRow('Hair', app.hairColor && app.hairStyle ? `${app.hairColor}, ${app.hairStyle}` : null)}
+          ${renderDataRow('Eyes', app.eyeColor)}
+          ${renderDataRow('Skin Tone', app.skinTone)}
+          ${renderDataRow('Face Shape', app.faceShape)}
+          ${renderDataRow('Build', app.buildDescription)}
+          ${renderDataRow('Height', app.heightEstimate)}
+        </div>
+      `;
+    }
+
+    function renderDataRow(label, value) {
+      const displayValue = value !== null && value !== undefined && value !== ''
+        ? escapeHtml(String(value))
+        : '<span class="null-value">—</span>';
+
+      return `
+        <div class="data-row">
+          <span class="data-label">${escapeHtml(label)}</span>
+          <span class="data-value">${displayValue}</span>
+        </div>
+      `;
+    }
+
+    function renderScoreRow(label, value) {
+      if (value === null || value === undefined) {
+        return renderDataRow(label, null);
+      }
+
+      return `
+        <div class="data-row">
+          <span class="data-label">${escapeHtml(label)}</span>
+          <span class="data-value">${value}/100</span>
+        </div>
+        <div class="score-bar">
+          <div class="score-fill" style="width: ${value}%"></div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Load profiles on page load
+    loadProfiles();
+  </script>
+</body>
+</html>
