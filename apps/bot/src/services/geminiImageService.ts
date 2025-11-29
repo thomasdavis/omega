@@ -9,6 +9,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
+import { formatMultipleCharacters, type UserCharacter } from '../lib/userAppearance.js';
 
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
@@ -137,26 +138,10 @@ export async function generateImageWithGemini(
  */
 export async function generateComicWithUsers(
   scenario: string,
-  userProfiles: Array<{
-    username: string;
-    appearance?: string;
-    personality?: any;
-    feelings?: any;
-  }>
+  userProfiles: UserCharacter[]
 ): Promise<GeminiImageResult> {
-  // Build character descriptions for the comic
-  const characterDescriptions = userProfiles
-    .map((profile, index) => {
-      const appearance = profile.appearance || 'a person';
-      const dominantArchetype =
-        profile.personality?.dominantArchetypes?.[0] || 'Everyman';
-      const traits = profile.feelings?.facets?.slice(0, 2).join(', ') || 'friendly';
-
-      return `${index + 1}. ${profile.username} - ${appearance}
-   Personality: ${dominantArchetype}
-   Traits: ${traits}`;
-    })
-    .join('\n\n');
+  // Build character descriptions for the comic using shared formatting
+  const characterDescriptions = formatMultipleCharacters(userProfiles);
 
   const comicPrompt = `Create a humorous comic illustration:
 

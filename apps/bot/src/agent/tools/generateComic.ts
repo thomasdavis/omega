@@ -12,7 +12,7 @@ import {
   generateComicWithUsers,
 } from '../../services/geminiImageService.js';
 import { postComicToDiscord } from '../../services/discordWebhookService.js';
-import { getUserProfile } from '../../database/userProfileService.js';
+import { getUserCharacters } from '../../lib/userAppearance.js';
 import { getDatabase } from '../../database/client.js';
 
 /**
@@ -141,33 +141,8 @@ export const generateComicTool = tool({
         if (allUserIds.length > 0) {
           console.log(`Including ${allUserIds.length} users in issue comic`);
 
-          // Fetch user profiles
-          const userProfiles = await Promise.all(
-            allUserIds.map(async (userId) => {
-              const profile = await getUserProfile(userId);
-              if (!profile) return null;
-
-              const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
-              const personality = profile.personality_facets
-                ? JSON.parse(profile.personality_facets)
-                : null;
-
-              return {
-                username: profile.username,
-                appearance: profile.ai_appearance_description,
-                personality,
-                feelings,
-              };
-            })
-          );
-
-          // Filter out null profiles
-          const validProfiles = userProfiles.filter((p) => p !== null) as Array<{
-            username: string;
-            appearance?: string;
-            personality?: any;
-            feelings?: any;
-          }>;
+          // Fetch user characters using shared module
+          const validProfiles = await getUserCharacters(allUserIds);
 
           if (validProfiles.length > 0) {
             // Generate comic from issue WITH users
@@ -186,33 +161,8 @@ export const generateComicTool = tool({
         if (allUserIds.length > 0) {
           console.log(`Including ${allUserIds.length} users in custom prompt comic`);
 
-          // Fetch user profiles
-          const userProfiles = await Promise.all(
-            allUserIds.map(async (userId) => {
-              const profile = await getUserProfile(userId);
-              if (!profile) return null;
-
-              const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
-              const personality = profile.personality_facets
-                ? JSON.parse(profile.personality_facets)
-                : null;
-
-              return {
-                username: profile.username,
-                appearance: profile.ai_appearance_description,
-                personality,
-                feelings,
-              };
-            })
-          );
-
-          // Filter out null profiles
-          const validProfiles = userProfiles.filter((p) => p !== null) as Array<{
-            username: string;
-            appearance?: string;
-            personality?: any;
-            feelings?: any;
-          }>;
+          // Fetch user characters using shared module
+          const validProfiles = await getUserCharacters(allUserIds);
 
           if (validProfiles.length > 0) {
             // Generate comic with users
