@@ -60,58 +60,16 @@ export async function updateUserProfile(
   const db = getDatabase();
   const now = Math.floor(Date.now() / 1000);
 
-  // Build dynamic UPDATE query
+  // Build dynamic UPDATE query from all provided fields
   const updateFields: string[] = [];
   const args: any[] = [];
 
-  if (updates.username !== undefined) {
-    updateFields.push('username = ?');
-    args.push(updates.username);
-  }
-
-  if (updates.feelings_json !== undefined) {
-    updateFields.push('feelings_json = ?');
-    args.push(updates.feelings_json);
-  }
-
-  if (updates.uploaded_photo_url !== undefined) {
-    updateFields.push('uploaded_photo_url = ?');
-    args.push(updates.uploaded_photo_url);
-  }
-
-  if (updates.uploaded_photo_metadata !== undefined) {
-    updateFields.push('uploaded_photo_metadata = ?');
-    args.push(updates.uploaded_photo_metadata);
-  }
-
-  if (updates.ai_appearance_description !== undefined) {
-    updateFields.push('ai_appearance_description = ?');
-    args.push(updates.ai_appearance_description);
-  }
-
-  if (updates.appearance_confidence !== undefined) {
-    updateFields.push('appearance_confidence = ?');
-    args.push(updates.appearance_confidence);
-  }
-
-  if (updates.personality_facets !== undefined) {
-    updateFields.push('personality_facets = ?');
-    args.push(updates.personality_facets);
-  }
-
-  if (updates.last_interaction_at !== undefined) {
-    updateFields.push('last_interaction_at = ?');
-    args.push(updates.last_interaction_at);
-  }
-
-  if (updates.last_analyzed_at !== undefined) {
-    updateFields.push('last_analyzed_at = ?');
-    args.push(updates.last_analyzed_at);
-  }
-
-  if (updates.message_count !== undefined) {
-    updateFields.push('message_count = ?');
-    args.push(updates.message_count);
+  // Iterate through all update fields dynamically
+  for (const [key, value] of Object.entries(updates)) {
+    if (value !== undefined) {
+      updateFields.push(`${key} = ?`);
+      args.push(value);
+    }
   }
 
   // Always update updated_at timestamp
