@@ -257,6 +257,16 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log('   Attachment details added to message context');
     }
 
+    // Prepare structured attachment data for tools (not just markdown text)
+    const structuredAttachments = message.attachments.size > 0
+      ? Array.from(message.attachments.values()).map(att => ({
+          url: att.url,
+          filename: att.name,
+          contentType: att.contentType || 'unknown',
+          size: att.size,
+        }))
+      : [];
+
     // Set message context for export, conversation diagram, slidev, and unsandbox tools
     setExportMessageContext(message);
     setConversationDiagramContext(message);
@@ -276,6 +286,7 @@ export async function handleMessage(message: Message): Promise<void> {
         userId: message.author.id,
         channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
         messageHistory,
+        attachments: structuredAttachments, // Pass structured attachment data
       });
       console.log('🔍 DEBUG: runAgent completed successfully');
     } catch (agentError) {

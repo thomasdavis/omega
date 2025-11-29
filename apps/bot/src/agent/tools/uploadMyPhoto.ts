@@ -304,64 +304,65 @@ async function uploadPhotoToGitHub(
  * Upload My Photo Tool
  */
 export const uploadMyPhotoTool = tool({
-  description: `Upload your photo so Omega can see what you look like. This helps Omega:
-  - Generate accurate portraits of you based on your actual appearance
-  - Include you in comics with your real look
-  - Form a complete mental image when talking to you
+  description: `Upload and analyze a user's photo to create their appearance profile.
 
-  The photo is analyzed with AI to extract appearance details (hair color, facial features, etc.)
-  and stored permanently on GitHub. Both the photo and AI description are saved.
+**Call this tool whenever:**
+- The user uploads an image (photo/selfie) AND
+- The user expresses ANY intent related to uploading, saving, storing, or analyzing that image
+- Examples: "upload my photo", "save this", "this is me", "use my picture", "update my appearance"
 
-  Use when:
-  - User uploads an image and says "this is me", "here's what I look like", etc.
-  - User explicitly asks to save their photo
-  - User wants to update their appearance
+**What it does:**
+- Analyzes the photo using GPT-4o vision to extract detailed phenotype data (78 fields)
+- Stores photo permanently on GitHub
+- Creates comprehensive appearance profile for accurate portrait generation and comics
 
-  IMPORTANT: Only use when the user clearly indicates the image is of themselves.`,
+**How to use:**
+When the user uploads an image with intent to save/analyze:
+1. Use the first attachment URL from context.attachments
+2. Pass the attachment URL, userId, and username
+3. The tool will automatically retrieve the cached image buffer
+4. GPT-4o will analyze facial features, hair, build, style, etc.
+5. Results stored in database for future use
+
+**Do NOT:**
+- Ask the user to re-upload if an attachment is present
+- Explain attachment issues - just call the tool
+- Hesitate if the user clearly wants to upload their photo`,
 
   inputSchema: z.object({
-    photoUrl: z.string().describe('URL of the photo (Discord attachment URL)'),
+    photoUrl: z.string().describe('Discord attachment URL of the uploaded photo'),
     userId: z.string().describe('Discord user ID'),
     username: z.string().describe('Discord username'),
-    photoBuffer: z.string().optional().describe('Base64-encoded photo buffer (internal use - populated from cache)'),
   }),
 
-  execute: async ({ photoUrl, userId, username, photoBuffer }) => {
+  execute: async ({ photoUrl, userId, username }) => {
     console.log(`📸 Uploading photo for ${username} (${userId})`);
 
     try {
-      // 1. Get photo (prioritize: provided buffer > cache > download)
+      // 1. Get photo from cache (attachment should be pre-downloaded by messageHandler)
       let buffer: Buffer;
       let mimeType: string;
 
-      if (photoBuffer) {
-        // Buffer was provided directly (from context enrichment)
-        console.log('   Using provided photo buffer...');
-        buffer = Buffer.from(photoBuffer, 'base64');
-        mimeType = 'image/jpeg'; // Default, will be determined from buffer
+      const cached = getCachedAttachment(photoUrl);
+      if (cached) {
+        console.log('   ✅ Using cached attachment from messageHandler...');
+        buffer = cached.buffer;
+        mimeType = cached.mimeType;
       } else {
-        // Check cache
-        const cached = getCachedAttachment(photoUrl);
-        if (cached) {
-          console.log('   Using cached attachment...');
-          buffer = cached.buffer;
-          mimeType = cached.mimeType;
-        } else {
-          // Last resort: download (like fileUpload does - simple and reliable)
-          console.log('   Downloading from URL...');
-          const response = await fetch(photoUrl);
-          if (!response.ok) {
-            throw new Error(
-              `Failed to download photo: HTTP ${response.status}. ` +
-              (photoUrl.includes('cdn.discordapp.com')
-                ? 'Discord CDN URLs can expire. Please re-upload the image.'
-                : 'Please check if the URL is valid.')
-            );
-          }
-          buffer = Buffer.from(await response.arrayBuffer());
-          mimeType = response.headers.get('content-type') || 'image/jpeg';
-          console.log(`   Downloaded ${buffer.length} bytes`);
+        // Fallback: direct download if cache missed (shouldn't happen after REST API fix)
+        console.log('   ⚠️  Cache miss - attempting direct download...');
+        const response = await fetch(photoUrl);
+        if (!response.ok) {
+          throw new Error(
+            `Failed to download photo: HTTP ${response.status}. ` +
+            (photoUrl.includes('cdn.discordapp.com')
+              ? 'Discord CDN URL expired. Please re-upload the image.'
+              : 'Please check if the URL is valid.')
+          );
         }
+        buffer = Buffer.from(await response.arrayBuffer());
+        mimeType = response.headers.get('content-type') || 'image/jpeg';
+        console.log(`   Downloaded ${buffer.length} bytes`);
       }
 
       // 2. Validate it's an image

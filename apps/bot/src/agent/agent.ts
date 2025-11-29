@@ -83,6 +83,7 @@ export interface AgentContext {
   userId: string;
   channelName: string;
   messageHistory?: Array<{ username: string; content: string; timestamp?: number }>;
+  attachments?: Array<{ url: string; filename: string; contentType: string; size: number }>;
 }
 
 export interface AgentResult {
@@ -133,9 +134,34 @@ export async function runAgent(
     // Get feelings context to include in system prompt
     const feelingsContext = feelingsService.getContextForPrompt();
 
+    // Build attachment context for photo uploads
+    let attachmentContext = '';
+    if (context.attachments && context.attachments.length > 0) {
+      const imageAttachments = context.attachments.filter(att =>
+        att.contentType.startsWith('image/')
+      );
+
+      if (imageAttachments.length > 0) {
+        attachmentContext = `\n\n**IMPORTANT: User uploaded ${imageAttachments.length} image(s)**
+The user has attached images in this message. If they express ANY intent to upload/save/analyze their photo (e.g., "upload my photo", "this is me", "save this"), you MUST call the uploadMyPhoto tool.
+
+Available images:
+${imageAttachments.map((att, idx) => `${idx + 1}. ${att.filename} (${att.contentType})`).join('\n')}
+
+To call uploadMyPhoto, use:
+{
+  "photoUrl": "${imageAttachments[0].url}",
+  "userId": "${context.userId}",
+  "username": "${context.username}"
+}
+
+DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call the tool.`;
+      }
+    }
+
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(context.username, context.userId) + feelingsContext,
+      system: buildSystemPrompt(context.username, context.userId) + feelingsContext + attachmentContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools: {
         search: searchTool,
