@@ -323,26 +323,45 @@ export const uploadMyPhotoTool = tool({
     photoUrl: z.string().describe('URL of the photo (Discord attachment URL)'),
     userId: z.string().describe('Discord user ID'),
     username: z.string().describe('Discord username'),
+    photoBuffer: z.string().optional().describe('Base64-encoded photo buffer (internal use - populated from cache)'),
   }),
 
-  execute: async ({ photoUrl, userId, username }) => {
+  execute: async ({ photoUrl, userId, username, photoBuffer }) => {
     console.log(`📸 Uploading photo for ${username} (${userId})`);
 
     try {
-      // 1. Get photo (check cache first, then download if needed)
+      // 1. Get photo (prioritize: provided buffer > cache > download)
       let buffer: Buffer;
       let mimeType: string;
 
-      const cached = getCachedAttachment(photoUrl);
-      if (cached) {
-        console.log('   Using cached attachment...');
-        buffer = cached.buffer;
-        mimeType = cached.mimeType;
+      if (photoBuffer) {
+        // Buffer was provided directly (from context enrichment)
+        console.log('   Using provided photo buffer...');
+        buffer = Buffer.from(photoBuffer, 'base64');
+        mimeType = 'image/jpeg'; // Default, will be determined from buffer
       } else {
-        console.log('   Attachment not in cache, downloading...');
-        const downloaded = await downloadFile(photoUrl);
-        buffer = downloaded.buffer;
-        mimeType = downloaded.mimeType;
+        // Check cache
+        const cached = getCachedAttachment(photoUrl);
+        if (cached) {
+          console.log('   Using cached attachment...');
+          buffer = cached.buffer;
+          mimeType = cached.mimeType;
+        } else {
+          // Last resort: download (like fileUpload does - simple and reliable)
+          console.log('   Downloading from URL...');
+          const response = await fetch(photoUrl);
+          if (!response.ok) {
+            throw new Error(
+              `Failed to download photo: HTTP ${response.status}. ` +
+              (photoUrl.includes('cdn.discordapp.com')
+                ? 'Discord CDN URLs can expire. Please re-upload the image.'
+                : 'Please check if the URL is valid.')
+            );
+          }
+          buffer = Buffer.from(await response.arrayBuffer());
+          mimeType = response.headers.get('content-type') || 'image/jpeg';
+          console.log(`   Downloaded ${buffer.length} bytes`);
+        }
       }
 
       // 2. Validate it's an image
