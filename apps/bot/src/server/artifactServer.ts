@@ -1347,6 +1347,7 @@ function createApp(): express.Application {
   });
 
   // GET /api/comic-characters?userIds=id1,id2,id3
+  // Returns comprehensive character appearance data for comic generation
   app.get('/api/comic-characters', async (req: Request, res: Response) => {
     try {
       const userIdsParam = req.query.userIds as string;
@@ -1366,18 +1367,48 @@ function createApp(): express.Application {
           const profile = await getUserProfile(userId);
           if (!profile) return null;
 
-          // Build character description for comic generation
+          // Build comprehensive character description
           const characterDescription = profile.ai_appearance_description ||
             `${profile.ai_detected_gender || 'person'} with ${profile.hair_color || 'hair'}, ${profile.eye_color || 'eyes'}`;
 
+          // Return ALL phenotype fields for accurate comic character depiction
           return {
             userId: profile.user_id,
             username: profile.username,
-            appearance: characterDescription,
-            gender: profile.ai_detected_gender || 'person',
-            ageRange: profile.estimated_age_range,
-            build: profile.build_description,
-            hairStyle: profile.hair_style,
+            description: characterDescription, // Match expected field name
+
+            // Demographics
+            gender: profile.ai_detected_gender || null,
+            ageRange: profile.estimated_age_range || null,
+
+            // Hair
+            hairColor: profile.hair_color || null,
+            hairStyle: profile.hair_style || null,
+            hairTexture: profile.hair_texture || null,
+            hairLength: profile.hair_length || null,
+            hairDensity: profile.hair_density || null,
+
+            // Facial features
+            eyeColor: profile.eye_color || null,
+            eyeShape: profile.eye_shape || null,
+            skinTone: profile.skin_tone || null,
+            faceShape: profile.face_shape || null,
+            facialHair: profile.facial_hair || null,
+            noseShape: profile.nose_shape || null,
+            lipFullness: profile.lip_fullness || null,
+
+            // Build and physique
+            bodyType: profile.body_type || null,
+            buildDescription: profile.build_description || null,
+            heightEstimate: profile.height_estimate || null,
+
+            // Style and presentation
+            clothingStyle: profile.clothing_style || null,
+            accessories: profile.accessories ? JSON.parse(profile.accessories) : [],
+            distinctiveFeatures: profile.distinctive_features ? JSON.parse(profile.distinctive_features) : [],
+            aestheticArchetype: profile.aesthetic_archetype || null,
+
+            // Personality (for character behavior in comics)
             personality: {
               dominantArchetype: profile.dominant_archetype,
               communicationStyle: profile.communication_formality,
@@ -1388,6 +1419,8 @@ function createApp(): express.Application {
                 profile.humor_style,
               ].filter(Boolean),
             },
+
+            // Omega's relationship data
             omegaFeeling: profile.affinity_score,
           };
         })

@@ -46,61 +46,70 @@ interface CharacterAppearance {
   accessories?: string[];
   distinctiveFeatures?: string[];
   aestheticArchetype?: string;
+  // Psychological data for character behavior
+  dominantArchetype?: string;
+  communicationStyle?: string;
+  humorStyle?: string;
+  affinityScore?: number;
 }
 
 /**
- * Fetch character appearance data from Omega HTTP API
+ * Fetch ALL user profiles from Omega HTTP API
+ * Returns comprehensive psychological and phenotype data for ALL users
  */
-async function fetchCharacterAppearances(userIds: string[]): Promise<CharacterAppearance[]> {
-  if (!userIds || userIds.length === 0) {
-    return [];
-  }
-
+async function fetchAllUserProfiles(): Promise<CharacterAppearance[]> {
   try {
     // Determine Omega API base URL
     const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app';
-    const url = `${OMEGA_API_URL}/api/comic-characters?userIds=${userIds.join(',')}`;
+    const url = `${OMEGA_API_URL}/api/profiles-full`;
 
-    console.log(`🔍 Fetching character appearances for ${userIds.length} users from ${url}`);
+    console.log(`🔍 Fetching ALL user profiles from ${url}`);
 
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.warn(`⚠️ Failed to fetch character appearances: ${response.status} ${response.statusText}`);
+      console.warn(`⚠️ Failed to fetch user profiles: ${response.status} ${response.statusText}`);
       return [];
     }
 
     const data: any = await response.json();
 
-    if (!data.success || !data.characters) {
+    if (!data.success || !data.profiles) {
       console.warn('⚠️ Invalid response from Omega API:', data);
       return [];
     }
 
-    console.log(`✅ Fetched appearance data for ${data.characters.length} characters`);
+    console.log(`✅ Fetched complete profiles for ${data.profiles.length} users`);
 
-    return data.characters.map((char: any) => ({
-      userId: char.userId,
-      username: char.username,
-      description: char.description,
-      gender: char.gender,
-      hairColor: char.hairColor,
-      hairStyle: char.hairStyle,
-      hairTexture: char.hairTexture,
-      eyeColor: char.eyeColor,
-      skinTone: char.skinTone,
-      faceShape: char.faceShape,
-      bodyType: char.bodyType,
-      buildDescription: char.buildDescription,
-      heightEstimate: char.heightEstimate,
-      facialHair: char.facialHair,
-      clothingStyle: char.clothingStyle,
-      accessories: char.accessories,
-      distinctiveFeatures: char.distinctiveFeatures,
-      aestheticArchetype: char.aestheticArchetype,
+    // Convert profiles-full format to CharacterAppearance format
+    return data.profiles.map((profile: any) => ({
+      userId: profile.userId,
+      username: profile.username,
+      description: profile.aiAppearanceDescription ||
+        `${profile.aiDetectedGender || 'person'} with ${profile.hairColor || 'hair'}, ${profile.eyeColor || 'eyes'}`,
+      gender: profile.aiDetectedGender,
+      hairColor: profile.hairColor,
+      hairStyle: profile.hairStyle,
+      hairTexture: profile.hairTexture,
+      eyeColor: profile.eyeColor,
+      skinTone: profile.skinTone,
+      faceShape: profile.faceShape,
+      bodyType: profile.bodyType,
+      buildDescription: profile.buildDescription,
+      heightEstimate: profile.heightEstimate,
+      facialHair: profile.facialHair,
+      clothingStyle: profile.clothingStyle,
+      accessories: profile.accessories,
+      distinctiveFeatures: profile.distinctiveFeatures,
+      aestheticArchetype: profile.aestheticArchetype,
+      // Include psychological data for richer character portrayal
+      dominantArchetype: profile.dominantArchetype,
+      communicationStyle: profile.communicationFormality,
+      humorStyle: profile.humorStyle,
+      affinityScore: profile.affinityScore,
     }));
   } catch (error) {
-    console.error('❌ Error fetching character appearances:', error);
+    console.error('❌ Error fetching user profiles:', error);
     return [];
   }
 }
@@ -123,11 +132,11 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
   try {
     console.log(`🎨 Generating comic for PR #${prNumber}: ${prTitle}`);
 
-    // Fetch character appearance data if user IDs provided
+    // Fetch ALL user profiles (not just specific users)
+    // This gives Gemini complete context about all Discord community members
     let characterAppearances: CharacterAppearance[] = [];
-    if (userIds && userIds.length > 0) {
-      characterAppearances = await fetchCharacterAppearances(userIds);
-    }
+    console.log('📊 Fetching complete user profile database for comic context...');
+    characterAppearances = await fetchAllUserProfiles();
 
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -253,70 +262,84 @@ function determineFrameCount(conversationContext: string): number {
 }
 
 /**
- * Build character design sections from appearance data
+ * Build character design sections from ALL user profile data
+ * Includes both phenotype (physical) and psychological characteristics
  */
 function buildCharacterDesignSections(characters: CharacterAppearance[]): string {
   if (!characters || characters.length === 0) {
     return '';
   }
 
-  const sections = characters.map((char) => {
-    const features: string[] = [];
+  const header = `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE**
+You have access to comprehensive profiles for ALL Discord community members.
+Choose which characters to include based on the conversation context.
+Each character has detailed physical appearance and psychological traits:
+\n`;
 
-    // Add gender if known
-    if (char.gender) {
-      features.push(`Gender: ${char.gender}`);
-    }
+  const sections = characters.map((char) => {
+    const physicalFeatures: string[] = [];
+    const psychologicalTraits: string[] = [];
 
     // Physical appearance
+    if (char.gender) {
+      physicalFeatures.push(`Gender: ${char.gender}`);
+    }
     if (char.hairColor && char.hairStyle) {
-      features.push(`Hair: ${char.hairColor}, ${char.hairStyle} style${char.hairTexture ? `, ${char.hairTexture} texture` : ''}`);
+      physicalFeatures.push(`Hair: ${char.hairColor}, ${char.hairStyle} style${char.hairTexture ? `, ${char.hairTexture} texture` : ''}`);
     }
     if (char.eyeColor) {
-      features.push(`Eyes: ${char.eyeColor}`);
+      physicalFeatures.push(`Eyes: ${char.eyeColor}`);
     }
     if (char.skinTone) {
-      features.push(`Skin tone: ${char.skinTone}`);
+      physicalFeatures.push(`Skin tone: ${char.skinTone}`);
     }
     if (char.faceShape) {
-      features.push(`Face shape: ${char.faceShape}`);
+      physicalFeatures.push(`Face shape: ${char.faceShape}`);
     }
-
-    // Build and stature
     if (char.heightEstimate && char.buildDescription) {
-      features.push(`Build: ${char.heightEstimate} height, ${char.buildDescription} build`);
+      physicalFeatures.push(`Build: ${char.heightEstimate} height, ${char.buildDescription} build`);
     } else if (char.buildDescription) {
-      features.push(`Build: ${char.buildDescription}`);
+      physicalFeatures.push(`Build: ${char.buildDescription}`);
     }
-
-    // Distinctive features
     if (char.facialHair) {
-      features.push(`Facial hair: ${char.facialHair}`);
+      physicalFeatures.push(`Facial hair: ${char.facialHair}`);
     }
     if (char.distinctiveFeatures && char.distinctiveFeatures.length > 0) {
-      features.push(`Distinctive features: ${char.distinctiveFeatures.join(', ')}`);
+      physicalFeatures.push(`Distinctive: ${char.distinctiveFeatures.join(', ')}`);
     }
-
-    // Style and aesthetic
     if (char.clothingStyle) {
-      features.push(`Clothing style: ${char.clothingStyle}`);
-    }
-    if (char.accessories && char.accessories.length > 0) {
-      features.push(`Accessories: ${char.accessories.join(', ')}`);
+      physicalFeatures.push(`Style: ${char.clothingStyle}`);
     }
     if (char.aestheticArchetype) {
-      features.push(`Overall aesthetic: ${char.aestheticArchetype}`);
+      physicalFeatures.push(`Aesthetic: ${char.aestheticArchetype}`);
     }
 
-    return `**Character Design - ${char.username}:**
-When depicting ${char.username}, use this consistent appearance based on their uploaded photo:
-- ${char.description}
-- Physical characteristics:
-  ${features.map(f => `* ${f}`).join('\n  ')}
-- This character should be recognizable as ${char.username} through these distinctive features`;
+    // Psychological characteristics
+    if (char.dominantArchetype) {
+      psychologicalTraits.push(`Archetype: ${char.dominantArchetype}`);
+    }
+    if (char.communicationStyle) {
+      psychologicalTraits.push(`Communication: ${char.communicationStyle}`);
+    }
+    if (char.humorStyle) {
+      psychologicalTraits.push(`Humor: ${char.humorStyle}`);
+    }
+    if (char.affinityScore !== undefined) {
+      psychologicalTraits.push(`Omega affinity: ${char.affinityScore}/100`);
+    }
+
+    const physicalSection = physicalFeatures.length > 0
+      ? `\n  Physical: ${physicalFeatures.join(', ')}`
+      : '';
+
+    const psychSection = psychologicalTraits.length > 0
+      ? `\n  Personality: ${psychologicalTraits.join(', ')}`
+      : '';
+
+    return `${char.username}: ${char.description}${physicalSection}${psychSection}`;
   }).join('\n\n');
 
-  return '\n\n' + sections;
+  return header + sections;
 }
 
 /**
@@ -457,11 +480,17 @@ ${superDeformedInstruction}
 
 3. Use a fun, lighthearted art style (cartoon/comic book style)
 
-4. Include 1-3 characters having a humorous exchange related to the PR
+4. **CHARACTER SELECTION FROM DATABASE:**
+   - Review the complete character database above
+   - Choose 1-3 characters relevant to the PR conversation
+   - Use ACCURATE physical descriptions from their profiles (hair color, eye color, build, style, etc.)
+   - Incorporate their personality traits (archetype, humor style, communication style) into dialogue and expressions
    - If the conversation involves the AI/bot, depict it as Omega with the unique design above
-   - Keep Omega's appearance consistent: sleek geometric robot with holographic code core, sardonic yet enthusiastic
+   - Keep each character's appearance CONSISTENT with their database profile
 
-5. Add speech bubbles with witty dialogue based on the conversation
+5. Add speech bubbles with witty dialogue based on:
+   - The PR conversation context
+   - Each character's communication style and humor type from their psychological profile
 
 6. Keep it family-friendly and professional
 
