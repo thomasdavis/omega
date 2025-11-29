@@ -882,6 +882,152 @@ function createApp(): express.Application {
   // External access to Omega's psychological profiling data
   // ========================================================================
 
+  // GET /api/profiles-full - Get ALL users with COMPLETE psychological data
+  // Returns every single field for every user (78+ fields per user)
+  app.get('/api/profiles-full', async (req: Request, res: Response) => {
+    try {
+      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const profiles = await getAllUserProfiles();
+
+      // Return raw database records with ALL fields
+      res.json({
+        success: true,
+        count: profiles.length,
+        profiles: profiles.map((p: any) => ({
+          // Identity
+          userId: p.user_id,
+          username: p.username,
+          messageCount: p.message_count,
+          firstSeen: p.first_seen_at ? new Date(p.first_seen_at * 1000).toISOString() : null,
+          lastInteraction: p.last_interaction_at ? new Date(p.last_interaction_at * 1000).toISOString() : null,
+          lastAnalyzed: p.last_analyzed_at ? new Date(p.last_analyzed_at * 1000).toISOString() : null,
+
+          // Jungian Analysis
+          dominantArchetype: p.dominant_archetype,
+          secondaryArchetypes: p.secondary_archetypes ? JSON.parse(p.secondary_archetypes) : null,
+          archetypeConfidence: p.archetype_confidence,
+          shadowArchetype: p.shadow_archetype,
+
+          // Big Five (OCEAN)
+          openness: p.openness_score,
+          conscientiousness: p.conscientiousness_score,
+          extraversion: p.extraversion_score,
+          agreeableness: p.agreeableness_score,
+          neuroticism: p.neuroticism_score,
+
+          // Attachment Theory
+          attachmentStyle: p.attachment_style,
+          attachmentConfidence: p.attachment_confidence,
+
+          // Emotional Intelligence
+          emotionalAwareness: p.emotional_awareness_score,
+          empathy: p.empathy_score,
+          emotionalRegulation: p.emotional_regulation_score,
+
+          // Communication Patterns
+          communicationFormality: p.communication_formality,
+          communicationAssertiveness: p.communication_assertiveness,
+          communicationEngagement: p.communication_engagement,
+          verbalFluency: p.verbal_fluency_score,
+          questionFrequency: p.question_asking_frequency,
+
+          // Cognitive Style
+          analyticalThinking: p.analytical_thinking_score,
+          creativeThinking: p.creative_thinking_score,
+          abstractReasoning: p.abstract_reasoning_score,
+          concreteThinking: p.concrete_thinking_score,
+
+          // Social Dynamics
+          socialDominance: p.social_dominance_score,
+          cooperation: p.cooperation_score,
+          conflictStyle: p.conflict_style,
+          humorStyle: p.humor_style,
+
+          // Behavioral Patterns
+          messageLengthAvg: p.message_length_avg,
+          messageLengthVariance: p.message_length_variance,
+          responseLatencyAvg: p.response_latency_avg,
+          emojiUsageRate: p.emoji_usage_rate,
+          punctuationStyle: p.punctuation_style,
+          capitalizationPattern: p.capitalization_pattern,
+
+          // Interests & Expertise
+          technicalKnowledge: p.technical_knowledge_level,
+          primaryInterests: p.primary_interests ? JSON.parse(p.primary_interests) : null,
+          expertiseAreas: p.expertise_areas ? JSON.parse(p.expertise_areas) : null,
+
+          // Relational Dynamics
+          affinityScore: p.affinity_score,
+          trustLevel: p.trust_level,
+          emotionalBond: p.emotional_bond,
+          omegaThoughts: p.omega_thoughts,
+          notablePatterns: p.notable_patterns ? JSON.parse(p.notable_patterns) : null,
+
+          // Sentiment Analysis
+          overallSentiment: p.overall_sentiment,
+          positiveInteractionRatio: p.positive_interaction_ratio,
+          negativeInteractionRatio: p.negative_interaction_ratio,
+          dominantEmotions: p.dominant_emotions ? JSON.parse(p.dominant_emotions) : null,
+
+          // Physical Phenotype (32 fields)
+          aiDetectedGender: p.ai_detected_gender,
+          genderConfidence: p.gender_confidence,
+          estimatedAgeRange: p.estimated_age_range,
+          ageConfidence: p.age_confidence,
+          faceShape: p.face_shape,
+          facialSymmetry: p.facial_symmetry_score,
+          jawlineProminence: p.jawline_prominence,
+          cheekboneProminence: p.cheekbone_prominence,
+          hairColor: p.hair_color,
+          hairTexture: p.hair_texture,
+          hairLength: p.hair_length,
+          hairStyle: p.hair_style,
+          hairDensity: p.hair_density,
+          facialHair: p.facial_hair,
+          eyeColor: p.eye_color,
+          eyeShape: p.eye_shape,
+          eyeSpacing: p.eye_spacing,
+          eyebrowShape: p.eyebrow_shape,
+          eyebrowThickness: p.eyebrow_thickness,
+          noseShape: p.nose_shape,
+          noseSize: p.nose_size,
+          lipFullness: p.lip_fullness,
+          smileType: p.smile_type,
+          skinTone: p.skin_tone,
+          skinTexture: p.skin_texture,
+          complexionQuality: p.complexion_quality,
+          bodyType: p.body_type,
+          buildDescription: p.build_description,
+          heightEstimate: p.height_estimate,
+          posture: p.posture,
+          distinctiveFeatures: p.distinctive_features ? JSON.parse(p.distinctive_features) : null,
+          clothingStyle: p.clothing_style,
+          accessories: p.accessories ? JSON.parse(p.accessories) : null,
+          attractivenessAssessment: p.attractiveness_assessment,
+          approachabilityScore: p.approachability_score,
+          perceivedConfidence: p.perceived_confidence_level,
+          aestheticArchetype: p.aesthetic_archetype,
+
+          // Photo metadata
+          uploadedPhotoUrl: p.uploaded_photo_url,
+          aiAppearanceDescription: p.ai_appearance_description,
+          appearanceConfidence: p.appearance_confidence,
+          lastPhotoAnalyzed: p.last_photo_analyzed_at ? new Date(p.last_photo_analyzed_at * 1000).toISOString() : null,
+
+          // Legacy fields (for backwards compatibility)
+          feelingsJson: p.feelings_json,
+          personalityFacets: p.personality_facets,
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching full profiles:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch profiles',
+      });
+    }
+  });
+
   // GET /api/users - List all users with profiles
   // Returns ALL users including those with 0 messages (for comic generation)
   app.get('/api/users', async (req: Request, res: Response) => {
