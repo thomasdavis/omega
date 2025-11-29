@@ -26,14 +26,33 @@ const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'];
  * Download file from URL
  */
 async function downloadFile(url: string): Promise<{ buffer: Buffer; mimeType: string }> {
+  console.log(`   Fetching from URL: ${url}`);
+
   const response = await fetch(url);
 
+  console.log(`   Response status: ${response.status} ${response.statusText}`);
+  console.log(`   Content-Type: ${response.headers.get('content-type')}`);
+
   if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.statusText}`);
+    // Special handling for Discord CDN URLs
+    if (url.includes('cdn.discordapp.com')) {
+      throw new Error(
+        `Discord CDN URL returned ${response.status}. ` +
+        `This usually means the URL has expired or is invalid. ` +
+        `Please re-upload the image as a fresh attachment in Discord.`
+      );
+    }
+
+    throw new Error(
+      `Failed to download file: ${response.status} ${response.statusText}. ` +
+      `URL: ${url.substring(0, 100)}...`
+    );
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
   const mimeType = response.headers.get('content-type') || 'application/octet-stream';
+
+  console.log(`   Downloaded ${buffer.length} bytes`);
 
   return { buffer, mimeType };
 }
