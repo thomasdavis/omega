@@ -60,6 +60,19 @@ function parseFrontmatter(content: string): {
 }
 
 /**
+ * Escape HTML special characters for use in HTML attributes
+ * This is more comprehensive than the escapeHtml function which is for text content
+ */
+function escapeHtmlAttribute(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Simple markdown to HTML converter
  * Handles basic markdown syntax
  */
@@ -72,15 +85,15 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   // Headers with TTS support
   if (ttsEnabled) {
     html = html.replace(/^### (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<h3 data-tts="${sanitized}" class="tts-text">${text}</h3>`;
     });
     html = html.replace(/^## (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<h2 data-tts="${sanitized}" class="tts-text">${text}</h2>`;
     });
     html = html.replace(/^# (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<h1 data-tts="${sanitized}" class="tts-text">${text}</h1>`;
     });
   } else {
@@ -94,9 +107,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
     html = html.replace(
       /!\[(.*?)\]\((.*?)\)\s*\n\*([^*]+)\*/g,
       (match, alt, src, caption) => {
-        const sanitizedCaption = caption.trim()
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
+        const sanitizedCaption = escapeHtmlAttribute(caption.trim());
         return `<figure><img src="${src}" alt="${alt}" data-tts="${sanitizedCaption}" /><figcaption>${caption}</figcaption></figure>`;
       }
     );
@@ -106,9 +117,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
       /!\[(.*?)\]\((.*?)\)/g,
       (match, alt, src) => {
         if (!alt.trim()) return match;
-        const sanitizedAlt = alt.trim()
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
+        const sanitizedAlt = escapeHtmlAttribute(alt.trim());
         return `<img src="${src}" alt="${sanitizedAlt}" data-tts="${sanitizedAlt}" />`;
       }
     );
@@ -135,11 +144,11 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   // Unordered lists
   if (ttsEnabled) {
     html = html.replace(/^\* (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
     });
     html = html.replace(/^- (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
     });
   } else {
@@ -151,7 +160,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
   // Ordered lists
   if (ttsEnabled) {
     html = html.replace(/^\d+\. (.*$)/gim, (match, text) => {
-      const sanitized = text.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      const sanitized = escapeHtmlAttribute(text.trim());
       return `<li data-tts="${sanitized}" class="tts-text">${text}</li>`;
     });
   } else {
@@ -175,7 +184,7 @@ function markdownToHTML(markdown: string, ttsEnabled: boolean): string {
       // Extract text content for TTS (strip HTML tags for the data-tts attribute)
       const textContent = trimmed.replace(/<[^>]+>/g, '').trim();
       if (textContent.length > 0) {
-        const sanitized = textContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const sanitized = escapeHtmlAttribute(textContent);
         return `<p data-tts="${sanitized}" class="tts-text">${para}</p>`;
       }
       return `<p>${para}</p>`;
