@@ -23,14 +23,12 @@ import { transferRailwayFilesTool } from './tools/transferRailwayFiles.js';
 import { exportConversationTool } from './tools/exportConversation.js';
 import { conversationDiagramTool } from './tools/conversationDiagram.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
-import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { hackerNewsTool } from './tools/hackerNews.js';
 import { arxivTool } from './tools/arxiv.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
 import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 import { recipeGeneratorTool } from './tools/recipeGenerator.js';
-import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
 import { listArtifactsTool } from './tools/listArtifacts.js';
 import { codeQueryTool } from './tools/codeQuery.js';
@@ -200,14 +198,12 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         exportConversation: exportConversationTool,
         conversationDiagram: conversationDiagramTool,
         jsonAgentGenerator: jsonAgentGeneratorTool,
-        hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         hackerNews: hackerNewsTool,
         arxiv: arxivTool,
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
         generateHtmlPage: generateHtmlPageTool,
         recipeGenerator: recipeGeneratorTool,
-        ooda: oodaTool,
         listArtifacts: listArtifactsTool,
         codeQuery: codeQueryTool,
         conversationToSlidev: conversationToSlidevTool,
