@@ -79,6 +79,7 @@ import { generateIconEmojiTool } from './tools/generateIconEmoji.js';
 import { generateStandupSummaryTool } from './tools/generateStandupSummary.js';
 import { generateLegalDisclaimerTool } from './tools/generateLegalDisclaimer.js';
 import { generateFilmSceneTool } from './tools/generateFilmScene.js';
+import { csvToChartTool } from './tools/csvToChart.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -233,6 +234,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         generateComic: generateComicTool,
         generateSonnet: generateSonnetTool,
         generateCsv: generateCsvTool,
+        csvToChart: csvToChartTool,
         generateSongLyrics: generateSongLyricsTool,
         generateSheetMusic: generateSheetMusicTool,
         generateHaiku: generateHaikuTool,
