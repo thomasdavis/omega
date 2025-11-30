@@ -44,7 +44,10 @@ export const generateComicTool = tool({
   - Loads their profiles from Omega's database (appearance, personality, feelings)
   - Renders them as characters in the comic based on how Omega perceives them
 
-  When generating comics, consider who is in the recent conversation and mention their usernames in conversationParticipants.
+  **FOCUS ON PR/ISSUE CONTEXT:**
+  When generating comics for GitHub issues or PRs, prioritize the specific PR/issue content over full conversation history.
+  Use conversation history only where it adds relevant context to the current PR/issue.
+  Include conversation participants who are directly relevant to the PR/issue being illustrated.
 
   Optionally posts to Discord.`,
   inputSchema: z.object({
