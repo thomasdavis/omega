@@ -92,6 +92,7 @@ function drawLine(
   let x = x1;
   let y = y1;
 
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (y >= 0 && y < grid.length && x >= 0 && x < grid[0].length) {
       grid[y][x] = symbol;
