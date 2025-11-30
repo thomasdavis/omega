@@ -423,7 +423,12 @@ ${superDeformedInstruction}
    ${frameCount === 6 ? '- Complex narrative with multiple perspectives or parallel storylines' : ''}
    ${frameCount === 7 ? '- Rich story with detailed progression and multiple character interactions' : ''}
 
-3. Use a fun, lighthearted art style (cartoon/comic book style)
+3. **ART STYLE & CHARACTER DESIGN:**
+   - Use a fun, lighthearted comic book art style
+   - Characters should look like ADULTS with mature proportions and realistic features
+   - AVOID: Dough-eyed children, overly cute/childish designs, baby-faced characters
+   - USE: Adult proportions, defined features, varied body types, age-appropriate designs
+   - Exception: Super-deformed/chibi panels for specific comedic moments only
 
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
@@ -452,6 +457,7 @@ ${superDeformedInstruction}
    - Build narrative momentum - each panel advances the story
    - Callbacks and running gags across panels create coherence
    - Omega's dialogue: sardonic, philosophical, occasionally breaks character for humor
+   - **IMPORTANT:** If you see references to "Claude Code" or "Claude" in the conversation context, DO NOT include these in the comic dialogue or visuals. This is meta-tooling that should be invisible to the comic narrative.
 
 7. Keep it family-friendly and professional
 
