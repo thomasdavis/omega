@@ -105,10 +105,26 @@ Respond in JSON format:
   }
 }
 
+interface RailwayWebhookPayload {
+  type?: string;
+  event?: string;
+  deployment?: {
+    status?: string;
+    error?: string;
+    logs?: string;
+    meta?: {
+      projectName?: string;
+      environmentName?: string;
+      serviceName?: string;
+    };
+  };
+  [key: string]: unknown;
+}
+
 /**
  * Extracts error information from Railway webhook payload
  */
-export function parseRailwayWebhook(payload: any): RailwayError | null {
+export function parseRailwayWebhook(payload: RailwayWebhookPayload): RailwayError | null {
   // Handle different Railway webhook event types
   const eventType = payload.type || payload.event;
 

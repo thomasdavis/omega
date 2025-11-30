@@ -22,7 +22,7 @@ interface RESTMessage {
   id: string;
   channel_id: string;
   attachments: DurableAttachment[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
