@@ -45,13 +45,13 @@ interface HNComment {
 }
 
 export const hackerNewsTool = tool({
-  description: 'Query the Hacker News API to fetch stories, comments, and other data. Supports fetching top, new, best, and ask stories, as well as individual story details and comments. Can filter results by keywords in titles.',
+  description: 'Query the Hacker News API to fetch stories, comments, and other data. Supports fetching top, new, best, and ask stories, as well as individual story details and comments. IMPORTANT: When users request stories about a specific topic (e.g., "AI", "Python"), you MUST use the keywords parameter to filter results - returning unfiltered results is not acceptable when a topic is specified.',
   inputSchema: z.object({
     action: z.enum(['topStories', 'newStories', 'bestStories', 'askStories', 'showStories', 'jobStories', 'storyDetails', 'comments']).describe('The type of data to fetch'),
     limit: z.number().int().min(1).max(50).optional().describe('Number of items to return (default 10, max 50)'),
     storyId: z.number().int().optional().describe('Story ID (required for storyDetails and comments actions)'),
     includeText: z.boolean().optional().describe('Include comment/story text in response (default false for lists, true for details)'),
-    keywords: z.string().optional().describe('Optional keywords to filter stories by title (case-insensitive, space-separated for multiple keywords)'),
+    keywords: z.string().optional().describe('Keywords to filter stories by title (case-insensitive, space-separated for multiple keywords). REQUIRED when users specify a topic (e.g., "stories about AI" requires keywords="AI")'),
   }),
   execute: async ({ action, limit = 10, storyId, includeText = false, keywords }) => {
     try {
