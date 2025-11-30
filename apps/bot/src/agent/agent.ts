@@ -104,6 +104,19 @@ import { mongoAggregateTool } from '../mongodb/tools/mongoAggregate.js';
 import { mongoCreateIndexTool } from '../mongodb/tools/mongoCreateIndex.js';
 import { mongoListIndexesTool } from '../mongodb/tools/mongoListIndexes.js';
 import { mongoDropIndexTool } from '../mongodb/tools/mongoDropIndex.js';
+import { pgQueryTool } from '../postgres/tools/pgQuery.js';
+import { pgInsertTool } from '../postgres/tools/pgInsert.js';
+import { pgSelectTool } from '../postgres/tools/pgSelect.js';
+import { pgUpdateTool } from '../postgres/tools/pgUpdate.js';
+import { pgDeleteTool } from '../postgres/tools/pgDelete.js';
+import { pgCountTool } from '../postgres/tools/pgCount.js';
+import { pgListTablesTool } from '../postgres/tools/pgListTables.js';
+import { pgCreateTableTool } from '../postgres/tools/pgCreateTable.js';
+import { pgDropTableTool } from '../postgres/tools/pgDropTable.js';
+import { pgDescribeTableTool } from '../postgres/tools/pgDescribeTable.js';
+import { pgCreateIndexTool } from '../postgres/tools/pgCreateIndex.js';
+import { pgListIndexesTool } from '../postgres/tools/pgListIndexes.js';
+import { pgDropIndexTool } from '../postgres/tools/pgDropIndex.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -304,6 +317,20 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         mongoCreateIndex: mongoCreateIndexTool,
         mongoListIndexes: mongoListIndexesTool,
         mongoDropIndex: mongoDropIndexTool,
+        // PostgreSQL Tools (13 total)
+        pgQuery: pgQueryTool,
+        pgInsert: pgInsertTool,
+        pgSelect: pgSelectTool,
+        pgUpdate: pgUpdateTool,
+        pgDelete: pgDeleteTool,
+        pgCount: pgCountTool,
+        pgListTables: pgListTablesTool,
+        pgCreateTable: pgCreateTableTool,
+        pgDropTable: pgDropTableTool,
+        pgDescribeTable: pgDescribeTableTool,
+        pgCreateIndex: pgCreateIndexTool,
+        pgListIndexes: pgListIndexesTool,
+        pgDropIndex: pgDropIndexTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary

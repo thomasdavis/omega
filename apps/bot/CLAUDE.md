@@ -1016,6 +1016,627 @@ export async function getMongoDatabase(): Promise<Db> {
 
 ---
 
+## PostgreSQL Integration
+
+### Overview
+
+Omega includes a comprehensive PostgreSQL integration that provides 13 specialized tools for production-grade relational database operations alongside the existing LibSQL/Turso and MongoDB databases. This **triple-database architecture** allows you to use the best tool for each job:
+
+- **LibSQL/Turso**: Lightweight, embedded analytics and message storage
+- **MongoDB**: Flexible document storage for dynamic schemas
+- **PostgreSQL**: Production-grade relational database with ACID transactions
+
+### Features
+
+**13 PostgreSQL Tools** organized into three categories:
+
+1. **Basic CRUD (6 tools)**: Query, insert, select, update, delete, count
+2. **Schema Management (4 tools)**: List tables, create table, drop table, describe table
+3. **Index Management (3 tools)**: Create index, list indexes, drop index
+
+**Key Capabilities:**
+- Raw SQL execution with parameterized queries (SQL injection protection)
+- Full table and row-level CRUD operations
+- Schema introspection and management
+- Index optimization for query performance
+- Support for all PostgreSQL data types (TEXT, INTEGER, JSONB, TIMESTAMP, etc.)
+- Safety restrictions (no system table access, no database-level operations)
+
+### Triple-Database Architecture
+
+```
+Omega Bot
+├── LibSQL/Turso (Embedded/Serverless)
+│   ├── Message History
+│   ├── Analytics & Metrics
+│   └── Lightweight Storage
+│
+├── MongoDB (Document/NoSQL)
+│   ├── User-Created Collections
+│   ├── Flexible Schemas
+│   └── Complex Nested Data
+│
+└── PostgreSQL (Relational/ACID)
+    ├── Production Data
+    ├── Structured Tables
+    ├── Complex Joins & Transactions
+    └── Enterprise Features
+```
+
+**When to use each:**
+- **LibSQL**: Embedded analytics, local data, serverless deployments
+- **MongoDB**: Dynamic schemas, hierarchical data, rapid prototyping
+- **PostgreSQL**: Relational data, ACID transactions, complex queries, production workloads
+
+### Setup Instructions
+
+#### 1. Railway PostgreSQL Plugin (Production)
+
+Railway provides automatic PostgreSQL provisioning:
+
+1. Go to your Railway project dashboard
+2. Click "+ New" → "Database" → "Add PostgreSQL"
+3. Railway automatically sets environment variables:
+   - `DATABASE_URL` - Connection string (auto-provided)
+4. No additional configuration needed!
+
+**Railway Advantages:**
+- Automatic connection string injection
+- Persistent storage included
+- Automatic backups
+- Free tier available
+- PostgreSQL 15+ with full feature set
+
+#### 2. Local Development
+
+For local testing, run PostgreSQL via Docker:
+
+```bash
+# Start PostgreSQL locally
+docker run -d \
+  --name postgres \
+  -p 5432:5432 \
+  -e POSTGRES_PASSWORD=password \
+  -e POSTGRES_DB=omega_bot \
+  postgres:15
+
+# Or use pgAdmin/TablePlus for GUI management
+```
+
+Update `.env.local`:
+```bash
+POSTGRES_URL=postgresql://postgres:password@localhost:5432/omega_bot
+```
+
+#### 3. Environment Variables
+
+Add to `.env.local` (already in `.env.example`):
+
+```bash
+# PostgreSQL Configuration
+POSTGRES_URL=postgresql://localhost:5432/omega_bot  # Local development
+# or
+DATABASE_URL=postgresql://...                       # Railway auto-provides
+```
+
+**Railway Note:** In production, Railway automatically injects `DATABASE_URL` when you add the PostgreSQL plugin. The client checks both `POSTGRES_URL` and `DATABASE_URL` (in that order).
+
+### PostgreSQL Tools Reference
+
+#### Basic CRUD Operations (6 Tools)
+
+**1. pgQuery** - Execute raw SQL queries
+
+```typescript
+pgQuery({
+  sql: "SELECT * FROM users WHERE age > $1 ORDER BY name",
+  params: [18],  // Parameterized queries prevent SQL injection
+  rowMode: "object"  // or "array" for array results
+})
+// Returns: { success: true, rows: [...], rowCount: 10, command: "SELECT" }
+```
+
+**Supported SQL operations:**
+- SELECT, INSERT, UPDATE, DELETE
+- CREATE TABLE, DROP TABLE, ALTER TABLE
+- CREATE INDEX, DROP INDEX
+- Joins, aggregations, CTEs, window functions
+- All PostgreSQL data types and functions
+
+**2. pgInsert** - Insert rows into a table
+
+```typescript
+pgInsert({
+  table: "users",
+  rows: { name: "Alice", email: "alice@example.com", age: 30 },
+  // Or insert multiple: rows: [{...}, {...}, {...}]
+  returning: ["id", "created_at"]  // RETURNING clause
+})
+// Returns: { success: true, rows: [{id: 1, created_at: "..."}], insertedCount: 1 }
+```
+
+**3. pgSelect** - Query rows with filters, joins, sorting
+
+```typescript
+pgSelect({
+  table: "users",
+  columns: ["id", "name", "email"],  // Projection
+  where: { age: { $gt: 18 }, active: true },  // Filters
+  orderBy: { name: "ASC" },  // Sorting
+  limit: 10,
+  offset: 0,  // Pagination
+  joins: [{  // Optional joins
+    type: "INNER",
+    table: "orders",
+    on: "users.id = orders.user_id"
+  }]
+})
+// Returns: { success: true, rows: [...], count: 10 }
+```
+
+**WHERE operators:**
+- `$eq`: Equal (default if no operator)
+- `$gt`, `$gte`: Greater than (or equal)
+- `$lt`, `$lte`: Less than (or equal)
+- `$ne`: Not equal
+- `$in`: Value in array
+- `$like`, `$ilike`: Pattern matching (case-sensitive/insensitive)
+
+**4. pgUpdate** - Update rows with conditions
+
+```typescript
+pgUpdate({
+  table: "users",
+  set: { age: 31, updated_at: "NOW()" },
+  where: { email: "alice@example.com" },  // REQUIRED for safety
+  returning: ["id", "name", "age"]
+})
+// Returns: { success: true, rows: [...], updatedCount: 1 }
+// ⚠️ WHERE clause is REQUIRED (prevents accidental mass updates)
+```
+
+**5. pgDelete** - Delete rows from a table
+
+```typescript
+pgDelete({
+  table: "users",
+  where: { age: { $lt: 18 } },  // REQUIRED for safety
+  returning: ["id", "name"]  // Optional: return deleted rows
+})
+// Returns: { success: true, rows: [...], deletedCount: 5 }
+// ⚠️ WHERE clause is REQUIRED (prevents accidental mass deletes)
+```
+
+**6. pgCount** - Count rows matching a filter
+
+```typescript
+pgCount({
+  table: "users",
+  where: { active: true }  // Optional filter
+})
+// Returns: { success: true, count: 42 }
+```
+
+#### Schema Management (4 Tools)
+
+**7. pgListTables** - List all tables in the database
+
+```typescript
+pgListTables({
+  includeSystemTables: false  // Filter out pg_* tables
+})
+// Returns: { success: true, tables: ["users", "orders", "products"], count: 3 }
+```
+
+**8. pgCreateTable** - Create a new table
+
+```typescript
+pgCreateTable({
+  table: "products",
+  columns: [
+    { name: "id", type: "SERIAL", primaryKey: true },
+    { name: "name", type: "TEXT", nullable: false },
+    { name: "price", type: "DECIMAL(10,2)", nullable: false },
+    { name: "description", type: "TEXT", nullable: true },
+    { name: "stock", type: "INTEGER", defaultValue: "0" },
+    { name: "created_at", type: "TIMESTAMP", defaultValue: "NOW()" },
+    { name: "metadata", type: "JSONB", nullable: true }
+  ],
+  ifNotExists: true  // Skip if already exists
+})
+// Returns: { success: true, table: "products", columns: [...] }
+```
+
+**Common PostgreSQL data types:**
+- **Text**: TEXT, VARCHAR(n), CHAR(n)
+- **Numbers**: INTEGER, BIGINT, SERIAL, BIGSERIAL, DECIMAL(p,s), NUMERIC, REAL, DOUBLE PRECISION
+- **Boolean**: BOOLEAN
+- **Date/Time**: DATE, TIME, TIMESTAMP, TIMESTAMPTZ, INTERVAL
+- **JSON**: JSON, JSONB (binary JSON, recommended)
+- **Other**: UUID, BYTEA, ARRAY, HSTORE
+
+**9. pgDropTable** - Drop (delete) an entire table
+
+```typescript
+pgDropTable({
+  table: "temp_data",
+  cascade: false,  // If true, also drop dependent objects
+  confirmDeletion: true  // REQUIRED: Safety confirmation
+})
+// Returns: { success: true, message: "Table permanently deleted" }
+// ⚠️ DANGER: Permanent deletion! Cannot drop pg_* or information_schema tables.
+```
+
+**10. pgDescribeTable** - Show table schema (columns, indexes, constraints)
+
+```typescript
+pgDescribeTable({
+  table: "users"
+})
+// Returns: {
+//   success: true,
+//   table: "users",
+//   columns: [
+//     { name: "id", type: "integer", nullable: false, default: "nextval(...)" },
+//     { name: "email", type: "text", nullable: false, default: null }
+//   ],
+//   indexes: [
+//     { name: "users_pkey", columns: ["id"], unique: true, primary: true },
+//     { name: "users_email_idx", columns: ["email"], unique: true }
+//   ],
+//   constraints: [
+//     { name: "users_pkey", type: "p", definition: "PRIMARY KEY (id)" }
+//   ]
+// }
+```
+
+#### Index Management (3 Tools)
+
+**11. pgCreateIndex** - Create an index for query optimization
+
+```typescript
+pgCreateIndex({
+  table: "users",
+  columns: ["email"],
+  unique: true,  // Enforce uniqueness
+  indexType: "btree",  // btree, hash, gin, gist
+  indexName: "users_email_unique",  // Optional custom name
+  ifNotExists: true
+})
+// Returns: { success: true, indexName: "users_email_unique" }
+```
+
+**Index types:**
+- **btree** (default): General-purpose, supports <, <=, =, >=, >, BETWEEN, IN
+- **hash**: Equality comparisons only (=), faster for exact matches
+- **gin**: Full-text search, JSONB, arrays (`@>`, `?`, `?&`, `?|`)
+- **gist**: Geometric data, full-text search, custom data types
+
+**Common indexing strategies:**
+```typescript
+// Unique constraint
+pgCreateIndex({ table: "users", columns: ["email"], unique: true })
+
+// Composite index (multiple columns)
+pgCreateIndex({ table: "orders", columns: ["user_id", "created_at"] })
+
+// JSONB index for fast queries
+pgCreateIndex({ table: "data", columns: ["metadata"], indexType: "gin" })
+
+// Partial index (filtered)
+pgQuery({ sql: "CREATE INDEX active_users_idx ON users(email) WHERE active = true" })
+```
+
+**12. pgListIndexes** - List all indexes on a table
+
+```typescript
+pgListIndexes({
+  table: "users"
+})
+// Returns: {
+//   success: true,
+//   indexes: [
+//     { name: "users_pkey", columns: ["id"], unique: true, primary: true, type: "btree" },
+//     { name: "users_email_idx", columns: ["email"], unique: true, primary: false, type: "btree" }
+//   ],
+//   count: 2
+// }
+```
+
+**13. pgDropIndex** - Drop an index
+
+```typescript
+pgDropIndex({
+  indexName: "old_index",
+  ifExists: true,  // Prevent error if doesn't exist
+  cascade: false   // Drop dependent objects
+})
+// Returns: { success: true, indexName: "old_index" }
+// ⚠️ Dropping indexes can slow down queries! Only drop if certain.
+```
+
+### Usage Examples
+
+#### Example 1: User Management System
+
+```typescript
+// 1. Create users table
+pgCreateTable({
+  table: "users",
+  columns: [
+    { name: "id", type: "SERIAL", primaryKey: true },
+    { name: "username", type: "TEXT", nullable: false, unique: true },
+    { name: "email", type: "TEXT", nullable: false, unique: true },
+    { name: "age", type: "INTEGER", nullable: true },
+    { name: "active", type: "BOOLEAN", defaultValue: "true" },
+    { name: "created_at", type: "TIMESTAMP", defaultValue: "NOW()" }
+  ]
+})
+
+// 2. Insert users
+pgInsert({
+  table: "users",
+  rows: [
+    { username: "alice", email: "alice@example.com", age: 30 },
+    { username: "bob", email: "bob@example.com", age: 25 }
+  ],
+  returning: ["id", "username"]
+})
+
+// 3. Query active users over 18
+pgSelect({
+  table: "users",
+  columns: ["id", "username", "email", "age"],
+  where: { active: true, age: { $gte: 18 } },
+  orderBy: { created_at: "DESC" },
+  limit: 100
+})
+
+// 4. Update user age
+pgUpdate({
+  table: "users",
+  set: { age: 31 },
+  where: { username: "alice" },
+  returning: ["id", "username", "age"]
+})
+
+// 5. Count users by age group
+pgQuery({
+  sql: `
+    SELECT
+      CASE
+        WHEN age < 18 THEN 'under_18'
+        WHEN age >= 18 AND age < 65 THEN 'adult'
+        ELSE 'senior'
+      END as age_group,
+      COUNT(*) as count
+    FROM users
+    WHERE active = true
+    GROUP BY age_group
+  `
+})
+```
+
+#### Example 2: E-commerce with Joins
+
+```typescript
+// Create orders table
+pgCreateTable({
+  table: "orders",
+  columns: [
+    { name: "id", type: "SERIAL", primaryKey: true },
+    { name: "user_id", type: "INTEGER", nullable: false },
+    { name: "total", type: "DECIMAL(10,2)", nullable: false },
+    { name: "status", type: "TEXT", defaultValue: "'pending'" },
+    { name: "created_at", type: "TIMESTAMP", defaultValue: "NOW()" }
+  ]
+})
+
+// Query users with their order totals (JOIN)
+pgSelect({
+  table: "users",
+  columns: ["users.id", "users.username", "COUNT(orders.id) as order_count", "SUM(orders.total) as total_spent"],
+  joins: [{
+    type: "LEFT",
+    table: "orders",
+    on: "users.id = orders.user_id"
+  }],
+  where: { "users.active": true },
+  orderBy: { "total_spent": "DESC" },
+  limit: 10
+})
+```
+
+#### Example 3: Performance Optimization
+
+```typescript
+// 1. Check slow queries - describe table first
+pgDescribeTable({ table: "users" })
+
+// 2. List existing indexes
+pgListIndexes({ table: "users" })
+
+// 3. Create index on frequently queried column
+pgCreateIndex({
+  table: "users",
+  columns: ["email"],
+  unique: true,
+  indexName: "users_email_unique"
+})
+
+// 4. Composite index for complex queries
+pgCreateIndex({
+  table: "orders",
+  columns: ["user_id", "created_at"],
+  indexName: "orders_user_date_idx"
+})
+
+// 5. JSONB index for JSON queries
+pgCreateIndex({
+  table: "products",
+  columns: ["metadata"],
+  indexType: "gin",
+  indexName: "products_metadata_gin"
+})
+
+// 6. Query with EXPLAIN to verify index usage
+pgQuery({
+  sql: "EXPLAIN ANALYZE SELECT * FROM users WHERE email = $1",
+  params: ["alice@example.com"]
+})
+```
+
+### Best Practices
+
+**1. Security**
+- Always use parameterized queries (`$1`, `$2`, etc.) to prevent SQL injection
+- Never concatenate user input directly into SQL strings
+- Table/column names are validated (alphanumeric + underscores only)
+- System tables (pg_*, information_schema) are protected
+
+**2. Performance**
+- Create indexes on frequently queried columns
+- Use `columns` parameter to limit returned fields (projection)
+- Use `limit` and `offset` for pagination
+- Avoid `SELECT *` in production queries
+- Use EXPLAIN ANALYZE to understand query plans
+
+**3. Safety**
+- UPDATE and DELETE require WHERE clause (prevents accidental mass operations)
+- DROP TABLE requires `confirmDeletion: true`
+- Test filters with pgCount before running UPDATE/DELETE
+- Use transactions for multi-step operations (via pgQuery)
+
+**4. Data Types**
+- Use SERIAL/BIGSERIAL for auto-incrementing IDs
+- Use TIMESTAMP or TIMESTAMPTZ for timestamps (TZ for timezone awareness)
+- Use JSONB (not JSON) for better performance and indexing
+- Use DECIMAL(p,s) for currency (not FLOAT/REAL)
+- Use TEXT instead of VARCHAR unless you need length constraints
+
+**5. Triple-Database Strategy**
+- **PostgreSQL**: Use for relational data with fixed schemas, complex joins, ACID transactions
+- **MongoDB**: Use for flexible schemas, nested documents, rapid iteration
+- **LibSQL**: Use for embedded analytics, local caching, lightweight storage
+
+### Troubleshooting
+
+**Problem:** "TABLE_NOT_FOUND" error
+
+**Solution:**
+```typescript
+// Check if table exists
+pgListTables({})
+
+// Create table if it doesn't exist
+pgCreateTable({
+  table: "my_table",
+  columns: [...],
+  ifNotExists: true
+})
+```
+
+**Problem:** "INVALID_TABLE_NAME" or "INVALID_COLUMN_NAME" error
+
+**Solution:**
+- Use only alphanumeric characters and underscores
+- Start with a letter or underscore
+- No spaces, hyphens, or special characters
+- Examples: `user_profiles` ✅, `my-table` ❌, `123users` ❌
+
+**Problem:** "WHERE clause is required" error
+
+**Solution:**
+```typescript
+// UPDATE and DELETE require WHERE for safety
+pgUpdate({
+  table: "users",
+  set: { active: false },
+  where: { id: 123 }  // REQUIRED!
+})
+
+// To update ALL rows, use pgQuery instead:
+pgQuery({
+  sql: "UPDATE users SET active = false"
+})
+```
+
+**Problem:** Slow queries
+
+**Solution:**
+```typescript
+// 1. Check if indexes exist
+pgListIndexes({ table: "users" })
+
+// 2. Create index on queried columns
+pgCreateIndex({
+  table: "users",
+  columns: ["email"]
+})
+
+// 3. Use EXPLAIN to analyze query plan
+pgQuery({
+  sql: "EXPLAIN ANALYZE SELECT * FROM users WHERE email = $1",
+  params: ["test@example.com"]
+})
+```
+
+**Problem:** Connection errors
+
+**Solution:**
+1. Verify `POSTGRES_URL` or `DATABASE_URL` environment variable is set
+2. Railway: Check PostgreSQL plugin is attached
+3. Local: Ensure PostgreSQL is running (`docker ps` or `pg_isready`)
+4. Check connection string format: `postgresql://user:password@host:port/database`
+5. Verify credentials and database name are correct
+
+**Problem:** "relation does not exist" error
+
+**Solution:**
+- PostgreSQL is case-sensitive and defaults to lowercase
+- Use lowercase table names: `users` not `Users`
+- Or quote identifiers: `"Users"` (not recommended)
+
+### Architecture Details
+
+**Singleton Connection Pattern:**
+```typescript
+// apps/bot/src/postgres/client.ts
+export async function getPostgresPool(): Promise<Pool> {
+  // Returns cached pool or creates new one
+  // Connection pooling: max 20, min 2 connections
+  // Timeouts: 10s connect, 30s query, 30s idle
+}
+```
+
+**Graceful Shutdown:**
+- SIGTERM/SIGINT handlers close PostgreSQL connection on bot shutdown
+- Prevents connection leaks
+- Ensures clean Railway deployments
+
+**Safety Features:**
+- Table/column name validation (alphanumeric + underscores only)
+- System table protection (cannot drop `pg_*` or `information_schema`)
+- WHERE clause required for UPDATE/DELETE (prevents mass operations)
+- Parameterized queries prevent SQL injection
+- Query timeouts (30s max)
+- confirmDeletion flag for destructive operations
+
+**Database Comparison:**
+
+| Feature | LibSQL/Turso | MongoDB | PostgreSQL |
+|---------|-------------|---------|------------|
+| **Type** | Embedded SQL | Document Store | Relational |
+| **Schema** | Fixed | Flexible | Fixed |
+| **Queries** | SQL | MongoDB Query | SQL |
+| **Joins** | Yes | $lookup | Yes (optimized) |
+| **Transactions** | Yes | Yes | Yes (ACID) |
+| **Indexing** | Basic | Advanced | Advanced |
+| **Use Case** | Local/Analytics | Dynamic data | Production data |
+| **Scalability** | Serverless | Horizontal | Vertical + Horizontal |
+
+---
+
 ## Local Development
 
 ### 1. Install Dependencies
