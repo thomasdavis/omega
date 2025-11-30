@@ -25,6 +25,7 @@ import { conversationDiagramTool } from './tools/conversationDiagram.js';
 import { jsonAgentGeneratorTool } from './tools/jsonAgentGenerator.js';
 import { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 import { hackerNewsTool } from './tools/hackerNews.js';
+import { arxivTool } from './tools/arxiv.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
 import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
@@ -200,6 +201,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         jsonAgentGenerator: jsonAgentGeneratorTool,
         hackerNewsPhilosophy: hackerNewsPhilosophyTool,
         hackerNews: hackerNewsTool,
+        arxiv: arxivTool,
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
         generateHtmlPage: generateHtmlPageTool,
