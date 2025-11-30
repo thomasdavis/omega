@@ -62,7 +62,7 @@ export async function postTweet(options: TweetOptions): Promise<TweetResult> {
 
     // Create tweet
     console.log('📝 Creating tweet...');
-    const tweetData: any = { text };
+    const tweetData: { text: string; media?: { media_ids: string[] } } = { text };
 
     if (mediaId) {
       tweetData.media = { media_ids: [mediaId] };

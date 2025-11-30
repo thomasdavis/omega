@@ -105,10 +105,32 @@ Respond in JSON format:
   }
 }
 
+interface RailwayWebhookPayload {
+  type?: string;
+  event?: string;
+  timestamp?: string;
+  deployment?: {
+    status?: string;
+    id?: string;
+    meta?: {
+      commitSha?: string;
+    };
+  };
+  snapshot?: {
+    error?: string;
+  };
+  error?: string;
+  service?: {
+    name?: string;
+  };
+  logs?: string;
+  stackTrace?: string;
+}
+
 /**
  * Extracts error information from Railway webhook payload
  */
-export function parseRailwayWebhook(payload: any): RailwayError | null {
+export function parseRailwayWebhook(payload: RailwayWebhookPayload): RailwayError | null {
   // Handle different Railway webhook event types
   const eventType = payload.type || payload.event;
 

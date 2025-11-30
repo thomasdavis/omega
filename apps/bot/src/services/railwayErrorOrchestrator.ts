@@ -37,7 +37,7 @@ export interface ErrorProcessingResult {
  * Main orchestration function that processes Railway errors end-to-end
  */
 export async function processRailwayError(
-  webhookPayload: any,
+  webhookPayload: unknown,
   githubToken: string,
   repo: string = 'thomasdavis/omega'
 ): Promise<ErrorProcessingResult> {

@@ -82,7 +82,10 @@ export async function generateImageWithGemini(
     // Extract image data from response
     // The response may contain multiple parts, find the image part
     const imageParts = result.response.candidates?.[0]?.content?.parts?.filter(
-      (part: any) => part.inlineData?.mimeType?.startsWith('image/')
+      (part): part is { inlineData?: { mimeType?: string; data?: string } } => {
+        const partWithData = part as { inlineData?: { mimeType?: string } };
+        return partWithData.inlineData?.mimeType?.startsWith('image/') ?? false;
+      }
     );
 
     if (!imageParts || imageParts.length === 0) {
@@ -94,7 +97,7 @@ export async function generateImageWithGemini(
 
     // Get the first image part
     const imagePart = imageParts[0];
-    const imageData = (imagePart as any).inlineData?.data;
+    const imageData = imagePart.inlineData?.data;
 
     if (!imageData) {
       return {
