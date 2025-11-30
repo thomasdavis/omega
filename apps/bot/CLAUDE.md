@@ -539,6 +539,483 @@ The Twitter integration is completely optional:
 
 ---
 
+## MongoDB Integration
+
+### Overview
+
+Omega includes a comprehensive MongoDB integration that provides 14 specialized tools for flexible, NoSQL data storage alongside the existing LibSQL/Turso database. This **dual-database architecture** allows you to use the best tool for each job:
+
+- **LibSQL/Turso**: Structured relational data (user profiles, messages, analytics)
+- **MongoDB**: Flexible document storage (user-created collections, dynamic schemas, complex data structures)
+
+### Features
+
+**14 MongoDB Tools** organized into three categories:
+
+1. **Basic CRUD (6 tools)**: Insert, find, find one, update, delete, count
+2. **Collection Management (4 tools)**: List, create, drop, rename collections
+3. **Advanced Operations (4 tools)**: Aggregation pipelines, indexes (create, list, drop)
+
+**Key Capabilities:**
+- Full collection-level access (users can create/drop collections)
+- Support for MongoDB query operators ($gt, $in, $regex, etc.)
+- Aggregation pipelines for complex analytics
+- Index management for query optimization
+- Safety restrictions (no system.* collections, no database-level operations)
+
+### Dual-Database Architecture
+
+```
+Omega Bot
+├── LibSQL/Turso (Relational)
+│   ├── User Profiles (user_profiles table)
+│   ├── Message History (messages table)
+│   ├── Analytics & Metrics
+│   └── Bot Configuration
+│
+└── MongoDB (Document/NoSQL)
+    ├── User-Created Collections (dynamic)
+    ├── Flexible Schemas
+    ├── Complex Nested Data
+    └── Experimental/Temporary Data
+```
+
+**When to use each:**
+- **LibSQL**: Fixed schema, relational data, ACID transactions, analytics
+- **MongoDB**: Dynamic schema, hierarchical data, rapid prototyping, user-generated content
+
+### Setup Instructions
+
+#### 1. Railway MongoDB Plugin (Production)
+
+Railway provides automatic MongoDB provisioning:
+
+1. Go to your Railway project dashboard
+2. Click "+ New" → "Database" → "Add MongoDB"
+3. Railway automatically sets environment variables:
+   - `MONGODB_URI` - Connection string (auto-provided)
+   - `MONGODB_DATABASE` - Database name (auto-provided)
+4. No additional configuration needed!
+
+**Railway Advantages:**
+- Automatic connection string injection
+- Persistent storage included
+- Automatic backups
+- Free tier available
+
+#### 2. Local Development
+
+For local testing, run MongoDB via Docker:
+
+```bash
+# Start MongoDB locally
+docker run -d \
+  --name mongodb \
+  -p 27017:27017 \
+  -e MONGO_INITDB_ROOT_USERNAME=admin \
+  -e MONGO_INITDB_ROOT_PASSWORD=password \
+  mongo:latest
+
+# Or use MongoDB Compass for GUI
+# Download: https://www.mongodb.com/products/compass
+```
+
+Update `.env.local`:
+```bash
+MONGODB_URI=mongodb://admin:password@localhost:27017
+MONGODB_DATABASE=omega_bot
+```
+
+#### 3. Environment Variables
+
+Add to `.env.local` (already in `.env.example`):
+
+```bash
+# MongoDB Configuration
+MONGODB_URI=mongodb://localhost:27017       # Railway auto-provides in production
+MONGODB_DATABASE=omega_bot                  # Railway auto-provides in production
+```
+
+**Railway Note:** In production, Railway automatically injects these variables when you add the MongoDB plugin. You don't need to set them manually!
+
+### MongoDB Tools Reference
+
+#### Basic CRUD Operations (6 Tools)
+
+**1. mongoInsert** - Insert documents into a collection
+
+```typescript
+mongoInsert({
+  collection: "users",
+  documents: { name: "Alice", age: 30, email: "alice@example.com" },
+  // Or insert multiple: documents: [{...}, {...}]
+  createCollectionIfNotExists: true
+})
+// Returns: { success: true, insertedCount: 1, insertedIds: [...] }
+```
+
+**2. mongoFind** - Query multiple documents with filters, sorting, pagination
+
+```typescript
+mongoFind({
+  collection: "users",
+  filter: { age: { $gt: 18 } },              // MongoDB query operators
+  projection: { name: 1, email: 1, _id: 0 }, // Which fields to return
+  sort: { age: -1 },                         // -1 = descending, 1 = ascending
+  limit: 10,
+  skip: 0                                     // For pagination
+})
+// Returns: { success: true, documents: [...], count: 10 }
+```
+
+**3. mongoFindOne** - Query a single document
+
+```typescript
+mongoFindOne({
+  collection: "users",
+  filter: { email: "alice@example.com" },
+  projection: { name: 1, age: 1 }
+})
+// Returns: { success: true, document: {...}, found: true }
+```
+
+**4. mongoUpdate** - Update documents using MongoDB operators
+
+```typescript
+mongoUpdate({
+  collection: "users",
+  filter: { email: "alice@example.com" },
+  update: {
+    $set: { age: 31 },              // Set fields
+    $inc: { loginCount: 1 },        // Increment
+    $push: { tags: "premium" }      // Add to array
+  },
+  updateMany: false,  // false = update first match, true = update all matches
+  upsert: false       // Insert if no match found
+})
+// Returns: { success: true, matchedCount: 1, modifiedCount: 1 }
+```
+
+**5. mongoDelete** - Delete documents from a collection
+
+```typescript
+mongoDelete({
+  collection: "users",
+  filter: { age: { $lt: 18 } },
+  deleteMany: true    // false = delete first match, true = delete all matches
+})
+// Returns: { success: true, deletedCount: 5 }
+```
+
+**6. mongoCount** - Count documents matching a filter
+
+```typescript
+mongoCount({
+  collection: "users",
+  filter: { age: { $gte: 18 } }  // Empty {} counts all
+})
+// Returns: { success: true, count: 42 }
+```
+
+#### Collection Management (4 Tools)
+
+**7. mongoListCollections** - List all collections in the database
+
+```typescript
+mongoListCollections({
+  includeSystemCollections: false  // Filter out system.* collections
+})
+// Returns: { success: true, collections: ["users", "products", "orders"], count: 3 }
+```
+
+**8. mongoCreateCollection** - Create a new collection
+
+```typescript
+mongoCreateCollection({
+  collection: "products",
+  capped: false,        // Optional: Fixed-size collection
+  size: 1000000,        // Required if capped=true (bytes)
+  maxDocuments: 100     // Optional: Max docs for capped collection
+})
+// Returns: { success: true, collection: "products" }
+```
+
+**9. mongoDropCollection** - Drop (delete) an entire collection
+
+```typescript
+mongoDropCollection({
+  collection: "temp_data",
+  confirmDeletion: true  // REQUIRED: Safety confirmation
+})
+// Returns: { success: true, message: "Collection permanently deleted" }
+// ⚠️ DANGER: Permanent deletion! Cannot drop system.* collections.
+```
+
+**10. mongoRenameCollection** - Rename a collection
+
+```typescript
+mongoRenameCollection({
+  oldName: "old_users",
+  newName: "archived_users",
+  dropTarget: false  // If true, overwrites target collection if exists
+})
+// Returns: { success: true, oldName: "old_users", newName: "archived_users" }
+```
+
+#### Advanced Operations (4 Tools)
+
+**11. mongoAggregate** - Run aggregation pipelines for complex analytics
+
+```typescript
+mongoAggregate({
+  collection: "orders",
+  pipeline: [
+    { $match: { status: "completed" } },
+    { $group: {
+        _id: "$customerId",
+        totalSpent: { $sum: "$amount" },
+        orderCount: { $sum: 1 }
+    }},
+    { $sort: { totalSpent: -1 } },
+    { $limit: 10 }
+  ],
+  timeout: 10000  // Max execution time (ms)
+})
+// Returns: { success: true, results: [...], count: 10 }
+```
+
+**Common aggregation stages:**
+- `$match`: Filter documents
+- `$group`: Group and aggregate
+- `$sort`: Sort results
+- `$project`: Reshape documents
+- `$lookup`: Join collections
+- `$unwind`: Flatten arrays
+- `$limit`/`$skip`: Pagination
+
+**12. mongoCreateIndex** - Create indexes for query optimization
+
+```typescript
+mongoCreateIndex({
+  collection: "users",
+  keys: { email: 1 },      // 1 = ascending, -1 = descending, "text" = text index
+  unique: true,            // Enforce uniqueness
+  sparse: false,           // Only index docs with the field
+  name: "email_unique",    // Optional custom name
+  expireAfterSeconds: 3600 // Optional TTL (auto-delete old docs)
+})
+// Returns: { success: true, indexName: "email_unique" }
+```
+
+**13. mongoListIndexes** - List all indexes on a collection
+
+```typescript
+mongoListIndexes({
+  collection: "users"
+})
+// Returns: {
+//   success: true,
+//   indexes: [
+//     { name: "_id_", key: { _id: 1 }, unique: true },
+//     { name: "email_unique", key: { email: 1 }, unique: true }
+//   ],
+//   count: 2
+// }
+```
+
+**14. mongoDropIndex** - Drop an index
+
+```typescript
+mongoDropIndex({
+  collection: "users",
+  indexName: "email_unique"  // Use "*" to drop all non-_id indexes
+})
+// Returns: { success: true, indexName: "email_unique" }
+// ⚠️ Cannot drop _id_ index (MongoDB requirement)
+```
+
+### Usage Examples
+
+#### Example 1: User Task Management System
+
+```typescript
+// User asks: "Create a todo list for me"
+
+// 1. Create collection
+mongoCreateCollection({ collection: "user_todos" })
+
+// 2. Add tasks
+mongoInsert({
+  collection: "user_todos",
+  documents: [
+    { userId: "123", task: "Buy groceries", completed: false, priority: "high" },
+    { userId: "123", task: "Write report", completed: false, priority: "medium" },
+    { userId: "123", task: "Call mom", completed: true, priority: "low" }
+  ]
+})
+
+// 3. Query active tasks
+mongoFind({
+  collection: "user_todos",
+  filter: { userId: "123", completed: false },
+  sort: { priority: 1 }
+})
+
+// 4. Mark task complete
+mongoUpdate({
+  collection: "user_todos",
+  filter: { task: "Buy groceries" },
+  update: { $set: { completed: true } }
+})
+
+// 5. Count completed tasks
+mongoCount({
+  collection: "user_todos",
+  filter: { userId: "123", completed: true }
+})
+```
+
+#### Example 2: Analytics Dashboard with Aggregation
+
+```typescript
+// User asks: "Show me sales by category"
+
+mongoAggregate({
+  collection: "sales",
+  pipeline: [
+    { $match: { date: { $gte: new Date("2025-01-01") } } },
+    { $group: {
+        _id: "$category",
+        totalRevenue: { $sum: "$amount" },
+        totalOrders: { $sum: 1 },
+        avgOrderValue: { $avg: "$amount" }
+    }},
+    { $sort: { totalRevenue: -1 } }
+  ]
+})
+```
+
+#### Example 3: Performance Optimization with Indexes
+
+```typescript
+// User asks: "Why are my user searches slow?"
+
+// 1. Check existing indexes
+mongoListIndexes({ collection: "users" })
+
+// 2. Create index on frequently queried field
+mongoCreateIndex({
+  collection: "users",
+  keys: { email: 1 },
+  unique: true
+})
+
+// 3. Create compound index for complex queries
+mongoCreateIndex({
+  collection: "users",
+  keys: { country: 1, age: -1 },
+  name: "country_age_idx"
+})
+
+// 4. Create text index for search
+mongoCreateIndex({
+  collection: "users",
+  keys: { bio: "text", interests: "text" },
+  name: "user_search"
+})
+```
+
+### Best Practices
+
+**1. Collection Naming**
+- Use descriptive names: `user_preferences`, `product_catalog`
+- Alphanumeric + underscores only: `my_data_v2` ✅, `my-data` ❌
+- No `system.*` prefix (reserved by MongoDB)
+
+**2. Query Optimization**
+- Always use indexes for frequently queried fields
+- Use `projection` to limit returned fields
+- Use `limit` to cap result sizes (max 1000)
+- Use aggregation pipelines for complex analytics instead of multiple queries
+
+**3. Safety**
+- Always set `confirmDeletion: true` when dropping collections
+- Test filters with `mongoCount` before deleting/updating
+- Use `updateMany: false` by default to prevent accidental mass updates
+- Cannot drop `system.*` collections (protected)
+- Cannot drop `_id_` index (MongoDB requirement)
+
+**4. Dual-Database Strategy**
+- LibSQL for structured, relational data with strong schemas
+- MongoDB for flexible, user-generated, experimental data
+- Both databases can coexist - use the right tool for each job
+
+### Troubleshooting
+
+**Problem:** "COLLECTION_NOT_FOUND" error
+
+**Solution:**
+```typescript
+// Collections are created automatically on first insert
+// Or explicitly create:
+mongoCreateCollection({ collection: "my_collection" })
+```
+
+**Problem:** "INVALID_COLLECTION_NAME" error
+
+**Solution:**
+- Use only alphanumeric characters and underscores
+- No spaces, hyphens, or special characters
+- Don't start with `system.`
+
+**Problem:** Slow queries
+
+**Solution:**
+```typescript
+// Create indexes on queried fields
+mongoCreateIndex({
+  collection: "users",
+  keys: { email: 1 }
+})
+
+// Check what indexes exist
+mongoListIndexes({ collection: "users" })
+```
+
+**Problem:** Connection errors
+
+**Solution:**
+1. Verify `MONGODB_URI` environment variable is set
+2. Railway: Check MongoDB plugin is attached
+3. Local: Ensure MongoDB is running (`docker ps`)
+4. Check connection string format: `mongodb://host:port` or Railway's full URI
+
+### Architecture Details
+
+**Singleton Connection Pattern:**
+```typescript
+// apps/bot/src/mongodb/client.ts
+export async function getMongoDatabase(): Promise<Db> {
+  // Returns cached connection or creates new one
+  // Connection pooling: max 10, min 2 connections
+  // Timeouts: 5s server selection, 10s connect
+}
+```
+
+**Graceful Shutdown:**
+- SIGTERM/SIGINT handlers close MongoDB connection on bot shutdown
+- Prevents connection leaks
+- Ensures clean Railway deployments
+
+**Safety Features:**
+- Collection name validation (alphanumeric + underscores only)
+- System collection protection (cannot drop `system.*`)
+- Index protection (cannot drop `_id_` index)
+- Deletion confirmation required
+- Query timeouts (30s max for aggregation)
+
+---
+
 ## Local Development
 
 ### 1. Install Dependencies
