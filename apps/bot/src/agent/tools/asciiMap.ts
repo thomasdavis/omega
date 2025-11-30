@@ -23,19 +23,20 @@ const SYMBOLS = {
   EMPTY: ' ',
 } as const;
 
-interface MapElement {
-  type: 'room' | 'corridor' | 'trap' | 'treasure' | 'stairs' | 'monster' | 'player' | 'feature';
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  symbol?: string;
-  label?: string;
-  direction?: 'horizontal' | 'vertical';
-  length?: number;
-  stairType?: 'up' | 'down';
-  featureType?: 'water' | 'grass' | 'tree';
-}
+const mapElementSchema = z.object({
+  type: z.enum(['room', 'corridor', 'trap', 'treasure', 'stairs', 'monster', 'player', 'feature'])
+    .describe('Type of map element to place'),
+  x: z.number().int().describe('X coordinate (column) for the element'),
+  y: z.number().int().describe('Y coordinate (row) for the element'),
+  width: z.number().int().optional().describe('Width of room or feature (default: 5 for rooms, 1 for features)'),
+  height: z.number().int().optional().describe('Height of room or feature (default: 3 for rooms, 1 for features)'),
+  direction: z.enum(['horizontal', 'vertical']).optional().describe('Direction of corridor (default: horizontal)'),
+  length: z.number().int().optional().describe('Length of corridor (default: 5)'),
+  stairType: z.enum(['up', 'down']).optional().describe('Type of stairs (up or down)'),
+  featureType: z.enum(['water', 'grass', 'tree']).optional().describe('Type of environmental feature'),
+});
+
+type MapElement = z.infer<typeof mapElementSchema>;
 
 interface MapOptions {
   width: number;
@@ -185,7 +186,7 @@ function drawFeature(grid: string[][], element: MapElement): void {
   const maxY = grid.length;
   const maxX = grid[0].length;
 
-  let symbol = SYMBOLS.WATER;
+  let symbol: string = SYMBOLS.WATER;
   if (featureType === 'grass') symbol = SYMBOLS.GRASS;
   if (featureType === 'tree') symbol = SYMBOLS.TREE;
 
@@ -221,20 +222,7 @@ export const asciiMapTool = tool({
     width: z.number().int().min(10).max(80).describe('Width of the map in characters (10-80)'),
     height: z.number().int().min(10).max(40).describe('Height of the map in rows (10-40)'),
     title: z.string().optional().describe('Optional title for the map'),
-    elements: z.array(
-      z.object({
-        type: z.enum(['room', 'corridor', 'trap', 'treasure', 'stairs', 'monster', 'player', 'feature'])
-          .describe('Type of map element to place'),
-        x: z.number().int().describe('X coordinate (column) for the element'),
-        y: z.number().int().describe('Y coordinate (row) for the element'),
-        width: z.number().int().optional().describe('Width of room or feature (default: 5 for rooms, 1 for features)'),
-        height: z.number().int().optional().describe('Height of room or feature (default: 3 for rooms, 1 for features)'),
-        direction: z.enum(['horizontal', 'vertical']).optional().describe('Direction of corridor (default: horizontal)'),
-        length: z.number().int().optional().describe('Length of corridor (default: 5)'),
-        stairType: z.enum(['up', 'down']).optional().describe('Type of stairs (up or down)'),
-        featureType: z.enum(['water', 'grass', 'tree']).optional().describe('Type of environmental feature'),
-      })
-    ).describe('Array of map elements to place on the map'),
+    elements: z.array(mapElementSchema).describe('Array of map elements to place on the map'),
     showLegend: z.boolean().optional().describe('Show legend explaining symbols (default: true)'),
   }),
   execute: async ({ width, height, title, elements, showLegend = true }) => {
