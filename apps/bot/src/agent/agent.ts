@@ -14,6 +14,7 @@ import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool, unsandboxSubmitTool, unsandboxStatusTool } from './tools/unsandbox.js';
 import { researchEssayTool } from './tools/researchEssay.js';
 import { asciiGraphTool } from './tools/asciiGraph.js';
+import { asciiMapTool } from './tools/asciiMap.js';
 import { whoamiTool } from './tools/whoami.js';
 import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
@@ -193,6 +194,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         unsandboxStatus: unsandboxStatusTool,
         researchEssay: researchEssayTool,
         asciiGraph: asciiGraphTool,
+        asciiMap: asciiMapTool,
         renderChart: renderChartTool,
         artifact: artifactTool,
         whoami: whoamiTool,
