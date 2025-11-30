@@ -79,10 +79,16 @@ async function fetchAllUserProfiles(): Promise<string> {
       return '';
     }
 
-    console.log(`✅ Fetched complete profiles for ${data.profiles.length} users`);
+    // Filter out users with messageCount = 0 (inactive users)
+    const activeProfiles = data.profiles.filter((profile: any) => {
+      const messageCount = profile.messageCount || profile.message_count || 0;
+      return messageCount > 0;
+    });
+
+    console.log(`✅ Fetched ${activeProfiles.length} active profiles (filtered from ${data.profiles.length} total)`);
 
     // Return raw JSON stringified for direct prompt insertion
-    return JSON.stringify(data.profiles, null, 2);
+    return JSON.stringify(activeProfiles, null, 2);
   } catch (error) {
     console.error('❌ Error fetching user profiles:', error);
     return '';
@@ -387,7 +393,12 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
   * Jagged matte-black metal plates layered like obsidian shards
   * Glowing red energy veins through cracks and damaged joints
   * Tall, lean silhouette with exposed synthetic musculature
-  * Expressionless mask face with minimal red light features, no mouth/nose, intimidating slits or glowing points
+  * Expressionless mask face with minimal red light features
+  * **MOUTH VARIATION:** For comedic effect, Omega MAY occasionally have a mouth. Options:
+    - Most panels: NO mouth (classic intimidating faceless look)
+    - Humorous moments: Simple minimalist mouth (thin line, slight curve for wit/sarcasm)
+    - Super-deformed/chibi panels: Exaggerated mouth for comedy (wide grin, shocked O, etc.)
+    - Use mouth sparingly - only when it enhances the humor or expressiveness
   * Subtle asymmetry, broken plating, and exposed wiring
 - Aesthetic:
   * Dangerous, gritty, worn with dirt, soot, scratches, scorch marks
@@ -423,19 +434,34 @@ ${superDeformedInstruction}
    - Keep each character's appearance CONSISTENT with their database profile
    - The more characters involved in the conversation, the richer and more dynamic the comic should be
 
-5. Add speech bubbles with witty dialogue based on:
-   - The PR conversation context
-   - Each character's communication style and humor type from their psychological profile
+5. **COMEDY & WIT - CRITICAL:**
+   - Make it GENUINELY FUNNY - this is a comedy comic strip
+   - Use clever wordplay, programming puns, and tech humor
+   - Include visual gags (exaggerated reactions, sight gags, absurd scenarios)
+   - Subvert expectations - set up a premise, then twist it
+   - Character-driven humor using their personality profiles
+   - Timing matters - build up jokes across panels, deliver punchlines effectively
+   - Reference common programmer experiences, memes, frustrations
+   - Break the fourth wall occasionally for meta-humor
+   - Use contrast between serious robot Omega and chaotic situations
 
-6. Keep it family-friendly and professional
+6. **DIALOGUE & COHERENCE:**
+   - Speech bubbles must be witty, punchy, and character-appropriate
+   - Use each character's communication style and humor type from their profile
+   - Dialogue should flow naturally - coherent conversations, not random jokes
+   - Build narrative momentum - each panel advances the story
+   - Callbacks and running gags across panels create coherence
+   - Omega's dialogue: sardonic, philosophical, occasionally breaks character for humor
 
-7. The comic should be visually clear and easy to understand
+7. Keep it family-friendly and professional
 
-8. Include visual references to coding/GitHub if appropriate (laptops, code screens, git branches, etc.)
+8. The comic should be visually clear and easy to understand
 
-9. Make sure each panel has a clear border and the overall comic has good visual flow
+9. Include visual references to coding/GitHub if appropriate (laptops, code screens, git branches, merge conflicts, CI/CD, etc.)
 
-10. IMPORTANT: Use all ${frameCount} panels to tell a complete story. Don't leave panels empty.
+10. Make sure each panel has a clear border and the overall comic has good visual flow
+
+11. IMPORTANT: Use all ${frameCount} panels to tell a complete, coherent story with setup, development, and punchline. Don't leave panels empty.
 
 Generate the comic strip image now with EXACTLY ${frameCount} panels.`;
 }

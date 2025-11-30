@@ -109,39 +109,49 @@ async function main() {
       client.login(process.env.DISCORD_BOT_TOKEN);
     });
 
-    // Extract keywords from PR title and body
-    const keywords = extractKeywords(pr.title, pr.body || '');
-    console.log(`🔍 Extracted keywords: ${keywords.join(', ')}`);
-
-    // Search Discord for relevant messages
+    // Fetch last 20 messages before PR creation date
     let discordMessages: any[] = [];
     let discordUserIds: string[] = [];
-    if (keywords.length > 0) {
-      try {
-        const searchResults = await searchDiscordMessages(client, keywords, {
-          channelIds: discordChannelId ? [discordChannelId] : undefined,
-          maxMessages: 200, // Search more messages to find relevant ones
-          daysBack: 30,
-        });
+    try {
+      const prCreatedAt = new Date(pr.created_at);
+      console.log(`📅 Fetching last 20 messages before PR created at ${prCreatedAt.toISOString()}`);
 
-        discordMessages = searchResults.map(result => ({
-          username: result.username,
-          content: result.content,
-          channelName: result.channelName,
-          timestamp: result.timestamp,
-        }));
-
-        // Extract unique Discord user IDs for character appearance lookups
-        discordUserIds = [...new Set(searchResults
-          .map(result => result.userId)
-          .filter((userId): userId is string => Boolean(userId))
-        )];
-
-        console.log(`✅ Found ${discordMessages.length} relevant Discord messages from ${discordUserIds.length} users`);
-      } catch (error) {
-        console.warn('⚠️ Error searching Discord messages:', error);
-        // Continue without Discord messages if search fails
+      // Get the channel
+      const channel = await client.channels.fetch(discordChannelId);
+      if (!channel || !channel.isTextBased()) {
+        throw new Error('Channel not found or not text-based');
       }
+
+      // Fetch messages before PR creation
+      const messages = await channel.messages.fetch({
+        limit: 100, // Fetch more to ensure we get 20 before PR date
+        before: undefined,
+      });
+
+      // Filter messages before PR creation and take last 20
+      const messagesBefore = messages
+        .filter(msg => msg.createdAt < prCreatedAt)
+        .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
+        .slice(-20); // Take last 20
+
+      discordMessages = messagesBefore.map(msg => ({
+        username: msg.author.username,
+        content: msg.content,
+        channelName: (msg.channel as any).name || 'unknown',
+        timestamp: msg.createdTimestamp,
+      }));
+
+      // Extract unique Discord user IDs for character appearance lookups (exclude bots)
+      discordUserIds = [...new Set(messagesBefore
+        .filter(msg => !msg.author.bot)
+        .map(msg => msg.author.id)
+        .filter((userId): userId is string => Boolean(userId))
+      )];
+
+      console.log(`✅ Found ${discordMessages.length} Discord messages from ${discordUserIds.length} users before PR creation`);
+    } catch (error) {
+      console.warn('⚠️ Error fetching Discord messages:', error);
+      // Continue without Discord messages if fetch fails
     }
 
     // Build conversation context with Discord messages
