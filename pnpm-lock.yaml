@@ -56,6 +56,9 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.21.2
+      fish-joke-generator:
+        specifier: ^1.1.0
+        version: 1.1.0(openai@4.104.0(ws@8.18.3)(zod@3.25.76))(zod@3.25.76)
       lib0:
         specifier: ^0.2.114
         version: 0.2.114
@@ -2453,6 +2456,13 @@ packages:
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
+
+  fish-joke-generator@1.1.0:
+    resolution: {integrity: sha512-w5NE7hIVEOBRcIYIc8AhOJyQSFhDfJF7/0www2p5g3t3XcQuYpRjQ8sclw601eXqrygBPbYchSM0+KfdlpESNg==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      openai: ^6.0.0
+      zod: ^4.0.0
 
   flat-cache@3.2.0:
     resolution: {integrity: sha512-CYcENa+FtcUKLmhhqyctpclsq7QF38pKjZHsGNiSQF5r4FtoKDWabFDl3hzaEQMvT1LHEysw5twgLvpYYb4vbw==}
@@ -7275,6 +7285,11 @@ snapshots:
     dependencies:
       locate-path: 6.0.0
       path-exists: 4.0.0
+
+  fish-joke-generator@1.1.0(openai@4.104.0(ws@8.18.3)(zod@3.25.76))(zod@3.25.76):
+    dependencies:
+      openai: 4.104.0(ws@8.18.3)(zod@3.25.76)
+      zod: 3.25.76
 
   flat-cache@3.2.0:
     dependencies:
