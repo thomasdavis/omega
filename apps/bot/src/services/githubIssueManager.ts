@@ -50,16 +50,16 @@ export async function fetchExistingIssues(
       return [];
     }
 
-    const issues = await response.json() as any[];
-    return issues.map((issue: any) => ({
-      number: issue.number,
-      title: issue.title,
-      body: issue.body || '',
-      state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
-      created_at: issue.created_at,
-      updated_at: issue.updated_at,
-      html_url: issue.html_url,
+    const issues = await response.json() as unknown[];
+    return issues.map((issue: Record<string, unknown>) => ({
+      number: issue.number as number,
+      title: issue.title as string,
+      body: (issue.body as string) || '',
+      state: issue.state as 'open' | 'closed',
+      labels: (issue.labels as Array<{ name: string }>).map((l) => l.name),
+      created_at: issue.created_at as string,
+      updated_at: issue.updated_at as string,
+      html_url: issue.html_url as string,
     }));
   } catch (error) {
     console.error('Error fetching GitHub issues:', error);
@@ -252,16 +252,16 @@ export async function createGitHubIssue(
       return null;
     }
 
-    const issue = await response.json() as any;
+    const issue = await response.json() as Record<string, unknown>;
     return {
-      number: issue.number,
-      title: issue.title,
-      body: issue.body,
-      state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
-      created_at: issue.created_at,
-      updated_at: issue.updated_at,
-      html_url: issue.html_url,
+      number: issue.number as number,
+      title: issue.title as string,
+      body: issue.body as string,
+      state: issue.state as 'open' | 'closed',
+      labels: (issue.labels as Array<{ name: string }>).map((l) => l.name),
+      created_at: issue.created_at as string,
+      updated_at: issue.updated_at as string,
+      html_url: issue.html_url as string,
     };
   } catch (error) {
     console.error('Error creating GitHub issue:', error);
