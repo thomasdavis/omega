@@ -28,31 +28,32 @@ interface ComicGenerationResult {
   error?: string;
 }
 
-interface CharacterAppearance {
-  userId: string;
-  username: string;
-  description: string;
-  gender?: string;
-  hairColor?: string;
-  hairStyle?: string;
-  hairTexture?: string;
-  eyeColor?: string;
-  skinTone?: string;
-  faceShape?: string;
-  bodyType?: string;
-  buildDescription?: string;
-  heightEstimate?: string;
-  facialHair?: string;
-  clothingStyle?: string;
-  accessories?: string[];
-  distinctiveFeatures?: string[];
-  aestheticArchetype?: string;
-  // Psychological data for character behavior
-  dominantArchetype?: string;
-  communicationStyle?: string;
-  humorStyle?: string;
-  affinityScore?: number;
-}
+// Character appearance interface - not currently used but kept for future enhancement
+// interface CharacterAppearance {
+//   userId: string;
+//   username: string;
+//   description: string;
+//   gender?: string;
+//   hairColor?: string;
+//   hairStyle?: string;
+//   hairTexture?: string;
+//   eyeColor?: string;
+//   skinTone?: string;
+//   faceShape?: string;
+//   bodyType?: string;
+//   buildDescription?: string;
+//   heightEstimate?: string;
+//   facialHair?: string;
+//   clothingStyle?: string;
+//   accessories?: string[];
+//   distinctiveFeatures?: string[];
+//   aestheticArchetype?: string;
+//   // Psychological data for character behavior
+//   dominantArchetype?: string;
+//   communicationStyle?: string;
+//   humorStyle?: string;
+//   affinityScore?: number;
+// }
 
 /**
  * Fetch ALL user profiles from Omega HTTP API
@@ -73,7 +74,7 @@ async function fetchAllUserProfiles(): Promise<string> {
       return '';
     }
 
-    const data: any = await response.json();
+    const data: { success?: boolean; profiles?: unknown[] } = await response.json();
 
     if (!data.success || !data.profiles) {
       console.warn('⚠️ Invalid response from Omega API:', data);
@@ -81,8 +82,8 @@ async function fetchAllUserProfiles(): Promise<string> {
     }
 
     // Filter out users with messageCount = 0 (inactive users)
-    const activeProfiles = data.profiles.filter((profile: any) => {
-      const messageCount = profile.messageCount || profile.message_count || 0;
+    const activeProfiles = data.profiles.filter((profile: Record<string, unknown>) => {
+      const messageCount = (profile.messageCount as number) || (profile.message_count as number) || 0;
       return messageCount > 0;
     });
 
@@ -100,7 +101,7 @@ async function fetchAllUserProfiles(): Promise<string> {
  * Generate a comic image using Gemini API
  */
 export async function generateComic(options: ComicGenerationOptions): Promise<ComicGenerationResult> {
-  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber, userIds } = options;
+  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber } = options;
 
   // Validate API key
   if (!process.env.GEMINI_API_KEY) {
@@ -168,11 +169,14 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     let imageData: Buffer | undefined;
     for (const part of candidate.content.parts) {
       // Check for inline data (base64 encoded image)
-      if ((part as any).inlineData?.mimeType?.startsWith('image/')) {
-        const base64Data = (part as any).inlineData.data;
-        imageData = Buffer.from(base64Data, 'base64');
-        console.log(`✅ Extracted image (${imageData.length} bytes, ${(part as any).inlineData.mimeType})`);
-        break;
+      const partData = part as { inlineData?: { mimeType?: string; data?: string } };
+      if (partData.inlineData?.mimeType?.startsWith('image/')) {
+        const base64Data = partData.inlineData.data;
+        if (base64Data) {
+          imageData = Buffer.from(base64Data, 'base64');
+          console.log(`✅ Extracted image (${imageData.length} bytes, ${partData.inlineData.mimeType})`);
+          break;
+        }
       }
     }
 
@@ -514,7 +518,7 @@ Generate the comic strip image now with EXACTLY ${frameCount} panels.`;
  * Extract conversation context from PR
  * This would typically parse PR comments, commits, etc.
  */
-export function extractConversationContext(prData: any): string {
+export function extractConversationContext(prData: Record<string, unknown>): string {
   const parts: string[] = [];
 
   if (prData.title) {
@@ -526,44 +530,48 @@ export function extractConversationContext(prData: any): string {
     parts.push(`Description: ${prData.body.substring(0, 1000)}`);
   }
 
-  if (prData.commits && prData.commits.length > 0) {
+  if (Array.isArray(prData.commits) && prData.commits.length > 0) {
     parts.push(`Commits (${prData.commits.length}):`);
     // Expanded from 5 to 10 commits
-    prData.commits.slice(0, 10).forEach((commit: any) => {
-      parts.push(`- ${commit.message || commit.commit?.message || 'Unnamed commit'}`);
+    prData.commits.slice(0, 10).forEach((commit: Record<string, unknown>) => {
+      const commitMessage = (commit.message as string) || ((commit.commit as Record<string, unknown>)?.message as string) || 'Unnamed commit';
+      parts.push(`- ${commitMessage}`);
     });
   }
 
-  if (prData.comments && prData.comments.length > 0) {
+  if (Array.isArray(prData.comments) && prData.comments.length > 0) {
     parts.push(`Comments (${prData.comments.length}):`);
     // Expanded from 3 to 10 comments and from 200 to 500 characters per comment
-    prData.comments.slice(0, 10).forEach((comment: any) => {
-      const body = comment.body || '';
-      parts.push(`- ${comment.user?.login || 'Unknown'}: ${body.substring(0, 500)}`);
+    prData.comments.slice(0, 10).forEach((comment: Record<string, unknown>) => {
+      const body = (comment.body as string) || '';
+      const userLogin = ((comment.user as Record<string, unknown>)?.login as string) || 'Unknown';
+      parts.push(`- ${userLogin}: ${body.substring(0, 500)}`);
     });
   }
 
   // Include Discord messages if provided
-  if (prData.discordMessages && prData.discordMessages.length > 0) {
+  if (Array.isArray(prData.discordMessages) && prData.discordMessages.length > 0) {
     parts.push('');
     parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
 
     // Group by user to show diverse perspectives
-    const messagesByUser = new Map<string, any[]>();
-    for (const msg of prData.discordMessages) {
-      if (!messagesByUser.has(msg.username)) {
-        messagesByUser.set(msg.username, []);
+    const messagesByUser = new Map<string, Record<string, unknown>[]>();
+    for (const msg of prData.discordMessages as Record<string, unknown>[]) {
+      const username = msg.username as string;
+      if (!messagesByUser.has(username)) {
+        messagesByUser.set(username, []);
       }
-      messagesByUser.get(msg.username)!.push(msg);
+      messagesByUser.get(username)!.push(msg);
     }
 
     // Include up to 3 messages per user
     for (const [username, messages] of messagesByUser) {
       const messagesToInclude = messages.slice(0, 3);
       for (const msg of messagesToInclude) {
-        const content = msg.content.length > 500
-          ? msg.content.substring(0, 500) + '...'
-          : msg.content;
+        const msgContent = msg.content as string;
+        const content = msgContent.length > 500
+          ? msgContent.substring(0, 500) + '...'
+          : msgContent;
 
         const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
         parts.push(`- ${username}${channelInfo}: ${content}`);

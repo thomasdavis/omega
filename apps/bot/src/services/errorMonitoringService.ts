@@ -108,11 +108,11 @@ export async function captureError(
 /**
  * Wrap an async function with error monitoring
  */
-export function withErrorMonitoring<T extends (...args: any[]) => Promise<any>>(
+export function withErrorMonitoring<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   context?: { railwayService?: string; environment?: string }
 ): T {
-  return (async (...args: any[]) => {
+  return (async (...args: unknown[]) => {
     try {
       return await fn(...args);
     } catch (error) {

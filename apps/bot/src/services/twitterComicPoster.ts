@@ -28,7 +28,7 @@ interface TwitterPostResult {
 export async function postComicToTwitter(
   options: TwitterPostOptions
 ): Promise<TwitterPostResult> {
-  const { imageData, prNumber, prTitle, prUrl } = options;
+  const { imageData, prTitle, prUrl } = options;
 
   try {
     // Validate required environment variables
