@@ -263,12 +263,14 @@ export const unsandboxTool = tool({
       };
 
       // Submit job to Unsandbox (pass language directly to API)
-      // DEMO MODE: Use empty bearer token if no API key is set
-      const apiKey = process.env.UNSANDBOX_API_KEY || '';
+      const apiKey = process.env.UNSANDBOX_API_KEY;
+      if (!apiKey) {
+        throw new Error('UNSANDBOX_API_KEY environment variable is not set');
+      }
       console.log(`   📤 Submitting code for execution...`);
       console.log(`   Language: ${language}`);
       console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
-      console.log(`   Auth Mode: ${apiKey ? 'authenticated' : 'demo mode (empty token)'}`);
+      console.log(`   Auth Mode: authenticated`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {
@@ -486,10 +488,12 @@ export const unsandboxSubmitTool = tool({
       };
 
       // Submit job (pass language directly to API)
-      // DEMO MODE: Use empty bearer token if no API key is set
-      const apiKey = process.env.UNSANDBOX_API_KEY || '';
-      console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)'}`);
-      console.log(`   Auth Mode: ${apiKey ? 'authenticated' : 'demo mode (empty token)'}`);
+      const apiKey = process.env.UNSANDBOX_API_KEY;
+      if (!apiKey) {
+        throw new Error('UNSANDBOX_API_KEY environment variable is not set');
+      }
+      console.log(`   Network Mode: ${network_mode === 'semitrust' ? 'semitrust (network access enabled)' : 'zerotrust (network access disabled)')`);
+      console.log(`   Auth Mode: authenticated`);
       const submitResponse = await fetch('https://api.unsandbox.com/execute/async', {
         method: 'POST',
         headers: {

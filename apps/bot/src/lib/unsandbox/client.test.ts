@@ -15,6 +15,8 @@ describe('UnsandboxClient', () => {
   let client: UnsandboxClient;
 
   beforeEach(() => {
+    // Set environment variable for tests
+    process.env.UNSANDBOX_API_KEY = 'test-api-key';
     client = createUnsandboxClient({});
     mockFetch.mockClear();
     vi.clearAllTimers();
@@ -32,9 +34,15 @@ describe('UnsandboxClient', () => {
       expect(client).toBeInstanceOf(UnsandboxClient);
     });
 
-    it('should use hardcoded API key', () => {
+    it('should throw error if no API key is provided', () => {
+      delete process.env.UNSANDBOX_API_KEY;
+      expect(() => createUnsandboxClient({})).toThrow('Unsandbox API key must be provided');
+    });
+
+    it('should use API key from config', () => {
+      delete process.env.UNSANDBOX_API_KEY;
       const client = createUnsandboxClient({
-        apiKey: 'custom-key', // Should be ignored
+        apiKey: 'custom-key',
       });
       expect(client).toBeInstanceOf(UnsandboxClient);
     });

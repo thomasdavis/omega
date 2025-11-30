@@ -15,6 +15,8 @@ describe('Unsandbox Polling Logic - Unit Tests', () => {
   let client: UnsandboxClient;
 
   beforeEach(() => {
+    // Set environment variable for tests
+    process.env.UNSANDBOX_API_KEY = 'test-api-key';
     client = createUnsandboxClient({
       timeout: 30000,
     });
