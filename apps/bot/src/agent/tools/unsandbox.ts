@@ -247,6 +247,7 @@ export const unsandboxTool = tool({
       // Create client instance
       console.log(`   🔧 Creating Unsandbox client...`);
       const client = createUnsandboxClient({
+        apiKey: process.env.UNSANDBOX_API_KEY,
         timeout: 30000, // 30 seconds timeout for HTTP requests
       });
       console.log(`   ✅ Client created`);
@@ -544,7 +545,10 @@ export const unsandboxStatusTool = tool({
 
     try {
       // Create client and check status
-      const client = createUnsandboxClient({ timeout: 30000 });
+      const client = createUnsandboxClient({
+        apiKey: process.env.UNSANDBOX_API_KEY,
+        timeout: 30000
+      });
       const statusResponse = await client.getExecutionStatus({ job_id });
 
       console.log(`   Status: ${statusResponse.status}`);
