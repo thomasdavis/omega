@@ -49,6 +49,9 @@ export const generateComicTool = tool({
   Use conversation history only where it adds relevant context to the current PR/issue.
   Include conversation participants who are directly relevant to the PR/issue being illustrated.
 
+  CONTEXT USAGE: When creating comics about GitHub issues/PRs, focus primarily on the issue/PR content itself.
+  Use conversation history selectively - only include relevant context that enhances the comic, not the entire conversation.
+
   Optionally posts to Discord.`,
   inputSchema: z.object({
     issueNumber: z
@@ -149,6 +152,7 @@ export const generateComicTool = tool({
 
           if (validProfiles.length > 0) {
             // Generate comic from issue WITH users
+            // Focus on the issue itself, not full conversation history
             const scenario = `GitHub Issue #${issueNumber}: ${issueTitle}\n\n${issueBody}`;
             imageResult = await generateComicWithUsers(scenario, validProfiles);
           } else {
