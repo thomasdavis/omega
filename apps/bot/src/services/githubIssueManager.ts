@@ -27,6 +27,17 @@ export interface IssueSearchResult {
   shouldUpdate: boolean;
 }
 
+interface GitHubIssueResponse {
+  number: number;
+  title: string;
+  body: string;
+  state: string;
+  labels: Array<{ name: string }>;
+  created_at: string;
+  updated_at: string;
+  html_url: string;
+}
+
 /**
  * Fetches existing GitHub issues with railway-error label
  */
@@ -50,13 +61,13 @@ export async function fetchExistingIssues(
       return [];
     }
 
-    const issues = await response.json() as any[];
-    return issues.map((issue: any) => ({
+    const issues = await response.json() as GitHubIssueResponse[];
+    return issues.map((issue: GitHubIssueResponse) => ({
       number: issue.number,
       title: issue.title,
       body: issue.body || '',
       state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
+      labels: issue.labels.map((l: { name: string }) => l.name),
       created_at: issue.created_at,
       updated_at: issue.updated_at,
       html_url: issue.html_url,
@@ -252,13 +263,13 @@ export async function createGitHubIssue(
       return null;
     }
 
-    const issue = await response.json() as any;
+    const issue = await response.json() as GitHubIssueResponse;
     return {
       number: issue.number,
       title: issue.title,
       body: issue.body,
       state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
+      labels: issue.labels.map((l: { name: string }) => l.name),
       created_at: issue.created_at,
       updated_at: issue.updated_at,
       html_url: issue.html_url,

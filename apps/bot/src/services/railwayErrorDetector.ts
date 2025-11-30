@@ -108,7 +108,7 @@ Respond in JSON format:
 /**
  * Extracts error information from Railway webhook payload
  */
-export function parseRailwayWebhook(payload: any): RailwayError | null {
+export function parseRailwayWebhook(payload: Record<string, unknown>): RailwayError | null {
   // Handle different Railway webhook event types
   const eventType = payload.type || payload.event;
 

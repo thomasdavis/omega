@@ -9,7 +9,7 @@ export interface ErrorContext {
   username?: string;
   channelName?: string;
   messageContent?: string;
-  additionalInfo?: Record<string, any>;
+  additionalInfo?: Record<string, unknown>;
 }
 
 export interface LoggedError {

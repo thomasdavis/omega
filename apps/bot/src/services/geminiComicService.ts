@@ -28,31 +28,32 @@ interface ComicGenerationResult {
   error?: string;
 }
 
-interface CharacterAppearance {
-  userId: string;
-  username: string;
-  description: string;
-  gender?: string;
-  hairColor?: string;
-  hairStyle?: string;
-  hairTexture?: string;
-  eyeColor?: string;
-  skinTone?: string;
-  faceShape?: string;
-  bodyType?: string;
-  buildDescription?: string;
-  heightEstimate?: string;
-  facialHair?: string;
-  clothingStyle?: string;
-  accessories?: string[];
-  distinctiveFeatures?: string[];
-  aestheticArchetype?: string;
-  // Psychological data for character behavior
-  dominantArchetype?: string;
-  communicationStyle?: string;
-  humorStyle?: string;
-  affinityScore?: number;
-}
+// Unused interface - kept for future reference if needed
+// interface CharacterAppearance {
+//   userId: string;
+//   username: string;
+//   description: string;
+//   gender?: string;
+//   hairColor?: string;
+//   hairStyle?: string;
+//   hairTexture?: string;
+//   eyeColor?: string;
+//   skinTone?: string;
+//   faceShape?: string;
+//   bodyType?: string;
+//   buildDescription?: string;
+//   heightEstimate?: string;
+//   facialHair?: string;
+//   clothingStyle?: string;
+//   accessories?: string[];
+//   distinctiveFeatures?: string[];
+//   aestheticArchetype?: string;
+//   // Psychological data for character behavior
+//   dominantArchetype?: string;
+//   communicationStyle?: string;
+//   humorStyle?: string;
+//   affinityScore?: number;
+// }
 
 /**
  * Fetch ALL user profiles from Omega HTTP API
@@ -73,7 +74,7 @@ async function fetchAllUserProfiles(): Promise<string> {
       return '';
     }
 
-    const data: any = await response.json();
+    const data: { success?: boolean; profiles?: Array<{ messageCount?: number; message_count?: number }> } = await response.json();
 
     if (!data.success || !data.profiles) {
       console.warn('⚠️ Invalid response from Omega API:', data);
@@ -81,7 +82,7 @@ async function fetchAllUserProfiles(): Promise<string> {
     }
 
     // Filter out users with messageCount = 0 (inactive users)
-    const activeProfiles = data.profiles.filter((profile: any) => {
+    const activeProfiles = data.profiles.filter((profile: { messageCount?: number; message_count?: number }) => {
       const messageCount = profile.messageCount || profile.message_count || 0;
       return messageCount > 0;
     });
@@ -100,7 +101,7 @@ async function fetchAllUserProfiles(): Promise<string> {
  * Generate a comic image using Gemini API
  */
 export async function generateComic(options: ComicGenerationOptions): Promise<ComicGenerationResult> {
-  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber, userIds } = options;
+  const { conversationContext, prNumber, prTitle, prAuthor, issueNumber } = options;
 
   // Validate API key
   if (!process.env.GEMINI_API_KEY) {
@@ -168,10 +169,11 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     let imageData: Buffer | undefined;
     for (const part of candidate.content.parts) {
       // Check for inline data (base64 encoded image)
-      if ((part as any).inlineData?.mimeType?.startsWith('image/')) {
-        const base64Data = (part as any).inlineData.data;
+      const partWithInlineData = part as { inlineData?: { mimeType: string; data: string } };
+      if (partWithInlineData.inlineData?.mimeType?.startsWith('image/')) {
+        const base64Data = partWithInlineData.inlineData.data;
         imageData = Buffer.from(base64Data, 'base64');
-        console.log(`✅ Extracted image (${imageData.length} bytes, ${(part as any).inlineData.mimeType})`);
+        console.log(`✅ Extracted image (${imageData.length} bytes, ${partWithInlineData.inlineData.mimeType})`);
         break;
       }
     }
