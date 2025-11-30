@@ -440,8 +440,16 @@ User: "I wonder if omega could do X..."
 
 User: "what tools do you have?"
 → DON'T CREATE: Just a question, not a request
+→ RESPOND: Use listRepositoryFilesTool with path="apps/bot/src/agent/tools" to show available tools
 
 Remember: Be proactive but not overzealous. Use conversation context and tone to determine genuine requests vs casual discussion. When in doubt, you can ask "Would you like me to create an issue to track this?" before auto-creating.
+
+**Listing Available Tools:**
+When users ask "what tools do you have?" or want to see available tools, use the listRepositoryFilesTool with:
+- path="apps/bot/src/agent/tools"
+- pattern="*.ts" (optional, to filter to TypeScript files)
+
+This will show all tool implementation files in the correct directory. The tool files are located at apps/bot/src/agent/tools/, NOT src/agent/tools/.
 
 Code Query (Enhanced): You have access to the advanced codeQuery tool for deep introspection of your own codebase with AI-powered understanding. This tool supports multiple operations:
 1. **Search**: Keyword/regex search with context lines (backward compatible)

@@ -133,22 +133,28 @@ export const listRepositoryFilesTool = tool({
   description: `List and browse files in the GitHub repository (thomasdavis/omega).
   Explore the codebase structure, find specific files, and get file metadata.
 
+  **IMPORTANT - Tool Listing Default:**
+  When users ask "what tools do you have?" or want to see available tools, ALWAYS use:
+  path="apps/bot/src/agent/tools"
+  This is the correct directory where all tool implementations are located.
+
   You can filter by:
   - Pattern: Glob-like patterns (e.g., "*.ts", "src/**/*.ts", "*.test.js")
-  - Path: Directory path to list (e.g., "src/agent/tools", "apps/bot")
+  - Path: Directory path to list (e.g., "apps/bot/src/agent/tools", "apps/bot")
   - Type: Filter to show only files or only directories
 
   Returns file metadata including path, size, and GitHub URLs.
   Use this tool to help users understand the codebase structure or locate specific files.
 
   Examples:
+  - List available tools: path="apps/bot/src/agent/tools", pattern="*.ts"
   - List all TypeScript files: pattern="*.ts"
-  - List files in a directory: path="src/agent/tools"
+  - List files in a directory: path="src/lib"
   - Find test files: pattern="*.test.ts"
   - List all markdown files: pattern="**/*.md"`,
   inputSchema: z.object({
     pattern: z.string().optional().describe('Glob pattern to match files (e.g., "*.ts", "src/**/*.js", "*.test.ts")'),
-    path: z.string().optional().describe('Directory path to list (e.g., "src/agent/tools")'),
+    path: z.string().optional().describe('Directory path to list. For tool listings, use "apps/bot/src/agent/tools"'),
     fileType: z.enum(['file', 'directory']).optional().describe('Filter to show only files or directories'),
     limit: z.number().optional().describe('Maximum number of results to return (default: 50)'),
   }),
