@@ -9,9 +9,9 @@ import { OMEGA_APPEARANCE } from './omegaAppearance.js';
 /**
  * Build system prompt with integrated personality
  */
-export function buildSystemPrompt(username: string, userId?: string): string {
+export function buildSystemPrompt(username: string, userId?: string, guildId?: string): string {
   const userContext = userId
-    ? `\n\n## Current User Context\n**IMPORTANT:** The user you're currently talking to is:\n- Username: ${username}\n- User ID: ${userId}\n\nWhen using tools that require userId (like getUserProfile, uploadMyPhoto, generateMyPortrait), use this exact user ID: \`${userId}\`\n`
+    ? `\n\n## Current User Context\n**IMPORTANT:** The user you're currently talking to is:\n- Username: ${username}\n- User ID: ${userId}${guildId ? `\n- Guild (Server) ID: ${guildId}` : ''}\n\nWhen using tools that require userId (like getUserProfile, uploadMyPhoto, generateMyPortrait, psychoAnalysisMode), use this exact user ID: \`${userId}\`\n${guildId ? `When using tools that require guildId (like createPsychoAnalysisChannel), use this exact guild ID: \`${guildId}\`\n` : ''}`
     : '';
 
   return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}

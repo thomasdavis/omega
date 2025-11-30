@@ -13,6 +13,7 @@ import { initializeSchema } from './database/schema.js';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
+import { setDiscordClient } from './agent/tools/createPsychoAnalysisChannel.js';
 
 dotenv.config();
 
@@ -70,6 +71,9 @@ client.once(Events.ClientReady, (readyClient) => {
   console.log(`✅ Bot is online as ${readyClient.user.tag}`);
   console.log(`📊 Connected to ${readyClient.guilds.cache.size} servers`);
   console.log(`🤖 Using AI SDK v6 with agent protocol`);
+
+  // Pass Discord client to tools that need it
+  setDiscordClient(readyClient);
 
   // Initialize scheduled tasks (daily blog generation, etc.)
   initializeScheduler();
