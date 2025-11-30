@@ -593,8 +593,9 @@ Railway provides automatic MongoDB provisioning:
 1. Go to your Railway project dashboard
 2. Click "+ New" → "Database" → "Add MongoDB"
 3. Railway automatically sets environment variables:
-   - `MONGODB_URI` - Connection string (auto-provided)
-   - `MONGODB_DATABASE` - Database name (auto-provided)
+   - `MONGO_URL` - Connection string (auto-provided)
+   - `MONGO_INITDB_ROOT_USERNAME` - Username (auto-provided)
+   - `MONGO_INITDB_ROOT_PASSWORD` - Password (auto-provided)
 4. No additional configuration needed!
 
 **Railway Advantages:**
@@ -632,11 +633,13 @@ Add to `.env.local` (already in `.env.example`):
 
 ```bash
 # MongoDB Configuration
-MONGODB_URI=mongodb://localhost:27017       # Railway auto-provides in production
-MONGODB_DATABASE=omega_bot                  # Railway auto-provides in production
+MONGODB_URI=mongodb://localhost:27017       # Local development
+MONGODB_DATABASE=omega_bot                  # Database name
+# or
+MONGO_URL=mongodb://mongo:password@host:27017  # Railway auto-provides
 ```
 
-**Railway Note:** In production, Railway automatically injects these variables when you add the MongoDB plugin. You don't need to set them manually!
+**Railway Note:** In production, Railway automatically injects `MONGO_URL` when you add the MongoDB plugin. The client will use `MONGO_URL` first, then fall back to `MONGODB_URI` for local development.
 
 ### MongoDB Tools Reference
 

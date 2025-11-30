@@ -24,8 +24,17 @@ export async function getMongoDatabase(): Promise<Db> {
 
   console.log('🔌 Connecting to MongoDB...');
 
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-  const dbName = process.env.MONGODB_DATABASE || 'omega_bot';
+  // Railway provides MONGO_URL, fallback to MONGODB_URI for backward compatibility
+  const uri = process.env.MONGO_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017';
+
+  // Try to extract database name from URI, or use environment variable, or default
+  let dbName = process.env.MONGODB_DATABASE || 'omega_bot';
+
+  // If MONGO_URL has a database name in the path, use it
+  const urlMatch = uri.match(/\/([^/?]+)(\?|$)/);
+  if (urlMatch && urlMatch[1] && urlMatch[1] !== 'admin') {
+    dbName = urlMatch[1];
+  }
 
   try {
     mongoClient = new MongoClient(uri, {
