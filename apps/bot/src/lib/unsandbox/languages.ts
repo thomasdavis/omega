@@ -50,7 +50,9 @@ export async function getUnsandboxLanguages(forceRefresh = false): Promise<Langu
   console.log(`\n🔄 [${new Date().toISOString()}] Fetching Fresh Languages List`);
   console.log(`   Reason: ${forceRefresh ? 'Force refresh' : cachedLanguages ? 'Cache expired' : 'No cache'}`);
 
-  const client = createUnsandboxClient({});
+  const client = createUnsandboxClient({
+    apiKey: process.env.UNSANDBOX_API_KEY,
+  });
   const languages = await client.getLanguages();
 
   // Update cache
