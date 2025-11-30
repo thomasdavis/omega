@@ -97,6 +97,93 @@ async function fetchAllUserProfiles(): Promise<string> {
 }
 
 /**
+ * Generate a screenplay script before comic generation
+ * This ensures proper character attribution and dialogue accuracy
+ */
+async function generateScreenplay(
+  conversationContext: string,
+  prNumber: number,
+  prTitle: string,
+  prAuthor: string,
+  profilesJson: string,
+  frameCount: number
+): Promise<string> {
+  console.log('📝 Generating screenplay before comic creation...');
+
+  const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+  const model = genai.getGenerativeModel({ model: 'gemini-pro' });
+
+  const characterDatabase = buildCharacterDatabaseSection(profilesJson);
+
+  const screenplayPrompt = `You are a comedy screenplay writer for a tech comic strip. Create a detailed screenplay/script for a ${frameCount}-panel comic based on this PR conversation.
+
+**Pull Request Information:**
+- PR #${prNumber}: ${prTitle}
+- Author: ${prAuthor}
+
+**Conversation Context:**
+${conversationContext}
+
+**Character Database:**
+${characterDatabase}
+
+**Instructions:**
+
+1. **CAST LIST**: Start with a "CAST" section listing ALL characters who appear in the comic
+   - Include their Discord username
+   - Brief physical description from their profile
+   - Their role in this story
+
+2. **SCREENPLAY**: Write the screenplay for exactly ${frameCount} panels
+   - Format: "PANEL X: [Setting/visual description]"
+   - Then list dialogue: "CHARACTER NAME: [their line]"
+   - Include stage directions in brackets [like this]
+   - Be specific about who says what
+   - Ensure dialogue is witty, punchy, and character-appropriate
+
+3. **CHARACTER ATTRIBUTION (CRITICAL):**
+   - Double-check that dialogue matches the character's actual contributions
+   - If unsure who said something, review the conversation context carefully
+   - Attribute quotes/ideas to the correct person based on the PR data
+   - Omega (the AI) should only speak if explicitly involved in the conversation
+
+4. **STORY STRUCTURE:**
+   - Panel 1-2: Setup and introduce the situation
+   - Middle panels: Development and escalation
+   - Final panel: Punchline/resolution
+
+**Example Format:**
+
+CAST:
+- OMEGA: The AI assistant, intimidating robotic appearance with battle damage
+- FOXHOP: [physical description from database], [personality traits]
+- [Other characters as needed]
+
+PANEL 1: [Setting description]
+FOXHOP: [their dialogue]
+[Stage direction]
+
+PANEL 2: [Setting]
+OMEGA: [their dialogue]
+FOXHOP: [their response]
+
+Generate the complete screenplay now:`;
+
+  const result = await model.generateContent(screenplayPrompt);
+  const response = await result.response;
+  const screenplay = response.text();
+
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📜 GENERATED SCREENPLAY:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(screenplay);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('\n');
+
+  return screenplay;
+}
+
+/**
  * Generate a comic image using Gemini API
  */
 export async function generateComic(options: ComicGenerationOptions): Promise<ComicGenerationResult> {
@@ -122,8 +209,21 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Build the prompt for comic generation with character data
-    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson);
+    // Determine optimal frame count BEFORE screenplay generation
+    const frameCount = determineFrameCount(conversationContext);
+
+    // STEP 1: Generate screenplay with character attribution
+    const screenplay = await generateScreenplay(
+      conversationContext,
+      prNumber,
+      prTitle,
+      prAuthor,
+      profilesJson,
+      frameCount
+    );
+
+    // STEP 2: Build the prompt for comic generation with screenplay included
+    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson, screenplay);
 
     console.log('📝 Comic generation prompt (first 200 chars):', prompt.substring(0, 200) + '...');
     console.log('\n');
@@ -291,7 +391,8 @@ function buildComicPrompt(
   prNumber: number,
   prTitle: string,
   prAuthor: string,
-  profilesJson: string = ''
+  profilesJson: string = '',
+  screenplay: string = ''
 ): string {
   // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
@@ -360,6 +461,18 @@ function buildComicPrompt(
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
 
+  // Build screenplay section if provided
+  const screenplaySection = screenplay ? `\n\n**SCREENPLAY SCRIPT (FOLLOW THIS EXACTLY):**
+
+This screenplay was carefully crafted to ensure proper character attribution and dialogue accuracy.
+Use this as your PRIMARY REFERENCE for who says what and in which panel.
+
+${screenplay}
+
+**IMPORTANT:** Stick to the screenplay. The cast list and dialogue attributions are authoritative.
+If the screenplay says "FOXHOP: [dialogue]", then FOXHOP must say that line, not another character.
+` : '';
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -368,6 +481,7 @@ function buildComicPrompt(
 
 **Conversation Context:**
 ${filteredContext}
+${screenplaySection}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
