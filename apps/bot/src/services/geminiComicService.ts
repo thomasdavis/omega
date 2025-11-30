@@ -320,7 +320,11 @@ function buildComicPrompt(
         lowerLine.includes('check successful') ||
         lowerLine.match(/\d+\/\d+\s+checks?\s+(passed|successful|passing)/) ||
         lowerLine.match(/build\s*(passed|succeeded|successful|passing)/) ||
-        lowerLine.match(/lint\s*(passed|succeeded|successful|passing)/)
+        lowerLine.match(/lint\s*(passed|succeeded|successful|passing)/) ||
+        // Filter out git commit co-authored messages
+        lowerLine.includes('co-authored-by') ||
+        lowerLine.includes('generated with') ||
+        lowerLine.match(/🤖\s*generated/i)
       );
     })
     .join('\n');
@@ -411,6 +415,8 @@ ${characterDatabase}
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
    - Include ALL distinct users mentioned or involved in the PR/issue/conversation
+   - **EXCLUDE "thomasdavis"** - This is the repo owner who appears in git commits but should NOT be depicted as a character
+   - Focus ONLY on Discord community members (users from Discord messages)
    - Use ACCURATE physical descriptions from their profiles (hair color, eye color, build, style, etc.)
    - Incorporate their personality traits (archetype, humor style, communication style) into dialogue and expressions
    - If the conversation involves the AI/bot, depict it as Omega with the unique design above
