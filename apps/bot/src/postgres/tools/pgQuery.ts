@@ -24,7 +24,7 @@ Examples:
 
   inputSchema: z.object({
     sql: z.string().describe('SQL query to execute (use $1, $2, etc. for parameters)'),
-    params: z.array(z.any()).optional().describe('Query parameters for $1, $2, etc.'),
+    params: z.array(z.union([z.string(), z.number(), z.boolean(), z.null()])).optional().describe('Query parameters for $1, $2, etc.'),
     rowMode: z.enum(['array', 'object']).default('object').describe('Return rows as objects or arrays'),
   }),
 
