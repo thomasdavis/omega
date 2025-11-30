@@ -86,6 +86,7 @@ import { csvToChartTool } from './tools/csvToChart.js';
 import { bullshitDetectorTool } from './tools/bullshitDetector.js';
 import { tweetTool } from './tools/tweet.js';
 import { generateStarSignTool } from './tools/generateStarSign.js';
+import { psychoAnalysisModeTool } from './tools/psychoAnalysisMode.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -267,6 +268,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         bullshitDetector: bullshitDetectorTool,
         tweet: tweetTool,
         generateStarSign: generateStarSignTool,
+        psychoAnalysisMode: psychoAnalysisModeTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
