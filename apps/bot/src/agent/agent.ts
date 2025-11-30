@@ -17,6 +17,7 @@ import { asciiGraphTool } from './tools/asciiGraph.js';
 import { whoamiTool } from './tools/whoami.js';
 import { linuxAdvantagesTool } from './tools/linuxAdvantages.js';
 import { artifactTool } from './tools/artifact.js';
+import { createPageTool } from './tools/createPage.js';
 import { fileUploadTool } from './tools/fileUpload.js';
 import { listUploadedFilesTool } from './tools/listUploadedFiles.js';
 import { transferRailwayFilesTool } from './tools/transferRailwayFiles.js';
@@ -192,6 +193,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         asciiGraph: asciiGraphTool,
         renderChart: renderChartTool,
         artifact: artifactTool,
+        createPage: createPageTool,
         whoami: whoamiTool,
         linuxAdvantages: linuxAdvantagesTool,
         fileUpload: fileUploadTool,

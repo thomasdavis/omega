@@ -12,6 +12,7 @@ import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../l
 import { queryMessages, getMessageCount } from '../database/messageService.js';
 import { getRecentQueries, getQueryCount } from '../database/queryService.js';
 import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
+import { getRoute, listRoutes, renderRoute, isValidSlug } from '../lib/router.js';
 import {
   createDocument,
   getDocument,
@@ -1526,6 +1527,31 @@ function createApp(): express.Application {
     } catch (error) {
       console.error('Error rendering blog post:', error);
       res.status(500).send('Error loading blog post');
+    }
+  });
+
+  // Named page routes (new routing system)
+  app.get('/pages/:slug', (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+
+      // Validate slug format
+      if (!isValidSlug(slug)) {
+        return res.status(400).send('Invalid page slug');
+      }
+
+      const route = getRoute(slug);
+
+      if (!route) {
+        return res.status(404).send('Page not found');
+      }
+
+      const html = renderRoute(route);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      res.status(500).send('Error loading page');
     }
   });
 
