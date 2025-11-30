@@ -104,7 +104,7 @@ export async function handleMessage(message: Message): Promise<void> {
   const decision = await shouldRespond(message, messageHistory);
 
   // Post decision info ONLY in #omega channel for debugging
-  // const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
+  const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
   // if ('send' in message.channel && channelName === 'omega') {
   //   const emoji = decision.shouldRespond ? '✅' : '❌';
   //   // Use spoiler tags to hide verbose reasoning while keeping key info visible
