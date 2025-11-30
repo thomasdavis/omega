@@ -70,6 +70,7 @@ import { quantumComputingTool } from './tools/quantumComputing.js';
 import { queryDatabaseTool } from './tools/queryDatabase.js';
 import { defineWordTool } from './tools/defineWord.js';
 import { getUserProfileTool } from './tools/getUserProfile.js';
+import { generateMarkdownTool } from './tools/generateMarkdown.js';
 import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -235,6 +236,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         queryDatabase: queryDatabaseTool,
         defineWord: defineWordTool,
         getUserProfile: getUserProfileTool,
+        generateMarkdown: generateMarkdownTool,
       },
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
