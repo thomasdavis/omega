@@ -143,16 +143,19 @@ export async function generateComicWithUsers(
   // Build character descriptions for the comic using shared formatting
   const characterDescriptions = formatMultipleCharacters(userProfiles);
 
-  const comicPrompt = `Create a humorous comic illustration:
+  const comicPrompt = `Create a humorous comic illustration focused on this specific scenario:
 
-Scenario: ${scenario}
+PRIMARY FOCUS - The Current Scenario:
+${scenario}
 
-Characters:
+Characters (use these personalities but keep focus on the scenario above):
 ${characterDescriptions}
 
 Style: Digital comic art, vibrant colors, expressive cartoon characters, developer/tech humor
 Include: Speech bubbles, character interactions, visual humor, expressive faces
 Ensure: Each character is visually distinct and matches their description
+
+IMPORTANT: The comic should primarily illustrate the scenario/issue/PR described above. Use the characters' personalities to react to and interact with this specific situation. Background conversation context is secondary to the main scenario.
 
 Make it entertaining and capture the personalities!`;
 
@@ -168,8 +171,9 @@ export async function generateComicFromIssue(
   issueNumber: number
 ): Promise<GeminiImageResult> {
   // Create a comic-style prompt from the issue
-  const comicPrompt = `Create a humorous comic illustration about this software development task:
+  const comicPrompt = `Create a humorous comic illustration focused specifically on this GitHub issue/PR:
 
+PRIMARY FOCUS - Issue #${issueNumber}:
 Title: ${issueTitle}
 
 Description: ${issueBody}
@@ -177,6 +181,8 @@ Description: ${issueBody}
 Style: Digital comic art, vibrant colors, funny cartoon characters, developer humor
 Theme: Software development, coding, debugging, tech humor
 Include: Speech bubbles, expressive characters, visual jokes
+
+IMPORTANT: The comic should illustrate THIS SPECIFIC issue/PR and its content. Focus on what this particular task is about, not general conversation or background context.
 
 Make it entertaining and relatable to software developers!`;
 

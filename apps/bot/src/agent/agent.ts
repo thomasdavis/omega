@@ -77,6 +77,7 @@ import { generateMarkdownTool } from './tools/generateMarkdown.js';
 import { generateCrosswordTool } from './tools/generateCrossword.js';
 import { generateMarketingCopyTool } from './tools/generateMarketingCopy.js';
 import { generateDungeonMapTool } from './tools/generateDungeonMap.js';
+import { drawAsciiMapTool } from './tools/drawAsciiMap.js';
 import { generateIconEmojiTool } from './tools/generateIconEmoji.js';
 import { generateStandupSummaryTool } from './tools/generateStandupSummary.js';
 import { generateLegalDisclaimerTool } from './tools/generateLegalDisclaimer.js';
@@ -257,6 +258,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         generateCrossword: generateCrosswordTool,
         generateMarketingCopy: generateMarketingCopyTool,
         generateDungeonMap: generateDungeonMapTool,
+        drawAsciiMap: drawAsciiMapTool,
         generateIconEmoji: generateIconEmojiTool,
         generateStandupSummary: generateStandupSummaryTool,
         generateLegalDisclaimer: generateLegalDisclaimerTool,
