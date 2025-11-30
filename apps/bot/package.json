@@ -27,6 +27,7 @@
     "discord.js": "^14.24.2",
     "dotenv": "^16.6.1",
     "express": "^4.18.2",
+    "fish-joke-generator": "^1.1.0",
     "lib0": "^0.2.114",
     "mime": "^4.0.0",
     "minimatch": "^10.1.1",
