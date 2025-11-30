@@ -328,9 +328,6 @@ function buildComicPrompt(
   // Determine optimal frame count based on context
   const frameCount = determineFrameCount(conversationContext);
 
-  // 20% chance to include a super-deformed/chibi panel
-  const includeSuperDeformed = Math.random() < 0.2;
-
   // Build panel layout description based on frame count
   let layoutDescription = '';
   switch (frameCount) {
@@ -353,26 +350,7 @@ function buildComicPrompt(
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
 
-  // Build super-deformed panel instruction if applicable
-  const superDeformedInstruction = includeSuperDeformed
-    ? `
-
-**SPECIAL INSTRUCTION - Super-Deformed Panel:**
-Include ONE panel with a humorous "super-deformed" (SD) or "chibi" style moment where characters are drawn in an exaggerated, cute, simplified form (big heads, tiny bodies). This panel should contain a text box with:
-
-"ChatGPT said:
-
-That effect is usually called 'super-deformed' (SD) or 'chibi.'
-
-💡 What it means
-
-Super-Deformed (SD): The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
-
-Chibi: The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect."
-
-This meta-commentary panel should break the fourth wall in a humorous way, showing the characters in super-deformed style while explaining what super-deformed means.
-`
-    : '';
+  // No conditional super-deformed instruction - it's now part of the main prompt
 
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
@@ -411,7 +389,7 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
 - Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
 ${characterDatabase}
-${superDeformedInstruction}
+
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
    Layout: ${layoutDescription}
@@ -449,6 +427,7 @@ ${superDeformedInstruction}
    - Reference common programmer experiences, memes, frustrations
    - Break the fourth wall occasionally for meta-humor
    - Use contrast between serious robot Omega and chaotic situations
+   - **OCCASIONALLY** (randomly, not every comic): Include one panel with "super-deformed" or "chibi" style for comedic effect - characters drawn in exaggerated cute simplified form (big heads, tiny bodies) for maximum humor impact
 
 6. **DIALOGUE & COHERENCE:**
    - Speech bubbles must be witty, punchy, and character-appropriate

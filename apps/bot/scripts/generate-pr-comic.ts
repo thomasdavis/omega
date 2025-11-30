@@ -128,8 +128,8 @@ async function main() {
         before: undefined,
       });
 
-      // Filter messages before PR creation and take last 20
-      const messagesBefore = messages
+      // Convert Collection to array, filter messages before PR creation, and take last 20
+      const messagesBefore = Array.from(messages.values())
         .filter(msg => msg.createdAt < prCreatedAt)
         .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
         .slice(-20); // Take last 20
