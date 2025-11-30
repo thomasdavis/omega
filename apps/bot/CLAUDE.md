@@ -410,6 +410,135 @@ https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=30
 
 ---
 
+## Twitter Integration
+
+### Overview
+
+Omega can automatically post generated PR comics to Twitter/X after each pull request merge. This integration is **optional** - the workflow will continue successfully even if Twitter credentials are not configured.
+
+### Features
+
+- **Automatic Posting**: Comics are posted to Twitter immediately after PR merge
+- **Rich Content**: Includes PR title, GitHub link, and hashtags
+- **Image Attachment**: Full-resolution comic PNG attached to tweet
+- **Non-Blocking**: Workflow continues even if Twitter posting fails
+- **Configurable**: Easy to enable/disable via GitHub Secrets
+
+### Tweet Format
+
+```
+🎨 [PR Title]
+
+🔗 [GitHub PR URL]
+
+#DevComics #GitHub #OpenSource #AIGenerated
+```
+
+### Setup Instructions
+
+#### 1. Create Twitter Developer Account
+
+1. Go to [https://developer.twitter.com/](https://developer.twitter.com/)
+2. Click "Sign up" (use your Twitter account for Omega)
+3. Fill out the application form:
+   - **Use case**: Bot/automated posting
+   - **Description**: "Automated posting of AI-generated comics for GitHub pull requests from the Omega Discord bot project"
+4. Wait for approval (usually instant for basic access)
+
+#### 2. Create Twitter App
+
+1. Go to [Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+2. Click "Create App" or "Create Project"
+3. **App name**: "Omega PR Comics" (or similar)
+4. **Description**: "Posts AI-generated comics for merged pull requests"
+5. **Use case**: Automated posting
+
+#### 3. Generate API Credentials
+
+1. In your app settings, go to "Keys and tokens"
+2. Click "Generate" for:
+   - **API Key** (also called Consumer Key)
+   - **API Secret** (also called Consumer Secret)
+   - **Access Token**
+   - **Access Token Secret**
+3. **IMPORTANT**: Save these immediately - you can't view them again!
+4. Set permissions to **Read and Write** (required for posting)
+
+#### 4. Verify Permissions
+
+1. Under "User authentication settings" → "App permissions"
+2. Must be set to **"Read and Write"**
+3. If not, regenerate Access Tokens after changing permissions
+
+#### 5. Add Secrets to GitHub Repository
+
+1. Go to your GitHub repository: `https://github.com/YOUR_USERNAME/omega`
+2. Click **Settings** → **Secrets and variables** → **Actions**
+3. Click **"New repository secret"** and add these 4 secrets:
+
+| Secret Name | Value |
+|------------|-------|
+| `TWITTER_API_KEY` | Your API Key (Consumer Key) |
+| `TWITTER_API_SECRET` | Your API Secret (Consumer Secret) |
+| `TWITTER_ACCESS_TOKEN` | Your Access Token |
+| `TWITTER_ACCESS_SECRET` | Your Access Token Secret |
+
+### How It Works
+
+1. **PR is merged** → GitHub Actions workflow triggers
+2. **Comic is generated** → Gemini API creates comic from PR context
+3. **Posted to Discord** → Comic shared in Discord channel
+4. **Posted to Twitter** → If credentials configured, posts to Twitter
+   - Uploads comic as media
+   - Creates tweet with PR info and hashtags
+   - Returns tweet URL
+5. **Result tracked** → GitHub PR comment includes Twitter link
+
+### Optional Configuration
+
+The Twitter integration is completely optional:
+
+- **With Twitter credentials**: Comics posted to both Discord and Twitter
+- **Without Twitter credentials**: Comics only posted to Discord
+- **Twitter posting fails**: Workflow continues, only logs a warning
+
+### Troubleshooting
+
+**Problem:** Twitter posting fails with authentication error
+
+**Solution:**
+1. Verify all 4 secrets are set correctly in GitHub
+2. Check that app permissions are "Read and Write"
+3. Regenerate Access Tokens if permissions were changed
+4. Ensure Twitter API keys are not expired
+
+**Problem:** Tweets not appearing on Twitter
+
+**Solution:**
+1. Check GitHub Actions logs for error messages
+2. Verify Twitter account is in good standing (not suspended)
+3. Check Twitter API rate limits (300 tweets per 3 hours)
+4. Ensure image size is under 5MB
+
+**Problem:** Duplicate tweet detection
+
+**Solution:**
+- Twitter may reject duplicate tweets
+- This is expected behavior for testing with same PR
+- Production PRs will always have unique titles/URLs
+
+### Rate Limits
+
+**Twitter API Limits:**
+- 300 tweets per 3 hours (app-level)
+- 500 media uploads per 15 minutes
+
+**Omega Usage:**
+- Typically 1-10 comics per day
+- Well within rate limits
+
+---
+
 ## Local Development
 
 ### 1. Install Dependencies

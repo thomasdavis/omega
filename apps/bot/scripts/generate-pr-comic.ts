@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateComic, extractConversationContext } from '../src/services/geminiComicService.js';
 import { postComicToDiscord } from '../src/services/discordComicPoster.js';
+import { postComicToTwitter } from '../src/services/twitterComicPoster.js';
 import { extractKeywords, searchDiscordMessages } from '../src/services/discordMessageSearch.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,6 +20,8 @@ interface ComicResult {
   success: boolean;
   imageSize?: number;
   discordMessageId?: string;
+  twitterPostId?: string;
+  twitterPostUrl?: string;
   comicPath?: string;
   error?: string;
 }
@@ -224,11 +227,43 @@ async function main() {
 
     console.log('✅ Comic posted to Discord successfully');
 
+    // Optional Twitter posting (won't fail workflow if Twitter fails)
+    let twitterPostId: string | undefined;
+    let twitterPostUrl: string | undefined;
+
+    if (process.env.TWITTER_API_KEY && process.env.TWITTER_ACCESS_TOKEN) {
+      console.log('📤 Posting comic to Twitter...');
+      try {
+        const twitterResult = await postComicToTwitter({
+          imageData: comicResult.imageData,
+          prNumber,
+          prTitle,
+          prUrl,
+        });
+
+        if (twitterResult.success) {
+          console.log(`✅ Comic posted to Twitter: ${twitterResult.tweetUrl}`);
+          twitterPostId = twitterResult.tweetId;
+          twitterPostUrl = twitterResult.tweetUrl;
+        } else {
+          console.warn(`⚠️ Twitter posting failed: ${twitterResult.error}`);
+          // Don't throw - continue with workflow
+        }
+      } catch (error) {
+        console.warn('⚠️ Twitter posting error:', error);
+        // Don't throw - continue with workflow
+      }
+    } else {
+      console.log('ℹ️ Twitter credentials not configured, skipping Twitter post');
+    }
+
     // Write success result
     await writeResult({
       success: true,
       imageSize: comicResult.imageData.length,
       discordMessageId: postResult.messageId,
+      twitterPostId,
+      twitterPostUrl,
       comicPath: comicResult.imagePath,
     });
 

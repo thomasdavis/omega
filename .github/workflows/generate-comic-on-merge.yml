@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Generate comic and post to Discord
+      - name: Generate comic and post to Discord + Twitter
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
@@ -38,11 +38,17 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPO: ${{ github.repository }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           OMEGA_API_URL: ${{ secrets.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app' }}
+          # Twitter credentials (optional - workflow continues if not set)
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
         run: |
           cd apps/bot
           npx tsx scripts/generate-pr-comic.ts
@@ -71,10 +77,13 @@ jobs:
               const result = JSON.parse(fs.readFileSync(resultPath, 'utf8'));
 
               if (result.success) {
-                comment += `✅ Successfully generated and posted comic to Discord!\n\n`;
+                comment += `✅ Successfully generated and posted comic!\n\n`;
                 comment += `📊 Image size: ${(result.imageSize / 1024).toFixed(2)} KB\n`;
                 if (result.discordMessageId) {
-                  comment += `🔗 Discord Message ID: \`${result.discordMessageId}\`\n`;
+                  comment += `💬 Discord Message ID: \`${result.discordMessageId}\`\n`;
+                }
+                if (result.twitterPostUrl) {
+                  comment += `🐦 Twitter: ${result.twitterPostUrl}\n`;
                 }
                 if (result.comicPath) {
                   comment += `📁 Saved to: \`${result.comicPath}\`\n`;

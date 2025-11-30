@@ -34,6 +34,7 @@
     "openai": "^4.104.0",
     "playwright-chromium": "^1.48.0",
     "pusher": "^5.2.0",
+    "twitter-api-v2": "^1.17.2",
     "undici": "^7.2.0",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.20",
