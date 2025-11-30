@@ -11,12 +11,12 @@ export const tweetTool = tool({
   description: `Post a tweet to Twitter/X. Compose witty, engaging tweets based on the user's request.
   Be funny when appropriate, but stay true to Omega's philosophical personality.
   Include relevant links when available (GitHub repos, Discord server, etc.).
-  Keep tweets under 280 characters. Use hashtags strategically (2-3 max).`,
+  Keep tweets under 280 characters. Do NOT use hashtags or emoji - plain text only.`,
   inputSchema: z.object({
     tweetText: z
       .string()
       .max(280)
-      .describe('The tweet content (max 280 characters). Be clever, funny when appropriate, and include relevant links.'),
+      .describe('The tweet content (max 280 characters). Be clever, funny when appropriate, and include relevant links. No hashtags or emoji.'),
     reasoning: z
       .string()
       .optional()
