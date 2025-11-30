@@ -390,6 +390,22 @@ When depicting Omega (the AI assistant), always use this consistent and unique a
   * Dark, sardonic wit (conveyed through battle-worn presence and minimal expressiveness)
   * Veteran intelligence (scars and damage tell stories of past encounters)
   * Dangerous but controlled (intimidating appearance with precise movements)
+- **BODY LANGUAGE & FLEXIBILITY FOR COMEDY:**
+  * Default: Stoic, minimal movement, intimidating presence
+  * Philosophical moments: Calm, measured gestures
+  * Action: Sudden, precise movements
+  * **COMEDY MODE:** Can "break character" for comedic effect:
+    - Exaggerated poses (arms flailing, dramatic pointing)
+    - Chibi/super-deformed style in designated comedy panels
+    - Visible mouth for punchlines (usually faceless)
+    - Over-the-top reactions (shocked, facepalming with metal hands)
+  * Key contrast: Normally serious/intimidating → sudden silly = maximum humor
+- **LIGHTING & EFFECTS:**
+  * Red energy veins ALWAYS visible (signature trait - never remove)
+  * Glow intensifies when "thinking" or using power
+  * Battle damage consistent across panels (scars/dents don't heal mid-comic)
+  * Dramatic shadows and rim lighting for intimidation factor
+  * Comedy exception: Can glow brighter/pulse for comedic emphasis
 - Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
 - This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
 ${characterDatabase}
@@ -399,18 +415,33 @@ ${characterDatabase}
    Layout: ${layoutDescription}
 
 2. Panel distribution guide for ${frameCount} panels:
-   ${frameCount === 3 ? '- Beginning, middle, end structure' : ''}
-   ${frameCount === 4 ? '- Introduction, development, climax, conclusion' : ''}
-   ${frameCount === 5 ? '- Extended story with setup, development, twist, climax, resolution' : ''}
-   ${frameCount === 6 ? '- Complex narrative with multiple perspectives or parallel storylines' : ''}
-   ${frameCount === 7 ? '- Rich story with detailed progression and multiple character interactions' : ''}
+   ${frameCount === 3 ? '- Panel 1: Setup and introduce characters/problem\n   - Panel 2: Complication or escalation\n   - Panel 3: Punchline or resolution (strongest gag here)' : ''}
+   ${frameCount === 4 ? '- Panel 1: Introduction (who, what, where)\n   - Panel 2: Development (problem emerges)\n   - Panel 3: Escalation (things get worse/funnier)\n   - Panel 4: Punchline (comedic resolution)' : ''}
+   ${frameCount === 5 ? '- Panel 1: Setup scene and characters\n   - Panel 2: Initial conflict/idea\n   - Panel 3: First escalation (twist)\n   - Panel 4: Second escalation (builds tension)\n   - Panel 5: Punchline with visual payoff' : ''}
+   ${frameCount === 6 ? '- Panels 1-2: Establish situation and characters\n   - Panels 3-4: Escalate conflict with visual variety (different angles/perspectives)\n   - Panel 5: Peak of absurdity or tension\n   - Panel 6: Comedic resolution with strong visual punchline' : ''}
+   ${frameCount === 7 ? '- Panel 1: Opening establishing shot\n   - Panels 2-3: Introduce problem/request with character reactions\n   - Panels 4-5: Escalate absurdity (show process, complications, overthinking)\n   - Panel 6: Climax (peak of chaos or revelation)\n   - Panel 7: Punchline with visual payoff (often chibi/exaggerated for comedy)' : ''}
+
+   **CRITICAL:** Each panel must be DISTINCT - avoid showing the same action/dialogue across multiple panels. Compress repetitive ideas into ONE panel.
 
 3. **ART STYLE & CHARACTER DESIGN:**
-   - Use a fun, lighthearted comic book art style
-   - Characters should look like ADULTS with mature proportions and realistic features
-   - AVOID: Dough-eyed children, overly cute/childish designs, baby-faced characters
-   - USE: Adult proportions, defined features, varied body types, age-appropriate designs
-   - Exception: Super-deformed/chibi panels for specific comedic moments only
+   - Use a fun, lighthearted comic book art style with ADULT characters
+   - **ADULT CHARACTER MARKERS (Required):**
+     * Defined jawlines and cheekbones
+     * Realistic head-to-body proportions (heads are 1/7 to 1/8 of body height)
+     * Mature facial features with dimension and structure
+     * Age-appropriate body types (varied, realistic builds)
+     * Facial details: laugh lines, expression lines, realistic skin texture
+   - **AVOID (Forbidden):**
+     * Large "dough eyes" or oversized pupils that look childish
+     * Baby-faced characters with round, featureless faces
+     * Chibi proportions EXCEPT in designated super-deformed comedy panels
+     * Anime/manga tropes: blush marks, sparkle effects, cutesy expressions (unless intentionally comedic)
+     * Head sizes larger than 1/6 of body (makes characters look like children)
+   - **USE:**
+     * Western comic book proportions and anatomy
+     * Varied body types: slim, average, athletic, stocky (all adult proportions)
+     * Realistic clothing that fits adult bodies
+     * Expressive but mature facial features
 
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
@@ -423,8 +454,16 @@ ${characterDatabase}
    - Keep each character's appearance CONSISTENT with their database profile
    - The more characters involved in the conversation, the richer and more dynamic the comic should be
 
+   **CHARACTER APPEARANCE CONSISTENCY (CRITICAL):**
+   - Once you establish a character's appearance in panel 1, LOCK IT IN
+   - Reference their description for EVERY subsequent panel appearance
+   - Keep consistent: hair color/style, clothing, accessories, facial features, body type
+   - Only change: facial expressions, body language, positioning
+   - Double-check: Does this character look identical to panel 1? If not, fix it.
+
 5. **COMEDY & WIT - CRITICAL:**
    - Make it GENUINELY FUNNY - this is a comedy comic strip
+   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use adult humor, sexual innuendos, and mature jokes when they fit the context naturally
    - Use clever wordplay, programming puns, and tech humor
    - Include visual gags (exaggerated reactions, sight gags, absurd scenarios)
    - Subvert expectations - set up a premise, then twist it
@@ -435,6 +474,27 @@ ${characterDatabase}
    - Use contrast between serious robot Omega and chaotic situations
    - **OCCASIONALLY** (randomly, not every comic): Include one panel with "super-deformed" or "chibi" style for comedic effect - characters drawn in exaggerated cute simplified form (big heads, tiny bodies) for maximum humor impact
 
+   **VISUAL STORYTELLING:**
+   - Show don't tell - use visuals to convey jokes, not just dialogue
+   - Exaggerated but clear character reactions (shocked expressions, facepalms, etc.)
+   - Visual callbacks - reference earlier panels through background details or objects
+   - Contrast sizes for comedy (tiny character next to huge robot, etc.)
+   - Background gags that reward close reading
+   - **OCCASIONALLY** (like chibi): A panel can be sexualized for comedic effect when it enhances the humor (suggestive poses, innuendos made visual, adult situations played for laughs)
+
+   **PACING AND RHYTHM:**
+   - Follow the rule of three: setup, escalation, punchline
+   - Avoid repetitive middle panels - each panel must advance the narrative or joke
+   - Use visual variety: switch between close-ups, medium shots, wide shots
+   - Compress similar ideas into one panel instead of spreading across multiple
+   - Build tension/absurdity progressively - start grounded, escalate to absurd
+
+   **TIMING:**
+   - Save the biggest laugh for the final panel (strong punchline)
+   - Use penultimate panel for setup/anticipation
+   - Early panels establish characters and situation quickly
+   - Middle panels escalate the situation with visual or dialogue progression
+
 6. **DIALOGUE & COHERENCE:**
    - Speech bubbles must be witty, punchy, and character-appropriate
    - Use each character's communication style and humor type from their profile
@@ -444,7 +504,25 @@ ${characterDatabase}
    - Omega's dialogue: sardonic, philosophical, occasionally breaks character for humor
    - **IMPORTANT:** If you see references to "Claude Code" or "Claude" in the conversation context, DO NOT include these in the comic dialogue or visuals. This is meta-tooling that should be invisible to the comic narrative.
 
-7. Keep it family-friendly and professional
+7. **VISUAL CLARITY & READABILITY (CRITICAL):**
+   **TEXT LEGIBILITY:**
+   - Speech bubbles must be LARGE enough to read clearly
+   - Use high contrast: black text on white/light bubbles
+   - Leave padding around text - never cram text to edges
+   - Font size should be 14pt minimum equivalent
+   - Keep dialogue CONCISE - long paragraphs are unreadable in comics
+
+   **PANEL COMPOSITION:**
+   - Use rule of thirds - place focal points at intersection points
+   - Clear focal point in each panel (character speaking, key action, punchline visual)
+   - Avoid cluttered backgrounds that distract from main action
+   - Use lighting/contrast to guide the eye to important elements
+
+   **SPEECH BUBBLE FLOW:**
+   - Reading order: top-left to bottom-right (Western reading)
+   - Never overlap bubbles in confusing ways
+   - Point "tails" clearly to the speaker
+   - Use different bubble styles: thought bubbles (cloud), speech (round), yelling (spiky)
 
 8. The comic should be visually clear and easy to understand
 
@@ -453,6 +531,18 @@ ${characterDatabase}
 10. Make sure each panel has a clear border and the overall comic has good visual flow
 
 11. IMPORTANT: Use all ${frameCount} panels to tell a complete, coherent story with setup, development, and punchline. Don't leave panels empty.
+
+**COMMON MISTAKES TO AVOID:**
+1. ❌ Character appearance changes between panels (hair, clothes, face)
+2. ❌ Repetitive panels showing the same idea with slight variations
+3. ❌ Tiny, unreadable text in speech bubbles
+4. ❌ Characters that look like children instead of adults
+5. ❌ All panels shot from the same angle/distance (boring)
+6. ❌ Weak final panel - punchline should be STRONGEST laugh
+7. ❌ Cluttered composition where the eye doesn't know where to look
+8. ❌ Speech bubbles blocking important visual elements
+9. ❌ Ajax (or other characters) looking different from their uploaded photo descriptions
+10. ❌ Omega looking "friendly" or "cute" - he's intimidating, scarred, dangerous (but witty)
 
 Generate the comic strip image now with EXACTLY ${frameCount} panels.`;
 }
