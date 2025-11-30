@@ -108,60 +108,73 @@ Respond in JSON format:
 /**
  * Extracts error information from Railway webhook payload
  */
-export function parseRailwayWebhook(payload: any): RailwayError | null {
+export function parseRailwayWebhook(payload: Record<string, unknown>): RailwayError | null {
   // Handle different Railway webhook event types
-  const eventType = payload.type || payload.event;
+  const eventType = (payload.type as string | undefined) || (payload.event as string | undefined);
 
   // Deployment failure
   if (eventType === 'DEPLOY' || eventType === 'DEPLOYMENT_FAILED') {
-    if (payload.deployment?.status === 'FAILED' || payload.deployment?.status === 'CRASHED') {
+    const deployment = payload.deployment as { status?: string; id?: string; meta?: { commitSha?: string; commitMessage?: string } } | undefined;
+    const snapshot = payload.snapshot as { error?: string; exitCode?: number; logs?: string } | undefined;
+    const service = payload.service as { name?: string } | undefined;
+
+    if (deployment?.status === 'FAILED' || deployment?.status === 'CRASHED') {
       return {
-        type: payload.deployment?.status === 'CRASHED' ? 'crash' : 'deployment',
-        timestamp: payload.timestamp || new Date().toISOString(),
-        message: payload.snapshot?.error || payload.error || 'Deployment failed',
-        deploymentId: payload.deployment?.id,
-        serviceName: payload.service?.name || 'unknown',
-        commitSha: payload.deployment?.meta?.commitSha,
-        commitMessage: payload.deployment?.meta?.commitMessage,
-        exitCode: payload.snapshot?.exitCode,
-        rawLogs: payload.logs || payload.snapshot?.logs,
+        type: deployment.status === 'CRASHED' ? 'crash' : 'deployment',
+        timestamp: (payload.timestamp as string | undefined) || new Date().toISOString(),
+        message: snapshot?.error || (payload.error as string | undefined) || 'Deployment failed',
+        deploymentId: deployment.id,
+        serviceName: service?.name || 'unknown',
+        commitSha: deployment.meta?.commitSha,
+        commitMessage: deployment.meta?.commitMessage,
+        exitCode: snapshot?.exitCode,
+        rawLogs: (payload.logs as string | undefined) || snapshot?.logs,
       };
     }
   }
 
   // Health check failure
-  if (eventType === 'HEALTHCHECK_FAILED' || payload.healthcheck?.status === 'FAILED') {
+  const healthcheck = payload.healthcheck as { status?: string; error?: string } | undefined;
+  const service = payload.service as { name?: string } | undefined;
+
+  if (eventType === 'HEALTHCHECK_FAILED' || healthcheck?.status === 'FAILED') {
     return {
       type: 'healthcheck',
-      timestamp: payload.timestamp || new Date().toISOString(),
-      message: payload.healthcheck?.error || 'Health check failed',
-      serviceName: payload.service?.name || 'unknown',
-      rawLogs: payload.logs,
+      timestamp: (payload.timestamp as string | undefined) || new Date().toISOString(),
+      message: healthcheck?.error || 'Health check failed',
+      serviceName: service?.name || 'unknown',
+      rawLogs: payload.logs as string | undefined,
     };
   }
 
   // OOM (Out of Memory)
-  if (payload.snapshot?.exitCode === 137 || payload.error?.includes('out of memory')) {
+  const snapshot = payload.snapshot as { exitCode?: number; logs?: string } | undefined;
+  const errorStr = payload.error as string | undefined;
+
+  if (snapshot?.exitCode === 137 || errorStr?.includes('out of memory')) {
+    const deployment = payload.deployment as { id?: string } | undefined;
     return {
       type: 'oom',
-      timestamp: payload.timestamp || new Date().toISOString(),
+      timestamp: (payload.timestamp as string | undefined) || new Date().toISOString(),
       message: 'Service crashed due to out of memory',
-      deploymentId: payload.deployment?.id,
-      serviceName: payload.service?.name || 'unknown',
+      deploymentId: deployment?.id,
+      serviceName: service?.name || 'unknown',
       exitCode: 137,
-      rawLogs: payload.logs,
+      rawLogs: payload.logs as string | undefined,
     };
   }
 
   // Runtime error (from logs)
-  if (payload.log?.level === 'error' || payload.log?.message?.includes('Error:')) {
+  const log = payload.log as { level?: string; message?: string; timestamp?: string } | undefined;
+
+  if (log?.level === 'error' || log?.message?.includes('Error:')) {
     return {
       type: 'runtime',
-      timestamp: payload.timestamp || payload.log?.timestamp || new Date().toISOString(),
-      message: payload.log?.message || payload.error || 'Runtime error detected',
-      stackTrace: extractStackTrace(payload.log?.message || payload.error),
-      serviceName: payload.service?.name || 'unknown',
-      rawLogs: payload.log?.message,
+      timestamp: (payload.timestamp as string | undefined) || log.timestamp || new Date().toISOString(),
+      message: log.message || errorStr || 'Runtime error detected',
+      stackTrace: extractStackTrace(log.message || errorStr),
+      serviceName: service?.name || 'unknown',
+      rawLogs: log.message,
     };
   }
 

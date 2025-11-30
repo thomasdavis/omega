@@ -50,13 +50,24 @@ export async function fetchExistingIssues(
       return [];
     }
 
-    const issues = await response.json() as any[];
-    return issues.map((issue: any) => ({
+    interface GitHubAPIIssue {
+      number: number;
+      title: string;
+      body?: string;
+      state: string;
+      labels: Array<{ name: string }>;
+      created_at: string;
+      updated_at: string;
+      html_url: string;
+    }
+
+    const issues = await response.json() as GitHubAPIIssue[];
+    return issues.map((issue) => ({
       number: issue.number,
       title: issue.title,
       body: issue.body || '',
-      state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
+      state: issue.state as 'open' | 'closed',
+      labels: issue.labels.map((l) => l.name),
       created_at: issue.created_at,
       updated_at: issue.updated_at,
       html_url: issue.html_url,
@@ -252,13 +263,24 @@ export async function createGitHubIssue(
       return null;
     }
 
-    const issue = await response.json() as any;
+    interface GitHubAPIIssueResponse {
+      number: number;
+      title: string;
+      body: string;
+      state: string;
+      labels: Array<{ name: string }>;
+      created_at: string;
+      updated_at: string;
+      html_url: string;
+    }
+
+    const issue = await response.json() as GitHubAPIIssueResponse;
     return {
       number: issue.number,
       title: issue.title,
       body: issue.body,
-      state: issue.state,
-      labels: issue.labels.map((l: any) => l.name),
+      state: issue.state as 'open' | 'closed',
+      labels: issue.labels.map((l) => l.name),
       created_at: issue.created_at,
       updated_at: issue.updated_at,
       html_url: issue.html_url,
