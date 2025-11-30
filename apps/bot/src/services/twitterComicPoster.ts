@@ -5,6 +5,8 @@
 
 import { TwitterApi } from 'twitter-api-v2';
 import { Buffer } from 'buffer';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 
 interface TwitterPostOptions {
   imageData: Buffer;
@@ -18,6 +20,48 @@ interface TwitterPostResult {
   tweetId?: string;
   tweetUrl?: string;
   error?: string;
+}
+
+/**
+ * Generates a concise, engaging tweet summary for a PR comic
+ * @param prTitle - The PR title/branch name
+ * @param prNumber - The PR number
+ * @returns A short, descriptive summary suitable for tweeting
+ */
+async function generateTweetSummary(prTitle: string, prNumber: number): Promise<string> {
+  try {
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const result = await generateText({
+      model: openai('gpt-4.1-mini'),
+      prompt: `Generate a concise, engaging tweet title/summary (max 50 characters) for a GitHub PR comic.
+
+PR Title/Branch: ${prTitle}
+PR Number: #${prNumber}
+
+Create a brief, appealing description that captures what the PR is about. Make it friendly and engaging for Twitter.
+If the PR title is just a branch name like "claude/issue-502-20251130-0533", try to infer what it might be about.
+If you can't infer anything specific, use a generic but engaging phrase like "New feature implementation" or "Code improvements".
+
+Return ONLY the summary text, nothing else. No quotes, no extra formatting.`,
+      maxTokens: 50,
+    });
+
+    const summary = result.text.trim();
+
+    // Ensure it's not too long (leave room for emojis and links)
+    if (summary.length > 60) {
+      return summary.substring(0, 57) + '...';
+    }
+
+    return summary;
+  } catch (error) {
+    console.warn('⚠️ Failed to generate AI summary, using PR title:', error);
+    // Fallback to PR title if AI generation fails
+    return prTitle.length > 60 ? prTitle.substring(0, 57) + '...' : prTitle;
+  }
 }
 
 /**
@@ -59,8 +103,13 @@ export async function postComicToTwitter(
     });
     console.log(`✅ Media uploaded successfully. Media ID: ${mediaId}`);
 
-    // Format tweet text
-    const tweetText = `🎨 ${prTitle}\n\n🔗 ${prUrl}\n\n#DevComics #GitHub #OpenSource #AIGenerated`;
+    // Generate engaging tweet summary
+    console.log('🤖 Generating tweet summary...');
+    const summary = await generateTweetSummary(prTitle, prNumber);
+    console.log(`📝 Generated summary: ${summary}`);
+
+    // Format tweet text with summary
+    const tweetText = `🎨 ${summary}\n\n🔗 ${prUrl}\n\n#DevComics #GitHub #OpenSource #AIGenerated`;
 
     // Create tweet with media
     console.log('📝 Creating tweet with comic...');
