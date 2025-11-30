@@ -10,6 +10,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 import { formatMultipleCharacters, type UserCharacter } from '../lib/userAppearance.js';
+import { generateScreenplay, formatScreenplayForComic } from './screenplayService.js';
 
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
@@ -140,10 +141,20 @@ export async function generateComicWithUsers(
   scenario: string,
   userProfiles: UserCharacter[]
 ): Promise<GeminiImageResult> {
-  // Build character descriptions for the comic using shared formatting
-  const characterDescriptions = formatMultipleCharacters(userProfiles);
+  // STEP 1: Generate screenplay with clear speaker attribution
+  console.log('📝 Generating screenplay for comic...');
+  const screenplayResult = await generateScreenplay({
+    scenario,
+    characters: userProfiles,
+    includeOmega: true,
+  });
 
-  const comicPrompt = `Create a humorous comic illustration:
+  if (!screenplayResult.success || !screenplayResult.screenplay) {
+    console.warn('⚠️ Screenplay generation failed, falling back to direct comic generation');
+    // Fallback to old method if screenplay fails
+    const characterDescriptions = formatMultipleCharacters(userProfiles);
+
+    const comicPrompt = `Create a humorous comic illustration:
 
 Scenario: ${scenario}
 
@@ -156,6 +167,36 @@ Ensure: Each character is visually distinct and matches their description
 
 Make it entertaining and capture the personalities!`;
 
+    return generateImageWithGemini({ prompt: comicPrompt });
+  }
+
+  // STEP 2: Build character descriptions for the comic using shared formatting
+  const characterDescriptions = formatMultipleCharacters(userProfiles);
+
+  // STEP 3: Format screenplay for comic prompt
+  const screenplaySection = formatScreenplayForComic(
+    screenplayResult.screenplay,
+    screenplayResult.cast || []
+  );
+
+  // STEP 4: Build comic prompt with screenplay
+  const comicPrompt = `Create a humorous comic illustration based on the screenplay below.
+
+${screenplaySection}
+
+Characters (Visual Descriptions):
+${characterDescriptions}
+
+Style: Digital comic art, vibrant colors, expressive cartoon characters, developer/tech humor
+Include: Speech bubbles matching the screenplay dialogue, character interactions, visual humor, expressive faces
+Ensure:
+- Each character is visually distinct and matches their description
+- Dialogue attribution EXACTLY matches the screenplay
+- Speech bubbles clearly show who is speaking (use character proximity, bubble tails, or labels)
+
+Make it entertaining and capture the personalities!`;
+
+  console.log('🎨 Generating comic from screenplay...');
   return generateImageWithGemini({ prompt: comicPrompt });
 }
 
