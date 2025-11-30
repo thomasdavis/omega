@@ -104,14 +104,14 @@ export async function handleMessage(message: Message): Promise<void> {
   const decision = await shouldRespond(message, messageHistory);
 
   // Post decision info ONLY in #omega channel for debugging
-  const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
-  if ('send' in message.channel && channelName === 'omega') {
-    const emoji = decision.shouldRespond ? '✅' : '❌';
-    // Use spoiler tags to hide verbose reasoning while keeping key info visible
-    await message.channel.send(
-      `${emoji} ${decision.shouldRespond ? 'Responding' : 'Ignoring'} (${decision.confidence}% confidence)\n||📋 Reason: ${decision.reason}||`
-    );
-  }
+  // const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
+  // if ('send' in message.channel && channelName === 'omega') {
+  //   const emoji = decision.shouldRespond ? '✅' : '❌';
+  //   // Use spoiler tags to hide verbose reasoning while keeping key info visible
+  //   await message.channel.send(
+  //     `${emoji} ${decision.shouldRespond ? 'Responding' : 'Ignoring'} (${decision.confidence}% confidence)\n||📋 Reason: ${decision.reason}||`
+  //   );
+  // }
 
   if (!decision.shouldRespond) {
     return;
