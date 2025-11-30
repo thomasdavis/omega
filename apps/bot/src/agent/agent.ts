@@ -28,6 +28,7 @@ import { hackerNewsTool } from './tools/hackerNews.js';
 import { arxivTool } from './tools/arxiv.js';
 import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
+import { tellHistoricalFactTool } from './tools/tellHistoricalFact.js';
 import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 import { oodaTool } from './tools/ooda.js';
@@ -206,6 +207,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
         arxiv: arxivTool,
         moodUplifter: moodUplifterTool,
         tellJoke: tellJokeTool,
+        tellHistoricalFact: tellHistoricalFactTool,
         generateHtmlPage: generateHtmlPageTool,
         recipeGenerator: recipeGeneratorTool,
         ooda: oodaTool,
