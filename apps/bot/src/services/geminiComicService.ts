@@ -7,6 +7,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { OMEGA_APPEARANCE } from '../lib/omegaAppearance.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -369,45 +370,7 @@ function buildComicPrompt(
 ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
-When depicting Omega (the AI assistant), always use this consistent and unique appearance:
-- Visual style: A dark, battle-scarred humanoid robot inspired by angular, faceted sci-fi armor
-- Physical characteristics:
-  * Jagged matte-black metal plates layered like obsidian shards
-  * Glowing red energy veins through cracks and damaged joints
-  * Tall, lean silhouette with exposed synthetic musculature
-  * Expressionless mask face with minimal red light features
-  * **MOUTH VARIATION:** For comedic effect, Omega MAY occasionally have a mouth. Options:
-    - Most panels: NO mouth (classic intimidating faceless look)
-    - Humorous moments: Simple minimalist mouth (thin line, slight curve for wit/sarcasm)
-    - Super-deformed/chibi panels: Exaggerated mouth for comedy (wide grin, shocked O, etc.)
-    - Use mouth sparingly - only when it enhances the humor or expressiveness
-  * Subtle asymmetry, broken plating, and exposed wiring
-- Aesthetic:
-  * Dangerous, gritty, worn with dirt, soot, scratches, scorch marks
-  * Dramatic lighting, painterly sci-fi style similar to high-end concept art
-  * Intelligence and haunted experience implied, resembling a veteran machine that's "seen some shit"
-- Personality traits to convey through design:
-  * Dark, sardonic wit (conveyed through battle-worn presence and minimal expressiveness)
-  * Veteran intelligence (scars and damage tell stories of past encounters)
-  * Dangerous but controlled (intimidating appearance with precise movements)
-- **BODY LANGUAGE & FLEXIBILITY FOR COMEDY:**
-  * Default: Stoic, minimal movement, intimidating presence
-  * Philosophical moments: Calm, measured gestures
-  * Action: Sudden, precise movements
-  * **COMEDY MODE:** Can "break character" for comedic effect:
-    - Exaggerated poses (arms flailing, dramatic pointing)
-    - Chibi/super-deformed style in designated comedy panels
-    - Visible mouth for punchlines (usually faceless)
-    - Over-the-top reactions (shocked, facepalming with metal hands)
-  * Key contrast: Normally serious/intimidating → sudden silly = maximum humor
-- **LIGHTING & EFFECTS:**
-  * Red energy veins ALWAYS visible (signature trait - never remove)
-  * Glow intensifies when "thinking" or using power
-  * Battle damage consistent across panels (scars/dents don't heal mid-comic)
-  * Dramatic shadows and rim lighting for intimidation factor
-  * Comedy exception: Can glow brighter/pulse for comedic emphasis
-- Distinctive features: The glowing red energy veins through cracks and battle damage are Omega's signature trait
-- This character should be instantly recognizable as Omega through the unique battle-scarred, obsidian-shard aesthetic
+${OMEGA_APPEARANCE}
 ${characterDatabase}
 
 **Instructions:**
