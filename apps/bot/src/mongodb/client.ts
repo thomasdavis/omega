@@ -30,9 +30,11 @@ export async function getMongoDatabase(): Promise<Db> {
   // Try to extract database name from URI, or use environment variable, or default
   let dbName = process.env.MONGODB_DATABASE || 'omega_bot';
 
-  // If MONGO_URL has a database name in the path, use it
-  const urlMatch = uri.match(/\/([^/?]+)(\?|$)/);
-  if (urlMatch && urlMatch[1] && urlMatch[1] !== 'admin') {
+  // Only try to extract database name if the URI has a path after host:port
+  // Format: mongodb://user:pass@host:port/database or mongodb://host:port/database
+  // Regex explanation: match / after either :digits or after @ (for no-port URIs)
+  const urlMatch = uri.match(/(?::\d+|@[^/:]+)\/([^/?]+)(?:\?|$)/);
+  if (urlMatch && urlMatch[1]) {
     dbName = urlMatch[1];
   }
 
