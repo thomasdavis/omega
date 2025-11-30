@@ -14,36 +14,99 @@ Omega has full access to edit its own codebase. When you ask for a feature, it:
 
 ## Current Capabilities (Self-Built)
 
-Through conversations, Omega has built itself these tools:
+Through conversations, Omega has built itself **80+ tools**. Here are the highlights:
 
 ### Development & Code
 - **calculator** - Math calculations
 - **unsandbox** - Execute code in 11 languages (Python, JS, TypeScript, Go, Rust, etc.)
+- **codeQuery** - Search and analyze codebase
+- **inspectTool** - Introspect tool definitions
 
 ### Web & Research
 - **webFetch** - Fetch and parse web content (respects robots.txt)
 - **researchEssay** - Automated research and essay generation
-- **hackerNewsPhilosophy** - Discover philosophical content from HN
+- **hackerNews** / **hackerNewsPhilosophy** - Fetch and analyze HN content
+- **arxiv** - Search academic papers
+- **search** - Web search capabilities
+- **weather** - Weather information
 
 ### Content Creation
 - **artifact** - Create interactive HTML/SVG/Markdown with shareable links
-- **asciiGraph** - Generate text-based visualizations
-- **recipeGenerator** - Generate detailed cooking recipes
-- **createBlogPost** - Create TTS-enabled blog posts with markdown
+- **createBlogPost** / **updateBlogPost** - TTS-enabled blog posts
 - **triggerDailyBlog** - Generate daily blog combining HN philosophy & market predictions
-- **marketPrediction** - Realpolitik-based global market analysis and forecasting
+- **generateHtmlPage** - Create custom HTML pages
+- **generateMarkdown** - Structured markdown generation
+- **buildSlidevPresentation** / **conversationToSlidev** - Create slide presentations
+- **createLiveDocument** / **readLiveDocument** - Collaborative real-time documents
+
+### Visual & Creative
+- **generateComic** - Create comic strips
+- **generateCrossword** - Interactive crossword puzzles
+- **generateDungeonMap** - D&D-style dungeon maps
+- **asciiGraph** / **asciiMap** - Text-based visualizations
+- **generateFilmScene** - Film scene descriptions
+- **csvToChart** / **renderChart** - Data visualization
+- **conversationDiagram** - Conversation flow diagrams
+- **generateSheetMusic** - Musical notation
+- **generateIconEmoji** - Custom emoji/icons
+
+### Image Generation & Editing
+- **generateUserImage** - Create user images
+- **generateUserAvatar** - Avatar generation
+- **generateMyPortrait** - Portrait generation
+- **editUserImage** - Edit user-uploaded images
+- **advancedImageEditingWithContext** - Context-aware image editing
+- **uploadMyPhoto** - Photo upload and management
+- **imageEditor** - General image editing
+
+### Writing & Language
+- **generateSonnet** - Poetry generation
+- **generateHaiku** - Haiku generation
+- **generateSongLyrics** - Song lyrics
+- **recipeGenerator** - Detailed cooking recipes
+- **generateMarketingCopy** - Marketing content
+- **generateLegalDisclaimer** - Legal text generation
+- **translateToSpanish** - Spanish translation
+- **defineWord** - Word definitions
+- **tellJoke** - Joke generation
+- **tellHistoricalFact** - Historical facts
+- **grammarInsult** - Grammar-based humor
 
 ### File Management & Data
-- **fileUpload** - Download and host Discord attachments permanently
+- **fileUpload** / **listUploadedFiles** - Download and host Discord attachments
+- **uploadAndCommitFile** / **commitFile** - Git-integrated file management
 - **exportConversation** - Export Discord conversations as Markdown
-- **queryMessages** - Search message history using natural language queries
+- **queryMessages** - Search message history using natural language
+- **generateCsv** - CSV file generation
+- **listRepositoryFiles** - Browse repository contents
 
-### GitHub Integration
-- **githubCreateIssue** - Create GitHub issues with context
+### Analysis & Prediction
+- **marketPrediction** - Realpolitik-based global market analysis
+- **generateStarSign** - Astrological analysis
+- **bullshitDetector** - Detect misleading content
+- **runBatchAnalysis** - Batch processing
+- **ooda** - OODA loop decision framework
 
-### Other
-- **whoami** - Explain its own capabilities
+### GitHub & Development Workflow
+- **github** - GitHub integration (issues, PRs, etc.)
+- **reportMessageAsIssue** - Convert messages to GitHub issues
+- **analyzeDocumentAndCreateIssue** - Document analysis with issue creation
+- **reportMissingTool** - Self-improvement via issue reporting
+- **summarizeCommits** - Commit history analysis
+
+### Utilities
+- **whoami** / **getOmegaManifest** - Self-awareness and capabilities
+- **getUserProfile** - User profile management
 - **moodUplifter** - Detect and respond to negative sentiment
+- **introspectFeelings** - Emotional analysis
+- **generateStandupSummary** - Daily standup summaries
+- **queryDatabase** - Database queries
+- **quantumComputing** - Quantum computing explanations
+- **linuxAdvantages** - Linux advocacy
+- **jsonAgentGenerator** - Generate agent configurations
+- **transferRailwayFiles** - Railway deployment file management
+- **tweet** - Twitter/X integration
+- **listArtifacts** / **listBlogPosts** - Content listing
 
 **None of these existed at the start. The bot coded them all itself.**
 
@@ -130,7 +193,7 @@ The architecture diagram provides a complete visual overview of:
 ### Prerequisites
 
 - Node.js 20+
-- pnpm 8+
+- pnpm 9.0.0+
 - Discord Bot Token with **MESSAGE CONTENT INTENT** enabled
 - OpenAI API Key
 - Railway account (for deployment)
@@ -291,17 +354,17 @@ The bot has intentional limitations:
 
 - **Runtime:** Node.js 20
 - **Language:** TypeScript (ESM)
-- **AI:** OpenAI GPT-4o via AI SDK v6 (beta.99)
+- **AI:** OpenAI GPT-4.1-mini via AI SDK v6 (beta.99)
 - **Discord:** discord.js v14 (Gateway API)
 - **Deployment:** Railway.app with persistent disk
 - **CI/CD:** GitHub Actions auto-deploy
-- **Monorepo:** Turborepo + pnpm workspaces
+- **Monorepo:** Turborepo 2.x + pnpm 9.0.0 workspaces
 
 ## Cost
 
 - **Railway:** Free tier or $5/month
-- **OpenAI:** ~$5-15/month for moderate usage
-- **Total:** ~$10-20/month for a bot that codes itself
+- **OpenAI:** ~$2-10/month for moderate usage (GPT-4.1-mini is very cost-effective)
+- **Total:** ~$5-15/month for a bot that codes itself
 
 ## Safety
 
@@ -329,7 +392,7 @@ Every change is tracked:
 
 Since Omega can code itself, its capabilities are only limited by:
 1. What you ask for
-2. What GPT-4o can code
+2. What the AI can code
 3. What APIs exist
 
 Future possibilities:
