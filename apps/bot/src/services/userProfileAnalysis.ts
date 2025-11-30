@@ -15,6 +15,7 @@ import {
   getOrCreateUserProfile,
 } from '../database/userProfileService.js';
 import type { MessageRecord } from '../database/schema.js';
+import { updateUserPredictions } from './behavioralPredictionService.js';
 
 /**
  * Sentiment analysis structure (from existing messages table)
@@ -264,6 +265,15 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
   console.log(`   Communication: ${communicationDetailed.formality} / ${communicationDetailed.assertiveness} / ${communicationDetailed.engagement}`);
   console.log(`   Interests: ${interestsExpertise.primaryInterests.join(', ') || 'None detected'}`);
   console.log(`   Thoughts: "${feelings.thoughts.substring(0, 80)}..."`);
+
+  // Generate behavioral predictions integrating psychology, culture, and astrology
+  try {
+    console.log(`🔮 Generating behavioral predictions for ${username}...`);
+    await updateUserPredictions(userId);
+  } catch (error) {
+    console.error('   ⚠️ Failed to generate behavioral predictions:', error);
+    // Don't fail the entire analysis if predictions fail
+  }
 }
 
 /**

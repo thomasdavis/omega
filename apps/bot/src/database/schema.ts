@@ -256,6 +256,9 @@ async function runMigrations(): Promise<void> {
   // Migration 6: Add PhD-level profiling fields to existing user_profiles
   await migrationPhDProfilingFields();
 
+  // Migration 7: Add cultural and astrological prediction fields
+  await migrationCulturalAstrologicalPrediction();
+
   console.log('✅ Migrations completed');
 }
 
@@ -618,6 +621,55 @@ async function migrationPhDProfilingFields(): Promise<void> {
 }
 
 /**
+ * Migration 7: Add cultural and astrological behavioral prediction fields
+ * Adds fields for cultural background, star sign, and behavioral predictions
+ */
+async function migrationCulturalAstrologicalPrediction(): Promise<void> {
+  const db = getDatabase();
+
+  console.log('   + Adding cultural and astrological prediction fields to user_profiles table');
+
+  // Helper function to safely add a column
+  const addColumn = async (columnName: string, columnType: string) => {
+    try {
+      await db.execute(`SELECT ${columnName} FROM user_profiles LIMIT 0`);
+      // Column exists, skip
+    } catch (error) {
+      console.log(`     - Adding column: ${columnName}`);
+      await db.execute(`ALTER TABLE user_profiles ADD COLUMN ${columnName} ${columnType}`);
+    }
+  };
+
+  // === CULTURAL BACKGROUND ===
+  await addColumn('cultural_background', 'TEXT'); // e.g., "Western European", "East Asian", "Latin American"
+  await addColumn('cultural_values', 'TEXT'); // JSON array of cultural values
+  await addColumn('cultural_communication_style', 'TEXT'); // e.g., "direct", "indirect", "high-context", "low-context"
+  await addColumn('cultural_confidence', 'REAL'); // 0.0-1.0 confidence score
+
+  // === ASTROLOGICAL DATA ===
+  await addColumn('zodiac_sign', 'TEXT'); // e.g., "Aries", "Taurus", etc.
+  await addColumn('zodiac_element', 'TEXT'); // e.g., "Fire", "Earth", "Air", "Water"
+  await addColumn('zodiac_modality', 'TEXT'); // e.g., "Cardinal", "Fixed", "Mutable"
+  await addColumn('birth_date', 'TEXT'); // ISO date string (optional, for precise calculations)
+  await addColumn('astrological_confidence', 'REAL'); // 0.0-1.0 confidence score
+
+  // === BEHAVIORAL PREDICTIONS ===
+  await addColumn('predicted_behaviors', 'TEXT'); // JSON array of predicted behaviors
+  await addColumn('prediction_confidence', 'REAL'); // 0.0-1.0 overall prediction confidence
+  await addColumn('prediction_timeframe', 'TEXT'); // e.g., "next 7 days", "next 30 days"
+  await addColumn('last_prediction_at', 'INTEGER'); // Unix timestamp of last prediction
+  await addColumn('prediction_accuracy_score', 'REAL'); // 0.0-1.0 tracking how accurate past predictions were
+
+  // === PSYCHO-CULTURAL-ASTROLOGICAL INTEGRATION ===
+  await addColumn('integrated_profile_summary', 'TEXT'); // AI-generated summary combining all factors
+  await addColumn('profile_integration_confidence', 'REAL'); // 0.0-1.0 confidence in integrated analysis
+  await addColumn('world_model_adjustments', 'TEXT'); // JSON array tracking model corrections
+  await addColumn('personal_model_adjustments', 'TEXT'); // JSON array tracking personal model corrections
+
+  console.log('   ✓ Cultural and astrological prediction fields added to user_profiles table');
+}
+
+/**
  * Message record interface
  */
 export interface MessageRecord {
@@ -774,6 +826,32 @@ export interface UserProfileRecord {
   // Legacy fields (backward compatibility)
   feelings_json?: string;
   personality_facets?: string;
+
+  // === CULTURAL BACKGROUND ===
+  cultural_background?: string;
+  cultural_values?: string; // JSON array
+  cultural_communication_style?: string;
+  cultural_confidence?: number;
+
+  // === ASTROLOGICAL DATA ===
+  zodiac_sign?: string;
+  zodiac_element?: string;
+  zodiac_modality?: string;
+  birth_date?: string;
+  astrological_confidence?: number;
+
+  // === BEHAVIORAL PREDICTIONS ===
+  predicted_behaviors?: string; // JSON array
+  prediction_confidence?: number;
+  prediction_timeframe?: string;
+  last_prediction_at?: number;
+  prediction_accuracy_score?: number;
+
+  // === PSYCHO-CULTURAL-ASTROLOGICAL INTEGRATION ===
+  integrated_profile_summary?: string;
+  profile_integration_confidence?: number;
+  world_model_adjustments?: string; // JSON array
+  personal_model_adjustments?: string; // JSON array
 
   // === PHYSICAL PHENOTYPE ANALYSIS ===
 
