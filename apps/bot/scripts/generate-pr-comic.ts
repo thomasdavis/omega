@@ -122,33 +122,38 @@ async function main() {
         throw new Error('Channel not found or not text-based');
       }
 
-      // Fetch messages before PR creation
+      // Fetch recent messages (around PR creation time)
       const messages = await channel.messages.fetch({
-        limit: 100, // Fetch more to ensure we get 20 before PR date
-        before: undefined,
+        limit: 100, // Fetch recent messages
       });
 
-      // Convert Collection to array, filter messages before PR creation, and take last 20
-      const messagesBefore = Array.from(messages.values())
-        .filter(msg => msg.createdAt < prCreatedAt)
+      // Convert Collection to array, sort by time, and take last 30
+      const recentMessages = Array.from(messages.values())
+        .filter(msg => !msg.author.bot) // Exclude bot messages
         .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
-        .slice(-20); // Take last 20
+        .slice(-30); // Take last 30
 
-      discordMessages = messagesBefore.map(msg => ({
+      console.log(`   📊 Fetched ${recentMessages.length} recent messages (excluding bots)`);
+      if (recentMessages.length > 0) {
+        const oldest = new Date(recentMessages[0].createdTimestamp);
+        const newest = new Date(recentMessages[recentMessages.length - 1].createdTimestamp);
+        console.log(`   📅 Message range: ${oldest.toISOString()} to ${newest.toISOString()}`);
+      }
+
+      discordMessages = recentMessages.map(msg => ({
         username: msg.author.username,
         content: msg.content,
         channelName: (msg.channel as any).name || 'unknown',
         timestamp: msg.createdTimestamp,
       }));
 
-      // Extract unique Discord user IDs for character appearance lookups (exclude bots)
-      discordUserIds = [...new Set(messagesBefore
-        .filter(msg => !msg.author.bot)
+      // Extract unique Discord user IDs for character appearance lookups (already filtered bots above)
+      discordUserIds = [...new Set(recentMessages
         .map(msg => msg.author.id)
         .filter((userId): userId is string => Boolean(userId))
       )];
 
-      console.log(`✅ Found ${discordMessages.length} Discord messages from ${discordUserIds.length} users before PR creation`);
+      console.log(`✅ Found ${discordMessages.length} recent Discord messages from ${discordUserIds.length} users`);
     } catch (error) {
       console.warn('⚠️ Error fetching Discord messages:', error);
       // Continue without Discord messages if fetch fails
