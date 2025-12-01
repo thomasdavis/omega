@@ -1,8 +1,11 @@
-# Railway Nixpacks configuration for Discord AI Bot
-# Railway uses Nixpacks to build Docker images automatically
+# Railway configuration for Discord AI Bot
+# Forces pnpm as package manager for workspace support
+
+[providers]
+pnpm = true
 
 [phases.setup]
-nixPkgs = ["nodejs-18_x", "pnpm"]
+nixPkgs = ["nodejs_20", "pnpm"]
 
 [phases.install]
 cmds = [
@@ -11,7 +14,7 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "pnpm --filter bot build"
+  "pnpm build --filter=bot"
 ]
 
 [start]
