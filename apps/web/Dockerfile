@@ -54,8 +54,6 @@ COPY --from=base /app/apps/web/next.config.js ./apps/web/
 
 # Start Next.js
 WORKDIR /app/apps/web
-ENV PORT=3000
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
-EXPOSE 3000
 CMD ["pnpm", "start"]
