@@ -15,7 +15,7 @@ The Railway CLI is timing out on all deployment commands. The services need to b
 Go to Railway Dashboard → Project → omega-bot service → Settings
 
 #### Builder Configuration
-1. **Builder**: Dockerfile
+1. **Builder**: Railpack
 2. **Dockerfile Path**: `Dockerfile.bot`
 3. **Root Directory**: (leave empty - use repo root)
 
@@ -69,9 +69,9 @@ Step 1/X : FROM node:20-alpine AS base
 Go to Railway Dashboard → Project → omega service → Settings
 
 #### Builder Configuration
-**IMPORTANT**: Must use Nixpacks, NOT Dockerfile
+**IMPORTANT**: Must use Railpack, NOT Dockerfile
 
-1. **Builder**: Nixpacks (select from dropdown)
+1. **Builder**: Railpack (select from dropdown)
 2. **Root Directory**: `apps/web`
 3. **Build Command**: (should auto-detect from railway.json)
 4. **Start Command**: (should auto-detect from railway.json)
@@ -116,7 +116,7 @@ If not auto-detected, manually set:
 **Build logs should show**:
 ```
 ╔═══════════════════════════════════════════╗
-║ Nixpacks v1.x.x                          ║
+║ Railpack (Railway's build system)        ║
 ╚═══════════════════════════════════════════╝
 
 ─────────────────────────────────────────────
@@ -197,11 +197,11 @@ Both services should be accessing the same `/data` volume:
 
 **Symptom**: Logs show "Bot is online", artifact server, etc.
 
-**Cause**: Still using Dockerfile instead of Nixpacks
+**Cause**: Still using Dockerfile instead of Railpack
 
 **Fix**:
 1. Go to omega service → Settings → Builder
-2. Change from "Dockerfile" to "Nixpacks"
+2. Change from "Dockerfile" to "Railpack"
 3. Redeploy
 
 ### Issue: omega-bot crashing with database error
@@ -250,9 +250,9 @@ This could be:
 These files are already committed and ready:
 
 - `/Dockerfile.bot` - Bot Docker build
-- `/railway.json` - omega-bot configuration (use Dockerfile.bot)
-- `/apps/web/railway.json` - omega configuration (use nixpacks)
-- `/apps/web/nixpacks.toml` - Nixpacks build configuration
+- `/railway.json` - omega-bot configuration (railpack with Dockerfile.bot)
+- `/apps/web/railway.json` - omega configuration (railpack with custom build)
+- `/apps/web/nixpacks.toml` - Build configuration (legacy, may be ignored by railpack)
 
 **Commit**: `9cd21f2` contains all the fixes
 
@@ -260,9 +260,9 @@ These files are already committed and ready:
 
 ## Next Steps (To Do in Railway Dashboard)
 
-1. ☐ Configure omega-bot to use Dockerfile.bot
+1. ☐ Configure omega-bot to use Railpack with Dockerfile.bot
 2. ☐ Attach volume to omega-bot at /data
-3. ☐ Configure omega to use Nixpacks builder
+3. ☐ Configure omega to use Railpack builder (not Dockerfile)
 4. ☐ Attach volume to omega at /data (same volume)
 5. ☐ Remove bot env vars from omega service
 6. ☐ Generate public domain for omega service
