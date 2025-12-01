@@ -2,7 +2,7 @@
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+# Dockerfile auto-detected in root directory
 
 [deploy]
 startCommand = "pnpm start"
