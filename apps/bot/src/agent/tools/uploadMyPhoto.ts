@@ -7,7 +7,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { updateUserProfile, getOrCreateUserProfile } from '../../database/userProfileService.js';
+import { updateUserProfile, getOrCreateUserProfile } from '@repo/database';// OLD:userProfileService.js';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';

@@ -6,8 +6,7 @@
 
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import type { UserProfileRecord } from '../database/schema.js';
-import { queryMessages } from '../database/messageService.js';
+import { queryMessages, type UserProfileRecord } from '@repo/database';
 
 export interface EnhancedPromptDetails {
   gender: 'male' | 'female' | 'non-binary' | 'unknown';

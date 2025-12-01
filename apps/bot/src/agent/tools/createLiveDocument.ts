@@ -8,7 +8,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { createDocument } from '../../database/documentService.js';
+import { createDocument } from '@repo/database';// OLD:documentService.js';
 import { OMEGA_MODEL } from '../../config/models.js';
 
 /**

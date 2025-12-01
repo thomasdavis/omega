@@ -6,7 +6,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getUserProfile, getOrCreateUserProfile } from '../../database/userProfileService.js';
+import { getUserProfile, getOrCreateUserProfile } from '@repo/database';// OLD:userProfileService.js';
 import { analyzeUser } from '../../services/userProfileAnalysis.js';
 import { generateImageWithGemini } from '../../services/geminiImageService.js';
 import { buildPortraitPrompt, buildGenericPortraitPrompt } from '../../lib/portraitPrompts.js';

@@ -1,9 +1,18 @@
 /**
- * Shared package
- *
- * This package contains shared types and utilities that can be used
- * across the monorepo. Currently a placeholder for future expansion.
+ * @repo/shared - Shared Package
+ * Exports common types, utilities, and configuration
  */
 
-export * from './types';
-export * from './utils';
+// Types
+export * from './types/index.js';
+
+// Utils
+export * from './utils/storage.js';
+
+// Lib
+export * from './lib/messageAnalysis.js';
+
+// Config
+export * from './config/models.js';
+
+export const SHARED_PACKAGE_VERSION = '1.0.0';

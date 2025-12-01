@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '../../config/models.js';
-import { getUserProfile } from '../../database/userProfileService.js';
+import { getUserProfile } from '@repo/database';// OLD:userProfileService.js';
 
 // All zodiac signs with their traditional date ranges
 const ZODIAC_SIGNS = [

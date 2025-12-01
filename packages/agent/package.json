@@ -1,0 +1,37 @@
+{
+  "name": "@repo/agent",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.67",
+    "@google/generative-ai": "^0.21.0",
+    "@octokit/rest": "^21.0.0",
+    "@repo/database": "workspace:*",
+    "@repo/shared": "workspace:*",
+    "@slidev/cli": "^0.50.0",
+    "ai": "6.0.0-beta.99",
+    "discord.js": "^14.24.2",
+    "fish-joke-generator": "^1.1.0",
+    "minimatch": "^10.1.1",
+    "minisearch": "^7.2.0",
+    "node-cron": "^3.0.3",
+    "openai": "^4.104.0",
+    "playwright-chromium": "^1.48.0",
+    "twitter-api-v2": "^1.17.2",
+    "undici": "^7.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.11",
+    "typescript": "^5.6.3"
+  }
+}

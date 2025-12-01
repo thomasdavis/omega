@@ -6,15 +6,16 @@
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '../config/models.js';
-import { queryMessages, getMessageCount } from '../database/messageService.js';
 import {
+  queryMessages,
+  getMessageCount,
   getUserProfile,
   updateUserProfile,
   getUsersNeedingAnalysis,
   saveAnalysisHistory,
   getOrCreateUserProfile,
-} from '../database/userProfileService.js';
-import type { MessageRecord } from '../database/schema.js';
+  type MessageRecord,
+} from '@repo/database';
 import { updateUserPredictions } from './behavioralPredictionService.js';
 
 /**

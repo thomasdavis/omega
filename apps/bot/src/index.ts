@@ -6,10 +6,8 @@
 import { Client, GatewayIntentBits, Events, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
-import { startArtifactServer } from './server/artifactServer.js';
 import { initializeStorage } from './utils/storage.js';
-import { initializeDatabase, closeDatabase } from './database/client.js';
-import { initializeSchema } from './database/schema.js';
+import { initializeDatabase, closeDatabase, initializeSchema } from '@repo/database';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
@@ -67,14 +65,8 @@ initializePusher();
 // Initialize error monitoring and GitHub issue automation
 initializeErrorMonitoring();
 
-// Start artifact preview server
-// Railway requires listening on PORT env var for healthchecks
-const artifactPort = process.env.PORT
-  ? parseInt(process.env.PORT, 10)
-  : (process.env.ARTIFACT_SERVER_PORT
-      ? parseInt(process.env.ARTIFACT_SERVER_PORT, 10)
-      : 3001);
-startArtifactServer({ port: artifactPort });
+// NOTE: Artifact server has been removed - it's now handled by the Next.js web app
+// All artifacts, uploads, documents, and blog posts are served via the omega-web service
 
 // Bot ready event
 client.once(Events.ClientReady, (readyClient) => {

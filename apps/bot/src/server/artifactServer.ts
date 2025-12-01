@@ -9,10 +9,11 @@ import { join } from 'path';
 import { getArtifactsDir, getUploadsDir, getPublicDir } from '../utils/storage.js';
 import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js';
 import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
-import { queryMessages, getMessageCount } from '../database/messageService.js';
-import { getRecentQueries, getQueryCount } from '../database/queryService.js';
-import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
 import {
+  queryMessages,
+  getMessageCount,
+  getRecentQueries,
+  getQueryCount,
   createDocument,
   getDocument,
   updateDocumentContent,
@@ -22,7 +23,8 @@ import {
   getDocumentCount,
   addCollaborator,
   getDocumentCollaborators,
-} from '../database/documentService.js';
+} from '@repo/database';
+import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
 import {
   broadcastDocumentUpdate,
   broadcastPresence,
@@ -886,7 +888,7 @@ function createApp(): express.Application {
   // Returns every single field for every user (78+ fields per user)
   app.get('/api/profiles-full', async (req: Request, res: Response) => {
     try {
-      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const { getAllUserProfiles } = await import('@repo/database');
       const profiles = await getAllUserProfiles();
 
       // Return raw database records with ALL fields
@@ -1032,7 +1034,7 @@ function createApp(): express.Application {
   // Returns ALL users including those with 0 messages (for comic generation)
   app.get('/api/users', async (req: Request, res: Response) => {
     try {
-      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const { getAllUserProfiles } = await import('@repo/database');
       const users = await getAllUserProfiles();
 
       res.json({
@@ -1060,7 +1062,7 @@ function createApp(): express.Application {
   app.get('/api/users/:userId', async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
-      const { getUserProfile } = await import('../database/userProfileService.js');
+      const { getUserProfile } = await import('@repo/database');
       const profile = await getUserProfile(userId);
 
       if (!profile) {
@@ -1195,7 +1197,7 @@ function createApp(): express.Application {
   app.get('/api/users/:userId/appearance', async (req: Request, res: Response) => {
     try {
       const { userId } = req.params;
-      const { getUserProfile } = await import('../database/userProfileService.js');
+      const { getUserProfile } = await import('@repo/database');
       const profile = await getUserProfile(userId);
 
       if (!profile) {
@@ -1248,7 +1250,7 @@ function createApp(): express.Application {
   app.post('/api/users/:userId/analyze', async (req: Request, res: Response) => {
     try {
       const { analyzeUser } = await import('../services/userProfileAnalysis.js');
-      const { getUserProfile } = await import('../database/userProfileService.js');
+      const { getUserProfile } = await import('@repo/database');
 
       const userId = req.params.userId;
       const { username } = req.body;
@@ -1294,7 +1296,7 @@ function createApp(): express.Application {
   // POST /api/analyze-all - Trigger analysis for all users with messages
   app.post('/api/analyze-all', async (req: Request, res: Response) => {
     try {
-      const { getAllUserProfiles } = await import('../database/userProfileService.js');
+      const { getAllUserProfiles } = await import('@repo/database');
       const { analyzeUser } = await import('../services/userProfileAnalysis.js');
 
       const users = await getAllUserProfiles();
@@ -1349,7 +1351,7 @@ function createApp(): express.Application {
   // POST /api/clean-bad-appearance-data
   app.post('/api/clean-bad-appearance-data', async (req: Request, res: Response) => {
     try {
-      const { getAllUserProfiles, updateUserProfile } = await import('../database/userProfileService.js');
+      const { getAllUserProfiles, updateUserProfile } = await import('@repo/database');
 
       const profiles = await getAllUserProfiles();
 
@@ -1417,7 +1419,7 @@ function createApp(): express.Application {
       }
 
       const userIds = userIdsParam.split(',').map((id: string) => id.trim());
-      const { getUserProfile } = await import('../database/userProfileService.js');
+      const { getUserProfile } = await import('@repo/database');
 
       const characters = await Promise.all(
         userIds.map(async (userId: string) => {

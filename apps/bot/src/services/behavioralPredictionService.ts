@@ -7,8 +7,12 @@
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '../config/models.js';
-import { getUserProfile, updateUserProfile, getAllUserProfiles } from '../database/userProfileService.js';
-import type { UserProfileRecord } from '../database/schema.js';
+import {
+  getUserProfile,
+  updateUserProfile,
+  getAllUserProfiles,
+  type UserProfileRecord,
+} from '@repo/database';
 
 /**
  * Zodiac sign mappings

@@ -3,8 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["api/**"],
-      "env": ["OPENAI_API_KEY", "GEMINI_API_KEY", "DISCORD_PUBLIC_KEY", "DISCORD_APP_ID", "DISCORD_BOT_TOKEN", "UNSANDBOX_API_KEY", "UNSANDBOX_ENABLE_SEMITRUST", "GITHUB_TOKEN", "GITHUB_REPO", "PUSHER_APP_ID", "PUSHER_KEY", "PUSHER_SECRET", "PUSHER_CLUSTER"]
+      "outputs": ["dist/**", "api/**", ".next/**"],
+      "env": ["OPENAI_API_KEY", "GEMINI_API_KEY", "DISCORD_PUBLIC_KEY", "DISCORD_APP_ID", "DISCORD_BOT_TOKEN", "UNSANDBOX_API_KEY", "UNSANDBOX_ENABLE_SEMITRUST", "GITHUB_TOKEN", "GITHUB_REPO", "PUSHER_APP_ID", "PUSHER_KEY", "PUSHER_SECRET", "PUSHER_CLUSTER", "NEXT_PUBLIC_API_URL", "ARTIFACT_SERVER_URL"]
     },
     "dev": {
       "cache": false,

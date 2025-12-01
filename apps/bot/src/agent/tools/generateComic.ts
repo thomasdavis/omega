@@ -13,7 +13,7 @@ import {
 } from '../../services/geminiImageService.js';
 import { postComicToDiscord } from '../../services/discordWebhookService.js';
 import { getUserCharacters } from '../../lib/userAppearance.js';
-import { getDatabase } from '../../database/client.js';
+import { getDatabase } from '@repo/database';// OLD:client.js';
 
 /**
  * Look up user profiles by usernames

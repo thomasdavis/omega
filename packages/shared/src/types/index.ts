@@ -1,9 +1,8 @@
 /**
- * Shared types
- *
- * Add common types here that are used across multiple packages
+ * Type exports
  */
 
-export interface BaseConfig {
-  env: 'development' | 'production' | 'test';
-}
+export * from './agent.js';
+export * from './message.js';
+export * from './artifact.js';
+export * from './document.js';

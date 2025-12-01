@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { OMEGA_MODEL } from '../../config/models.js';
-import { getDatabase } from '../../database/client.js';
+import { getDatabase } from '@repo/database';// OLD:client.js';
 
 interface MarketPrediction {
   date: string;

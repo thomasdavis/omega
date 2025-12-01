@@ -7,7 +7,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { getDocument } from '../../database/documentService.js';
+import { getDocument } from '@repo/database';// OLD:documentService.js';
 import { OMEGA_MODEL } from '../../config/models.js';
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;

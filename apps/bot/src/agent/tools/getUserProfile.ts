@@ -6,9 +6,9 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getUserProfile } from '../../database/userProfileService.js';
+import { getUserProfile } from '@repo/database';// OLD:userProfileService.js';
 import { analyzeUser } from '../../services/userProfileAnalysis.js';
-import { getDatabase } from '../../database/client.js';
+import { getDatabase } from '@repo/database';// OLD:client.js';
 
 export const getUserProfileTool = tool({
   description: `Get EVERYTHING Omega knows and feels about a user. This is a comprehensive profile report.

@@ -14,8 +14,8 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '../../config/models.js';
-import { getUserProfile, updateUserProfile } from '../../database/userProfileService.js';
-import { queryMessages } from '../../database/messageService.js';
+import { getUserProfile, updateUserProfile } from '@repo/database';// OLD:userProfileService.js';
+import { queryMessages } from '@repo/database';// OLD:messageService.js';
 
 /**
  * Psycho-analysis tool

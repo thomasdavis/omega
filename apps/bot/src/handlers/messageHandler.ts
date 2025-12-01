@@ -10,9 +10,9 @@ import { setConversationDiagramContext, clearConversationDiagramContext } from '
 import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
 import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution } from '../database/messageService.js';
+import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
-import { getOrCreateUserProfile, incrementMessageCount } from '../database/userProfileService.js';
+import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '../utils/attachmentCache.js';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
