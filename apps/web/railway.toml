@@ -1,9 +1,13 @@
 # railway.toml for omega-web service
 # This file is used when Root Directory is set to "apps/web" in Railway Dashboard
+#
+# IMPORTANT: dockerfilePath is ALWAYS relative to repo root, not the root directory!
+# Root Directory setting only determines WHICH railway.toml to read.
+# Docker build context remains at repo root for monorepo package access.
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "apps/web/Dockerfile"
 
 [deploy]
 startCommand = "pnpm start"

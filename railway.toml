@@ -1,5 +1,16 @@
 # railway.toml for omega-bot service (at repo root)
-# omega-web will be configured via Railway Dashboard settings
+#
+# HOW RAILWAY RESOLVES THIS FILE:
+# - omega-bot service: Root Directory = blank → uses THIS file
+# - omega-web service: Root Directory = "apps/web" → uses apps/web/railway.toml
+#
+# IMPORTANT RAILWAY TOML RULES:
+# 1. Each service reads EXACTLY ONE railway.toml based on Root Directory setting
+# 2. dockerfilePath is ALWAYS relative to repo root, not Root Directory
+# 3. Docker build context is ALWAYS repo root (for monorepo workspace access)
+# 4. There is NO [service.*] multi-service syntax in Railway TOML
+#
+# omega-web configuration is in apps/web/railway.toml (separate file)
 
 [build]
 builder = "DOCKERFILE"
