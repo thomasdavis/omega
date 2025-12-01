@@ -1,6 +1,6 @@
 #!/bin/bash
 # Migration script to be run on Railway
-# Run with: railway run bash packages/database/migrate.sh
+# Run with: railway run bash migrate.sh (from packages/database directory)
 
 set -e  # Exit on error
 
@@ -10,7 +10,6 @@ echo ""
 
 # Phase 1: Setup PostgreSQL schema
 echo "📋 Phase 1: Setting up PostgreSQL schema..."
-cd /app/packages/database
 node dist/postgres/migrations/runMigration.js
 echo "✅ Phase 1 complete"
 echo ""
