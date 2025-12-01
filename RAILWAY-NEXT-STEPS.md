@@ -32,9 +32,16 @@ mounts = [{ source = "omega_data", dest = "/data" }]
 [volume.omega_data]
 ```
 
-### 3. Committed and Pushed
-- Commit: `427abbf`
-- Message: "fix: Replace railway.toml with proper multi-service configuration"
+### 3. Removed Conflicting railway.json Files
+**Files Deleted:** `/railway.json` and `/apps/web/railway.json`
+
+These legacy JSON files were conflicting with railway.toml, causing Railway to use Railpack auto-detection instead of the Dockerfile builder specified in railway.toml.
+
+Railway prioritizes railway.json over railway.toml when both exist, which is why the Dockerfile configuration was being ignored.
+
+### 4. Committed and Pushed
+- Commit: `427abbf` - Created railway.toml with multi-service configuration
+- Commit: `50bbe5e` - Removed conflicting railway.json files
 - Status: Pushed to GitHub
 
 ---
