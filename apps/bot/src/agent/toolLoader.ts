@@ -26,6 +26,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },
   generateHtmlPage: { path: './tools/generateHtmlPage.js', exportName: 'generateHtmlPageTool' },
   whoami: { path: './tools/whoami.js', exportName: 'whoamiTool' },
+  listTools: { path: './tools/listTools.js', exportName: 'listToolsTool' },
 
   // MongoDB tools (14)
   mongoInsert: { path: '../mongodb/tools/mongoInsert.js', exportName: 'mongoInsertTool' },

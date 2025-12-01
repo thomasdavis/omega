@@ -1716,6 +1716,168 @@ function createApp(): express.Application {
     res.json({ status: 'ok', service: 'artifact-server' });
   });
 
+  // Tools API - GET /api/tools
+  app.get('/api/tools', async (req: Request, res: Response) => {
+    try {
+      // Import tool metadata dynamically
+      const { TOOL_METADATA, CORE_TOOLS } = await import('../agent/toolRegistry/metadata.js');
+
+      // Get query parameters
+      const format = req.query.format as string || 'html';
+      const category = req.query.category as string;
+      const search = req.query.search as string;
+
+      // Filter tools if category or search is provided
+      let filteredTools = TOOL_METADATA;
+
+      if (category) {
+        filteredTools = filteredTools.filter(tool => tool.category === category);
+      }
+
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredTools = filteredTools.filter(tool =>
+          tool.name.toLowerCase().includes(searchLower) ||
+          tool.description.toLowerCase().includes(searchLower) ||
+          tool.keywords.some(k => k.toLowerCase().includes(searchLower)) ||
+          tool.tags.some(t => t.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Sort tools: core tools first, then alphabetically
+      const sortedTools = filteredTools.sort((a, b) => {
+        const aIsCore = CORE_TOOLS.includes(a.id);
+        const bIsCore = CORE_TOOLS.includes(b.id);
+
+        if (aIsCore && !bIsCore) return -1;
+        if (!aIsCore && bIsCore) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Return JSON if requested
+      if (format === 'json') {
+        return res.json({
+          total: TOOL_METADATA.length,
+          filtered: sortedTools.length,
+          coreTools: CORE_TOOLS,
+          tools: sortedTools,
+          categories: Array.from(new Set(TOOL_METADATA.map(t => t.category))).sort(),
+        });
+      }
+
+      // Otherwise, return HTML
+      const categoryCounts = TOOL_METADATA.reduce((acc, tool) => {
+        acc[tool.category] = (acc[tool.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const toolsHtml = sortedTools.map(tool => {
+        const isCore = CORE_TOOLS.includes(tool.id);
+        return `
+          <div class="tool ${isCore ? 'core-tool' : ''}">
+            <div class="tool-header">
+              <h3>${tool.name} ${isCore ? '<span class="badge core-badge">CORE</span>' : ''}</h3>
+              <span class="badge">${tool.category}</span>
+            </div>
+            <p class="tool-description">${tool.description}</p>
+            <div class="tool-meta">
+              <div class="tool-section">
+                <strong>Keywords:</strong>
+                <div class="tags">
+                  ${tool.keywords.map(k => `<span class="tag">${k}</span>`).join('')}
+                </div>
+              </div>
+              <div class="tool-section">
+                <strong>Tags:</strong>
+                <div class="tags">
+                  ${tool.tags.map(t => `<span class="tag tag-secondary">${t}</span>`).join('')}
+                </div>
+              </div>
+              <div class="tool-section">
+                <strong>Example queries:</strong>
+                <ul class="examples">
+                  ${tool.examples.map(e => `<li>"${e}"</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const categoryFilters = Object.keys(categoryCounts).sort().map(cat => {
+        const isActive = category === cat;
+        return `<a href="?category=${cat}" class="category-filter ${isActive ? 'active' : ''}">${cat} (${categoryCounts[cat]})</a>`;
+      }).join('');
+
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Omega AI Tools - ${TOOL_METADATA.length} Tools Available</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #e0e0e0; line-height: 1.6; min-height: 100vh; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 40px; padding: 30px 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+    h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stats { font-size: 1.1em; color: #a0a0a0; margin-top: 10px; }
+    .filters { margin-bottom: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+    .search-box { width: 100%; padding: 12px 20px; font-size: 1em; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 8px; background: rgba(255, 255, 255, 0.05); color: #e0e0e0; margin-bottom: 15px; }
+    .search-box:focus { outline: none; border-color: #667eea; }
+    .category-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+    .category-filter { padding: 8px 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; text-decoration: none; color: #a0a0a0; font-size: 0.9em; transition: all 0.3s; }
+    .category-filter:hover { background: rgba(255, 255, 255, 0.1); color: #e0e0e0; }
+    .category-filter.active { background: #667eea; color: white; border-color: #667eea; }
+    .tool { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; }
+    .tool:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
+    .tool.core-tool { border-color: #667eea; background: rgba(102, 126, 234, 0.1); }
+    .tool-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .tool h3 { font-size: 1.5em; color: #fff; display: flex; align-items: center; gap: 10px; }
+    .tool-description { color: #b0b0b0; margin-bottom: 20px; }
+    .tool-meta { display: grid; gap: 15px; }
+    .tool-section { background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 8px; }
+    .tool-section strong { color: #a0a0a0; font-size: 0.9em; display: block; margin-bottom: 10px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: #667eea; color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.85em; }
+    .tag-secondary { background: rgba(255, 255, 255, 0.2); }
+    .badge { background: rgba(255, 255, 255, 0.1); color: #a0a0a0; padding: 4px 12px; border-radius: 15px; font-size: 0.8em; text-transform: uppercase; }
+    .core-badge { background: #667eea; color: white; }
+    .examples { list-style: none; }
+    .examples li { color: #b0b0b0; padding: 8px 12px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid #667eea; margin-bottom: 8px; border-radius: 4px; font-style: italic; }
+    .footer { text-align: center; margin-top: 50px; padding: 20px; color: #707070; }
+    .footer a { color: #667eea; text-decoration: none; }
+    .nav-links { display: flex; justify-content: center; gap: 20px; margin-top: 20px; }
+    .nav-links a { color: #667eea; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🤖 Omega AI Tools</h1>
+      <p class="stats">${sortedTools.length === TOOL_METADATA.length ? `${TOOL_METADATA.length} total tools` : `Showing ${sortedTools.length} of ${TOOL_METADATA.length} tools`} · ${CORE_TOOLS.length} core tools · ${Object.keys(categoryCounts).length} categories</p>
+      <div class="nav-links"><a href="/">← Home</a><a href="/api/tools?format=json">JSON API →</a></div>
+    </header>
+    <div class="filters">
+      <form action="/api/tools" method="get"><input type="text" name="search" class="search-box" placeholder="Search tools..." value="${search || ''}"></form>
+      <div class="category-filters"><a href="/api/tools" class="category-filter ${!category ? 'active' : ''}">All (${TOOL_METADATA.length})</a>${categoryFilters}</div>
+    </div>
+    <div class="tools-list">${toolsHtml}</div>
+    <div class="footer">${generateBuildFooterHtml()}<p style="margin-top:15px;">Powered by BM25 search</p></div>
+  </div>
+</body>
+</html>`;
+
+      res.send(html);
+    } catch (error) {
+      console.error('Error fetching tools:', error);
+      res.status(500).json({
+        error: 'Failed to fetch tools',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
   return app;
 }
 

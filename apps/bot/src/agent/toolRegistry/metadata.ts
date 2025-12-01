@@ -144,6 +144,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'admin'
   },
 
+  {
+    id: 'listTools',
+    name: 'List Available Tools',
+    description: 'List all available AI tools with their descriptions and capabilities',
+    keywords: ['list', 'tools', 'show', 'available', 'capabilities', 'what tools', 'all tools', 'browse tools', 'tool browser'],
+    tags: ['admin', 'discovery', 'help', 'tools', 'catalog'],
+    examples: [
+      'list all tools',
+      'what tools are available',
+      'show me all database tools',
+      'list your capabilities',
+      'what tools do you have',
+      'browse tools'
+    ],
+    isCore: false,
+    category: 'admin'
+  },
+
   // ===== MONGODB TOOLS (14) =====
   {
     id: 'mongoInsert',
