@@ -1389,6 +1389,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'tellSpanishJoke',
+    name: 'Tell Spanish Joke',
+    description: 'Tell jokes in Spanish',
+    keywords: ['spanish', 'joke', 'funny', 'humor', 'comedy', 'laugh', 'español', 'chiste', 'gracioso'],
+    tags: ['specialized', 'joke', 'fun', 'spanish', 'language'],
+    examples: [
+      'tell a joke in spanish',
+      'tell me a spanish joke',
+      'chiste en español',
+      'cuéntame un chiste',
+      'spanish humor',
+      'joke in spanish'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'fishJoke',
     name: 'Fish Joke',
     description: 'Tell fish-themed jokes',
