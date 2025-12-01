@@ -55,8 +55,9 @@ function convertRowForPostgres(row: any, tableName: string): any {
       try {
         converted[field] = JSON.parse(converted[field]);
       } catch (error) {
-        // If parsing fails, leave as-is (will be treated as text)
-        console.warn(`   Warning: Failed to parse JSON for ${field}: ${converted[field]}`);
+        // If parsing fails, set to null (PostgreSQL won't accept invalid JSON in JSONB columns)
+        console.warn(`   Warning: Failed to parse JSON for ${field}, setting to null`);
+        converted[field] = null;
       }
     }
   }
