@@ -8,13 +8,10 @@ name = "omega"
 # SERVICE: omega-bot (Discord bot)
 ###############################################
 [service.omega-bot]
-# Root of this service in your monorepo
-root = "./apps/bot"
-
 # Use Dockerfile (disables Railpack/Nixpacks auto-detection)
-# Path is relative to root directory
 builder = "dockerfile"
-dockerfile = "Dockerfile"
+dockerfilePath = "apps/bot/Dockerfile"
+# Docker build context is repo root
 
 # No ports (background worker)
 # Start command is handled by Dockerfile CMD
@@ -25,15 +22,13 @@ mounts = [
 ]
 
 ###############################################
-# SERVICE: omega (Next.js web)
+# SERVICE: omega-web (Next.js web)
 ###############################################
-[service.omega]
-root = "./apps/web"
-
+[service.omega-web]
 # Use Dockerfile (disables Railpack/Nixpacks auto-detection)
-# Path is relative to root directory
 builder = "dockerfile"
-dockerfile = "Dockerfile"
+dockerfilePath = "apps/web/Dockerfile"
+# Docker build context is repo root
 
 # Public port
 port = 3000
