@@ -1,8 +1,8 @@
-# railway.toml - Railway V2 configuration
+# railway.toml for omega-bot service
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "apps/bot/Dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "node dist/index.js"
