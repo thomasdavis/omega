@@ -2,6 +2,7 @@
   "name": "discord-ai-bot",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Serverless Discord AI bot using OpenAI, Vercel AI SDK v6, and Discord Interactions API",
   "scripts": {
     "dev": "turbo run dev",
