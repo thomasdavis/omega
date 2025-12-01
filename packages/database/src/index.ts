@@ -19,3 +19,23 @@ export * from './mongodb/tools/index.js';
 // PostgreSQL
 export { getPostgresPool } from './postgres/client.js';
 export * from './postgres/tools/index.js';
+
+// PostgreSQL Services (exported with 'pg' prefix to avoid conflicts)
+export * as pgMessageService from './postgres/messageService.js';
+export * as pgQueryService from './postgres/queryService.js';
+export * as pgDocumentService from './postgres/documentService.js';
+export * as pgUserProfileService from './postgres/userProfileService.js';
+
+// Migration tools
+export { initializePostgresSchema } from './postgres/migrations/runMigration.js';
+export { exportAllTables } from './migrations/exportFromSQLite.js';
+export { importAllTables } from './migrations/importToPostgres.js';
+
+// Database Adapter (feature flag system for PostgreSQL migration)
+export {
+  messageService,
+  queryService,
+  documentService,
+  userProfileService,
+  DB_CONFIG,
+} from './adapter.js';
