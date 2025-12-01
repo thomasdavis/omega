@@ -303,5 +303,23 @@ If you encounter issues:
 ---
 
 **Last Updated**: 2025-12-02
-**Status**: Ready for migration
-**Next Step**: Run Phase 1 (Setup PostgreSQL Schema)
+**Status**: Phase 1 Complete ✅ - PostgreSQL schema created
+**Next Step**: Run Phases 2-3 (Data Migration) via Railway Shell
+
+## Quick Start: Complete Phases 2-3
+
+Phase 1 (schema setup) is complete. To finish the migration:
+
+```bash
+# SSH into Railway
+railway service omega-bot
+railway shell
+
+# Run the migration script
+node run-migration.js
+
+# Exit shell
+exit
+```
+
+This will export all SQLite data and import it into PostgreSQL.
