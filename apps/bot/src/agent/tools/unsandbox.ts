@@ -99,10 +99,11 @@ async function sendDiscordUpdate(content: string): Promise<void> {
   console.log(`[sendDiscordUpdate] Channel has send: ${currentMessageContext && 'send' in currentMessageContext.channel}`);
 
   if (currentMessageContext && 'send' in currentMessageContext.channel) {
+    const channel = currentMessageContext.channel;
     try {
       await sendChunkedMessage(
         content,
-        async (chunk) => await currentMessageContext!.channel.send({ content: chunk })
+        async (chunk) => await channel.send({ content: chunk })
       );
       console.log(`[sendDiscordUpdate] ✅ Message sent successfully`);
     } catch (error) {
