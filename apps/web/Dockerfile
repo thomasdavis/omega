@@ -50,7 +50,7 @@ COPY --from=base /app/packages/database/dist ./packages/database/dist
 # Copy built Next.js app
 COPY --from=base /app/apps/web/.next ./apps/web/.next
 COPY --from=base /app/apps/web/public ./apps/web/public
-COPY --from=base /app/apps/web/next.config.ts ./apps/web/
+COPY --from=base /app/apps/web/next.config.js ./apps/web/
 
 # Start Next.js
 WORKDIR /app/apps/web
