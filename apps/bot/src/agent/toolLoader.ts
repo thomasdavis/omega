@@ -129,6 +129,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   arxiv: { path: './tools/arxiv.js', exportName: 'arxivTool' },
   moodUplifter: { path: './tools/moodUplifter.js', exportName: 'moodUplifterTool' },
   tellJoke: { path: './tools/tellJoke.js', exportName: 'tellJokeTool' },
+  tellSpanishJoke: { path: './tools/tellSpanishJoke.js', exportName: 'tellSpanishJokeTool' },
   fishJoke: { path: './tools/fishJoke.js', exportName: 'fishJokeTool' },
   tellHistoricalFact: { path: './tools/tellHistoricalFact.js', exportName: 'tellHistoricalFactTool' },
   ooda: { path: './tools/ooda.js', exportName: 'oodaTool' },
