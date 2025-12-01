@@ -1,0 +1,30 @@
+# railway-web.toml for omega-web service (at repo root)
+#
+# WORKAROUND: Railway's Config File Path setting for /apps/web/railway.toml
+# doesn't work properly due to directChildOfRepoRoot heuristic.
+# This file is a workaround - it's in repo root where Railway can find it.
+#
+# HOW TO USE:
+# In Railway Dashboard for omega-web service:
+# - Root Directory: blank
+# - Config File Path: /railway-web.toml
+#
+# IMPORTANT RAILWAY RULES:
+# - dockerfilePath is ALWAYS relative to repo root
+# - Docker build context is ALWAYS repo root (for monorepo workspace access)
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/web/Dockerfile"
+
+[deploy]
+startCommand = "pnpm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[mounts]]
+mountPath = "/data"
+
+[deploy.healthcheck]
+path = "/"
+timeout = 300
