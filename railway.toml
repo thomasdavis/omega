@@ -1,11 +1,12 @@
-# railway.toml - Railway V2 configuration
+# railway.toml for omega-bot service (at repo root)
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/bot/Dockerfile"
+# Build context is repo root
 
 [deploy]
-startCommand = "node dist/index.js"
+startCommand = "node apps/bot/dist/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
