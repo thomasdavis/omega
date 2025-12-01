@@ -12,8 +12,9 @@ name = "omega"
 root = "./apps/bot"
 
 # Use Dockerfile (disables Railpack/Nixpacks auto-detection)
+# Path is relative to root directory
 builder = "dockerfile"
-dockerfile = "./apps/bot/Dockerfile"
+dockerfile = "Dockerfile"
 
 # No ports (background worker)
 # Start command is handled by Dockerfile CMD
@@ -30,8 +31,9 @@ mounts = [
 root = "./apps/web"
 
 # Use Dockerfile (disables Railpack/Nixpacks auto-detection)
+# Path is relative to root directory
 builder = "dockerfile"
-dockerfile = "./apps/web/Dockerfile"
+dockerfile = "Dockerfile"
 
 # Public port
 port = 3000
