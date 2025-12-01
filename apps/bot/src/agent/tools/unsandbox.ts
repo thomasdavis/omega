@@ -13,6 +13,7 @@ import { z } from 'zod';
 import type { Message } from 'discord.js';
 import { createUnsandboxClient, UnsandboxApiError, type UnsandboxLanguage } from '../../lib/unsandbox/index.js';
 import { validateTypeScript, shouldBypassValidation } from '../../lib/typescript-validator.js';
+import { sendChunkedMessage } from '../../utils/messageChunker.js';
 
 // Language-specific emojis for better UX
 // This map is for display purposes only and not used for validation
@@ -90,7 +91,7 @@ function getLanguageEmoji(language: string): string {
 }
 
 /**
- * Send a Discord message if context is available
+ * Send a Discord message if context is available (with automatic chunking)
  */
 async function sendDiscordUpdate(content: string): Promise<void> {
   console.log(`[sendDiscordUpdate] Attempting to send: "${content}"`);
@@ -98,8 +99,12 @@ async function sendDiscordUpdate(content: string): Promise<void> {
   console.log(`[sendDiscordUpdate] Channel has send: ${currentMessageContext && 'send' in currentMessageContext.channel}`);
 
   if (currentMessageContext && 'send' in currentMessageContext.channel) {
+    const channel = currentMessageContext.channel;
     try {
-      await currentMessageContext.channel.send({ content });
+      await sendChunkedMessage(
+        content,
+        async (chunk) => await channel.send({ content: chunk })
+      );
       console.log(`[sendDiscordUpdate] ✅ Message sent successfully`);
     } catch (error) {
       console.error('[sendDiscordUpdate] ❌ Failed to send Discord update:', error);
