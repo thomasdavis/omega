@@ -25,12 +25,22 @@ export async function runMigration(migrationFile: string): Promise<void> {
     const sqlPath = join(__dirname, migrationFile);
     const sql = readFileSync(sqlPath, 'utf-8');
 
-    // Split by semicolons to execute statements individually
-    // This handles multi-statement SQL files properly
-    const statements = sql
+    // Remove comment-only lines first, then split by semicolons
+    // This preserves multi-line statements that may start with comments
+    const cleanedSql = sql
+      .split('\n')
+      .filter((line) => {
+        const trimmed = line.trim();
+        // Keep the line if it's not empty and not a comment-only line
+        return trimmed.length > 0 && !trimmed.startsWith('--');
+      })
+      .join('\n');
+
+    // Now split by semicolons to get individual statements
+    const statements = cleanedSql
       .split(';')
       .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !s.startsWith('--'));
+      .filter((s) => s.length > 0);
 
     console.log(`   Found ${statements.length} SQL statements to execute`);
 
