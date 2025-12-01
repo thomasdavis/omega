@@ -15,6 +15,7 @@ import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '../database/userProfileService.js';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '../utils/attachmentCache.js';
+import { sendChunkedMessage } from '../utils/messageChunker.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore bot messages (including our own)
@@ -145,10 +146,22 @@ export async function handleMessage(message: Message): Promise<void> {
     console.log(`   Responding with minimal acknowledgment (avoiding verbosity)`);
 
     const acknowledgment = getMinimalAcknowledgment(message);
-    await message.reply({
-      content: acknowledgment,
-      allowedMentions: { repliedUser: false },
-    });
+    // Use chunking for acknowledgment (though unlikely to be long)
+    let isFirstChunk = true;
+    await sendChunkedMessage(
+      acknowledgment,
+      async (chunk) => {
+        if (isFirstChunk) {
+          await message.reply({
+            content: chunk,
+            allowedMentions: { repliedUser: false },
+          });
+          isFirstChunk = false;
+        } else {
+          await message.channel.send({ content: chunk });
+        }
+      }
+    );
 
     // Still persist the interaction to database
     try {
@@ -387,18 +400,21 @@ export async function handleMessage(message: Message): Promise<void> {
               const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
               const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} ${statusText}${durationText}`;
 
-              // Send plain text with chart image attached
-              await message.channel.send({
-                content: plainTextReport,
-                files: [attachment],
-              });
+              // Send plain text with chart image attached (chunked if needed)
+              await sendChunkedMessage(
+                plainTextReport,
+                async (chunk) => await message.channel.send({
+                  content: chunk,
+                  files: [attachment],
+                })
+              );
               console.log(`✅ Sent chart image attachment (${buffer.length} bytes)`);
             } else {
               console.error(`❌ Failed to download chart image: HTTP ${imageResponse.status}`);
-              // Send plain text without attachment
+              // Send plain text without attachment (chunked if needed)
               const statusEmoji = '❌';
               const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} Failed to download chart`;
-              await message.channel.send({ content: plainTextReport });
+              await sendChunkedMessage(plainTextReport, async (chunk) => await message.channel.send({ content: chunk }));
             }
           } catch (error) {
             logError(error, {
@@ -408,9 +424,9 @@ export async function handleMessage(message: Message): Promise<void> {
               channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
               additionalInfo: { downloadUrl: toolCall.result?.downloadUrl },
             });
-            // Fallback: send plain text without attachment
+            // Fallback: send plain text without attachment (chunked if needed)
             const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n❌ Error downloading chart`;
-            await message.channel.send({ content: plainTextReport });
+            await sendChunkedMessage(plainTextReport, async (chunk) => await message.channel.send({ content: chunk }));
           }
         } else if (toolCall.toolName === 'generateUserImage' && toolCall.result?.success && toolCall.result?.imageUrl) {
           try {
@@ -427,10 +443,8 @@ export async function handleMessage(message: Message): Promise<void> {
               plainTextReport += `\n\n📝 Revised Prompt: ${toolCall.result.revisedPrompt.substring(0, 1000)}`;
             }
 
-            // Send plain text message
-            await message.channel.send({
-              content: plainTextReport,
-            });
+            // Send plain text message (chunked if needed)
+            await sendChunkedMessage(plainTextReport, async (chunk) => await message.channel.send({ content: chunk }));
             console.log(`✅ Sent generated image URL`);
           } catch (error) {
             logError(error, {
@@ -440,12 +454,12 @@ export async function handleMessage(message: Message): Promise<void> {
               channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
               additionalInfo: { imageUrl: toolCall.result?.imageUrl },
             });
-            // Fallback: send plain text error
+            // Fallback: send plain text error (chunked if needed)
             const plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n❌ Error displaying image`;
-            await message.channel.send({ content: plainTextReport });
+            await sendChunkedMessage(plainTextReport, async (chunk) => await message.channel.send({ content: chunk }));
           }
         } else {
-          // Regular tool report - send as plain text
+          // Regular tool report - send as plain text (chunked if needed)
           const statusEmoji = toolCall.result?.success !== false ? '✅' : '❌';
           const statusText = toolCall.result?.success !== false ? 'Success' : 'Failed';
           const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
@@ -459,7 +473,7 @@ export async function handleMessage(message: Message): Promise<void> {
             }
           }
 
-          await message.channel.send({ content: plainTextReport });
+          await sendChunkedMessage(plainTextReport, async (chunk) => await message.channel.send({ content: chunk }));
         }
 
         // Add a small delay between messages to avoid rate limiting
@@ -473,11 +487,24 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
-      // Send as plain text message
-      await message.reply({
-        content: result.response,
-        allowedMentions: { repliedUser: false }, // Don't ping the user
-      });
+      // Send as plain text message (chunked if needed for messages > 2000 chars)
+      let isFirstChunk = true;
+      await sendChunkedMessage(
+        result.response,
+        async (chunk) => {
+          if (isFirstChunk) {
+            // First chunk as a reply
+            await message.reply({
+              content: chunk,
+              allowedMentions: { repliedUser: false }, // Don't ping the user
+            });
+            isFirstChunk = false;
+          } else {
+            // Subsequent chunks as regular messages
+            await message.channel.send({ content: chunk });
+          }
+        }
+      );
       console.log(`✅ Sent response (${result.response.length} chars)`);
 
       // Persist AI response to database
@@ -511,12 +538,23 @@ export async function handleMessage(message: Message): Promise<void> {
       username: message.author.username,
     });
 
-    // Send error message to user
+    // Send error message to user (chunked if needed)
     try {
-      await message.reply({
-        content: userErrorMessage,
-        allowedMentions: { repliedUser: false },
-      });
+      let isFirstChunk = true;
+      await sendChunkedMessage(
+        userErrorMessage,
+        async (chunk) => {
+          if (isFirstChunk) {
+            await message.reply({
+              content: chunk,
+              allowedMentions: { repliedUser: false },
+            });
+            isFirstChunk = false;
+          } else {
+            await message.channel.send({ content: chunk });
+          }
+        }
+      );
     } catch (replyError) {
       logError(replyError, {
         operation: 'Send error message to user',
