@@ -1,0 +1,18 @@
+# railway.toml for omega-web service
+# This file is used when Root Directory is set to "apps/web" in Railway Dashboard
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "pnpm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[mounts]]
+mountPath = "/data"
+
+[deploy.healthcheck]
+path = "/"
+timeout = 300

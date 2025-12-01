@@ -1,30 +1,14 @@
-# Railway.toml - Multi-service configuration for monorepo
-# Both services build from repo root to access workspace packages
+# railway.toml for omega-bot service (at repo root)
+# omega-web will be configured via Railway Dashboard settings
 
-# Service 1: Discord Bot (Gateway API)
-[service.omega-bot]
-root = "."  # Build from repo root for workspace access
-dockerfile = "apps/bot/Dockerfile"
-buildCommand = "echo 'Building omega-bot...'"
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/bot/Dockerfile"
+
+[deploy]
 startCommand = "node dist/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
-[[service.omega-bot.mounts]]
+[[mounts]]
 mountPath = "/data"
-
-# Service 2: Next.js Web App
-[service.omega-web]
-root = "."  # Build from repo root for workspace access
-dockerfile = "apps/web/Dockerfile"
-buildCommand = "echo 'Building omega-web...'"
-startCommand = "pnpm start"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-
-[[service.omega-web.mounts]]
-mountPath = "/data"
-
-[service.omega-web.healthcheck]
-path = "/"
-timeout = 300
