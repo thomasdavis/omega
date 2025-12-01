@@ -5,8 +5,6 @@
     "buildCommand": "cd ../.. && pnpm install && pnpm build --filter=web"
   },
   "deploy": {
-    "startCommand": "pnpm start",
-    "restartPolicyType": "on-failure",
-    "restartPolicyMaxRetries": 10
+    "startCommand": "pnpm start"
   }
 }
