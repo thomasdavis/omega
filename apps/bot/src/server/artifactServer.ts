@@ -1717,13 +1717,13 @@ function createApp(): express.Application {
   });
 
   // Tools API - GET /api/tools
+  // JSON API endpoint - returns only JSON
   app.get('/api/tools', async (req: Request, res: Response) => {
     try {
       // Import tool metadata dynamically
       const { TOOL_METADATA, CORE_TOOLS } = await import('../agent/toolRegistry/metadata.js');
 
       // Get query parameters
-      const format = req.query.format as string || 'html';
       const category = req.query.category as string;
       const search = req.query.search as string;
 
@@ -1754,18 +1754,61 @@ function createApp(): express.Application {
         return a.name.localeCompare(b.name);
       });
 
-      // Return JSON if requested
-      if (format === 'json') {
-        return res.json({
-          total: TOOL_METADATA.length,
-          filtered: sortedTools.length,
-          coreTools: CORE_TOOLS,
-          tools: sortedTools,
-          categories: Array.from(new Set(TOOL_METADATA.map(t => t.category))).sort(),
-        });
+      // Always return JSON
+      return res.json({
+        total: TOOL_METADATA.length,
+        filtered: sortedTools.length,
+        coreTools: CORE_TOOLS,
+        tools: sortedTools,
+        categories: Array.from(new Set(TOOL_METADATA.map(t => t.category))).sort(),
+      });
+    } catch (error) {
+      console.error('Error fetching tools:', error);
+      res.status(500).json({
+        error: 'Failed to fetch tools',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  });
+
+  // HTML UI endpoint - browser-friendly interface
+  app.get('/tools', async (req: Request, res: Response) => {
+    try {
+      // Import tool metadata dynamically
+      const { TOOL_METADATA, CORE_TOOLS } = await import('../agent/toolRegistry/metadata.js');
+
+      // Get query parameters
+      const category = req.query.category as string;
+      const search = req.query.search as string;
+
+      // Filter tools if category or search is provided
+      let filteredTools = TOOL_METADATA;
+
+      if (category) {
+        filteredTools = filteredTools.filter(tool => tool.category === category);
       }
 
-      // Otherwise, return HTML
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredTools = filteredTools.filter(tool =>
+          tool.name.toLowerCase().includes(searchLower) ||
+          tool.description.toLowerCase().includes(searchLower) ||
+          tool.keywords.some(k => k.toLowerCase().includes(searchLower)) ||
+          tool.tags.some(t => t.toLowerCase().includes(searchLower))
+        );
+      }
+
+      // Sort tools: core tools first, then alphabetically
+      const sortedTools = filteredTools.sort((a, b) => {
+        const aIsCore = CORE_TOOLS.includes(a.id);
+        const bIsCore = CORE_TOOLS.includes(b.id);
+
+        if (aIsCore && !bIsCore) return -1;
+        if (!aIsCore && bIsCore) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Generate HTML
       const categoryCounts = TOOL_METADATA.reduce((acc, tool) => {
         acc[tool.category] = (acc[tool.category] || 0) + 1;
         return acc;

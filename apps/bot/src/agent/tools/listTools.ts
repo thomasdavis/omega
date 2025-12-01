@@ -107,7 +107,8 @@ Examples:
 
       // Add footer with link
       response += `\n---\n`;
-      response += `🌐 **View interactive tool browser:** /api/tools\n`;
+      response += `🌐 **View interactive tool browser:** https://omegaai.dev/tools\n`;
+      response += `📡 **JSON API:** https://omegaai.dev/api/tools\n`;
       response += `💡 **Tip:** Use category or search parameters to filter tools!\n`;
 
       console.log(`✅ Listed ${sortedTools.length} tools`);
