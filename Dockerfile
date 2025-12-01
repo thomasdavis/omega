@@ -10,7 +10,7 @@ RUN npm install -g pnpm@9.0.0
 WORKDIR /app
 
 # Copy workspace files
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
 
 # Copy ALL packages (required for @repo/* dependencies)
 COPY packages ./packages
@@ -21,14 +21,8 @@ COPY apps/bot ./apps/bot
 # Install dependencies (will install packages too)
 RUN pnpm install --frozen-lockfile
 
-# Build packages first (dependencies)
-RUN pnpm build --filter=@repo/shared
-RUN pnpm build --filter=@repo/database
-RUN pnpm build --filter=@repo/agent
-
-# Build bot
-WORKDIR /app/apps/bot
-RUN pnpm run build
+# Build everything using turbo (builds packages + bot in correct order)
+RUN pnpm build --filter=bot
 
 # Production image
 FROM node:20-alpine
@@ -54,14 +48,10 @@ COPY --from=base /app/packages/shared/dist ./packages/shared/dist
 COPY --from=base /app/packages/database/dist ./packages/database/dist
 COPY --from=base /app/packages/agent/dist ./packages/agent/dist
 
-# Copy built bot from builder
+# Copy built bot from builder (turbo outputs to apps/bot/dist)
 COPY --from=base /app/apps/bot/dist ./apps/bot/dist
-
-# Copy bot public assets (BUILD-TIMESTAMP.txt, etc)
 COPY --from=base /app/apps/bot/public ./apps/bot/public
-
-# Copy omega-manifest.json
-COPY --from=base /app/apps/bot/omega-manifest.json ./apps/bot/
+COPY --from=base /app/apps/bot/omega-manifest.json ./apps/bot/omega-manifest.json
 
 # Start the bot
 WORKDIR /app/apps/bot
