@@ -1697,29 +1697,100 @@ pnpm type-check
 
 ## Deployment to Railway
 
-### Current Setup
+### Current Setup - Dual Service Architecture
 
-- **Service ID:** `YOUR_RAILWAY_SERVICE_ID`
-- **Service Name:** `omega`
-- **Region:** Oregon
-- **Plan:** Free tier
-- **Storage:** Persistent disk at `/data`
-- **Auto-deploy:** Railway auto-deploy on push to main + GitHub Actions workflow
+**Two Railway Services (Monorepo Deployment):**
+
+#### Service 1: omega-bot (Discord Bot)
+- **Builder:** Dockerfile (`apps/bot/Dockerfile`)
+- **Purpose:** Discord Gateway bot with AI tools
+- **Port:** None (background worker)
+- **Storage:** Persistent volume at `/data`
+- **Configuration:** `/railway.json` (repo root)
+  - Points to `apps/bot/Dockerfile`
+  - Uses Docker multi-stage build with pnpm + turbo
+
+#### Service 2: omega (Next.js Web App)
+- **Builder:** Dockerfile (`apps/web/Dockerfile`)
+- **Purpose:** Next.js web app serving artifacts, documents, blog
+- **Port:** 3000 (exposed publicly)
+- **Storage:** Shares same persistent volume at `/data`
+- **Configuration:** `apps/web/railway.json`
+  - Root directory: `apps/web`
+  - Points to `apps/web/Dockerfile`
+  - Uses Docker multi-stage build with pnpm + turbo
+
+**Shared Architecture:**
+```
+Railway Persistent Volume (/data)
+├── artifacts/     ← Bot writes, Web serves
+├── uploads/       ← Bot writes, Web serves
+├── blog/          ← Bot writes, Web serves
+└── omega.db       ← Shared SQLite database
+```
+
+### Why Dockerfile Instead of Railpack?
+
+**Problem:** Railpack's auto-detection uses npm instead of pnpm, causing:
+```
+Unsupported URL Type "workspace:": workspace:*
+```
+
+**Solution:** Explicit Dockerfiles that:
+- Use pnpm explicitly (no auto-detection)
+- Build from repo root to access workspace packages (@repo/*)
+- Run `pnpm build --filter=X` which invokes Turbo
+- Turbo builds dependencies first via `"dependsOn": ["^build"]`
+- Multi-stage builds for smaller production images
+
+### Build Process
+
+Both services use identical build strategy:
+
+1. **Stage 1 (Builder):**
+   ```dockerfile
+   FROM node:20-alpine AS base
+   RUN npm install -g pnpm@9.0.0
+   COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json tsconfig.json ./
+   COPY packages ./packages
+   COPY apps/bot ./apps/bot  # or apps/web
+   RUN pnpm install --frozen-lockfile
+   RUN pnpm build --filter=bot  # or web (uses Turbo)
+   ```
+
+2. **Stage 2 (Production):**
+   ```dockerfile
+   FROM node:20-alpine
+   RUN npm install -g pnpm@9.0.0
+   # Copy only production dependencies + built artifacts
+   COPY --from=base /app/packages/*/dist ./packages/*/dist
+   COPY --from=base /app/apps/bot/dist ./apps/bot/dist
+   CMD ["node", "apps/bot/dist/index.js"]  # or pnpm start for web
+   ```
+
+**Key Points:**
+- Turbo automatically builds `@repo/shared`, `@repo/database`, `@repo/agent` before bot/web
+- No workspace resolution errors
+- Same volume allows file sharing between services
+- Bot creates files, Web serves them
 
 ### Manual Deployment
 
-Deployments are triggered automatically when you push to the main branch, but you can also trigger manually:
+Deployments are triggered automatically on git push, but you can also trigger manually:
 
 ```bash
-# Deploy via Railway CLI
+# Deploy via Railway CLI (if working)
 railway up
 
-# View real-time logs
-railway logs
+# View real-time logs for each service
+railway logs --service omega-bot
+railway logs --service omega
 
 # Check service status
 railway status
 ```
+
+**Note:** Railway CLI may time out - use Railway Dashboard for configuration changes.
 
 ### GitHub Actions Auto-Deploy
 
@@ -1728,30 +1799,38 @@ The bot auto-deploys via GitHub Actions (`.github/workflows/auto-create-claude-p
 1. Push to `claude/**` branches
 2. GitHub Actions creates PR automatically
 3. PR auto-merges when checks pass
-4. Deployment to Railway triggered via API
+4. Railway auto-deploys both services on main branch push
 5. Discord notification on success/failure
 
 **To trigger deployment:**
 ```bash
 git add .
-git commit -m "Update bot"
+git commit -m "Update services"
 git push origin main
 ```
 
-**Required GitHub Secrets:**
-- `RAILWAY_TOKEN`: Get from https://railway.app/account/tokens
-- `RAILWAY_SERVICE_ID`: Your Railway service ID
-- `DISCORD_WEBHOOK_URL`: For deployment notifications
+### Shared Volume Configuration
 
-### Persistent Disk Management
+**CRITICAL:** Both services must share the same Railway volume for file access:
 
-Railway provides persistent disk storage that survives across deploys:
+1. Go to Railway Dashboard
+2. Create volume named `omega-data` (if not exists)
+3. Attach to **omega-bot** at mount path `/data`
+4. Attach to **omega** at mount path `/data` (same volume!)
+5. Both services can now read/write shared files
 
-- **Location:** `/data` (configured in railway.yaml)
-- **Directories:**
-  - `/data/artifacts` - Generated artifacts
-  - `/data/uploads` - User uploaded files
-- **Management:** Access via Railway Dashboard or Shell
+**Workflow:**
+```
+User in Discord: "@omega create an HTML button"
+   ↓
+omega-bot saves to /data/artifacts/abc-123.html
+   ↓
+omega-bot returns URL: https://omega.railway.app/artifacts/abc-123.html
+   ↓
+omega web app serves /data/artifacts/abc-123.html
+   ↓
+User clicks URL → sees artifact
+```
 
 ### Monitoring
 
