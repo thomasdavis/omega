@@ -1,12 +1,49 @@
-[build]
-builder = "NIXPACKS"
+# railway.toml - Railway configuration for monorepo deployment
+# This file is REQUIRED for multi-service monorepo deployments on Railway
 
-[deploy]
-healthcheckPath = "/health"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+[project]
+name = "omega"
 
-[[mounts]]
-# Mount persistent storage for artifacts and uploads
-mountPath = "/data"
+###############################################
+# SERVICE: omega-bot (Discord bot)
+###############################################
+[service.omega-bot]
+# Root of this service in your monorepo
+root = "./apps/bot"
+
+# Use Dockerfile (disables Railpack/Nixpacks auto-detection)
+builder = "dockerfile"
+dockerfile = "./apps/bot/Dockerfile"
+
+# No ports (background worker)
+# Start command is handled by Dockerfile CMD
+
+# Shared persistent volume
+mounts = [
+  { source = "omega_data", dest = "/data" }
+]
+
+###############################################
+# SERVICE: omega (Next.js web)
+###############################################
+[service.omega]
+root = "./apps/web"
+
+# Use Dockerfile (disables Railpack/Nixpacks auto-detection)
+builder = "dockerfile"
+dockerfile = "./apps/web/Dockerfile"
+
+# Public port
+port = 3000
+# Start command is handled by Dockerfile CMD
+
+# Shared persistent volume (same as omega-bot)
+mounts = [
+  { source = "omega_data", dest = "/data" }
+]
+
+###############################################
+# VOLUMES
+###############################################
+# Shared volume for artifacts, uploads, blog, and SQLite database
+[volume.omega_data]
