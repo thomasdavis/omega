@@ -31,6 +31,7 @@
     "lib0": "^0.2.114",
     "mime": "^4.0.0",
     "minimatch": "^10.1.1",
+    "minisearch": "^7.2.0",
     "mongodb": "^7.0.0",
     "node-cron": "^3.0.3",
     "openai": "^4.104.0",

@@ -13,6 +13,7 @@ import { initializeSchema } from './database/schema.js';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
+import { preloadCoreTools } from './agent/toolLoader.js';
 
 dotenv.config();
 
@@ -27,6 +28,16 @@ try {
 } catch (error) {
   console.error('❌ Failed to initialize database:', error);
   process.exit(1);
+}
+
+// Preload core tools for faster first response
+try {
+  console.log('🔧 Preloading core tools...');
+  await preloadCoreTools();
+  console.log('✅ Core tools preloaded and ready');
+} catch (error) {
+  console.error('⚠️  Failed to preload core tools (continuing anyway):', error);
+  // Don't exit - bot can still work, just slower on first call
 }
 
 // Validate environment variables

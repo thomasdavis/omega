@@ -121,6 +121,8 @@ import { logError } from '../utils/errorLogger.js';
 import { buildSystemPrompt } from '../lib/systemPrompt.js';
 import { OMEGA_MODEL } from '../config/models.js';
 import { feelingsService } from '../lib/feelings/index.js';
+import { selectTools } from './toolRouter.js';
+import { loadTools } from './toolLoader.js';
 
 // Use openai.chat() to force /v1/chat/completions instead of /v1/responses
 // This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
@@ -179,6 +181,25 @@ export async function runAgent(
     console.log('🔍 DEBUG: Model =', model);
     console.log('🔍 DEBUG: stopWhen condition = stepCountIs(10)');
 
+    // ====== DYNAMIC TOOL SELECTION using BM25 ======
+
+    // Extract recent conversation context for tool selection
+    const recentContext = context.messageHistory
+      ? context.messageHistory.slice(-3).map(msg => msg.content)
+      : [];
+
+    // SELECT tools using BM25 search
+    console.log('🎯 Selecting relevant tools via BM25 search...');
+    const selectedToolIds = selectTools(userMessage, recentContext);
+
+    // LOAD selected tools dynamically
+    console.log('🔧 Loading selected tools...');
+    const tools = await loadTools(selectedToolIds);
+
+    console.log(`✅ Using ${Object.keys(tools).length} tools for this conversation`);
+
+    // ====== END DYNAMIC TOOL SELECTION ======
+
     // Get feelings context to include in system prompt
     const feelingsContext = feelingsService.getContextForPrompt();
 
@@ -211,127 +232,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
       model,
       system: buildSystemPrompt(context.username, context.userId) + feelingsContext + attachmentContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
-      tools: {
-        search: searchTool,
-        calculator: calculatorTool,
-        weather: weatherTool,
-        githubCreateIssue: githubCreateIssueTool,
-        githubUpdateIssue: githubUpdateIssueTool,
-        githubCloseIssue: githubCloseIssueTool,
-        githubMergePR: githubMergePRTool,
-        listRepositoryFiles: listRepositoryFilesTool,
-        webFetch: webFetchTool,
-        unsandbox: unsandboxTool,
-        unsandboxSubmit: unsandboxSubmitTool,
-        unsandboxStatus: unsandboxStatusTool,
-        researchEssay: researchEssayTool,
-        asciiGraph: asciiGraphTool,
-        asciiMap: asciiMapTool,
-        renderChart: renderChartTool,
-        artifact: artifactTool,
-        whoami: whoamiTool,
-        linuxAdvantages: linuxAdvantagesTool,
-        fileUpload: fileUploadTool,
-        listUploadedFiles: listUploadedFilesTool,
-        transferRailwayFiles: transferRailwayFilesTool,
-        exportConversation: exportConversationTool,
-        conversationDiagram: conversationDiagramTool,
-        jsonAgentGenerator: jsonAgentGeneratorTool,
-        hackerNewsPhilosophy: hackerNewsPhilosophyTool,
-        hackerNews: hackerNewsTool,
-        arxiv: arxivTool,
-        moodUplifter: moodUplifterTool,
-        tellJoke: tellJokeTool,
-        fishJoke: fishJokeTool,
-        tellHistoricalFact: tellHistoricalFactTool,
-        generateHtmlPage: generateHtmlPageTool,
-        recipeGenerator: recipeGeneratorTool,
-        ooda: oodaTool,
-        listArtifacts: listArtifactsTool,
-        codeQuery: codeQueryTool,
-        conversationToSlidev: conversationToSlidevTool,
-        getOmegaManifest: getOmegaManifestTool,
-        buildSlidevPresentation: buildSlidevPresentationTool,
-        createBlogPost: createBlogPostTool,
-        updateBlogPost: updateBlogPostTool,
-        listBlogPosts: listBlogPostsTool,
-        queryMessages: queryMessagesTool,
-        translateToSpanish: translateToSpanishTool,
-        generateUserImage: generateUserImageTool,
-        editUserImage: editUserImageTool,
-        imageEditor: imageEditorTool,
-        advancedImageEditingWithContext: advancedImageEditingWithContextTool,
-        marketPrediction: marketPredictionTool,
-        triggerDailyBlog: triggerDailyBlogTool,
-        commitFile: commitFileTool,
-        uploadAndCommitFile: uploadAndCommitFileTool,
-        summarizeCommits: summarizeCommitsTool,
-        introspectFeelings: introspectFeelingsTool,
-        createLiveDocument: createLiveDocumentTool,
-        readLiveDocument: readLiveDocumentTool,
-        reportMissingTool: reportMissingToolTool,
-        reportMessageAsIssue: reportMessageAsIssueTool,
-        inspectTool: inspectToolTool,
-        generateComic: generateComicTool,
-        generateSonnet: generateSonnetTool,
-        generateCsv: generateCsvTool,
-        csvToChart: csvToChartTool,
-        generateSongLyrics: generateSongLyricsTool,
-        generateSheetMusic: generateSheetMusicTool,
-        generateHaiku: generateHaikuTool,
-        generateUserAvatar: generateUserAvatarTool,
-        grammarInsult: grammarInsultTool,
-        uploadMyPhoto: uploadMyPhotoTool,
-        generateMyPortrait: generateMyPortraitTool,
-        runBatchAnalysis: runBatchAnalysisTool,
-        quantumComputing: quantumComputingTool,
-        queryDatabase: queryDatabaseTool,
-        defineWord: defineWordTool,
-        getUserProfile: getUserProfileTool,
-        generateMarkdown: generateMarkdownTool,
-        generateCrossword: generateCrosswordTool,
-        generateMarketingCopy: generateMarketingCopyTool,
-        generateDungeonMap: generateDungeonMapTool,
-        generateIconEmoji: generateIconEmojiTool,
-        generateStandupSummary: generateStandupSummaryTool,
-        generateLegalDisclaimer: generateLegalDisclaimerTool,
-        generateFilmScene: generateFilmSceneTool,
-        bullshitDetector: bullshitDetectorTool,
-        tweet: tweetTool,
-        generateStarSign: generateStarSignTool,
-        detectBias: detectBiasTool,
-        psychoAnalysis: psychoAnalysisTool,
-        psychoHistory: psychoHistoryTool,
-        // MongoDB Tools (14 total)
-        mongoInsert: mongoInsertTool,
-        mongoFind: mongoFindTool,
-        mongoFindOne: mongoFindOneTool,
-        mongoUpdate: mongoUpdateTool,
-        mongoDelete: mongoDeleteTool,
-        mongoCount: mongoCountTool,
-        mongoListCollections: mongoListCollectionsTool,
-        mongoCreateCollection: mongoCreateCollectionTool,
-        mongoDropCollection: mongoDropCollectionTool,
-        mongoRenameCollection: mongoRenameCollectionTool,
-        mongoAggregate: mongoAggregateTool,
-        mongoCreateIndex: mongoCreateIndexTool,
-        mongoListIndexes: mongoListIndexesTool,
-        mongoDropIndex: mongoDropIndexTool,
-        // PostgreSQL Tools (13 total)
-        pgQuery: pgQueryTool,
-        pgInsert: pgInsertTool,
-        pgSelect: pgSelectTool,
-        pgUpdate: pgUpdateTool,
-        pgDelete: pgDeleteTool,
-        pgCount: pgCountTool,
-        pgListTables: pgListTablesTool,
-        pgCreateTable: pgCreateTableTool,
-        pgDropTable: pgDropTableTool,
-        pgDescribeTable: pgDescribeTableTool,
-        pgCreateIndex: pgCreateIndexTool,
-        pgListIndexes: pgListIndexesTool,
-        pgDropIndex: pgDropIndexTool,
-      },
+      tools, // ← Dynamic tools loaded via BM25 search
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
       stopWhen: stepCountIs(10),
