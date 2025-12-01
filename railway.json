@@ -2,9 +2,10 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "railpack",
-    "dockerfilePath": "Dockerfile.bot"
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm build --filter=bot"
   },
   "deploy": {
+    "startCommand": "node apps/bot/dist/index.js",
     "restartPolicyType": "on-failure",
     "restartPolicyMaxRetries": 10
   }
