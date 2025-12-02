@@ -84,12 +84,12 @@ Your rules:
 
     const markdown = completion.choices[0]?.message?.content || '# Error\n\nFailed to generate agent response';
 
-    // Return as markdown with 5-minute cache
+    // Return as markdown with 20-minute browser cache
     return new NextResponse(markdown, {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+        'Cache-Control': 'public, max-age=1200', // Cache for 20 minutes (1200 seconds)
       },
     });
   } catch (error) {
