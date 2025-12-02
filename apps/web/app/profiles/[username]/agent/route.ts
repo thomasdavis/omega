@@ -1,0 +1,242 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@repo/database';
+import OpenAI from 'openai';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  try {
+    const { username } = await params;
+
+    // Fetch user profile
+    const profile = await prisma.userProfile.findFirst({
+      where: { username },
+    });
+
+    if (!profile) {
+      return new NextResponse('# Profile Not Found\n\nNo profile exists for this username.', {
+        status: 404,
+        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      });
+    }
+
+    // Fetch last 500 messages by this user
+    const messages = await prisma.message.findMany({
+      where: { userId: profile.userId },
+      orderBy: { timestamp: 'desc' },
+      take: 500,
+      select: {
+        messageContent: true,
+        timestamp: true,
+        channelName: true,
+        senderType: true,
+      },
+    });
+
+    // Build comprehensive identity embodiment prompt
+    const prompt = buildIdentityEmbodimentPrompt(profile, messages);
+
+    // Call OpenAI to generate agent response
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4.1-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a PhD-level identity synthesis engine. Your task is to analyze comprehensive psychological, behavioral, and linguistic data to create a complete identity model.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 4000,
+    });
+
+    const markdown = completion.choices[0]?.message?.content || '# Error\n\nFailed to generate agent response';
+
+    // Return as markdown with 5-minute cache
+    return new NextResponse(markdown, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/markdown; charset=utf-8',
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
+      },
+    });
+  } catch (error) {
+    console.error('Error generating agent response:', error);
+    return new NextResponse('# Error\n\nFailed to generate agent response', {
+      status: 500,
+      headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+    });
+  }
+}
+
+function buildIdentityEmbodimentPrompt(profile: any, messages: any[]): string {
+  // Analyze message patterns
+  const messageAnalysis = analyzeMessages(messages);
+
+  // Format messages for inclusion
+  const formattedMessages = messages.slice(0, 100).map(msg => {
+    const timestamp = new Date(Number(msg.timestamp) * 1000).toLocaleString();
+    return `[${timestamp}] ${msg.channelName || 'DM'}: ${msg.messageContent}`;
+  }).join('\n');
+
+  return `# Identity Analysis for ${profile.username || 'Unknown'}
+
+## Profile Data
+
+**User ID:** ${profile.userId}
+**Messages Analyzed:** ${messages.length}
+**Time Range:** ${messages.length > 0 ? `${new Date(Number(messages[messages.length - 1].timestamp) * 1000).toLocaleDateString()} - ${new Date(Number(messages[0].timestamp) * 1000).toLocaleDateString()}` : 'N/A'}
+
+### Jungian Archetypes
+- Primary: ${profile.dominant_archetype || 'N/A'}
+- Confidence: ${profile.archetype_confidence ? `${(profile.archetype_confidence * 100).toFixed(1)}%` : 'N/A'}
+- Secondary: ${Array.isArray(profile.secondary_archetypes) ? profile.secondary_archetypes.join(', ') : profile.secondary_archetypes || 'None'}
+- Shadow: ${profile.shadow_archetype || 'N/A'}
+
+### Big Five Personality (OCEAN)
+
+- Openness: ${profile.openness_score || 'N/A'}/100
+- Conscientiousness: ${profile.conscientiousness_score || 'N/A'}/100
+- Extraversion: ${profile.extraversion_score || 'N/A'}/100
+- Agreeableness: ${profile.agreeableness_score || 'N/A'}/100
+- Neuroticism: ${profile.neuroticism_score || 'N/A'}/100
+
+### Attachment & Emotional Intelligence
+- Attachment Style: ${profile.attachmentStyle || 'N/A'} ${profile.attachment_confidence ? `(${(profile.attachment_confidence * 100).toFixed(1)}% confidence)` : ''}
+- Emotional Awareness: ${profile.emotional_awareness_score || 'N/A'}/100
+- Empathy: ${profile.empathy_score || 'N/A'}/100
+- Emotional Regulation: ${profile.emotional_regulation_score || 'N/A'}/100
+
+### Communication Style
+- Formality: ${profile.communication_formality || 'N/A'}
+- Assertiveness: ${profile.communication_assertiveness || 'N/A'}
+- Engagement: ${profile.communication_engagement || 'N/A'}
+- Verbal Fluency: ${profile.verbal_fluency_score || 'N/A'}/100
+
+### Message Statistics
+- Average Length: ${messageAnalysis.avgLength} characters
+- Emoji Usage: ${messageAnalysis.emojiRate.toFixed(2)}%
+- Question Rate: ${messageAnalysis.questionRate.toFixed(2)}%
+- Lexical Density: ${messageAnalysis.lexicalDensity}
+- Common Topics: ${messageAnalysis.topics.join(', ')}
+
+### Cognitive Profile
+- Analytical Thinking: ${profile.analytical_thinking_score || 'N/A'}/100
+- Creative Thinking: ${profile.creative_thinking_score || 'N/A'}/100
+- Abstract Reasoning: ${profile.abstract_reasoning_score || 'N/A'}/100
+- Concrete Thinking: ${profile.concrete_thinking_score || 'N/A'}/100
+
+### Social & Behavioral
+- Humor Style: ${profile.humorStyle || 'N/A'}
+- Technical Knowledge: ${profile.technical_knowledge_level || 'N/A'}
+- Interests: ${Array.isArray(profile.primary_interests) ? profile.primary_interests.join(', ') : profile.primary_interests || 'N/A'}
+- Expertise: ${Array.isArray(profile.expertise_areas) ? profile.expertise_areas.join(', ') : profile.expertise_areas || 'N/A'}
+- Social Dominance: ${profile.social_dominance_score || 'N/A'}/100
+- Cooperation: ${profile.cooperation_score || 'N/A'}/100
+
+### Sentiment Analysis
+- Overall Sentiment: ${profile.overall_sentiment || 'N/A'}
+- Positive Ratio: ${profile.positive_interaction_ratio ? `${(profile.positive_interaction_ratio * 100).toFixed(1)}%` : 'N/A'}
+- Negative Ratio: ${profile.negative_interaction_ratio ? `${(profile.negative_interaction_ratio * 100).toFixed(1)}%` : 'N/A'}
+- Dominant Emotions: ${Array.isArray(profile.dominant_emotions) ? profile.dominant_emotions.join(', ') : profile.dominant_emotions || 'N/A'}
+
+### Physical Appearance (AI Vision)
+${profile.aiAppearanceDescription ? `
+Description: ${profile.aiAppearanceDescription}
+Confidence: ${profile.appearanceConfidence ? `${(profile.appearanceConfidence * 100).toFixed(1)}%` : 'N/A'}
+` : 'No photo analyzed'}
+- Gender: ${profile.aiDetectedGender || 'N/A'}
+- Age Range: ${profile.estimatedAgeRange || 'N/A'}
+- Face Shape: ${profile.faceShape || 'N/A'}
+- Hair: ${profile.hairColor || 'N/A'} ${profile.hairTexture ? `(${profile.hairTexture})` : ''}
+- Eyes: ${profile.eyeColor || 'N/A'} ${profile.eyeShape ? `(${profile.eyeShape})` : ''}
+- Build: ${profile.bodyType || 'N/A'}
+- Style: ${profile.aestheticArchetype || profile.clothingStyle || 'N/A'}
+
+### Relationship with Omega
+- Affinity Score: ${profile.affinity_score || 'N/A'}/100
+- Trust Level: ${profile.trust_level || 'N/A'}/100
+- Emotional Bond: ${profile.emotional_bond || 'N/A'}
+${profile.omega_thoughts ? `- Omega's Thoughts: "${profile.omega_thoughts}"` : ''}
+
+## Recent Messages (Last 100 of ${messages.length} total)
+
+${formattedMessages}
+
+---
+
+Analyze this person's identity, personality, communication patterns, and behavioral tendencies. Write a comprehensive psychological profile in markdown format.`;
+}
+
+function analyzeMessages(messages: any[]): any {
+  if (messages.length === 0) {
+    return {
+      patterns: '*No message data available for analysis*',
+      avgLength: 0,
+      variance: 0,
+      emojiRate: 0,
+      questionRate: 0,
+      lexicalDensity: 'N/A',
+      pragmaticFunctions: 'N/A',
+      topics: [],
+      themes: '*Insufficient data*',
+    };
+  }
+
+  const lengths = messages.map(m => (m.messageContent || '').length);
+  const avgLength = lengths.reduce((sum, len) => sum + len, 0) / lengths.length;
+  const variance = lengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / lengths.length;
+
+  const allContent = messages.map(m => m.messageContent || '').join(' ');
+  const emojiCount = (allContent.match(/[\p{Emoji}]/gu) || []).length;
+  const emojiRate = (emojiCount / allContent.length) * 100;
+
+  const questionCount = messages.filter(m => (m.messageContent || '').includes('?')).length;
+  const questionRate = (questionCount / messages.length) * 100;
+
+  // Extract common words for topics
+  const words = allContent.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+  const wordFreq: Record<string, number> = {};
+  words.forEach(w => { wordFreq[w] = (wordFreq[w] || 0) + 1; });
+  const topWords = Object.entries(wordFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word]) => word);
+
+  // Determine lexical density
+  const uniqueWords = new Set(words);
+  const lexicalDensity = words.length > 0 ? (uniqueWords.size / words.length * 100).toFixed(1) + '% (vocabulary diversity)' : 'N/A';
+
+  // Pragmatic patterns
+  const patterns = [];
+  const shortMessages = messages.filter(m => (m.messageContent || '').length < 50).length;
+  const longMessages = messages.filter(m => (m.messageContent || '').length > 200).length;
+
+  if (shortMessages > messages.length * 0.6) patterns.push('Predominantly brief, direct communication');
+  if (longMessages > messages.length * 0.3) patterns.push('Frequent extended discourse');
+  if (questionRate > 20) patterns.push('High interrogative engagement');
+  if (emojiRate > 2) patterns.push('Expressive emoji usage');
+
+  return {
+    patterns: patterns.length > 0 ? patterns.join('; ') : 'Standard conversational patterns',
+    avgLength: Math.round(avgLength),
+    variance,
+    emojiRate,
+    questionRate,
+    lexicalDensity,
+    pragmaticFunctions: patterns.length > 0 ? patterns.join(', ') : 'Balanced informational and relational functions',
+    topics: topWords,
+    themes: topWords.length > 0 ? `Recurring semantic themes include: ${topWords.slice(0, 5).join(', ')}` : 'Insufficient data for theme extraction',
+  };
+}

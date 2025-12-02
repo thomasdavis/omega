@@ -16,6 +16,7 @@
     "@repo/ui": "workspace:*",
     "mime-types": "^3.0.2",
     "next": "^15.1.0",
+    "openai": "^4.104.0",
     "pusher": "^5.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
