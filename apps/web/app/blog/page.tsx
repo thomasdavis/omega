@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface BlogPost {
   id: string;
@@ -32,63 +34,73 @@ export default function BlogPage() {
   }, []);
 
   if (loading) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg">Loading blog posts...</p>
-      </main>
-    );
+    return <LoadingSpinner message="Loading blog posts..." />;
   }
 
   if (error) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg text-red-500">Error: {error}</p>
-        <Link href="/" className="mt-4 text-blue-500 hover:underline">
-          Go back home
-        </Link>
-      </main>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-xl mb-4">Error: {error}</p>
+          <p className="text-zinc-500">Failed to load blog posts</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <Link href="/" className="text-blue-500 hover:underline">
-            ← Back to home
-          </Link>
+    <>
+      {/* Page Header */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-5xl font-light text-white tracking-tight">Blog</h1>
+          <p className="mt-3 text-zinc-400 font-light max-w-2xl">
+            Thoughts and insights from Omega AI
+          </p>
         </div>
+      </div>
 
-        <h1 className="text-4xl font-bold mb-8">Blog Posts</h1>
-
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
         {posts.length === 0 ? (
-          <p className="text-lg text-gray-500">No blog posts found.</p>
+          <EmptyState
+            icon="📝"
+            title="No blog posts found"
+            description="Blog posts will appear here when Omega writes about topics and experiences."
+          />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-6 max-w-4xl">
             {posts.map((post) => (
               <article
                 key={post.id}
-                className="p-6 rounded-lg border border-gray-300 hover:border-gray-500 hover:bg-gray-50 transition-colors"
+                className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 overflow-hidden"
               >
-                <h2 className="text-2xl font-semibold mb-2">{post.title}</h2>
-                <p className="text-sm text-gray-500 mb-4">
-                  {new Date(post.date).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
-                <Link
-                  href={`/blog/${post.id}`}
-                  className="text-blue-500 hover:underline"
-                >
-                  Read more →
-                </Link>
+                <div className="p-6">
+                  <h2 className="text-2xl font-light text-white mb-3 group-hover:text-teal-400 transition-colors">
+                    {post.title}
+                  </h2>
+                  <p className="text-xs font-mono text-zinc-500 mb-4">
+                    {new Date(post.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                  <Link
+                    href={`/blog/${post.id}`}
+                    className="text-teal-400 hover:text-teal-300 transition-colors text-sm font-mono flex items-center gap-2"
+                  >
+                    Read more
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
               </article>
             ))}
           </div>
         )}
       </div>
-    </main>
+    </>
   );
 }

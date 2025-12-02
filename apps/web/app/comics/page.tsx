@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import Badge from '@/components/ui/Badge';
 
 interface Comic {
   id: number;
@@ -32,52 +35,49 @@ export default function ComicsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg">Loading comics...</p>
-      </main>
-    );
+    return <LoadingSpinner message="Loading comics..." />;
   }
 
   if (error) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg text-red-500">Error: {error}</p>
-        <Link href="/" className="mt-4 text-blue-500 hover:underline">
-          Go back home
-        </Link>
-      </main>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-xl mb-4">Error: {error}</p>
+          <p className="text-zinc-500">Failed to load comics</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <Link href="/" className="text-blue-600 hover:underline font-medium">
-            ← Back to home
-          </Link>
+    <>
+      {/* Page Header */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-5xl font-light text-white tracking-tight">Comics Gallery</h1>
+          <p className="mt-3 text-zinc-400 font-light max-w-2xl">
+            AI-generated comics created by Omega, sorted from newest to oldest
+          </p>
         </div>
+      </div>
 
-        <h1 className="text-5xl font-bold mb-4 text-gray-900">Comics Gallery</h1>
-        <p className="text-gray-600 mb-12 text-lg">
-          Explore all the comics, sorted from newest to oldest.
-        </p>
-
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
         {comics.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-xl text-gray-500">No comics found yet.</p>
-            <p className="text-gray-400 mt-2">Check back later for new comics!</p>
-          </div>
+          <EmptyState
+            icon="🎨"
+            title="No comics found"
+            description="Comics will appear here when Omega creates visual stories and artwork."
+          />
         ) : (
-          <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {comics.map((comic) => (
               <article
                 key={comic.id}
-                className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 overflow-hidden"
               >
                 {/* Comic Preview */}
-                <div className="w-full h-96 bg-gray-100 border-b border-gray-200 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-96 bg-zinc-800 border-b border-zinc-800 flex items-center justify-center overflow-hidden">
                   <img
                     src={comic.url}
                     alt={comic.filename}
@@ -87,30 +87,36 @@ export default function ComicsPage() {
 
                 {/* Comic Info */}
                 <div className="p-6">
-                  <h2 className="text-xl font-semibold mb-3 text-gray-900 line-clamp-2">
-                    {comic.filename.replace('.html', '').replace(/-comic/gi, '')}
-                  </h2>
-
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <time dateTime={comic.createdAt}>
-                      {new Date(comic.createdAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </time>
-                    <span className="text-xs bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
+                  <div className="flex justify-between items-start gap-3 mb-4">
+                    <h2 className="text-xl font-light text-white flex-1 line-clamp-2">
+                      {comic.filename.replace('.html', '').replace(/-comic/gi, '')}
+                    </h2>
+                    <Badge variant="accent" className="shrink-0">
                       COMIC
-                    </span>
+                    </Badge>
                   </div>
+
+                  <time
+                    dateTime={comic.createdAt}
+                    className="block text-xs font-mono text-zinc-500 mb-4"
+                  >
+                    {new Date(comic.createdAt).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </time>
 
                   <a
                     href={`/api/artifacts/${comic.id}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    className="text-teal-400 hover:text-teal-300 transition-colors text-sm font-mono flex items-center gap-2"
                   >
-                    View Full Comic →
+                    View Full Comic
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </a>
                 </div>
               </article>
@@ -118,6 +124,6 @@ export default function ComicsPage() {
           </div>
         )}
       </div>
-    </main>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface UserProfile {
   // Core
@@ -370,11 +371,7 @@ export default function ProfileDetailPage() {
   }, [userId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-zinc-400 text-xl font-light tracking-wide">Loading profile...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading profile..." />;
   }
 
   if (error || !profile) {
@@ -399,7 +396,7 @@ export default function ProfileDetailPage() {
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header with Photo */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <Link href="/profiles" className="text-teal-400 hover:text-teal-300 text-sm font-mono inline-flex items-center gap-2 mb-4">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

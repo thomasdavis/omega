@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface UserProfile {
   userId: string;
@@ -32,11 +33,7 @@ export default function ProfilesPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
-        <div className="text-zinc-400 text-xl font-light tracking-wide">Loading profiles...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading profiles..." />;
   }
 
   if (error) {
@@ -48,9 +45,9 @@ export default function ProfilesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950">
-      {/* Header */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm sticky top-0 z-10">
+    <>
+      {/* Page Header */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-baseline gap-4">
             <h1 className="text-5xl font-light text-white tracking-tight">Profiles</h1>
@@ -149,6 +146,6 @@ export default function ProfilesPage() {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
