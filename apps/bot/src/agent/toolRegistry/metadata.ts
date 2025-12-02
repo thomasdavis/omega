@@ -1662,6 +1662,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'searchDocuments',
+    name: 'Search Documents',
+    description: 'Fuzzy search documents in the database by title and content',
+    keywords: ['search', 'find', 'document', 'fuzzy', 'lookup', 'query', 'locate', 'discover'],
+    tags: ['content', 'document', 'search', 'database'],
+    examples: [
+      'search documents for',
+      'find documents about',
+      'locate document with',
+      'search for doc',
+      'find document containing',
+      'search documents database'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'reportMissingTool',
     name: 'Report Missing Tool',
     description: 'Report missing or needed tools',

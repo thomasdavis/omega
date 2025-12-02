@@ -148,6 +148,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   introspectFeelings: { path: './tools/introspectFeelings.js', exportName: 'introspectFeelingsTool' },
   createLiveDocument: { path: './tools/createLiveDocument.js', exportName: 'createLiveDocumentTool' },
   readLiveDocument: { path: './tools/readLiveDocument.js', exportName: 'readLiveDocumentTool' },
+  searchDocuments: { path: './tools/searchDocuments.js', exportName: 'searchDocumentsTool' },
   reportMissingTool: { path: './tools/reportMissingTool.js', exportName: 'reportMissingToolTool' },
   inspectTool: { path: './tools/inspectTool.js', exportName: 'inspectToolTool' },
   grammarInsult: { path: './tools/grammarInsult.js', exportName: 'grammarInsultTool' },
