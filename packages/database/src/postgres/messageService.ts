@@ -1,9 +1,9 @@
 /**
  * PostgreSQL Message Persistence Service
- * Port of libsql/messageService.ts for PostgreSQL
+ * Refactored to use Prisma ORM for type-safe database operations
  */
 
-import { getPostgresPool } from './client.js';
+import { prisma } from './prismaClient.js';
 import type { MessageRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 import { analyzeMessage } from '@repo/shared';
@@ -27,9 +27,8 @@ export async function saveHumanMessage(params: {
     reason: string;
   };
 }): Promise<string> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Date.now();
+  const timestamp = BigInt(Date.now());
 
   // Get previous messages from this user for context
   let previousMessages: Array<{ content: string; sentiment?: string }> = [];
@@ -96,35 +95,27 @@ export async function saveHumanMessage(params: {
     // Continue saving the message even if analysis fails
   }
 
-  // Prepare response decision JSONB
-  const responseDecision = params.responseDecision || null;
-
-  await pool.query(
-    `INSERT INTO messages (
-      id, timestamp, sender_type, user_id, username,
-      channel_id, channel_name, guild_id, message_content, session_id,
-      ai_summary, sentiment_analysis, response_decision,
-      interaction_type, user_intent, bot_perception, conversation_quality
-    ) VALUES ($1, $2, 'human', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-    [
+  await prisma.message.create({
+    data: {
       id,
       timestamp,
-      params.userId,
-      params.username,
-      params.channelId,
-      params.channelName,
-      params.guildId || null,
-      params.messageContent,
-      params.sessionId || null,
-      aiSummary || null,
-      sentimentAnalysis,
-      responseDecision,
-      interactionType || null,
-      userIntent || null,
-      botPerception || null,
-      conversationQuality || null,
-    ]
-  );
+      senderType: 'human',
+      userId: params.userId,
+      username: params.username,
+      channelId: params.channelId,
+      channelName: params.channelName,
+      guildId: params.guildId || null,
+      messageContent: params.messageContent,
+      sessionId: params.sessionId || null,
+      aiSummary: aiSummary || null,
+      sentimentAnalysis: sentimentAnalysis || undefined,
+      responseDecision: params.responseDecision || undefined,
+      interactionType: interactionType || null,
+      userIntent: userIntent || null,
+      botPerception: botPerception || null,
+      conversationQuality: conversationQuality || null,
+    },
+  });
 
   return id;
 }
@@ -143,30 +134,25 @@ export async function saveAIMessage(params: {
   sessionId?: string;
   metadata?: Record<string, any>;
 }): Promise<string> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Date.now();
+  const timestamp = BigInt(Date.now());
 
-  await pool.query(
-    `INSERT INTO messages (
-      id, timestamp, sender_type, user_id, username,
-      channel_id, channel_name, guild_id, message_content,
-      parent_message_id, session_id, metadata
-    ) VALUES ($1, $2, 'ai', $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-    [
+  await prisma.message.create({
+    data: {
       id,
       timestamp,
-      params.userId,
-      params.username,
-      params.channelId,
-      params.channelName,
-      params.guildId || null,
-      params.messageContent,
-      params.parentMessageId || null,
-      params.sessionId || null,
-      params.metadata || null,
-    ]
-  );
+      senderType: 'ai',
+      userId: params.userId,
+      username: params.username,
+      channelId: params.channelId,
+      channelName: params.channelName,
+      guildId: params.guildId || null,
+      messageContent: params.messageContent,
+      parentMessageId: params.parentMessageId || null,
+      sessionId: params.sessionId || null,
+      metadata: params.metadata || undefined,
+    },
+  });
 
   return id;
 }
@@ -186,36 +172,30 @@ export async function saveToolExecution(params: {
   parentMessageId?: string;
   sessionId?: string;
 }): Promise<string> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Date.now();
+  const timestamp = BigInt(Date.now());
 
   // Create a summary message content from tool execution
   const messageContent = `Tool: ${params.toolName}`;
 
-  await pool.query(
-    `INSERT INTO messages (
-      id, timestamp, sender_type, user_id, username,
-      channel_id, channel_name, guild_id, message_content,
-      tool_name, tool_args, tool_result,
-      parent_message_id, session_id
-    ) VALUES ($1, $2, 'tool', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-    [
+  await prisma.message.create({
+    data: {
       id,
       timestamp,
-      params.userId,
-      params.username,
-      params.channelId,
-      params.channelName,
-      params.guildId || null,
+      senderType: 'tool',
+      userId: params.userId,
+      username: params.username,
+      channelId: params.channelId,
+      channelName: params.channelName,
+      guildId: params.guildId || null,
       messageContent,
-      params.toolName,
-      JSON.stringify(params.toolArgs),
-      JSON.stringify(params.toolResult),
-      params.parentMessageId || null,
-      params.sessionId || null,
-    ]
-  );
+      toolName: params.toolName,
+      toolArgs: JSON.stringify(params.toolArgs),
+      toolResult: JSON.stringify(params.toolResult),
+      parentMessageId: params.parentMessageId || null,
+      sessionId: params.sessionId || null,
+    },
+  });
 
   return id;
 }
@@ -233,42 +213,37 @@ export async function queryMessages(params: {
   endTime?: number;
   searchText?: string;
 }): Promise<MessageRecord[]> {
-  const pool = await getPostgresPool();
-  const conditions: string[] = [];
-  const args: any[] = [];
-  let paramIndex = 1;
-
-  // Build WHERE clause
-  if (params.userId) {
-    conditions.push(`user_id = $${paramIndex++}`);
-    args.push(params.userId);
-  }
-
-  if (params.channelId) {
-    conditions.push(`channel_id = $${paramIndex++}`);
-    args.push(params.channelId);
-  }
-
-  if (params.senderType) {
-    conditions.push(`sender_type = $${paramIndex++}`);
-    args.push(params.senderType);
-  }
-
-  if (params.startTime) {
-    conditions.push(`timestamp >= $${paramIndex++}`);
-    args.push(params.startTime);
-  }
-
-  if (params.endTime) {
-    conditions.push(`timestamp <= $${paramIndex++}`);
-    args.push(params.endTime);
-  }
-
   const limit = params.limit || 100;
   const offset = params.offset || 0;
 
-  // Handle full-text search (PostgreSQL GIN index)
+  // Build where clause
+  const where: any = {};
+
+  if (params.userId) {
+    where.userId = params.userId;
+  }
+
+  if (params.channelId) {
+    where.channelId = params.channelId;
+  }
+
+  if (params.senderType) {
+    where.senderType = params.senderType;
+  }
+
+  if (params.startTime) {
+    where.timestamp = { ...where.timestamp, gte: BigInt(params.startTime) };
+  }
+
+  if (params.endTime) {
+    where.timestamp = { ...where.timestamp, lte: BigInt(params.endTime) };
+  }
+
+  // For full-text search, we need to use raw SQL since Prisma doesn't support PostgreSQL full-text search directly
   if (params.searchText) {
+    const { getPostgresPool } = await import('./client.js');
+    const pool = await getPostgresPool();
+
     const result = await pool.query(
       `SELECT * FROM messages
        WHERE to_tsvector('english',
@@ -284,34 +259,30 @@ export async function queryMessages(params: {
     return result.rows as MessageRecord[];
   }
 
-  // Regular query
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-  args.push(limit, offset);
+  // Regular Prisma query
+  const messages = await prisma.message.findMany({
+    where,
+    orderBy: { timestamp: 'desc' },
+    take: limit,
+    skip: offset,
+  });
 
-  const result = await pool.query(
-    `SELECT * FROM messages
-     ${whereClause}
-     ORDER BY timestamp DESC
-     LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
-    args
-  );
-
-  return result.rows as MessageRecord[];
+  return messages as any as MessageRecord[];
 }
 
 /**
  * Get message by ID
  */
 export async function getMessageById(id: string): Promise<MessageRecord | null> {
-  const pool = await getPostgresPool();
+  const message = await prisma.message.findUnique({
+    where: { id },
+  });
 
-  const result = await pool.query('SELECT * FROM messages WHERE id = $1', [id]);
-
-  if (result.rows.length === 0) {
+  if (!message) {
     return null;
   }
 
-  return result.rows[0] as MessageRecord;
+  return message as any as MessageRecord;
 }
 
 /**
@@ -322,29 +293,21 @@ export async function getMessageCount(params: {
   channelId?: string;
   senderType?: 'human' | 'ai' | 'tool';
 }): Promise<number> {
-  const pool = await getPostgresPool();
-  const conditions: string[] = [];
-  const args: any[] = [];
-  let paramIndex = 1;
+  const where: any = {};
 
   if (params.userId) {
-    conditions.push(`user_id = $${paramIndex++}`);
-    args.push(params.userId);
+    where.userId = params.userId;
   }
 
   if (params.channelId) {
-    conditions.push(`channel_id = $${paramIndex++}`);
-    args.push(params.channelId);
+    where.channelId = params.channelId;
   }
 
   if (params.senderType) {
-    conditions.push(`sender_type = $${paramIndex++}`);
-    args.push(params.senderType);
+    where.senderType = params.senderType;
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const count = await prisma.message.count({ where });
 
-  const result = await pool.query(`SELECT COUNT(*) as count FROM messages ${whereClause}`, args);
-
-  return parseInt(result.rows[0].count, 10);
+  return count;
 }

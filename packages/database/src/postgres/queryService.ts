@@ -1,9 +1,9 @@
 /**
  * PostgreSQL Query Persistence Service
- * Port of libsql/queryService.ts for PostgreSQL
+ * Refactored to use Prisma ORM for type-safe database operations
  */
 
-import { getPostgresPool } from './client.js';
+import { prisma } from './prismaClient.js';
 import type { QueryRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 import { analyzeQuery } from '@repo/shared';
@@ -22,9 +22,8 @@ export async function saveQuery(params: {
   error?: string;
   executionTimeMs?: number;
 }): Promise<string> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Date.now();
+  const timestamp = BigInt(Date.now());
 
   // Generate sentiment analysis and query metrics
   let sentimentAnalysis: any = null;
@@ -65,29 +64,24 @@ export async function saveQuery(params: {
     }
   }
 
-  await pool.query(
-    `INSERT INTO queries (
-      id, timestamp, user_id, username, query_text,
-      translated_sql, ai_summary, query_result, result_count,
-      error, execution_time_ms, sentiment_analysis, query_complexity, user_satisfaction
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
-    [
+  await prisma.query.create({
+    data: {
       id,
       timestamp,
-      params.userId,
-      params.username,
-      params.queryText,
-      params.translatedSql || null,
-      params.aiSummary || null,
-      queryResultJsonb,
-      params.resultCount || null,
-      params.error || null,
-      params.executionTimeMs || null,
-      sentimentAnalysis,
-      queryComplexity || null,
-      userSatisfaction || null,
-    ]
-  );
+      userId: params.userId,
+      username: params.username,
+      queryText: params.queryText,
+      translatedSql: params.translatedSql || null,
+      aiSummary: params.aiSummary || null,
+      queryResult: queryResultJsonb,
+      resultCount: params.resultCount || null,
+      error: params.error || null,
+      executionTimeMs: params.executionTimeMs || null,
+      sentimentAnalysis: sentimentAnalysis || null,
+      queryComplexity: queryComplexity || null,
+      userSatisfaction: userSatisfaction || null,
+    },
+  });
 
   return id;
 }
@@ -100,60 +94,50 @@ export async function getRecentQueries(params: {
   limit?: number;
   offset?: number;
 }): Promise<QueryRecord[]> {
-  const pool = await getPostgresPool();
-  const args: any[] = [];
-  let whereClause = '';
-  let paramIndex = 1;
-
-  if (params.userId) {
-    whereClause = `WHERE user_id = $${paramIndex++}`;
-    args.push(params.userId);
-  }
-
   const limit = params.limit || 50;
   const offset = params.offset || 0;
-  args.push(limit, offset);
 
-  const result = await pool.query(
-    `SELECT * FROM queries
-     ${whereClause}
-     ORDER BY timestamp DESC
-     LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
-    args
-  );
+  const where: any = {};
+  if (params.userId) {
+    where.userId = params.userId;
+  }
 
-  return result.rows as QueryRecord[];
+  const queries = await prisma.query.findMany({
+    where,
+    orderBy: { timestamp: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+
+  return queries as any as QueryRecord[];
 }
 
 /**
  * Get query by ID
  */
 export async function getQueryById(id: string): Promise<QueryRecord | null> {
-  const pool = await getPostgresPool();
+  const query = await prisma.query.findUnique({
+    where: { id },
+  });
 
-  const result = await pool.query('SELECT * FROM queries WHERE id = $1', [id]);
-
-  if (result.rows.length === 0) {
+  if (!query) {
     return null;
   }
 
-  return result.rows[0] as QueryRecord;
+  return query as any as QueryRecord;
 }
 
 /**
  * Get total query count with optional filters
  */
 export async function getQueryCount(params: { userId?: string }): Promise<number> {
-  const pool = await getPostgresPool();
-  const args: any[] = [];
-  let whereClause = '';
+  const where: any = {};
 
   if (params.userId) {
-    whereClause = 'WHERE user_id = $1';
-    args.push(params.userId);
+    where.userId = params.userId;
   }
 
-  const result = await pool.query(`SELECT COUNT(*) as count FROM queries ${whereClause}`, args);
+  const count = await prisma.query.count({ where });
 
-  return parseInt(result.rows[0].count, 10);
+  return count;
 }

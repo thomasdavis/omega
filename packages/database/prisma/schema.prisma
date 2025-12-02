@@ -15,25 +15,36 @@ datasource db {
 // ============================================================================
 
 model Message {
-  id              String  @id
-  timestamp       BigInt
-  senderType      String  @map("sender_type")
-  userId          String? @map("user_id")
-  username        String?
-  channelId       String? @map("channel_id")
-  channelName     String? @map("channel_name")
-  messageContent  String  @map("message_content")
-  toolName        String? @map("tool_name")
-  metadata        Json?
-  conversationId  String? @map("conversation_id")
-  parentMessageId String? @map("parent_message_id")
+  id                    String  @id
+  timestamp             BigInt
+  senderType            String  @map("sender_type")
+  userId                String? @map("user_id")
+  username              String?
+  channelId             String? @map("channel_id")
+  channelName           String? @map("channel_name")
+  guildId               String? @map("guild_id")
+  messageContent        String  @map("message_content")
+  toolName              String? @map("tool_name")
+  toolArgs              String? @map("tool_args")
+  toolResult            String? @map("tool_result")
+  sessionId             String? @map("session_id")
+  parentMessageId       String? @map("parent_message_id")
+  metadata              Json?
+  aiSummary             String? @map("ai_summary")
+  sentimentAnalysis     Json?   @map("sentiment_analysis")
+  responseDecision      Json?   @map("response_decision")
+  interactionType       String? @map("interaction_type")
+  userIntent            String? @map("user_intent")
+  botPerception         String? @map("bot_perception")
+  conversationQuality   String? @map("conversation_quality")
 
   createdAt BigInt @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
 
   @@index([timestamp(sort: Desc)])
   @@index([userId])
   @@index([channelId])
-  @@index([conversationId])
+  @@index([senderType])
+  @@index([sessionId])
   @@map("messages")
 }
 
@@ -42,25 +53,25 @@ model Message {
 // ============================================================================
 
 model Query {
-  id             String  @id
-  userId         String  @map("user_id")
-  username       String?
-  channelId      String  @map("channel_id")
-  channelName    String? @map("channel_name")
-  queryText      String  @map("query_text")
-  responseText   String? @map("response_text")
-  timestamp      BigInt
-  executionTime  Int?    @map("execution_time")
-  success        Boolean @default(true)
-  errorMessage   String? @map("error_message")
-  metadata       Json?
-  conversationId String? @map("conversation_id")
+  id                  String  @id
+  timestamp           BigInt
+  userId              String  @map("user_id")
+  username            String
+  queryText           String  @map("query_text")
+  translatedSql       String? @map("translated_sql")
+  aiSummary           String? @map("ai_summary")
+  queryResult         Json?   @map("query_result")
+  resultCount         Int?    @map("result_count")
+  error               String?
+  executionTimeMs     Int?    @map("execution_time_ms")
+  sentimentAnalysis   Json?   @map("sentiment_analysis")
+  queryComplexity     String? @map("query_complexity")
+  userSatisfaction    String? @map("user_satisfaction")
 
   createdAt BigInt @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
 
   @@index([timestamp(sort: Desc)])
   @@index([userId])
-  @@index([channelId])
   @@map("queries")
 }
 
@@ -69,27 +80,22 @@ model Query {
 // ============================================================================
 
 model Document {
-  id              String  @id
-  title           String
-  content         String
-  contentType     String  @map("content_type")
-  ownerId         String  @map("owner_id")
-  ownerUsername   String? @map("owner_username")
-  channelId       String? @map("channel_id")
-  channelName     String? @map("channel_name")
-  isPublic        Boolean @default(false) @map("is_public")
-  metadata        Json?
-  version         Int     @default(1)
-  lastEditedBy    String? @map("last_edited_by")
+  id                String  @id
+  title             String
+  content           String  @default("")
+  createdBy         String  @map("created_by")
+  createdByUsername String? @map("created_by_username")
+  isPublic          Boolean @default(true) @map("is_public")
+  metadata          Json?
 
-  createdAt       BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
-  updatedAt       BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("updated_at")
+  createdAt         BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+  updatedAt         BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("updated_at")
 
-  collaborators   DocumentCollaborator[]
+  collaborators     DocumentCollaborator[]
 
-  @@index([ownerId])
-  @@index([channelId])
+  @@index([createdBy])
   @@index([createdAt(sort: Desc)])
+  @@index([updatedAt(sort: Desc)])
   @@map("documents")
 }
 
@@ -102,14 +108,15 @@ model DocumentCollaborator {
   documentId    String   @map("document_id")
   userId        String   @map("user_id")
   username      String?
-  permission    String   @default("view")
+  role          String   @default("editor")
 
-  addedAt       BigInt   @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("added_at")
+  joinedAt      BigInt   @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("joined_at")
 
   document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
   @@index([userId])
+  @@unique([documentId, userId])
   @@map("document_collaborators")
 }
 

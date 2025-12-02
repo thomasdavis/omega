@@ -1,10 +1,10 @@
 /**
  * PostgreSQL Document Service
- * Port of libsql/documentService.ts for PostgreSQL
+ * Refactored to use Prisma ORM for type-safe database operations
  * Handles CRUD operations for collaborative documents
  */
 
-import { getPostgresPool } from './client.js';
+import { prisma } from './prismaClient.js';
 import type { DocumentRecord, DocumentCollaboratorRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 
@@ -18,36 +18,22 @@ export async function createDocument(params: {
   createdByUsername?: string;
   isPublic?: boolean;
 }): Promise<DocumentRecord> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
-  const document: DocumentRecord = {
-    id,
-    title: params.title,
-    content: params.content || '',
-    created_by: params.createdBy,
-    created_by_username: params.createdByUsername || null,
-    created_at: timestamp,
-    updated_at: timestamp,
-    is_public: params.isPublic !== false,
-    metadata: null,
-  };
-
-  await pool.query(
-    `INSERT INTO documents (id, title, content, created_by, created_by_username, created_at, updated_at, is_public)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-    [
-      document.id,
-      document.title,
-      document.content,
-      document.created_by,
-      document.created_by_username || null,
-      document.created_at,
-      document.updated_at,
-      params.isPublic !== false, // PostgreSQL BOOLEAN
-    ]
-  );
+  const document = await prisma.document.create({
+    data: {
+      id,
+      title: params.title,
+      content: params.content || '',
+      createdBy: params.createdBy,
+      createdByUsername: params.createdByUsername || null,
+      isPublic: params.isPublic !== false,
+      metadata: undefined,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+  });
 
   // Add creator as first collaborator
   await addCollaborator({
@@ -57,59 +43,61 @@ export async function createDocument(params: {
     role: 'owner',
   });
 
-  return document;
+  return document as any as DocumentRecord;
 }
 
 /**
  * Get a document by ID
  */
 export async function getDocument(id: string): Promise<DocumentRecord | null> {
-  const pool = await getPostgresPool();
+  const document = await prisma.document.findUnique({
+    where: { id },
+  });
 
-  const result = await pool.query('SELECT * FROM documents WHERE id = $1', [id]);
-
-  if (result.rows.length === 0) {
+  if (!document) {
     return null;
   }
 
-  return result.rows[0] as DocumentRecord;
+  return document as any as DocumentRecord;
 }
 
 /**
  * Update document content
  */
 export async function updateDocumentContent(id: string, content: string): Promise<void> {
-  const pool = await getPostgresPool();
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
-  await pool.query('UPDATE documents SET content = $1, updated_at = $2 WHERE id = $3', [
-    content,
-    timestamp,
-    id,
-  ]);
+  await prisma.document.update({
+    where: { id },
+    data: {
+      content,
+      updatedAt: timestamp,
+    },
+  });
 }
 
 /**
  * Update document title
  */
 export async function updateDocumentTitle(id: string, title: string): Promise<void> {
-  const pool = await getPostgresPool();
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = BigInt(Math.floor(Date.now() / 1000));
 
-  await pool.query('UPDATE documents SET title = $1, updated_at = $2 WHERE id = $3', [
-    title,
-    timestamp,
-    id,
-  ]);
+  await prisma.document.update({
+    where: { id },
+    data: {
+      title,
+      updatedAt: timestamp,
+    },
+  });
 }
 
 /**
  * Delete a document
  */
 export async function deleteDocument(id: string): Promise<void> {
-  const pool = await getPostgresPool();
-
-  await pool.query('DELETE FROM documents WHERE id = $1', [id]);
+  await prisma.document.delete({
+    where: { id },
+  });
 }
 
 /**
@@ -120,42 +108,36 @@ export async function listDocuments(params?: {
   limit?: number;
   offset?: number;
 }): Promise<DocumentRecord[]> {
-  const pool = await getPostgresPool();
   const limit = params?.limit || 50;
   const offset = params?.offset || 0;
 
-  let sql = 'SELECT * FROM documents';
-  const args: any[] = [];
-  let paramIndex = 1;
-
+  const where: any = {};
   if (params?.createdBy) {
-    sql += ` WHERE created_by = $${paramIndex++}`;
-    args.push(params.createdBy);
+    where.createdBy = params.createdBy;
   }
 
-  sql += ` ORDER BY updated_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-  args.push(limit, offset);
+  const documents = await prisma.document.findMany({
+    where,
+    orderBy: { updatedAt: 'desc' },
+    take: limit,
+    skip: offset,
+  });
 
-  const result = await pool.query(sql, args);
-  return result.rows as DocumentRecord[];
+  return documents as any as DocumentRecord[];
 }
 
 /**
  * Get documents count
  */
 export async function getDocumentCount(params?: { createdBy?: string }): Promise<number> {
-  const pool = await getPostgresPool();
-
-  let sql = 'SELECT COUNT(*) as count FROM documents';
-  const args: any[] = [];
-
+  const where: any = {};
   if (params?.createdBy) {
-    sql += ' WHERE created_by = $1';
-    args.push(params.createdBy);
+    where.createdBy = params.createdBy;
   }
 
-  const result = await pool.query(sql, args);
-  return parseInt(result.rows[0].count, 10);
+  const count = await prisma.document.count({ where });
+
+  return count;
 }
 
 /**
@@ -167,30 +149,39 @@ export async function addCollaborator(params: {
   username?: string;
   role?: string;
 }): Promise<void> {
-  const pool = await getPostgresPool();
   const id = randomUUID();
-  const timestamp = Math.floor(Date.now() / 1000);
 
-  await pool.query(
-    `INSERT INTO document_collaborators (id, document_id, user_id, username, role, joined_at)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT (document_id, user_id) DO UPDATE SET
-       username = EXCLUDED.username,
-       role = EXCLUDED.role`,
-    [id, params.documentId, params.userId, params.username || null, params.role || 'editor', timestamp]
-  );
+  await prisma.documentCollaborator.upsert({
+    where: {
+      documentId_userId: {
+        documentId: params.documentId,
+        userId: params.userId,
+      },
+    },
+    update: {
+      username: params.username || null,
+      role: params.role || 'editor',
+    },
+    create: {
+      id,
+      documentId: params.documentId,
+      userId: params.userId,
+      username: params.username || null,
+      role: params.role || 'editor',
+    },
+  });
 }
 
 /**
  * Remove a collaborator from a document
  */
 export async function removeCollaborator(documentId: string, userId: string): Promise<void> {
-  const pool = await getPostgresPool();
-
-  await pool.query('DELETE FROM document_collaborators WHERE document_id = $1 AND user_id = $2', [
-    documentId,
-    userId,
-  ]);
+  await prisma.documentCollaborator.deleteMany({
+    where: {
+      documentId,
+      userId,
+    },
+  });
 }
 
 /**
@@ -199,39 +190,39 @@ export async function removeCollaborator(documentId: string, userId: string): Pr
 export async function getDocumentCollaborators(
   documentId: string
 ): Promise<DocumentCollaboratorRecord[]> {
-  const pool = await getPostgresPool();
+  const collaborators = await prisma.documentCollaborator.findMany({
+    where: { documentId },
+    orderBy: { joinedAt: 'asc' },
+  });
 
-  const result = await pool.query(
-    'SELECT * FROM document_collaborators WHERE document_id = $1 ORDER BY joined_at ASC',
-    [documentId]
-  );
-
-  return result.rows as DocumentCollaboratorRecord[];
+  return collaborators as any as DocumentCollaboratorRecord[];
 }
 
 /**
  * Check if user has access to document
  */
 export async function hasDocumentAccess(documentId: string, userId: string): Promise<boolean> {
-  const pool = await getPostgresPool();
-
   // Check if document is public
-  const docResult = await pool.query('SELECT is_public FROM documents WHERE id = $1', [documentId]);
+  const document = await prisma.document.findUnique({
+    where: { id: documentId },
+    select: { isPublic: true },
+  });
 
-  if (docResult.rows.length === 0) {
+  if (!document) {
     return false;
   }
 
-  const isPublic = docResult.rows[0].is_public;
-  if (isPublic) {
+  if (document.isPublic) {
     return true;
   }
 
   // Check if user is a collaborator
-  const collabResult = await pool.query(
-    'SELECT COUNT(*) as count FROM document_collaborators WHERE document_id = $1 AND user_id = $2',
-    [documentId, userId]
-  );
+  const collaborator = await prisma.documentCollaborator.findFirst({
+    where: {
+      documentId,
+      userId,
+    },
+  });
 
-  return parseInt(collabResult.rows[0].count, 10) > 0;
+  return collaborator !== null;
 }
