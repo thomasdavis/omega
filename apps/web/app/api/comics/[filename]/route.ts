@@ -18,10 +18,10 @@ function getComicsDir(): string {
 
 export async function GET(
   request: Request,
-  { params }: { params: { filename: string } }
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const { filename } = params;
+    const { filename } = await params;
 
     // Security: Only allow PNG files with comic_ prefix
     if (!filename.endsWith('.png') || !filename.startsWith('comic_')) {
