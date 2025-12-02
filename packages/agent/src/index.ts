@@ -20,6 +20,7 @@ export { setUnsandboxMessageContext, clearUnsandboxMessageContext } from './tool
 // Services (re-export for bot to use)
 export * from './services/userProfileAnalysis.js';
 export * from './services/geminiImageService.js';
+export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';
 
 export const AGENT_PACKAGE_VERSION = '1.0.0';

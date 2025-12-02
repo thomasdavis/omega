@@ -8,7 +8,7 @@ import { Octokit } from '@octokit/rest';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { generateComic, extractConversationContext } from '../src/services/geminiComicService.js';
+import { generateComic, extractConversationContext } from '@repo/agent';
 import { postComicToDiscord } from '../src/services/discordComicPoster.js';
 import { postComicToTwitter } from '../src/services/twitterComicPoster.js';
 import { extractKeywords, searchDiscordMessages } from '../src/services/discordMessageSearch.js';
