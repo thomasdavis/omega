@@ -11,7 +11,7 @@ import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@r
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
-import { preloadCoreTools } from './agent/toolLoader.js';
+import { preloadCoreTools } from '@repo/agent';
 
 dotenv.config();
 

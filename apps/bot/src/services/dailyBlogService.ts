@@ -10,9 +10,8 @@ import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getBlogDir } from '../utils/storage.js';
 
-// Import tool implementations directly
-import { hackerNewsPhilosophyTool } from '../agent/tools/hackerNewsPhilosophy.js';
-import { marketPredictionTool } from '../agent/tools/marketPrediction.js';
+// Import tool implementations from @repo/agent package
+import { hackerNewsPhilosophyTool, marketPredictionTool } from '@repo/agent';
 
 /**
  * Generate URL-friendly slug from title
