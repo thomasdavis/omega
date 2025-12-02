@@ -238,12 +238,18 @@ async function initEditor() {
 
     // Handle text changes
     ytext.observe((event, transaction) => {
-      if (transaction.origin === 'local') return;
+      console.log('[Yjs] Text changed, origin:', transaction.origin);
+      if (transaction.origin === 'local') {
+        console.log('[Yjs] Skipping local update');
+        return;
+      }
+      console.log('[Yjs] Applying remote update to UI');
       isRemoteUpdate = true;
       const cursorPos = contentEl.selectionStart;
       contentEl.value = ytext.toString();
       contentEl.setSelectionRange(cursorPos, cursorPos);
       isRemoteUpdate = false;
+      console.log('[Yjs] UI updated with:', ytext.toString().substring(0, 50));
     });
 
     // Handle input
@@ -300,9 +306,18 @@ async function initEditor() {
 
       channel.bind('yjs-update', (data) => {
         if (data.clientId !== clientId) {
-          const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
-          window.Y.applyUpdate(ydoc, updateBytes, 'remote');
-          showNotification('Document updated by collaborator');
+          console.log('[Pusher] Received yjs-update from', data.clientId);
+          try {
+            const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
+            console.log('[Pusher] Applying update, bytes:', updateBytes.length);
+            window.Y.applyUpdate(ydoc, updateBytes, 'remote');
+            console.log('[Pusher] Update applied successfully');
+            showNotification('Document updated by collaborator');
+          } catch (error) {
+            console.error('[Pusher] Error applying update:', error);
+          }
+        } else {
+          console.log('[Pusher] Ignoring own update');
         }
       });
 
