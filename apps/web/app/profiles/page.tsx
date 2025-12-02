@@ -65,7 +65,7 @@ export default function ProfilesPage() {
           {profiles.map((profile) => (
             <Link
               key={profile.userId}
-              href={`/profiles/${profile.userId}`}
+              href={`/profiles/${profile.username}`}
               className="group block bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 overflow-hidden"
             >
               {/* Photo Section */}

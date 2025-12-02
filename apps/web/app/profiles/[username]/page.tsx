@@ -348,14 +348,14 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 
 export default function ProfileDetailPage() {
   const params = useParams();
-  const userId = params.userId as string;
+  const username = params.username as string;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/profiles/${userId}`)
+    fetch(`/api/profiles/by-username/${username}`)
       .then(res => {
         if (!res.ok) throw new Error('Profile not found');
         return res.json();
@@ -368,7 +368,7 @@ export default function ProfileDetailPage() {
         setError(err.message);
         setLoading(false);
       });
-  }, [userId]);
+  }, [username]);
 
   if (loading) {
     return <LoadingSpinner message="Loading profile..." />;
