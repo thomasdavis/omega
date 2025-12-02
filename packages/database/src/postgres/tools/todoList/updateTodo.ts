@@ -5,6 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../prismaClient.js';
 
 export const updateTodoTool = tool({
@@ -47,7 +48,7 @@ Examples:
       }
 
       // Build update data
-      const updateData: any = {};
+      const updateData: Prisma.TodoListUpdateInput = {};
       if (task !== undefined) {
         updateData.task = task;
       }
