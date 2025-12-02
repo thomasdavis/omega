@@ -53,15 +53,14 @@ function convertRowForPostgres(row: any, tableName: string): any {
   for (const field of jsonFields) {
     if (converted[field] !== undefined && converted[field] !== null) {
       try {
-        // If it's a string, parse it first
-        if (typeof converted[field] === 'string') {
-          console.log(`🔍 DEBUG: Parsing string JSON for field ${field}`);
-          converted[field] = JSON.parse(converted[field]);
+        // If it's a string, parse it first to validate JSON
+        let value = converted[field];
+        if (typeof value === 'string') {
+          value = JSON.parse(value);
         }
-        // Validate that the value can be stringified to valid JSON
-        // This catches malformed objects that would fail PostgreSQL's JSONB validation
-        console.log(`🔍 DEBUG: Validating JSON for field ${field}`);
-        JSON.stringify(converted[field]);
+        // Convert to JSON string for PostgreSQL JSONB column
+        // pg library accepts both objects and strings, but strings are safer
+        converted[field] = JSON.stringify(value);
       } catch (error) {
         // If parsing or stringify fails, set to null (PostgreSQL won't accept invalid JSON in JSONB columns)
         console.warn(`⚠️  Warning: Invalid JSON for ${field}, setting to null. Error: ${error}`);
