@@ -8,11 +8,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const { id: _id } = await params;
 
     // TODO: This endpoint should communicate with the bot service
     // which has access to the agent and GitHub tools
     // For now, return a placeholder response
+    // The _id will be used when implementing the bot service integration
 
     return NextResponse.json(
       {

@@ -1,8 +1,19 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import Script from 'next/script';
+
+// Extend Window interface for editor functions set by inline script
+declare global {
+  interface Window {
+    Y?: unknown;
+    formatText?: (format: string) => void;
+    insertList?: () => void;
+    insertLink?: () => void;
+    syncToDatabase?: () => void;
+  }
+}
 
 interface DocumentEditorProps {
   params: Promise<{ id: string }>;
@@ -11,24 +22,12 @@ interface DocumentEditorProps {
 export default function DocumentEditor({ params }: DocumentEditorProps) {
   const { id: documentId } = use(params);
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [status, setStatus] = useState('Loading...');
-  const [onlineCount, setOnlineCount] = useState(0);
-  const [collaborators, setCollaborators] = useState<Map<string, string>>(new Map());
-  const [yjsLoaded, setYjsLoaded] = useState(false);
+  const [status] = useState('Loading...');
+  const [onlineCount] = useState(0);
   const [pusherLoaded, setPusherLoaded] = useState(false);
 
-  useEffect(() => {
-    if (!yjsLoaded || !pusherLoaded) return;
-
-    // Initialize editor once both libraries are loaded
-    initializeEditor();
-  }, [yjsLoaded, pusherLoaded, documentId]);
-
-  function initializeEditor() {
-    // This will be called from the inline script after Yjs loads
-    console.log('Editor initialization ready');
-  }
+  // Editor initialization happens in the inline script after Yjs loads
+  // No need for React state management since it's all vanilla JS in the script
 
   return (
     <>
@@ -105,37 +104,37 @@ export default function DocumentEditor({ params }: DocumentEditorProps) {
         <div className="border-b border-zinc-800 bg-zinc-900/50 px-6 py-3">
           <div className="max-w-7xl mx-auto flex gap-2 flex-wrap">
             <button
-              onClick={() => (window as any).formatText?.('bold')}
+              onClick={() => window.formatText?.('bold')}
               className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm border border-zinc-700 transition-colors"
             >
               <strong>B</strong>
             </button>
             <button
-              onClick={() => (window as any).formatText?.('italic')}
+              onClick={() => window.formatText?.('italic')}
               className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm border border-zinc-700 transition-colors"
             >
               <em>I</em>
             </button>
             <button
-              onClick={() => (window as any).formatText?.('underline')}
+              onClick={() => window.formatText?.('underline')}
               className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm border border-zinc-700 transition-colors"
             >
               <u>U</u>
             </button>
             <button
-              onClick={() => (window as any).insertList?.()}
+              onClick={() => window.insertList?.()}
               className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm border border-zinc-700 transition-colors"
             >
               • List
             </button>
             <button
-              onClick={() => (window as any).insertLink?.()}
+              onClick={() => window.insertLink?.()}
               className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-white text-sm border border-zinc-700 transition-colors"
             >
               🔗 Link
             </button>
             <button
-              onClick={() => (window as any).syncToDatabase?.()}
+              onClick={() => window.syncToDatabase?.()}
               className="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm border border-teal-700 transition-colors"
             >
               💾 Save

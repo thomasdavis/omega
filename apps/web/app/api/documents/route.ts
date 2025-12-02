@@ -6,8 +6,8 @@ import {
 } from '@repo/database';
 
 // Helper to convert BigInt fields to numbers for JSON serialization
-function serializeDocument(doc: any) {
-  const serialized: any = { ...doc };
+function serializeDocument(doc: Record<string, unknown>) {
+  const serialized: Record<string, unknown> = { ...doc };
 
   // Handle both camelCase (Prisma) and snake_case (mapped) field names
   if (typeof serialized.createdAt === 'bigint') {
