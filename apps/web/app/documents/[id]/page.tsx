@@ -345,8 +345,14 @@ async function initEditor() {
   }
 
   async function syncToDatabase() {
+    if (!ytext) return;
     document.getElementById('status').textContent = 'Saving...';
-    await fetch('/api/documents/' + documentId + '/yjs-sync', { method: 'POST' });
+    const content = ytext.toString();
+    await fetch('/api/documents/' + documentId + '/yjs-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content })
+    });
     document.getElementById('status').textContent = 'Saved';
     setTimeout(() => {
       document.getElementById('status').textContent = 'Connected';
