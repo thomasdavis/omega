@@ -6,85 +6,78 @@ import Link from 'next/link';
 
 interface UserProfile {
   // Core
+  id: string;
   userId: string;
-  username: string | null;
+  username: string;
 
-  // Emotional State
-  currentFeelings: any;
-  emotionalState: string | null;
-  emotionalTrend: string | null;
-  emotionalVolatility: number | null;
-  stressLevel: number | null;
-  moodHistory: any;
+  // Archetypes
+  dominant_archetype: string | null;
+  secondary_archetypes: any;
+  archetype_confidence: number | null;
+  shadow_archetype: string | null;
 
-  // Personality Traits
-  bigFiveOpenness: number | null;
-  bigFiveConscientiousness: number | null;
-  bigFiveExtraversion: number | null;
-  bigFiveAgreeableness: number | null;
-  bigFiveNeuroticism: number | null;
-  mbtiType: string | null;
-  enneagramType: string | null;
-  enneagramWing: string | null;
-  dominantTraits: any;
-  personalityNotes: string | null;
+  // Big Five Personality Traits
+  openness_score: number | null;
+  conscientiousness_score: number | null;
+  extraversion_score: number | null;
+  agreeableness_score: number | null;
+  neuroticism_score: number | null;
 
-  // Cognitive Patterns
-  thinkingStyle: string | null;
-  decisionMakingStyle: string | null;
-  problemSolvingApproach: string | null;
-  learningStyle: string | null;
-  communicationStyle: string | null;
-  conflictStyle: string | null;
-  creativityLevel: number | null;
-  analyticalLevel: number | null;
-
-  // Interests & Values
-  interests: any;
-  hobbies: any;
-  values: any;
-  goals: any;
-  fears: any;
-  motivations: any;
-  strengthsWeaknesses: any;
-
-  // Social Patterns
-  socialStyle: string | null;
-  relationshipPatterns: string | null;
+  // Attachment Style
   attachmentStyle: string | null;
-  socialEnergyLevel: number | null;
-  groupDynamicsRole: string | null;
+  attachment_confidence: number | null;
+
+  // Emotional Intelligence
+  emotional_awareness_score: number | null;
+  empathy_score: number | null;
+  emotional_regulation_score: number | null;
+
+  // Communication Style
+  communication_formality: string | null;
+  communication_assertiveness: string | null;
+  communication_engagement: string | null;
+  verbal_fluency_score: number | null;
+  question_asking_frequency: number | null;
+
+  // Thinking Style
+  analytical_thinking_score: number | null;
+  creative_thinking_score: number | null;
+  abstract_reasoning_score: number | null;
+  concrete_thinking_score: number | null;
+
+  // Social Dynamics
+  social_dominance_score: number | null;
+  cooperation_score: number | null;
+  conflictStyle: string | null;
+  humorStyle: string | null;
 
   // Linguistic Patterns
-  vocabularyComplexity: number | null;
-  sentimentTrend: string | null;
-  formalityLevel: number | null;
-  humorStyle: string | null;
-  sarcasmFrequency: number | null;
-  emojiUsagePattern: string | null;
-  typingPatterns: string | null;
-  commonPhrases: any;
-
-  // Behavioral Patterns
-  activityPattern: string | null;
-  responseTimeAvg: number | null;
   messageLengthAvg: number | null;
-  topicPreferences: any;
-  conversationInitiationRate: number | null;
+  message_length_variance: number | null;
+  response_latency_avg: number | null;
+  emoji_usage_rate: number | null;
+  punctuation_style: string | null;
+  capitalization_pattern: string | null;
 
-  // Life Context
-  lifeStage: string | null;
-  lifeCircumstances: string | null;
-  recentLifeEvents: any;
-  supportNetwork: string | null;
+  // Knowledge & Interests
+  technical_knowledge_level: string | null;
+  primary_interests: any;
+  expertise_areas: any;
 
-  // Mental Health Indicators
-  anxietyIndicators: any;
-  depressionIndicators: any;
-  wellbeingScore: number | null;
-  copingMechanisms: any;
-  riskFactors: any;
-  protectiveFactors: any;
+  // Relationship with Omega
+  affinity_score: number | null;
+  trust_level: number | null;
+  emotional_bond: string | null;
+  omega_thoughts: string | null;
+
+  // Patterns & Sentiment
+  notable_patterns: any;
+  overall_sentiment: string | null;
+  positive_interaction_ratio: number | null;
+  negative_interaction_ratio: number | null;
+  dominant_emotions: any;
+  feelings_json: any;
+  personality_facets: any;
 
   // Cultural Background
   culturalBackground: string | null;
@@ -96,14 +89,14 @@ interface UserProfile {
   zodiacSign: string | null;
   zodiacElement: string | null;
   zodiacModality: string | null;
-  birthDate: Date | null;
+  birthDate: string | null;
   astrologicalConfidence: number | null;
 
   // Behavioral Predictions
   predictedBehaviors: any;
   predictionConfidence: number | null;
   predictionTimeframe: string | null;
-  lastPredictionAt: Date | null;
+  lastPredictionAt: number | null;
   predictionAccuracyScore: number | null;
 
   // Integration
@@ -112,61 +105,71 @@ interface UserProfile {
   worldModelAdjustments: any;
   personalModelAdjustments: any;
 
-  // Physical Phenotype
+  // Physical Appearance
   uploadedPhotoUrl: string | null;
+  uploadedPhotoMetadata: any;
   aiAppearanceDescription: string | null;
+  appearanceConfidence: number | null;
   aiDetectedGender: string | null;
+  genderConfidence: number | null;
   estimatedAgeRange: string | null;
+  ageConfidence: number | null;
+
+  // Face Structure
   faceShape: string | null;
   facialSymmetryScore: number | null;
   jawlineProminence: string | null;
   cheekboneProminence: string | null;
+
+  // Hair
   hairColor: string | null;
   hairTexture: string | null;
   hairLength: string | null;
   hairStyle: string | null;
   hairDensity: string | null;
   facialHair: string | null;
+
+  // Eyes
   eyeColor: string | null;
   eyeShape: string | null;
   eyeSpacing: string | null;
   eyebrowShape: string | null;
   eyebrowThickness: string | null;
+
+  // Nose & Lips
   noseShape: string | null;
   noseSize: string | null;
   lipFullness: string | null;
   smileType: string | null;
+
+  // Skin
   skinTone: string | null;
   skinTexture: string | null;
   complexionQuality: string | null;
+
+  // Body
   bodyType: string | null;
   buildDescription: string | null;
   heightEstimate: string | null;
   posture: string | null;
   distinctiveFeatures: any;
+
+  // Style & Presentation
   clothingStyle: string | null;
   accessories: any;
   attractivenessAssessment: string | null;
   approachabilityScore: number | null;
   perceivedConfidenceLevel: string | null;
   aestheticArchetype: string | null;
-  // Confidence scores
-  faceShapeConfidence: number | null;
-  hairColorConfidence: number | null;
-  eyeColorConfidence: number | null;
-  skinToneConfidence: number | null;
-  genderConfidence: number | null;
-  ageConfidence: number | null;
-  bodyTypeConfidence: number | null;
 
   // Tracking & Metadata
   messageCount: number;
-  firstSeenAt: Date;
-  lastInteractionAt: Date;
-  lastAnalyzedAt: Date | null;
-  lastPhotoAnalyzedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  firstSeenAt: number;
+  lastInteractionAt: number;
+  lastAnalyzedAt: number | null;
+  lastPhotoAnalyzedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
 }
 
 const DataField = ({ label, value, confidence }: { label: string; value: any; confidence?: number | null }) => {
@@ -243,6 +246,12 @@ export default function ProfileDetailPage() {
     );
   }
 
+  // Helper to convert Unix timestamp to Date
+  const formatTimestamp = (timestamp: number | null) => {
+    if (!timestamp) return null;
+    return new Date(timestamp * 1000).toLocaleString();
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950">
       {/* Header with Photo */}
@@ -282,116 +291,116 @@ export default function ProfileDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
-        {/* Emotional State */}
-        <Section title="Emotional State">
+        {/* Omega's Perspective */}
+        {profile.omega_thoughts && (
+          <Section title="Omega's Thoughts">
+            <div className="p-6 bg-zinc-900 border border-teal-500/30 rounded">
+              <p className="text-zinc-300 font-light italic">{profile.omega_thoughts}</p>
+            </div>
+          </Section>
+        )}
+
+        {/* Personality Archetypes */}
+        <Section title="Personality Archetypes">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Current Feelings" value={profile.currentFeelings} />
-            <DataField label="Emotional State" value={profile.emotionalState} />
-            <DataField label="Emotional Trend" value={profile.emotionalTrend} />
-            <DataField label="Emotional Volatility" value={profile.emotionalVolatility} />
-            <DataField label="Stress Level" value={profile.stressLevel} />
-            <DataField label="Mood History" value={profile.moodHistory} />
+            <DataField label="Dominant Archetype" value={profile.dominant_archetype} confidence={profile.archetype_confidence} />
+            <DataField label="Secondary Archetypes" value={profile.secondary_archetypes} />
+            <DataField label="Shadow Archetype" value={profile.shadow_archetype} />
           </div>
         </Section>
 
-        {/* Personality Traits */}
-        <Section title="Personality Traits">
+        {/* Big Five Personality Traits */}
+        <Section title="Big Five Personality Traits">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Big Five: Openness" value={profile.bigFiveOpenness} />
-            <DataField label="Big Five: Conscientiousness" value={profile.bigFiveConscientiousness} />
-            <DataField label="Big Five: Extraversion" value={profile.bigFiveExtraversion} />
-            <DataField label="Big Five: Agreeableness" value={profile.bigFiveAgreeableness} />
-            <DataField label="Big Five: Neuroticism" value={profile.bigFiveNeuroticism} />
-            <DataField label="MBTI Type" value={profile.mbtiType} />
-            <DataField label="Enneagram Type" value={profile.enneagramType} />
-            <DataField label="Enneagram Wing" value={profile.enneagramWing} />
-            <DataField label="Dominant Traits" value={profile.dominantTraits} />
-            <DataField label="Personality Notes" value={profile.personalityNotes} />
+            <DataField label="Openness" value={profile.openness_score} />
+            <DataField label="Conscientiousness" value={profile.conscientiousness_score} />
+            <DataField label="Extraversion" value={profile.extraversion_score} />
+            <DataField label="Agreeableness" value={profile.agreeableness_score} />
+            <DataField label="Neuroticism" value={profile.neuroticism_score} />
           </div>
         </Section>
 
-        {/* Cognitive Patterns */}
-        <Section title="Cognitive Patterns">
+        {/* Emotional Intelligence */}
+        <Section title="Emotional Intelligence">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Thinking Style" value={profile.thinkingStyle} />
-            <DataField label="Decision Making Style" value={profile.decisionMakingStyle} />
-            <DataField label="Problem Solving Approach" value={profile.problemSolvingApproach} />
-            <DataField label="Learning Style" value={profile.learningStyle} />
-            <DataField label="Communication Style" value={profile.communicationStyle} />
-            <DataField label="Conflict Style" value={profile.conflictStyle} />
-            <DataField label="Creativity Level" value={profile.creativityLevel} />
-            <DataField label="Analytical Level" value={profile.analyticalLevel} />
+            <DataField label="Attachment Style" value={profile.attachmentStyle} confidence={profile.attachment_confidence} />
+            <DataField label="Emotional Awareness" value={profile.emotional_awareness_score} />
+            <DataField label="Empathy Score" value={profile.empathy_score} />
+            <DataField label="Emotional Regulation" value={profile.emotional_regulation_score} />
           </div>
         </Section>
 
-        {/* Interests & Values */}
-        <Section title="Interests & Values">
+        {/* Communication Style */}
+        <Section title="Communication Style">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <DataField label="Formality" value={profile.communication_formality} />
+            <DataField label="Assertiveness" value={profile.communication_assertiveness} />
+            <DataField label="Engagement" value={profile.communication_engagement} />
+            <DataField label="Verbal Fluency" value={profile.verbal_fluency_score} />
+            <DataField label="Question Asking Frequency" value={profile.question_asking_frequency} />
+          </div>
+        </Section>
+
+        {/* Thinking Style */}
+        <Section title="Thinking Style">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DataField label="Interests" value={profile.interests} />
-            <DataField label="Hobbies" value={profile.hobbies} />
-            <DataField label="Values" value={profile.values} />
-            <DataField label="Goals" value={profile.goals} />
-            <DataField label="Fears" value={profile.fears} />
-            <DataField label="Motivations" value={profile.motivations} />
-            <DataField label="Strengths & Weaknesses" value={profile.strengthsWeaknesses} />
+            <DataField label="Analytical Thinking" value={profile.analytical_thinking_score} />
+            <DataField label="Creative Thinking" value={profile.creative_thinking_score} />
+            <DataField label="Abstract Reasoning" value={profile.abstract_reasoning_score} />
+            <DataField label="Concrete Thinking" value={profile.concrete_thinking_score} />
           </div>
         </Section>
 
-        {/* Social Patterns */}
-        <Section title="Social Patterns">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Social Style" value={profile.socialStyle} />
-            <DataField label="Relationship Patterns" value={profile.relationshipPatterns} />
-            <DataField label="Attachment Style" value={profile.attachmentStyle} />
-            <DataField label="Social Energy Level" value={profile.socialEnergyLevel} />
-            <DataField label="Group Dynamics Role" value={profile.groupDynamicsRole} />
+        {/* Social Dynamics */}
+        <Section title="Social Dynamics">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DataField label="Social Dominance" value={profile.social_dominance_score} />
+            <DataField label="Cooperation Score" value={profile.cooperation_score} />
+            <DataField label="Conflict Style" value={profile.conflictStyle} />
+            <DataField label="Humor Style" value={profile.humorStyle} />
           </div>
         </Section>
 
         {/* Linguistic Patterns */}
         <Section title="Linguistic Patterns">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Vocabulary Complexity" value={profile.vocabularyComplexity} />
-            <DataField label="Sentiment Trend" value={profile.sentimentTrend} />
-            <DataField label="Formality Level" value={profile.formalityLevel} />
-            <DataField label="Humor Style" value={profile.humorStyle} />
-            <DataField label="Sarcasm Frequency" value={profile.sarcasmFrequency} />
-            <DataField label="Emoji Usage Pattern" value={profile.emojiUsagePattern} />
-            <DataField label="Typing Patterns" value={profile.typingPatterns} />
-            <DataField label="Common Phrases" value={profile.commonPhrases} />
+            <DataField label="Average Message Length" value={profile.messageLengthAvg} />
+            <DataField label="Message Length Variance" value={profile.message_length_variance} />
+            <DataField label="Response Latency (avg)" value={profile.response_latency_avg} />
+            <DataField label="Emoji Usage Rate" value={profile.emoji_usage_rate} />
+            <DataField label="Punctuation Style" value={profile.punctuation_style} />
+            <DataField label="Capitalization Pattern" value={profile.capitalization_pattern} />
           </div>
         </Section>
 
-        {/* Behavioral Patterns */}
-        <Section title="Behavioral Patterns">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Activity Pattern" value={profile.activityPattern} />
-            <DataField label="Response Time Avg (ms)" value={profile.responseTimeAvg} />
-            <DataField label="Message Length Avg" value={profile.messageLengthAvg} />
-            <DataField label="Topic Preferences" value={profile.topicPreferences} />
-            <DataField label="Conversation Initiation Rate" value={profile.conversationInitiationRate} />
-          </div>
-        </Section>
-
-        {/* Life Context */}
-        <Section title="Life Context">
+        {/* Knowledge & Interests */}
+        <Section title="Knowledge & Interests">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DataField label="Life Stage" value={profile.lifeStage} />
-            <DataField label="Life Circumstances" value={profile.lifeCircumstances} />
-            <DataField label="Recent Life Events" value={profile.recentLifeEvents} />
-            <DataField label="Support Network" value={profile.supportNetwork} />
+            <DataField label="Technical Knowledge Level" value={profile.technical_knowledge_level} />
+            <DataField label="Primary Interests" value={profile.primary_interests} />
+            <DataField label="Expertise Areas" value={profile.expertise_areas} />
           </div>
         </Section>
 
-        {/* Mental Health Indicators */}
-        <Section title="Mental Health Indicators">
+        {/* Relationship with Omega */}
+        <Section title="Relationship with Omega">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <DataField label="Anxiety Indicators" value={profile.anxietyIndicators} />
-            <DataField label="Depression Indicators" value={profile.depressionIndicators} />
-            <DataField label="Wellbeing Score" value={profile.wellbeingScore} />
-            <DataField label="Coping Mechanisms" value={profile.copingMechanisms} />
-            <DataField label="Risk Factors" value={profile.riskFactors} />
-            <DataField label="Protective Factors" value={profile.protectiveFactors} />
+            <DataField label="Affinity Score" value={profile.affinity_score} />
+            <DataField label="Trust Level" value={profile.trust_level} />
+            <DataField label="Emotional Bond" value={profile.emotional_bond} />
+          </div>
+        </Section>
+
+        {/* Emotional Patterns */}
+        <Section title="Emotional Patterns">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DataField label="Overall Sentiment" value={profile.overall_sentiment} />
+            <DataField label="Positive Interaction Ratio" value={profile.positive_interaction_ratio} />
+            <DataField label="Negative Interaction Ratio" value={profile.negative_interaction_ratio} />
+            <DataField label="Dominant Emotions" value={profile.dominant_emotions} />
+            <DataField label="Feelings Data" value={profile.feelings_json} />
+            <DataField label="Notable Patterns" value={profile.notable_patterns} />
+            <DataField label="Personality Facets" value={profile.personality_facets} />
           </div>
         </Section>
 
@@ -411,7 +420,7 @@ export default function ProfileDetailPage() {
             <DataField label="Zodiac Sign" value={profile.zodiacSign} />
             <DataField label="Zodiac Element" value={profile.zodiacElement} />
             <DataField label="Zodiac Modality" value={profile.zodiacModality} />
-            <DataField label="Birth Date" value={profile.birthDate ? new Date(profile.birthDate).toLocaleDateString() : null} />
+            <DataField label="Birth Date" value={profile.birthDate} />
             <DataField label="Astrological Confidence" value={profile.astrologicalConfidence} confidence={profile.astrologicalConfidence} />
           </div>
         </Section>
@@ -422,15 +431,14 @@ export default function ProfileDetailPage() {
             <DataField label="Predicted Behaviors" value={profile.predictedBehaviors} />
             <DataField label="Prediction Confidence" value={profile.predictionConfidence} confidence={profile.predictionConfidence} />
             <DataField label="Prediction Timeframe" value={profile.predictionTimeframe} />
-            <DataField label="Last Prediction" value={profile.lastPredictionAt ? new Date(profile.lastPredictionAt).toLocaleString() : null} />
+            <DataField label="Last Prediction" value={formatTimestamp(profile.lastPredictionAt)} />
             <DataField label="Prediction Accuracy Score" value={profile.predictionAccuracyScore} />
           </div>
         </Section>
 
-        {/* Integration */}
+        {/* Profile Integration */}
         <Section title="Profile Integration">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DataField label="Integrated Summary" value={profile.integratedProfileSummary} />
             <DataField label="Integration Confidence" value={profile.profileIntegrationConfidence} confidence={profile.profileIntegrationConfidence} />
             <DataField label="World Model Adjustments" value={profile.worldModelAdjustments} />
             <DataField label="Personal Model Adjustments" value={profile.personalModelAdjustments} />
@@ -443,6 +451,11 @@ export default function ProfileDetailPage() {
             <div className="mb-8 p-6 bg-zinc-900 border border-zinc-800 rounded">
               <h3 className="text-lg font-light text-white mb-2">AI Appearance Description</h3>
               <p className="text-zinc-300 font-light">{profile.aiAppearanceDescription}</p>
+              {profile.appearanceConfidence && (
+                <p className="text-xs text-teal-400 mt-2">
+                  Confidence: {(profile.appearanceConfidence * 100).toFixed(0)}%
+                </p>
+              )}
             </div>
           )}
 
@@ -461,7 +474,7 @@ export default function ProfileDetailPage() {
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Face Structure</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <DataField label="Face Shape" value={profile.faceShape} confidence={profile.faceShapeConfidence} />
+                <DataField label="Face Shape" value={profile.faceShape} />
                 <DataField label="Facial Symmetry Score" value={profile.facialSymmetryScore} />
                 <DataField label="Jawline Prominence" value={profile.jawlineProminence} />
                 <DataField label="Cheekbone Prominence" value={profile.cheekboneProminence} />
@@ -472,7 +485,7 @@ export default function ProfileDetailPage() {
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Hair</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <DataField label="Hair Color" value={profile.hairColor} confidence={profile.hairColorConfidence} />
+                <DataField label="Hair Color" value={profile.hairColor} />
                 <DataField label="Hair Texture" value={profile.hairTexture} />
                 <DataField label="Hair Length" value={profile.hairLength} />
                 <DataField label="Hair Style" value={profile.hairStyle} />
@@ -485,7 +498,7 @@ export default function ProfileDetailPage() {
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Eyes</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <DataField label="Eye Color" value={profile.eyeColor} confidence={profile.eyeColorConfidence} />
+                <DataField label="Eye Color" value={profile.eyeColor} />
                 <DataField label="Eye Shape" value={profile.eyeShape} />
                 <DataField label="Eye Spacing" value={profile.eyeSpacing} />
                 <DataField label="Eyebrow Shape" value={profile.eyebrowShape} />
@@ -508,7 +521,7 @@ export default function ProfileDetailPage() {
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Skin</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <DataField label="Skin Tone" value={profile.skinTone} confidence={profile.skinToneConfidence} />
+                <DataField label="Skin Tone" value={profile.skinTone} />
                 <DataField label="Skin Texture" value={profile.skinTexture} />
                 <DataField label="Complexion Quality" value={profile.complexionQuality} />
               </div>
@@ -518,7 +531,7 @@ export default function ProfileDetailPage() {
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Body</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <DataField label="Body Type" value={profile.bodyType} confidence={profile.bodyTypeConfidence} />
+                <DataField label="Body Type" value={profile.bodyType} />
                 <DataField label="Build Description" value={profile.buildDescription} />
                 <DataField label="Posture" value={profile.posture} />
                 <DataField label="Distinctive Features" value={profile.distinctiveFeatures} />
@@ -535,7 +548,7 @@ export default function ProfileDetailPage() {
               </div>
             </div>
 
-            {/* Impressions */}
+            {/* Overall Impressions */}
             <div>
               <h3 className="text-lg font-light text-teal-400 mb-4">Overall Impressions</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -551,12 +564,12 @@ export default function ProfileDetailPage() {
         <Section title="Tracking & Metadata">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <DataField label="Message Count" value={profile.messageCount} />
-            <DataField label="First Seen" value={new Date(profile.firstSeenAt).toLocaleString()} />
-            <DataField label="Last Interaction" value={new Date(profile.lastInteractionAt).toLocaleString()} />
-            <DataField label="Last Analyzed" value={profile.lastAnalyzedAt ? new Date(profile.lastAnalyzedAt).toLocaleString() : null} />
-            <DataField label="Last Photo Analyzed" value={profile.lastPhotoAnalyzedAt ? new Date(profile.lastPhotoAnalyzedAt).toLocaleString() : null} />
-            <DataField label="Created" value={new Date(profile.createdAt).toLocaleString()} />
-            <DataField label="Updated" value={new Date(profile.updatedAt).toLocaleString()} />
+            <DataField label="First Seen" value={formatTimestamp(profile.firstSeenAt)} />
+            <DataField label="Last Interaction" value={formatTimestamp(profile.lastInteractionAt)} />
+            <DataField label="Last Analyzed" value={formatTimestamp(profile.lastAnalyzedAt)} />
+            <DataField label="Last Photo Analyzed" value={formatTimestamp(profile.lastPhotoAnalyzedAt)} />
+            <DataField label="Created" value={formatTimestamp(profile.createdAt)} />
+            <DataField label="Updated" value={formatTimestamp(profile.updatedAt)} />
           </div>
         </Section>
       </div>
