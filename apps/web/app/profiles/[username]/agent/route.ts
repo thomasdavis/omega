@@ -266,9 +266,23 @@ ${formattedMessages}
 
 ## 🧩 2. SYNTHESIS: UNIFIED PERSONA MODEL
 
-Using ALL the data above, synthesize a complete personality model. Identify:
+Using ALL the data above, synthesize a complete personality model. Your response MUST include:
 
 **Core Personality Summary:** The essence of who they are (10-20 sentences capturing fundamental traits, motivations, and patterns)
+
+**Skills & Capabilities:**
+- What they're good at (technical skills, creative abilities, intellectual strengths)
+- Their areas of expertise and knowledge domains
+- Natural talents and developed competencies
+- Cognitive strengths (analytical vs creative thinking patterns)
+- How they apply their skills in practice
+
+**Physical Appearance & Presence:**
+- How they look (comprehensive physical description based on AI vision analysis)
+- Their style and how they present themselves
+- Their physical presence and energy
+- How their appearance relates to their identity and self-expression
+- Notable physical characteristics that contribute to first impressions
 
 **Communication Style:** Their vocabulary, tone, tempo, formality, sense of humor, unique speaking traits, signature phrases
 
