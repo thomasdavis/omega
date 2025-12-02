@@ -3,11 +3,8 @@ import { prisma } from '@repo/database';
 import OpenAI from 'openai';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 export const maxDuration = 60;
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function GET(
   request: NextRequest,
@@ -15,6 +12,18 @@ export async function GET(
 ) {
   try {
     const { username } = await params;
+
+    // Initialize OpenAI client at runtime
+    if (!process.env.OPENAI_API_KEY) {
+      return new NextResponse('# Configuration Error\n\nOpenAI API key not configured.', {
+        status: 500,
+        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      });
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Fetch user profile
     const profile = await prisma.userProfile.findFirst({
