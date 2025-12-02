@@ -40,6 +40,14 @@ export default function Home() {
       gradient: 'from-indigo-500 to-purple-500',
       bgGradient: 'from-indigo-50 to-purple-50',
     },
+    {
+      title: 'Profiles',
+      href: '/profiles',
+      description: 'Explore comprehensive psychological and physical profiles',
+      icon: '🧬',
+      gradient: 'from-teal-500 to-emerald-500',
+      bgGradient: 'from-teal-50 to-emerald-50',
+    },
   ];
 
   return (
