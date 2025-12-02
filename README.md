@@ -425,4 +425,4 @@ MIT
 
 Omega started with zero features and coded everything you see through conversations. Deploy it and watch it grow.
 
-blah
+thomas
