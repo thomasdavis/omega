@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getPusher } from '@/lib/pusher';
 
-// POST /api/documents/:id/join - Join document (broadcast presence)
-// TODO: Implement when real-time collaboration is needed
+// POST /api/documents/:id/join - Join document and broadcast presence
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +14,7 @@ export async function POST(
     if (!userId) {
       return NextResponse.json(
         {
+          success: false,
           error: 'Missing userId',
           message: 'userId is required',
         },
@@ -21,19 +22,23 @@ export async function POST(
       );
     }
 
-    // TODO: Broadcast presence via Pusher when implemented
-    // await broadcastPresence(id, {
-    //   userId,
-    //   username,
-    //   action: 'join',
-    //   timestamp: Date.now(),
-    // });
+    // Broadcast presence via Pusher
+    const pusher = getPusher();
+    if (pusher) {
+      await pusher.trigger(`document-${id}`, 'presence', {
+        action: 'join',
+        userId,
+        username: username || 'Anonymous',
+        timestamp: Date.now(),
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error joining document:', error);
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to join document',
         message: error instanceof Error ? error.message : 'Unknown error',
       },

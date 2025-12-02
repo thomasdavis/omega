@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
+import { getPusher } from '@/lib/pusher';
 
-// POST /api/documents/:id/yjs-update - Receive Yjs update from client
-// For now, we just acknowledge updates. Full Yjs state sync and Pusher
-// broadcasting can be added when needed for real-time collaboration.
+// POST /api/documents/:id/yjs-update - Receive Yjs update from client and broadcast to others
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -23,11 +22,14 @@ export async function POST(
       );
     }
 
-    // TODO: For full real-time collaboration, implement:
-    // 1. Store Yjs updates in database or Redis
-    // 2. Broadcast to other clients via Pusher:
-    //    const pusher = new Pusher({ ... });
-    //    await pusher.trigger(`document-${id}`, 'yjs-update', { update, clientId });
+    // Broadcast to other clients via Pusher
+    const pusher = getPusher();
+    if (pusher) {
+      await pusher.trigger(`document-${id}`, 'yjs-update', {
+        update,
+        clientId,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
