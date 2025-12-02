@@ -25,22 +25,11 @@ export async function GET(request: NextRequest) {
 
     const [profiles, total] = await Promise.all([
       prisma.userProfile.findMany({
-        where: {
-          messageCount: {
-            gt: 0,
-          },
-        },
         orderBy: { lastInteractionAt: 'desc' },
         take: limit,
         skip: offset,
       }),
-      prisma.userProfile.count({
-        where: {
-          messageCount: {
-            gt: 0,
-          },
-        },
-      }),
+      prisma.userProfile.count(),
     ]);
 
     // Convert BigInt fields to numbers for JSON serialization
