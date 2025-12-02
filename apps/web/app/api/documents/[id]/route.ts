@@ -8,11 +8,23 @@ import {
 
 // Helper to convert BigInt fields to numbers for JSON serialization
 function serializeDocument(doc: any) {
-  return {
-    ...doc,
-    created_at: typeof doc.created_at === 'bigint' ? Number(doc.created_at) : doc.created_at,
-    updated_at: typeof doc.updated_at === 'bigint' ? Number(doc.updated_at) : doc.updated_at,
-  };
+  const serialized: any = { ...doc };
+
+  // Handle both camelCase (Prisma) and snake_case (mapped) field names
+  if (typeof serialized.createdAt === 'bigint') {
+    serialized.createdAt = Number(serialized.createdAt);
+  }
+  if (typeof serialized.updatedAt === 'bigint') {
+    serialized.updatedAt = Number(serialized.updatedAt);
+  }
+  if (typeof serialized.created_at === 'bigint') {
+    serialized.created_at = Number(serialized.created_at);
+  }
+  if (typeof serialized.updated_at === 'bigint') {
+    serialized.updated_at = Number(serialized.updated_at);
+  }
+
+  return serialized;
 }
 
 // GET /api/documents/:id - Get a document by ID
