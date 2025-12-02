@@ -25,31 +25,42 @@ export async function GET(
       });
     }
 
-    // Check for cached synthesis
-    const cachedSynthesis = await prisma.agentSynthesis.findUnique({
-      where: { userId: profile.userId },
-    });
+    // Check for cached synthesis (gracefully handle missing table)
+    let cachedSynthesis = null;
+    try {
+      cachedSynthesis = await prisma.agentSynthesis.findUnique({
+        where: { userId: profile.userId },
+      });
 
-    const now = Math.floor(Date.now() / 1000); // Current time in seconds
-    const CACHE_DURATION = 20 * 60; // 20 minutes in seconds
+      const now = Math.floor(Date.now() / 1000); // Current time in seconds
+      const CACHE_DURATION = 20 * 60; // 20 minutes in seconds
 
-    // Return cached version if it exists and is fresh (less than 20 minutes old)
-    if (cachedSynthesis) {
-      const age = now - Number(cachedSynthesis.generatedAt);
-      if (age < CACHE_DURATION) {
-        console.log(`[AgentSynthesis] Cache hit for ${username} (age: ${Math.floor(age / 60)} minutes)`);
-        return new NextResponse(cachedSynthesis.synthesisContent, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/markdown; charset=utf-8',
-            'X-Cache': 'HIT',
-            'X-Cache-Age': age.toString(),
-          },
-        });
+      // Return cached version if it exists and is fresh (less than 20 minutes old)
+      if (cachedSynthesis) {
+        const age = now - Number(cachedSynthesis.generatedAt);
+        if (age < CACHE_DURATION) {
+          console.log(`[AgentSynthesis] Cache hit for ${username} (age: ${Math.floor(age / 60)} minutes)`);
+          return new NextResponse(cachedSynthesis.synthesisContent, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/markdown; charset=utf-8',
+              'X-Cache': 'HIT',
+              'X-Cache-Age': age.toString(),
+            },
+          });
+        }
+        console.log(`[AgentSynthesis] Cache expired for ${username} (age: ${Math.floor(age / 60)} minutes)`);
+      } else {
+        console.log(`[AgentSynthesis] No cache found for ${username}`);
       }
-      console.log(`[AgentSynthesis] Cache expired for ${username} (age: ${Math.floor(age / 60)} minutes)`);
-    } else {
-      console.log(`[AgentSynthesis] No cache found for ${username}`);
+    } catch (dbError: any) {
+      // Gracefully handle missing table or database errors
+      if (dbError?.code === '42P01') {
+        console.warn('[AgentSynthesis] Table does not exist yet. Run migration: pnpm --filter=@repo/database migrate');
+      } else {
+        console.warn('[AgentSynthesis] Database error checking cache:', dbError?.message);
+      }
+      // Continue to generate synthesis without cache
     }
 
     // Initialize OpenAI client at runtime
@@ -111,28 +122,38 @@ Your rules:
 
     const markdown = completion.choices[0]?.message?.content || '# Error\n\nFailed to generate agent response';
 
-    // Store synthesis in database
+    // Store synthesis in database (gracefully handle missing table)
     const generatedAt = Math.floor(Date.now() / 1000);
+    let cacheStored = false;
 
-    await prisma.agentSynthesis.upsert({
-      where: { userId: profile.userId },
-      create: {
-        userId: profile.userId,
-        username: profile.username,
-        synthesisContent: markdown,
-        messageCount: messages.length,
-        generatedAt: BigInt(generatedAt),
-      },
-      update: {
-        username: profile.username,
-        synthesisContent: markdown,
-        messageCount: messages.length,
-        generatedAt: BigInt(generatedAt),
-        updatedAt: BigInt(generatedAt),
-      },
-    });
-
-    console.log(`[AgentSynthesis] Generated and cached new synthesis for ${username}`);
+    try {
+      await prisma.agentSynthesis.upsert({
+        where: { userId: profile.userId },
+        create: {
+          userId: profile.userId,
+          username: profile.username,
+          synthesisContent: markdown,
+          messageCount: messages.length,
+          generatedAt: BigInt(generatedAt),
+        },
+        update: {
+          username: profile.username,
+          synthesisContent: markdown,
+          messageCount: messages.length,
+          generatedAt: BigInt(generatedAt),
+          updatedAt: BigInt(generatedAt),
+        },
+      });
+      cacheStored = true;
+      console.log(`[AgentSynthesis] Generated and cached new synthesis for ${username}`);
+    } catch (dbError: any) {
+      if (dbError?.code === '42P01') {
+        console.warn('[AgentSynthesis] Table does not exist. Synthesis generated but not cached. Run migration: pnpm --filter=@repo/database migrate');
+      } else {
+        console.warn('[AgentSynthesis] Database error storing cache:', dbError?.message);
+      }
+      // Continue without caching - synthesis is still returned to user
+    }
 
     // Return markdown with cache headers
     return new NextResponse(markdown, {
