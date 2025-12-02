@@ -12,6 +12,7 @@ export { pgListTablesTool } from './pgListTables.js';
 export { pgCreateTableTool } from './pgCreateTable.js';
 export { pgDropTableTool } from './pgDropTable.js';
 export { pgDescribeTableTool } from './pgDescribeTable.js';
+export { pgDescribeSchemaTool } from './pgDescribeSchema.js';
 export { pgCreateIndexTool } from './pgCreateIndex.js';
 export { pgListIndexesTool } from './pgListIndexes.js';
 export { pgDropIndexTool } from './pgDropIndex.js';

@@ -44,7 +44,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   mongoListIndexes: { path: '../../../../packages/database/dist/mongodb/tools/mongoListIndexes.js', exportName: 'mongoListIndexesTool' },
   mongoDropIndex: { path: '../../../../packages/database/dist/mongodb/tools/mongoDropIndex.js', exportName: 'mongoDropIndexTool' },
 
-  // PostgreSQL tools (13)
+  // PostgreSQL tools (14)
   pgQuery: { path: '../../../../packages/database/dist/postgres/tools/pgQuery.js', exportName: 'pgQueryTool' },
   pgInsert: { path: '../../../../packages/database/dist/postgres/tools/pgInsert.js', exportName: 'pgInsertTool' },
   pgSelect: { path: '../../../../packages/database/dist/postgres/tools/pgSelect.js', exportName: 'pgSelectTool' },
@@ -55,6 +55,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgCreateTable: { path: '../../../../packages/database/dist/postgres/tools/pgCreateTable.js', exportName: 'pgCreateTableTool' },
   pgDropTable: { path: '../../../../packages/database/dist/postgres/tools/pgDropTable.js', exportName: 'pgDropTableTool' },
   pgDescribeTable: { path: '../../../../packages/database/dist/postgres/tools/pgDescribeTable.js', exportName: 'pgDescribeTableTool' },
+  pgDescribeSchema: { path: '../../../../packages/database/dist/postgres/tools/pgDescribeSchema.js', exportName: 'pgDescribeSchemaTool' },
   pgCreateIndex: { path: '../../../../packages/database/dist/postgres/tools/pgCreateIndex.js', exportName: 'pgCreateIndexTool' },
   pgListIndexes: { path: '../../../../packages/database/dist/postgres/tools/pgListIndexes.js', exportName: 'pgListIndexesTool' },
   pgDropIndex: { path: '../../../../packages/database/dist/postgres/tools/pgDropIndex.js', exportName: 'pgDropIndexTool' },
