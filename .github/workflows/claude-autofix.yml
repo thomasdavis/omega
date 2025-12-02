@@ -138,8 +138,7 @@ jobs:
               owner,
               repo,
               issue_number: pr,
-              body: `
-[claude-retry] Attempt ${attempt} of 5
+              body: `[claude-retry] Attempt ${attempt} of 5
 
 @claude please fix the failing CI checks.
 
@@ -147,6 +146,5 @@ The failing jobs were **build** or **lint**, and here is the summary:
 
 ${summary}
 
-Use these logs to identify the issue, correct the code, and push a new commit.
-`
+Use these logs to identify the issue, correct the code, and push a new commit.`
             });
