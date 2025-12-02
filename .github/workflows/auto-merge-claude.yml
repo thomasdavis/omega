@@ -100,6 +100,10 @@ jobs:
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         run: pnpm install --frozen-lockfile
 
+      - name: Build agent package
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        run: pnpm build --filter=agent
+
       - name: Generate Comic
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         continue-on-error: true
