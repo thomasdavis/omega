@@ -308,9 +308,26 @@ async function initEditor() {
           console.log('[Pusher] Received yjs-update from', data.clientId);
           try {
             const updateBytes = Uint8Array.from(atob(data.update), c => c.charCodeAt(0));
+            console.log('[Pusher] Current ytext content:', ytext.toString());
             console.log('[Pusher] Applying update, bytes:', updateBytes.length);
+
+            // Apply the update
             window.Y.applyUpdate(ydoc, updateBytes, 'remote');
+
             console.log('[Pusher] Update applied successfully');
+            console.log('[Pusher] New ytext content:', ytext.toString());
+            console.log('[Pusher] Current textarea value:', contentEl.value);
+
+            // If observer didn't trigger, manually update the UI
+            if (ytext.toString() !== contentEl.value) {
+              console.log('[Pusher] Observer did not trigger, manually updating UI');
+              isRemoteUpdate = true;
+              const cursorPos = contentEl.selectionStart;
+              contentEl.value = ytext.toString();
+              contentEl.setSelectionRange(cursorPos, cursorPos);
+              isRemoteUpdate = false;
+            }
+
             showNotification('Document updated by collaborator');
           } catch (error) {
             console.error('[Pusher] Error applying update:', error);
