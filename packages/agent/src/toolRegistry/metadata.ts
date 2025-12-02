@@ -732,6 +732,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generatePersonalizedPoem',
+    name: 'Generate Personalized Poem',
+    description: 'Generate personalized poems based on user profile data including personality, interests, and characteristics',
+    keywords: ['personalized', 'poem', 'poetry', 'profile', 'personal', 'custom', 'me', 'my', 'about me'],
+    tags: ['content', 'poetry', 'writing', 'personalized'],
+    examples: [
+      'write me a poem',
+      'write a poem about me',
+      'create a personalized poem',
+      'generate a poem for me',
+      'make me a personal poem'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateCsv',
     name: 'Generate CSV',
     description: 'Generate CSV data files',
