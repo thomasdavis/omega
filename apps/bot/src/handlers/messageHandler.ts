@@ -114,6 +114,24 @@ export async function handleMessage(message: Message): Promise<void> {
   //   );
   // }
 
+  // Store ALL messages to database regardless of response decision
+  // This ensures we have a complete record of all Discord activity
+  try {
+    await saveHumanMessage({
+      userId: message.author.id,
+      username: message.author.username,
+      channelId: message.channel.id,
+      channelName: channelName,
+      guildId: message.guild?.id,
+      messageContent: message.content,
+      messageId: message.id,
+      responseDecision: decision,
+    });
+  } catch (dbError) {
+    console.error('⚠️  Failed to persist message to database:', dbError);
+    // Continue execution even if database write fails
+  }
+
   if (!decision.shouldRespond) {
     return;
   }
@@ -166,21 +184,9 @@ export async function handleMessage(message: Message): Promise<void> {
       }
     );
 
-    // Still persist the interaction to database
+    // Persist AI acknowledgment to database
+    // (Human message already persisted earlier)
     try {
-      await saveHumanMessage({
-        userId: message.author.id,
-        username: message.author.username,
-        channelId: message.channel.id,
-        channelName: channelName,
-        guildId: message.guild?.id,
-        messageContent: message.content,
-        messageId: message.id,
-        responseDecision: decision,
-      });
-
-      // User profile already tracked at start of function
-
       await saveAIMessage({
         userId: message.client.user!.id,
         username: message.client.user!.username,
@@ -206,24 +212,7 @@ export async function handleMessage(message: Message): Promise<void> {
     await message.channel.sendTyping();
   }
 
-  // Persist human message to database with decision reasoning
-  try {
-    await saveHumanMessage({
-      userId: message.author.id,
-      username: message.author.username,
-      channelId: message.channel.id,
-      channelName: channelName,
-      guildId: message.guild?.id,
-      messageContent: message.content,
-      messageId: message.id,
-      responseDecision: decision,
-    });
-
-    // User profile already tracked at start of function
-  } catch (dbError) {
-    console.error('⚠️  Failed to persist message to database:', dbError);
-    // Continue execution even if database write fails
-  }
+  // Human message already persisted to database earlier (before response decision)
 
   try {
     // Check for file attachments
