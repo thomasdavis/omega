@@ -4,15 +4,11 @@ import { join } from 'path';
 
 /**
  * Get the comics directory path
- * Uses /data/comics in production (Railway shared volume), otherwise local fallback
+ * Reads from bot's public/comics directory in the monorepo
  */
 function getComicsDir(): string {
-  // Check for production Railway volume
-  if (process.env.NODE_ENV === 'production' && existsSync('/data')) {
-    return '/data/comics';
-  }
-
-  // Local development fallback
+  // In production, the bot's public folder is in the same repo structure
+  // Railway builds from repo root, so we can access ../bot/public/comics
   return join(process.cwd(), '../bot/public/comics');
 }
 

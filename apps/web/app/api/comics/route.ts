@@ -4,25 +4,19 @@ import { join } from 'path';
 
 /**
  * Get the comics directory path
- * Uses /data/comics in production (Railway shared volume), otherwise local fallback
+ * Reads from bot's public/comics directory in the monorepo
  */
 function getComicsDir(): string {
-  // Check for production Railway volume
-  if (process.env.NODE_ENV === 'production' && existsSync('/data')) {
-    const dir = '/data/comics';
-    // Create the directory if it doesn't exist
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-    return dir;
+  // In production, the bot's public folder is in the same repo structure
+  // Railway builds from repo root, so we can access ../bot/public/comics
+  const comicsPath = join(process.cwd(), '../bot/public/comics');
+
+  // Create directory if it doesn't exist (for local dev)
+  if (!existsSync(comicsPath)) {
+    mkdirSync(comicsPath, { recursive: true });
   }
 
-  // Local development fallback
-  const fallback = join(process.cwd(), '../bot/public/comics');
-  if (!existsSync(fallback)) {
-    mkdirSync(fallback, { recursive: true });
-  }
-  return fallback;
+  return comicsPath;
 }
 
 export async function GET() {
