@@ -30,18 +30,18 @@ async function getRecentPredictions(limit: number = 10): Promise<Array<{
   date: string;
   prediction_text: string;
 }>> {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   try {
-    const result = await db.execute({
-      sql: `SELECT date, prediction_text FROM market_predictions
-            ORDER BY date DESC LIMIT ?`,
-      args: [limit],
-    });
+    const result = await db.query(
+      `SELECT date, prediction_text FROM market_predictions
+       ORDER BY date DESC LIMIT $1`,
+      [limit]
+    );
 
-    return result.rows.map(row => ({
-      date: (row as any).date as string,
-      prediction_text: (row as any).prediction_text as string,
+    return result.rows.map((row: any) => ({
+      date: row.date as string,
+      prediction_text: row.prediction_text as string,
     }));
   } catch (error) {
     // Table might not exist yet
@@ -54,10 +54,10 @@ async function getRecentPredictions(limit: number = 10): Promise<Array<{
  * Store prediction in database
  */
 async function storePrediction(prediction: MarketPrediction): Promise<void> {
-  const db = getDatabase();
+  const db = await getDatabase();
 
-  // Ensure table exists
-  await db.execute(`
+  // Ensure table exists (PostgreSQL syntax)
+  await db.query(`
     CREATE TABLE IF NOT EXISTS market_predictions (
       id TEXT PRIMARY KEY,
       date TEXT NOT NULL,
@@ -65,30 +65,30 @@ async function storePrediction(prediction: MarketPrediction): Promise<void> {
       predictions_json TEXT NOT NULL,
       black_swan_factors TEXT NOT NULL,
       geopolitical_context TEXT NOT NULL,
-      created_at INTEGER DEFAULT (strftime('%s', 'now'))
+      created_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())
     )
   `);
 
-  await db.execute(`
+  await db.query(`
     CREATE INDEX IF NOT EXISTS idx_market_predictions_date
     ON market_predictions(date DESC)
   `);
 
   const id = `pred-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-  await db.execute({
-    sql: `INSERT INTO market_predictions
-          (id, date, prediction_text, predictions_json, black_swan_factors, geopolitical_context)
-          VALUES (?, ?, ?, ?, ?, ?)`,
-    args: [
+  await db.query(
+    `INSERT INTO market_predictions
+     (id, date, prediction_text, predictions_json, black_swan_factors, geopolitical_context)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
       id,
       prediction.date,
       prediction.summary,
       JSON.stringify(prediction.predictions),
       JSON.stringify(prediction.blackSwanFactors),
       prediction.geopoliticalContext,
-    ],
-  });
+    ]
+  );
 }
 
 export const marketPredictionTool = tool({

@@ -61,16 +61,16 @@ export const getUserProfileTool = tool({
         : null;
 
       // 4. Get sample recent messages
-      const db = getDatabase();
-      const messagesResult = await db.execute({
-        sql: `SELECT message_content, timestamp, channel_name
-              FROM messages
-              WHERE user_id = ? AND sender_type = 'human'
-              ORDER BY timestamp DESC
-              LIMIT 5`,
-        args: [userId],
-      });
-      const recentMessages = messagesResult.rows.map((row: any) => ({
+      const db = await getDatabase();
+      const messagesResult = await db.query(
+        `SELECT message_content, timestamp, channel_name
+         FROM messages
+         WHERE user_id = $1 AND sender_type = 'human'
+         ORDER BY timestamp DESC
+         LIMIT 5`,
+        [userId]
+      );
+      const recentMessages = messagesResult.rows.map((row: any, i: number) => ({
         content: row.message_content.substring(0, 100) + (row.message_content.length > 100 ? '...' : ''),
         timestamp: new Date(row.timestamp).toISOString(),
         channel: row.channel_name,
@@ -80,7 +80,9 @@ export const getUserProfileTool = tool({
       const lastAnalyzed = profile.last_analyzed_at
         ? new Date(profile.last_analyzed_at * 1000).toISOString()
         : 'Never';
-      const createdAt = new Date(profile.created_at * 1000).toISOString();
+      const createdAt = profile.created_at
+        ? new Date(profile.created_at * 1000).toISOString()
+        : new Date().toISOString();
       const firstSeen = new Date(profile.first_seen_at * 1000).toISOString();
       const lastInteraction = new Date(profile.last_interaction_at * 1000).toISOString();
 
@@ -90,7 +92,7 @@ export const getUserProfileTool = tool({
         : '';
 
       const photoInfo = profile.uploaded_photo_url
-        ? `📸 **Photo:** Yes (confidence: ${Math.round(profile.appearance_confidence * 100)}%)\n🎨 **Appearance:** ${profile.ai_appearance_description}\n${genderInfo}`
+        ? `📸 **Photo:** Yes (confidence: ${Math.round((profile.appearance_confidence || 0) * 100)}%)\n🎨 **Appearance:** ${profile.ai_appearance_description}\n${genderInfo}`
         : `📸 **Photo:** No\n`;
 
       const feelingsDetails = feelings

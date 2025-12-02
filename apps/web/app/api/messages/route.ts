@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Convert Prisma messages to match the expected format
-    const formattedMessages = messages.map((msg) => ({
+    const formattedMessages = messages.map((msg: typeof messages[number]) => ({
       id: msg.id,
       timestamp: Number(msg.timestamp),
       sender_type: msg.senderType,

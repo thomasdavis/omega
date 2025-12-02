@@ -35,13 +35,13 @@ export const queryDatabaseTool = tool({
       }
 
       // Execute query
-      const db = getDatabase();
+      const db = await getDatabase();
       const result = params && params.length > 0
-        ? await db.execute({ sql: query, args: params })
-        : await db.execute(query);
+        ? await db.query(query, params)
+        : await db.query(query);
 
       // Convert rows to plain objects for better readability
-      const rows = result.rows.map(row => {
+      const rows = result.rows.map((row: any) => {
         const obj: Record<string, any> = {};
         Object.keys(row).forEach(key => {
           obj[key] = row[key];
@@ -53,7 +53,7 @@ export const queryDatabaseTool = tool({
         success: true,
         rowCount: rows.length,
         rows: rows,
-        columns: result.columns || [],
+        columns: result.fields?.map(f => f.name) || [],
       };
     } catch (error) {
       return {

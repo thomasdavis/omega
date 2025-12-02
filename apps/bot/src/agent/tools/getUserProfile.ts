@@ -61,16 +61,16 @@ export const getUserProfileTool = tool({
         : null;
 
       // 4. Get sample recent messages
-      const db = getDatabase();
-      const messagesResult = await db.execute({
-        sql: `SELECT message_content, timestamp, channel_name
-              FROM messages
-              WHERE user_id = ? AND sender_type = 'human'
-              ORDER BY timestamp DESC
-              LIMIT 5`,
-        args: [userId],
-      });
-      const recentMessages = messagesResult.rows.map((row: any) => ({
+      const db = await getDatabase();
+      const messagesResult = await db.query(
+        `SELECT message_content, timestamp, channel_name
+         FROM messages
+         WHERE user_id = $1 AND sender_type = 'human'
+         ORDER BY timestamp DESC
+         LIMIT 5`,
+        [userId]
+      );
+      const recentMessages = messagesResult.rows.map((row: any, i: number) => ({
         content: row.message_content.substring(0, 100) + (row.message_content.length > 100 ? '...' : ''),
         timestamp: new Date(row.timestamp).toISOString(),
         channel: row.channel_name,

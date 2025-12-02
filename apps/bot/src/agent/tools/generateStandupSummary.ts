@@ -47,7 +47,7 @@ interface Message {
  * Fetch recent messages from the database
  */
 async function fetchRecentMessages(hours: number, channelFilter?: string): Promise<Message[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
 
   // Calculate the timestamp threshold (in milliseconds)
   const sinceTimestamp = Date.now() - (hours * 60 * 60 * 1000);
@@ -56,22 +56,19 @@ async function fetchRecentMessages(hours: number, channelFilter?: string): Promi
     SELECT timestamp, username, message_content, channel_name
     FROM messages
     WHERE sender_type = 'human'
-      AND timestamp >= ?
+      AND timestamp >= $1
   `;
 
   const params: any[] = [sinceTimestamp];
 
   if (channelFilter) {
-    query += ' AND channel_name = ?';
+    query += ' AND channel_name = $2';
     params.push(channelFilter);
   }
 
   query += ' ORDER BY timestamp ASC';
 
-  const result = await db.execute({
-    sql: query,
-    args: params,
-  });
+  const result = await db.query(query, params);
 
   return result.rows.map((row: any) => ({
     timestamp: row.timestamp as number,

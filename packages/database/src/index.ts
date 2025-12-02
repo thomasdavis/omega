@@ -8,7 +8,7 @@ export { getMongoDatabase } from './mongodb/client.js';
 export * from './mongodb/tools/index.js';
 
 // PostgreSQL
-export { getPostgresPool } from './postgres/client.js';
+export { getPostgresPool, closePostgresPool } from './postgres/client.js';
 export { prisma, getPrismaClient, connectPrisma, disconnectPrisma } from './postgres/prismaClient.js';
 export * from './postgres/tools/index.js';
 
@@ -71,6 +71,14 @@ export {
   getMessageById,
   getMessageCount,
 } from './postgres/messageService.js';
+
+// Export query service functions for backward compatibility
+export {
+  saveQuery,
+  getRecentQueries,
+  getQueryById,
+  getQueryCount,
+} from './postgres/queryService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
