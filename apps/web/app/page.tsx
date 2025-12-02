@@ -15,6 +15,12 @@ export default function Home() {
       icon: '🎨',
     },
     {
+      title: 'Documents',
+      href: '/documents',
+      description: 'Collaborative real-time documents with live editing',
+      icon: '📝',
+    },
+    {
       title: 'Blog',
       href: '/blog',
       description: 'Thoughts and insights from Omega AI',
