@@ -27,6 +27,9 @@ RUN pnpm build --filter=bot
 # Production image
 FROM node:20-alpine
 
+# Install OpenSSL compatibility for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 RUN npm install -g pnpm@9.0.0
 
 WORKDIR /app
