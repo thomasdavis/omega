@@ -164,19 +164,11 @@ From this point on:
 - Lexical Density: ${messageAnalysis.lexicalDensity}
 - Common Topics: ${messageAnalysis.topics.join(', ')}
 
-### Cognitive Profile
-- Analytical Thinking: ${profile.analytical_thinking_score || 'N/A'}/100
-- Creative Thinking: ${profile.creative_thinking_score || 'N/A'}/100
-- Abstract Reasoning: ${profile.abstract_reasoning_score || 'N/A'}/100
-- Concrete Thinking: ${profile.concrete_thinking_score || 'N/A'}/100
-
 ### Social & Behavioral
 - Humor Style: ${profile.humorStyle || 'N/A'}
-- Technical Knowledge: ${profile.technical_knowledge_level || 'N/A'}
-- Interests: ${Array.isArray(profile.primary_interests) ? profile.primary_interests.join(', ') : profile.primary_interests || 'N/A'}
-- Expertise: ${Array.isArray(profile.expertise_areas) ? profile.expertise_areas.join(', ') : profile.expertise_areas || 'N/A'}
 - Social Dominance: ${profile.social_dominance_score || 'N/A'}/100
 - Cooperation: ${profile.cooperation_score || 'N/A'}/100
+- Conflict Resolution Style: ${profile.conflictStyle || 'N/A'}
 
 ### Sentiment Analysis
 - Overall Sentiment: ${profile.overall_sentiment || 'N/A'}
@@ -184,18 +176,81 @@ From this point on:
 - Negative Ratio: ${profile.negative_interaction_ratio ? `${(profile.negative_interaction_ratio * 100).toFixed(1)}%` : 'N/A'}
 - Dominant Emotions: ${Array.isArray(profile.dominant_emotions) ? profile.dominant_emotions.join(', ') : profile.dominant_emotions || 'N/A'}
 
-### Physical Appearance (AI Vision)
-${profile.aiAppearanceDescription ? `
-Description: ${profile.aiAppearanceDescription}
-Confidence: ${profile.appearanceConfidence ? `${(profile.appearanceConfidence * 100).toFixed(1)}%` : 'N/A'}
-` : 'No photo analyzed'}
-- Gender: ${profile.aiDetectedGender || 'N/A'}
-- Age Range: ${profile.estimatedAgeRange || 'N/A'}
-- Face Shape: ${profile.faceShape || 'N/A'}
-- Hair: ${profile.hairColor || 'N/A'} ${profile.hairTexture ? `(${profile.hairTexture})` : ''}
-- Eyes: ${profile.eyeColor || 'N/A'} ${profile.eyeShape ? `(${profile.eyeShape})` : ''}
-- Build: ${profile.bodyType || 'N/A'}
-- Style: ${profile.aestheticArchetype || profile.clothingStyle || 'N/A'}
+### Skills & Expertise
+
+**Technical Knowledge Level:** ${profile.technical_knowledge_level || 'Not assessed'}
+
+**Primary Interests:**
+${Array.isArray(profile.primary_interests) && profile.primary_interests.length > 0
+  ? profile.primary_interests.map((interest: string) => `- ${interest}`).join('\n')
+  : '- Not specified'}
+
+**Expertise Areas:**
+${Array.isArray(profile.expertise_areas) && profile.expertise_areas.length > 0
+  ? profile.expertise_areas.map((area: string) => `- ${area}`).join('\n')
+  : '- Not identified'}
+
+**Cognitive Strengths:**
+- Analytical Thinking: ${profile.analytical_thinking_score || 'N/A'}/100
+- Creative Thinking: ${profile.creative_thinking_score || 'N/A'}/100
+- Abstract Reasoning: ${profile.abstract_reasoning_score || 'N/A'}/100
+
+### Physical Appearance & Presence
+
+${profile.aiAppearanceDescription ? `**AI Vision Analysis:**
+${profile.aiAppearanceDescription}
+(Confidence: ${profile.appearanceConfidence ? `${(profile.appearanceConfidence * 100).toFixed(1)}%` : 'N/A'})
+` : '**Photo Analysis:** Not available'}
+
+**Demographics:**
+- Gender Presentation: ${profile.aiDetectedGender || 'Not detected'} ${profile.genderConfidence ? `(${(profile.genderConfidence * 100).toFixed(1)}% confidence)` : ''}
+- Age Range: ${profile.estimatedAgeRange || 'Not estimated'} ${profile.ageConfidence ? `(${(profile.ageConfidence * 100).toFixed(1)}% confidence)` : ''}
+- Estimated Height: ${profile.heightEstimate || 'Not estimated'}
+
+**Facial Features:**
+- Face Shape: ${profile.faceShape || 'Not analyzed'}
+- Facial Symmetry: ${profile.facialSymmetryScore ? `${profile.facialSymmetryScore}/100` : 'Not scored'}
+- Jawline: ${profile.jawlineProminence || 'Not noted'}
+- Cheekbones: ${profile.cheekboneProminence || 'Not noted'}
+- Nose: ${profile.noseShape || 'Not analyzed'}${profile.noseSize ? `, ${profile.noseSize}` : ''}
+- Lips: ${profile.lipFullness || 'Not analyzed'}
+- Smile: ${profile.smileType || 'Not analyzed'}
+
+**Eyes & Eyebrows:**
+- Eye Color: ${profile.eyeColor || 'Not identified'}
+- Eye Shape: ${profile.eyeShape || 'Not analyzed'}
+- Eye Spacing: ${profile.eyeSpacing || 'Not noted'}
+- Eyebrow Shape: ${profile.eyebrowShape || 'Not analyzed'}
+- Eyebrow Thickness: ${profile.eyebrowThickness || 'Not analyzed'}
+
+**Hair & Facial Hair:**
+- Hair Color: ${profile.hairColor || 'Not identified'}
+- Hair Texture: ${profile.hairTexture || 'Not analyzed'}
+- Hair Length: ${profile.hairLength || 'Not analyzed'}
+- Hair Style: ${profile.hairStyle || 'Not specified'}
+- Hair Density: ${profile.hairDensity || 'Not noted'}
+- Facial Hair: ${profile.facialHair || 'Not noted'}
+
+**Skin & Complexion:**
+- Skin Tone: ${profile.skinTone || 'Not identified'}
+- Skin Texture: ${profile.skinTexture || 'Not analyzed'}
+- Complexion Quality: ${profile.complexionQuality || 'Not assessed'}
+
+**Body & Build:**
+- Body Type: ${profile.bodyType || 'Not assessed'}
+- Build: ${profile.buildDescription || 'Not described'}
+- Posture: ${profile.posture || 'Not analyzed'}
+
+**Style & Presentation:**
+- Aesthetic Archetype: ${profile.aestheticArchetype || 'Not identified'}
+- Clothing Style: ${profile.clothingStyle || 'Not noted'}
+- Accessories: ${Array.isArray(profile.accessories) && profile.accessories.length > 0 ? profile.accessories.join(', ') : 'Not noted'}
+- Distinctive Features: ${Array.isArray(profile.distinctiveFeatures) && profile.distinctiveFeatures.length > 0 ? profile.distinctiveFeatures.join(', ') : 'None identified'}
+
+**Presence & Energy:**
+- Attractiveness Assessment: ${profile.attractivenessAssessment || 'Not assessed'}
+- Approachability Score: ${profile.approachabilityScore ? `${profile.approachabilityScore}/100` : 'Not scored'}
+- Perceived Confidence Level: ${profile.perceivedConfidenceLevel || 'Not assessed'}
 
 ### Relationship with Omega
 - Affinity Score: ${profile.affinity_score || 'N/A'}/100
