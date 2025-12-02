@@ -141,6 +141,9 @@ importers:
       '@repo/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@repo/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       mime-types:
         specifier: ^3.0.2
         version: 3.0.2
