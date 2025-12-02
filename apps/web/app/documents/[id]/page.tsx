@@ -44,10 +44,9 @@ export default function DocumentEditor({ params }: DocumentEditorProps) {
         strategy="afterInteractive"
         dangerouslySetInnerHTML={{
           __html: `
-            import('https://esm.sh/yjs@13.6.20').then((YjsModule) => {
-              window.Y = YjsModule;
-              window.dispatchEvent(new Event('yjs-loaded'));
-            });
+            import * as Y from 'https://esm.sh/yjs@13.6.20';
+            window.Y = Y;
+            window.dispatchEvent(new Event('yjs-loaded'));
           `,
         }}
         type="module"
