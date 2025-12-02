@@ -3,6 +3,20 @@ import { prisma } from '@repo/database';
 
 export const dynamic = 'force-dynamic';
 
+// Helper to convert BigInt fields to numbers for JSON serialization
+function serializeProfile(profile: any) {
+  return {
+    ...profile,
+    firstSeenAt: profile.firstSeenAt ? Number(profile.firstSeenAt) : null,
+    lastInteractionAt: profile.lastInteractionAt ? Number(profile.lastInteractionAt) : null,
+    lastAnalyzedAt: profile.lastAnalyzedAt ? Number(profile.lastAnalyzedAt) : null,
+    lastPhotoAnalyzedAt: profile.lastPhotoAnalyzedAt ? Number(profile.lastPhotoAnalyzedAt) : null,
+    lastPredictionAt: profile.lastPredictionAt ? Number(profile.lastPredictionAt) : null,
+    createdAt: profile.createdAt ? Number(profile.createdAt) : null,
+    updatedAt: profile.updatedAt ? Number(profile.updatedAt) : null,
+  };
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -18,8 +32,11 @@ export async function GET(request: NextRequest) {
       prisma.userProfile.count(),
     ]);
 
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedProfiles = profiles.map(serializeProfile);
+
     return NextResponse.json({
-      profiles,
+      profiles: serializedProfiles,
       total,
       limit,
       offset,
