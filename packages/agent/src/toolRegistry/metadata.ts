@@ -566,6 +566,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
+  {
+    id: 'analyzeMessageWords',
+    name: 'Analyze Message Words',
+    description: 'Count the most commonly used words in recent messages from the messages table',
+    keywords: ['messages', 'words', 'analyze', 'count', 'common', 'frequent', 'vocabulary', 'keywords', 'conversation', 'text analysis'],
+    tags: ['database', 'postgresql', 'analysis', 'messages', 'text'],
+    examples: [
+      'what are the most common words in recent messages',
+      'analyze message vocabulary',
+      'count frequent words in conversations',
+      'show top words in last 100 messages',
+      'keyword analysis of messages'
+    ],
+    category: 'database'
+  },
+
   // ===== GITHUB TOOLS (4) =====
   {
     id: 'githubCreateIssue',
