@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readdirSync, statSync, existsSync } from 'fs';
+import { readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 /**
@@ -9,11 +9,20 @@ import { join } from 'path';
 function getComicsDir(): string {
   // Check for production Railway volume
   if (process.env.NODE_ENV === 'production' && existsSync('/data')) {
-    return '/data/comics';
+    const dir = '/data/comics';
+    // Create the directory if it doesn't exist
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
   }
 
   // Local development fallback
-  return join(process.cwd(), '../bot/public/comics');
+  const fallback = join(process.cwd(), '../bot/public/comics');
+  if (!existsSync(fallback)) {
+    mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
 }
 
 export async function GET() {
