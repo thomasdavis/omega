@@ -406,8 +406,29 @@ ${characterDatabase}
      * Western comic book proportions and anatomy
      * Varied body types: slim, average, athletic, stocky (all adult proportions)
      * Realistic clothing that fits adult bodies
-     * Expressive but mature facial features
-
+     * Expressive but mature facial features 
+   - ** FUNNY:**
+     * Sometimes when you make funny tiles use one of these styles regardless of the rules 
+     1. Stick Figure / MS Paint Style
+     2. Crayon / Child’s Drawing
+     3. Corporate Memphis / Tech Art
+     4. IKEA Manual / Warning Label
+     5. The "SpongeBob" Gross-Up
+     6. Shonen "Power Up" (JoJo Style)
+     7. Film Noir / Sin City
+     8. Eldritch Horror / Junji Ito
+     9. Rubber Hose (1930s Animation)
+     10. 8-Bit / Pixel Art
+     11. Sunday Funnies / Garfield Style
+     12. Medieval Tapestry / Bayeux
+     13. Vaporwave / Glitch Art
+     14. Claymation / Aardman
+     15. Uncanny Valley 3D
+     16. Felt Puppet / Muppet
+     17. Paper Cutout / Collage
+     18. Renaissance Oil Painting
+     19. Abstract / Cubism
+     20. Political Cartoon / Caricature
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
    - Include ALL distinct users mentioned or involved in the PR/issue/conversation
