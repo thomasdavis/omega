@@ -15,19 +15,19 @@ import type { TextProps } from './text.types.js';
  * <Text as="span" weight="medium">Inline medium text</Text>
  * ```
  */
-export const Text = React.forwardRef<HTMLParagraphElement, TextProps>(
+export const Text = React.forwardRef<HTMLElement, TextProps>(
   (
     { className, size, weight, color, align, as: Component = 'p', children, ...props },
     ref
   ) => {
-    return (
-      <Component
-        ref={ref as any}
-        className={cn(textVariants({ size, weight, color, align }), className)}
-        {...props}
-      >
-        {children}
-      </Component>
+    return React.createElement(
+      Component,
+      {
+        ref,
+        className: cn(textVariants({ size, weight, color, align }), className),
+        ...props,
+      },
+      children
     );
   }
 );

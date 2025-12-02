@@ -4,7 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
 
   // Transpile workspace packages
-  transpilePackages: ['@repo/database', '@repo/shared'],
+  transpilePackages: ['@repo/database', '@repo/shared', '@repo/ui'],
 
   // Environment variables to expose to the client
   env: {

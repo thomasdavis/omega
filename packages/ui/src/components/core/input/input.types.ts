@@ -1,5 +1,9 @@
 import type { InputVariants } from './input.variants.js';
 
-export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
-    InputVariants {}
+export type InputProps = Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'size'
+> &
+  InputVariants;
+
+export type { InputVariants };

@@ -18,16 +18,16 @@ import type { HeadingProps } from './heading.types.js';
  */
 export const Heading = React.forwardRef<HTMLHeadingElement, HeadingProps>(
   ({ className, level = 'h2', color, as, children, ...props }, ref) => {
-    const Component = as || level;
+    const Component = (as || level) as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 
-    return (
-      <Component
-        ref={ref as any}
-        className={cn(headingVariants({ level, color }), className)}
-        {...props}
-      >
-        {children}
-      </Component>
+    return React.createElement(
+      Component,
+      {
+        ref,
+        className: cn(headingVariants({ level, color }), className),
+        ...props,
+      },
+      children
     );
   }
 );

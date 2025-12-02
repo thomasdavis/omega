@@ -208,14 +208,14 @@ export const tokens = {
    * Z-index scale (for layering)
    */
   zIndex: {
-    base: 0,
-    dropdown: 10,
-    sticky: 20,
-    fixed: 30,
-    modalBackdrop: 40,
-    modal: 50,
-    popover: 60,
-    tooltip: 70,
+    base: '0',
+    dropdown: '10',
+    sticky: '20',
+    fixed: '30',
+    modalBackdrop: '40',
+    modal: '50',
+    popover: '60',
+    tooltip: '70',
   },
 } as const;
 
