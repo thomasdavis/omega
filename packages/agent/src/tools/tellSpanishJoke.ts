@@ -13,7 +13,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { OMEGA_MODEL } from '../../config/models.js';
+import { OMEGA_MODEL } from '../config/models.js';
 
 // Available joke categories in Spanish
 const SPANISH_JOKE_CATEGORIES = [

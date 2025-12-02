@@ -3,12 +3,18 @@
  */
 
 import { Message, AttachmentBuilder } from 'discord.js';
-import { runAgent } from '../agent/agent.js';
+import {
+  runAgent,
+  setExportMessageContext,
+  clearExportMessageContext,
+  setConversationDiagramContext,
+  clearConversationDiagramContext,
+  setSlidevMessageContext,
+  clearSlidevMessageContext,
+  setUnsandboxMessageContext,
+  clearUnsandboxMessageContext
+} from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
-import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
-import { setConversationDiagramContext, clearConversationDiagramContext } from '../agent/tools/conversationDiagram.js';
-import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
-import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
