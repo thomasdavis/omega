@@ -12,6 +12,9 @@ export { getPostgresPool, closePostgresPool } from './postgres/client.js';
 export { prisma, getPrismaClient, connectPrisma, disconnectPrisma } from './postgres/prismaClient.js';
 export * from './postgres/tools/index.js';
 
+// Todo List CRUD tools
+export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoTool } from './postgres/tools/todoList/index.js';
+
 // Backward compatibility: getDatabase now returns PostgreSQL pool
 export { getPostgresPool as getDatabase } from './postgres/client.js';
 

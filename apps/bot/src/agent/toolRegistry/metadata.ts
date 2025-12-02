@@ -566,6 +566,82 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
+  // ===== TODO LIST CRUD TOOLS (5) =====
+  {
+    id: 'createTodo',
+    name: 'Create Todo',
+    description: 'Create a new task in the todo list',
+    keywords: ['todo', 'task', 'create', 'add', 'reminder', 'list', 'new'],
+    tags: ['todo', 'task', 'productivity', 'create'],
+    examples: [
+      'add buy groceries to my todo list',
+      'create a task to call mom',
+      'remind me to finish the report',
+      'add a new todo'
+    ],
+    category: 'productivity'
+  },
+
+  {
+    id: 'listTodos',
+    name: 'List Todos',
+    description: 'List all tasks or filter by completion status',
+    keywords: ['todo', 'list', 'tasks', 'show', 'view', 'get', 'all', 'completed', 'incomplete'],
+    tags: ['todo', 'task', 'productivity', 'list'],
+    examples: [
+      'show me my todo list',
+      'what tasks do I have',
+      'list completed tasks',
+      'show incomplete todos'
+    ],
+    category: 'productivity'
+  },
+
+  {
+    id: 'getTodo',
+    name: 'Get Todo',
+    description: 'Get a specific task by ID',
+    keywords: ['todo', 'task', 'get', 'show', 'view', 'details', 'id'],
+    tags: ['todo', 'task', 'productivity', 'read'],
+    examples: [
+      'show me task 5',
+      'what is task 3',
+      'get details for todo 10',
+      'view task number 7'
+    ],
+    category: 'productivity'
+  },
+
+  {
+    id: 'updateTodo',
+    name: 'Update Todo',
+    description: 'Update a task text or completion status',
+    keywords: ['todo', 'task', 'update', 'edit', 'change', 'mark', 'complete', 'done', 'modify'],
+    tags: ['todo', 'task', 'productivity', 'update'],
+    examples: [
+      'mark task 5 as complete',
+      'update task 3 to say buy milk and eggs',
+      'mark todo 7 as done',
+      'change task 2 to incomplete'
+    ],
+    category: 'productivity'
+  },
+
+  {
+    id: 'deleteTodo',
+    name: 'Delete Todo',
+    description: 'Delete a task from the todo list',
+    keywords: ['todo', 'task', 'delete', 'remove', 'clear', 'drop'],
+    tags: ['todo', 'task', 'productivity', 'delete'],
+    examples: [
+      'delete task 5',
+      'remove todo 3',
+      'clear this task',
+      'delete the task about groceries'
+    ],
+    category: 'productivity'
+  },
+
   // ===== GITHUB TOOLS (4) =====
   {
     id: 'githubCreateIssue',

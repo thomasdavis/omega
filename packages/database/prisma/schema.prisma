@@ -240,3 +240,15 @@ model jokes {
   id        Int    @id @default(autoincrement())
   joke_text String
 }
+
+model TodoList {
+  id           Int      @id @default(autoincrement())
+  task         String
+  isCompleted  Boolean  @default(false) @map("is_completed")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_todo_list_created_at")
+  @@index([isCompleted], map: "idx_todo_list_is_completed")
+  @@map("todo_list")
+}

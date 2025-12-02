@@ -16,3 +16,6 @@ export { pgDescribeSchemaTool } from './pgDescribeSchema.js';
 export { pgCreateIndexTool } from './pgCreateIndex.js';
 export { pgListIndexesTool } from './pgListIndexes.js';
 export { pgDropIndexTool } from './pgDropIndex.js';
+
+// Todo List CRUD tools
+export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoTool } from './todoList/index.js';

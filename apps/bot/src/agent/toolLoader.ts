@@ -60,6 +60,13 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgListIndexes: { path: '../../../../packages/database/dist/postgres/tools/pgListIndexes.js', exportName: 'pgListIndexesTool' },
   pgDropIndex: { path: '../../../../packages/database/dist/postgres/tools/pgDropIndex.js', exportName: 'pgDropIndexTool' },
 
+  // Todo List CRUD tools (5)
+  createTodo: { path: '../../../../packages/database/dist/postgres/tools/todoList/createTodo.js', exportName: 'createTodoTool' },
+  listTodos: { path: '../../../../packages/database/dist/postgres/tools/todoList/listTodos.js', exportName: 'listTodosTool' },
+  getTodo: { path: '../../../../packages/database/dist/postgres/tools/todoList/getTodo.js', exportName: 'getTodoTool' },
+  updateTodo: { path: '../../../../packages/database/dist/postgres/tools/todoList/updateTodo.js', exportName: 'updateTodoTool' },
+  deleteTodo: { path: '../../../../packages/database/dist/postgres/tools/todoList/deleteTodo.js', exportName: 'deleteTodoTool' },
+
   // GitHub tools (4)
   githubCreateIssue: { path: './tools/github.js', exportName: 'githubCreateIssueTool' },
   githubUpdateIssue: { path: './tools/github.js', exportName: 'githubUpdateIssueTool' },
