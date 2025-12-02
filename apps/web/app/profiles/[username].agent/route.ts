@@ -14,15 +14,7 @@ export async function GET(
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const { username: rawUsername } = await params;
-
-    // Check if this is an .agent request
-    if (!rawUsername.endsWith('.agent')) {
-      return new NextResponse('Not found', { status: 404 });
-    }
-
-    // Extract real username
-    const username = rawUsername.replace(/\.agent$/, '');
+    const { username } = await params;
 
     // Fetch user profile
     const profile = await prisma.userProfile.findFirst({
@@ -30,7 +22,10 @@ export async function GET(
     });
 
     if (!profile) {
-      return new NextResponse('Profile not found', { status: 404 });
+      return new NextResponse('# Profile Not Found\n\nNo profile exists for this username.', {
+        status: 404,
+        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      });
     }
 
     // Fetch last 500 messages by this user
@@ -51,7 +46,7 @@ export async function GET(
 
     // Call OpenAI to generate agent response
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4.1-mini',
       messages: [
         {
           role: 'system',
@@ -66,14 +61,14 @@ export async function GET(
       max_tokens: 4000,
     });
 
-    const markdown = completion.choices[0]?.message?.content || '# Error generating agent response';
+    const markdown = completion.choices[0]?.message?.content || '# Error\n\nFailed to generate agent response';
 
-    // Return as markdown
+    // Return as markdown with 5-minute cache
     return new NextResponse(markdown, {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+        'Cache-Control': 'public, max-age=300', // Cache for 5 minutes
       },
     });
   } catch (error) {
@@ -260,7 +255,7 @@ ${profile.omega_thoughts ? `> "${profile.omega_thoughts}"` : '*No recorded thoug
 
 ## 🎨 SECTION 6: PHYSICAL PHENOTYPE (AI Vision Analysis)
 
-${profile.uploadedPhotoUrl ? `**Photo Available:** Yes ([View Profile Photo](${profile.uploadedPhotoUrl}))` : '**Photo Available:** No'}
+${profile.uploadedPhotoUrl ? `**Photo Available:** Yes` : '**Photo Available:** No'}
 
 ${profile.aiAppearanceDescription ? `
 **AI Appearance Description:**
