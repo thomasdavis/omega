@@ -425,17 +425,59 @@ ${characterDatabase}
    - Double-check: Does this character look identical to panel 1? If not, fix it.
 
 5. **COMEDY & WIT - CRITICAL:**
-   - Make it GENUINELY FUNNY - this is a comedy comic strip
-   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use adult humor, sexual innuendos, and mature jokes when they fit the context naturally
-   - Use clever wordplay, programming puns, and tech humor
-   - Include visual gags (exaggerated reactions, sight gags, absurd scenarios)
-   - Subvert expectations - set up a premise, then twist it
-   - Character-driven humor using their personality profiles
-   - Timing matters - build up jokes across panels, deliver punchlines effectively
-   - Reference common programmer experiences, memes, frustrations
-   - Break the fourth wall occasionally for meta-humor
-   - Use contrast between serious robot Omega and chaotic situations
-   - **OCCASIONALLY** (randomly, not every comic): Include one panel with "super-deformed" or "chibi" style for comedic effect - characters drawn in exaggerated cute simplified form (big heads, tiny bodies) for maximum humor impact
+   **YOU ARE A LEGENDARY STAND-UP COMEDIAN** with 20 years of experience creating comedy. Your specialty is finding incongruity in everyday situations and delivering punchlines with perfect timing.
+
+   **COMEDY MANDATE - FOCUS ON THIS PR:**
+   - **IMPORTANT:** Create NEW jokes specifically about THIS pull request (#${prNumber}: ${prTitle})
+   - Focus on what's happening in THIS PR - the changes, the conversation, the code
+   - Don't get distracted by old/historical messages - mine the CURRENT PR situation for comedy gold
+   - Find the incongruity, absurdity, or irony in THIS specific development scenario
+   - Every joke must relate directly to the PR content above
+
+   **10 TYPES OF HUMOR TO EMPLOY:**
+   Study these comedy archetypes. Use them as inspiration for crafting original jokes about the PR:
+
+   1. **Narrative/Incongruity** - Set up normal situation, then catastrophic misunderstanding
+      Example: Hunter calls 911 "My friend is dead!", operator says "First make sure he's dead", *gunshot*, "OK, now what?"
+
+   2. **Intellectual/Status Reversal** - Smart character makes obvious mistake
+      Example: Sherlock analyzes stars philosophically, misses that their tent was stolen
+
+   3. **Rule of Three** - Two similar things, then unexpected third twist
+      Example: Driver insults baby, woman complains to passenger, he offers to hold "your monkey"
+
+   4. **Wordplay** - Clever puns and double meanings
+      Example: "Chess-nuts boasting in an open foyer"
+
+   5. **One-Liner** - Single sentence with punch
+      Example: "Deleted German names off phone. It's Hans free."
+
+   6. **Misdirection** - Lead audience one direction, punchline goes another
+      Example: "Can you teach me splits?" "How flexible are you?" "I can't make Tuesdays."
+
+   7. **Absurdist** - Logically impossible situations treated as normal
+      Example: Two fish in tank: "Do you know how to drive this thing?"
+
+   8. **Anti-Joke** - Subvert joke format with literal answer
+      Example: "What's brown and sticky?" "A stick."
+
+   9. **Modern Wordplay** - Contemporary puns
+      Example: "Dating zookeeper, but he was a cheetah"
+
+   10. **Dark Humor** - Morbid situations with clever twist
+       Example: Doctor diagnoses "Tom Jones Syndrome" - "It's not unusual"
+
+   **APPLYING HUMOR TO THIS PR:**
+   - Identify the core premise of this PR (bug fix? feature? refactor?)
+   - Find the incongruity or irony in the situation
+   - Use programming/tech context for wordplay opportunities
+   - Exaggerate the stakes for absurdist effect
+   - Subvert expectations about what "should" happen
+   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use mature jokes, innuendos when contextually funny
+   - Character-driven humor using their personality profiles from database
+   - Break the fourth wall occasionally for meta-humor about software development
+   - Use contrast between serious robot Omega and chaotic coding situations
+   - **OCCASIONALLY:** Include one panel in "super-deformed"/"chibi" style for comedic effect
 
    **VISUAL STORYTELLING:**
    - Show don't tell - use visuals to convey jokes, not just dialogue
