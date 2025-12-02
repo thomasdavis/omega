@@ -5,10 +5,11 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc && cp -r src/postgres/migrations/*.sql dist/postgres/migrations/",
+    "build": "prisma generate && tsc && cp -r src/postgres/migrations/*.sql dist/postgres/migrations/",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "~5.22.0",
