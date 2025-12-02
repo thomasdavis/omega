@@ -40,6 +40,9 @@ COPY --from=base /app/packages/shared/package.json ./packages/shared/
 COPY --from=base /app/packages/database/package.json ./packages/database/
 COPY --from=base /app/apps/web/package.json ./apps/web/
 
+# Copy Prisma schema for database package (needed for postinstall hook)
+COPY --from=base /app/packages/database/prisma ./packages/database/prisma
+
 # Install production dependencies
 RUN pnpm install --frozen-lockfile --prod
 
