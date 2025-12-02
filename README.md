@@ -149,6 +149,10 @@ Omega includes an automated Railway error detection system with AI-powered analy
 
 See `apps/bot/docs/RAILWAY-ERROR-MONITORING.md` for setup and usage details.
 
+### 🤝 Cross-Bot Collaboration
+
+Omega can message other bots in the server to delegate work dynamically. This enables collaboration across multiple AI agents, allowing Omega to distribute tasks and orchestrate multi-bot workflows.
+
 ## How It Works
 
 ### The Self-Coding Loop
