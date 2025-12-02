@@ -32,6 +32,7 @@ export async function createUserProfile(userId: string, username: string): Promi
 
   await prisma.userProfile.create({
     data: {
+      id,
       userId,
       username,
       firstSeenAt: now,
