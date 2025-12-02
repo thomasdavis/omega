@@ -13,18 +13,6 @@ export async function GET(
   try {
     const { username } = await params;
 
-    // Initialize OpenAI client at runtime
-    if (!process.env.OPENAI_API_KEY) {
-      return new NextResponse('# Configuration Error\n\nOpenAI API key not configured.', {
-        status: 500,
-        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
-      });
-    }
-
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-
     // Fetch user profile
     const profile = await prisma.userProfile.findFirst({
       where: { username },
@@ -36,6 +24,45 @@ export async function GET(
         headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
       });
     }
+
+    // Check for cached synthesis
+    const cachedSynthesis = await prisma.agentSynthesis.findUnique({
+      where: { userId: profile.userId },
+    });
+
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const CACHE_DURATION = 20 * 60; // 20 minutes in seconds
+
+    // Return cached version if it exists and is fresh (less than 20 minutes old)
+    if (cachedSynthesis) {
+      const age = now - Number(cachedSynthesis.generatedAt);
+      if (age < CACHE_DURATION) {
+        console.log(`[AgentSynthesis] Cache hit for ${username} (age: ${Math.floor(age / 60)} minutes)`);
+        return new NextResponse(cachedSynthesis.synthesisContent, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/markdown; charset=utf-8',
+            'X-Cache': 'HIT',
+            'X-Cache-Age': age.toString(),
+          },
+        });
+      }
+      console.log(`[AgentSynthesis] Cache expired for ${username} (age: ${Math.floor(age / 60)} minutes)`);
+    } else {
+      console.log(`[AgentSynthesis] No cache found for ${username}`);
+    }
+
+    // Initialize OpenAI client at runtime
+    if (!process.env.OPENAI_API_KEY) {
+      return new NextResponse('# Configuration Error\n\nOpenAI API key not configured.', {
+        status: 500,
+        headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
+      });
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     // Fetch last 500 messages by this user
     const messages = await prisma.message.findMany({
@@ -84,12 +111,36 @@ Your rules:
 
     const markdown = completion.choices[0]?.message?.content || '# Error\n\nFailed to generate agent response';
 
-    // Return as markdown with 20-minute browser cache
+    // Store synthesis in database
+    const generatedAt = Math.floor(Date.now() / 1000);
+
+    await prisma.agentSynthesis.upsert({
+      where: { userId: profile.userId },
+      create: {
+        userId: profile.userId,
+        username: profile.username,
+        synthesisContent: markdown,
+        messageCount: messages.length,
+        generatedAt: BigInt(generatedAt),
+      },
+      update: {
+        username: profile.username,
+        synthesisContent: markdown,
+        messageCount: messages.length,
+        generatedAt: BigInt(generatedAt),
+        updatedAt: BigInt(generatedAt),
+      },
+    });
+
+    console.log(`[AgentSynthesis] Generated and cached new synthesis for ${username}`);
+
+    // Return markdown with cache headers
     return new NextResponse(markdown, {
       status: 200,
       headers: {
         'Content-Type': 'text/markdown; charset=utf-8',
-        'Cache-Control': 'public, max-age=1200', // Cache for 20 minutes (1200 seconds)
+        'X-Cache': 'MISS',
+        'Cache-Control': 'public, max-age=1200', // Browser cache for 20 minutes
       },
     });
   } catch (error) {

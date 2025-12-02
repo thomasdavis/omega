@@ -252,3 +252,18 @@ model TodoList {
   @@index([isCompleted], map: "idx_todo_list_is_completed")
   @@map("todo_list")
 }
+
+model AgentSynthesis {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  username         String
+  synthesisContent String   @map("synthesis_content") @db.Text
+  messageCount     Int      @map("message_count")
+  generatedAt      BigInt   @map("generated_at")
+  createdAt        BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt        BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([userId], map: "idx_agent_synthesis_user_id")
+  @@index([generatedAt(sort: Desc)], map: "idx_agent_synthesis_generated_at")
+  @@map("agent_syntheses")
+}
