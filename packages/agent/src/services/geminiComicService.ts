@@ -62,7 +62,10 @@ async function fetchAllUserProfiles(): Promise<string> {
   try {
     // Determine Omega API base URL
     const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omegaai.dev';
-    const url = `${OMEGA_API_URL}/api/profiles-full`;
+
+    // Fetch all profiles with pagination
+    // Start with a large limit to get all profiles in one request
+    const url = `${OMEGA_API_URL}/api/profiles?limit=1000`;
 
     console.log(`🔍 Fetching ALL user profiles from ${url}`);
 
@@ -75,18 +78,15 @@ async function fetchAllUserProfiles(): Promise<string> {
 
     const data: any = await response.json();
 
-    if (!data.success || !data.profiles) {
+    if (!data.profiles || !Array.isArray(data.profiles)) {
       console.warn('⚠️ Invalid response from Omega API:', data);
       return '';
     }
 
-    // Filter out users with messageCount = 0 (inactive users)
-    const activeProfiles = data.profiles.filter((profile: any) => {
-      const messageCount = profile.messageCount || profile.message_count || 0;
-      return messageCount > 0;
-    });
+    // Note: /api/profiles already filters for messageCount > 0, so no need to filter again
+    const activeProfiles = data.profiles;
 
-    console.log(`✅ Fetched ${activeProfiles.length} active profiles (filtered from ${data.profiles.length} total)`);
+    console.log(`✅ Fetched ${activeProfiles.length} active profiles (out of ${data.total} total)`);
 
     // Return raw JSON stringified for direct prompt insertion
     return JSON.stringify(activeProfiles, null, 2);
@@ -261,7 +261,7 @@ function buildCharacterDatabaseSection(profilesJson: string): string {
   return `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE (Raw JSON)**
 
 You have access to comprehensive profiles for ALL Discord community members.
-This is the COMPLETE JSON response from the /api/profiles-full endpoint.
+This is the COMPLETE JSON response from the /api/profiles endpoint.
 It includes ALL psychological and phenotype data for every user:
 
 - Physical appearance (78+ fields): hair, eyes, skin, face shape, build, height, style, etc.
