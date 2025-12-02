@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./tailwind-preset": {
       "import": "./dist/styles/tailwind-preset.js",
+      "require": "./dist/styles/tailwind-preset.js",
       "types": "./dist/styles/tailwind-preset.d.ts"
     },
     "./globals.css": "./dist/styles/globals.css"
