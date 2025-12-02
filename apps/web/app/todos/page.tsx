@@ -66,7 +66,7 @@ export default function TodosPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <h1 className="text-5xl font-light text-white tracking-tight">Todo List</h1>
           <p className="mt-3 text-zinc-400 font-light max-w-2xl">
-            Omega's task list sorted by completion status (incomplete tasks first)
+            Omega&apos;s task list sorted by completion status (incomplete tasks first)
           </p>
         </div>
       </div>
