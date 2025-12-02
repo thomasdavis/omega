@@ -1782,6 +1782,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'summarizeUserProfiles',
+    name: 'Summarize User Profiles',
+    description: 'AI-powered summarization and analysis of user profiles across database based on requested datapoints',
+    keywords: ['summarize', 'analyze', 'profiles', 'users', 'average', 'statistics', 'aggregate', 'community', 'emotional intelligence', 'personality', 'traits', 'patterns'],
+    tags: ['admin', 'analytics', 'user', 'profile', 'ai', 'statistics'],
+    examples: [
+      'what is the average emotional intelligence',
+      'summarize all user profiles',
+      'analyze personality traits across users',
+      'what are the dominant archetypes',
+      'compare trust levels',
+      'show community statistics',
+      'analyze communication styles'
+    ],
+    category: 'admin'
+  },
+
+  {
     id: 'bullshitDetector',
     name: 'Bullshit Detector',
     description: 'Detect and analyze misleading information',
