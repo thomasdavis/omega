@@ -2,10 +2,24 @@ import { NextResponse } from 'next/server';
 import { readdirSync, statSync, existsSync } from 'fs';
 import { join } from 'path';
 
+/**
+ * Get the comics directory path
+ * Uses /data/comics in production (Railway shared volume), otherwise local fallback
+ */
+function getComicsDir(): string {
+  // Check for production Railway volume
+  if (process.env.NODE_ENV === 'production' && existsSync('/data')) {
+    return '/data/comics';
+  }
+
+  // Local development fallback
+  return join(process.cwd(), '../bot/public/comics');
+}
+
 export async function GET() {
   try {
-    // Path to comics directory in the bot app
-    const comicsDir = join(process.cwd(), 'apps/bot/public/comics');
+    // Path to comics directory (shared volume in production)
+    const comicsDir = getComicsDir();
 
     // Check if directory exists
     if (!existsSync(comicsDir)) {
@@ -13,6 +27,7 @@ export async function GET() {
         success: false,
         error: 'Comics directory not found',
         path: comicsDir,
+        env: process.env.NODE_ENV,
       }, { status: 404 });
     }
 
@@ -40,7 +55,7 @@ export async function GET() {
           id: number,
           number,
           filename: file,
-          url: `/comics/${file}`,
+          url: `/api/comics/${file}`,
           createdAt: stats.birthtime.toISOString(),
           size: stats.size,
         };

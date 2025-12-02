@@ -125,6 +125,27 @@ export function getContentIndexDir(localFallback?: string): string {
 }
 
 /**
+ * Get the comics directory path
+ * Uses /data/comics in production with Railway volume, otherwise local path
+ */
+export function getComicsDir(localFallback?: string): string {
+  if (isProductionWithVolume()) {
+    const dir = '/data/comics';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Default local fallback path
+  const fallback = localFallback || join(process.cwd(), 'apps/bot/public/comics');
+  if (!existsSync(fallback)) {
+    mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
+}
+
+/**
  * Get the public directory path (for static assets like TTS player)
  * This directory is part of the codebase, not persistent storage
  */
@@ -160,12 +181,14 @@ export function initializeStorage(): void {
   const uploadsDir = getUploadsDir();
   const blogDir = getBlogDir();
   const contentIndexDir = getContentIndexDir();
+  const comicsDir = getComicsDir();
   const publicDir = getPublicDir();
 
   console.log(`   Artifacts: ${artifactsDir}`);
   console.log(`   Uploads: ${uploadsDir}`);
   console.log(`   Blog: ${blogDir}`);
   console.log(`   Content Index: ${contentIndexDir}`);
+  console.log(`   Comics: ${comicsDir}`);
   console.log(`   Public: ${publicDir}`);
 
   if (isProductionWithVolume()) {

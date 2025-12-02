@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { OMEGA_APPEARANCE } from '../lib/omegaAppearance.js';
+import { getComicsDir } from '../utils/storage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -186,7 +187,7 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     }
 
     // Save the image to file system
-    const outputDir = path.join(__dirname, '../../public/comics');
+    const outputDir = getComicsDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     // Use issue number if available, otherwise use PR number with timestamp

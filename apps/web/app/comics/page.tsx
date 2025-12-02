@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 interface Comic {
-  id: string;
+  id: number;
+  number: number;
   filename: string;
+  url: string;
   createdAt: string;
   size: number;
 }
@@ -74,13 +76,12 @@ export default function ComicsPage() {
                 key={comic.id}
                 className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
               >
-                {/* Comic Preview in iframe */}
-                <div className="w-full h-96 bg-gray-100 border-b border-gray-200">
-                  <iframe
-                    src={`/api/artifacts/${comic.id}`}
-                    className="w-full h-full"
-                    title={comic.filename}
-                    sandbox="allow-scripts allow-same-origin"
+                {/* Comic Preview */}
+                <div className="w-full h-96 bg-gray-100 border-b border-gray-200 flex items-center justify-center overflow-hidden">
+                  <img
+                    src={comic.url}
+                    alt={comic.filename}
+                    className="w-full h-full object-contain"
                   />
                 </div>
 
