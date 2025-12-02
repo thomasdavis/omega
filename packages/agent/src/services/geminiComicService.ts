@@ -305,6 +305,7 @@ function buildComicPrompt(
         lowerLine.includes('lint') ||
         lowerLine.includes('linting') ||
         lowerLine.includes('eslint') ||
+        lowerLine.includes('Omega Deploy') ||
         lowerLine.includes('prettier') ||
         lowerLine.includes('passing') ||
         lowerLine.includes('passed') ||
@@ -593,7 +594,7 @@ export function extractConversationContext(prData: any): string {
     parts.push('');
 
     // Get last 20 messages, sorted oldest to newest
-    const messages = prData.discordMessages.slice(-20);
+    const messages = prData.discordMessages.slice(-30);
 
     // List messages with timestamps
     for (const msg of messages) {

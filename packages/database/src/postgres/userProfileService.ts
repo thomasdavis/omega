@@ -75,10 +75,16 @@ export async function updateUserProfile(
     updatedAt: now,
   };
 
-  // Map all update fields dynamically
+  // Helper function to convert snake_case to camelCase
+  const snakeToCamel = (str: string): string => {
+    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  };
+
+  // Map all update fields dynamically, converting keys to camelCase
   for (const [key, value] of Object.entries(updates)) {
     if (value !== undefined && key !== 'id' && key !== 'userId') {
-      prismaUpdates[key] = value;
+      const camelKey = snakeToCamel(key);
+      prismaUpdates[camelKey] = value;
     }
   }
 
