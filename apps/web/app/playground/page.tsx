@@ -105,7 +105,7 @@ export default function PlaygroundPage() {
                 <div className="space-y-2">
                   <Text size="xs">Extra small text</Text>
                   <Text size="sm">Small text</Text>
-                  <Text size="md">Medium text (default)</Text>
+                  <Text size="base">Base text (default)</Text>
                   <Text size="lg">Large text</Text>
                   <Text size="xl">Extra large text</Text>
                 </div>
@@ -116,10 +116,10 @@ export default function PlaygroundPage() {
                   Text Weights
                 </Text>
                 <div className="space-y-2">
+                  <Text weight="light">Light weight</Text>
                   <Text weight="normal">Normal weight</Text>
                   <Text weight="medium">Medium weight</Text>
                   <Text weight="semibold">Semibold weight</Text>
-                  <Text weight="bold">Bold weight</Text>
                 </div>
               </div>
 
@@ -150,10 +150,10 @@ export default function PlaygroundPage() {
                 <div className="flex flex-wrap gap-3">
                   <Badge variant="default">Default</Badge>
                   <Badge variant="primary">Primary</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
                   <Badge variant="success">Success</Badge>
                   <Badge variant="warning">Warning</Badge>
-                  <Badge variant="danger">Danger</Badge>
+                  <Badge variant="error">Error</Badge>
+                  <Badge variant="info">Info</Badge>
                 </div>
               </div>
 
@@ -294,22 +294,26 @@ export default function PlaygroundPage() {
               <StatCard
                 label="Total Users"
                 value="1,234"
-                trend={{ value: 12.5, direction: 'up' }}
+                trend="+12.5%"
+                trendDirection="up"
               />
               <StatCard
                 label="Active Sessions"
                 value="856"
-                trend={{ value: 8.2, direction: 'up' }}
+                trend="+8.2%"
+                trendDirection="up"
               />
               <StatCard
                 label="Revenue"
                 value="$45,678"
-                trend={{ value: 5.3, direction: 'down' }}
+                trend="-5.3%"
+                trendDirection="down"
               />
               <StatCard
                 label="Conversion Rate"
                 value="3.24%"
-                trend={{ value: 0.5, direction: 'up' }}
+                trend="+0.5%"
+                trendDirection="up"
               />
             </div>
           </section>
@@ -408,17 +412,20 @@ export default function PlaygroundPage() {
                     <StatCard
                       label="Messages"
                       value="1,234"
-                      trend={{ value: 12.5, direction: 'up' }}
+                      trend="+12.5%"
+                      trendDirection="up"
                     />
                     <StatCard
                       label="Artifacts"
                       value="56"
-                      trend={{ value: 8.2, direction: 'up' }}
+                      trend="+8.2%"
+                      trendDirection="up"
                     />
                     <StatCard
                       label="Documents"
                       value="89"
-                      trend={{ value: 5.3, direction: 'down' }}
+                      trend="-5.3%"
+                      trendDirection="down"
                     />
                   </div>
 
@@ -447,8 +454,8 @@ export default function PlaygroundPage() {
                       <Label>Notification Preferences</Label>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <Badge variant="primary">Email</Badge>
-                        <Badge variant="secondary">Push</Badge>
-                        <Badge variant="default">SMS</Badge>
+                        <Badge variant="default">Push</Badge>
+                        <Badge variant="info">SMS</Badge>
                       </div>
                     </div>
                   </div>
