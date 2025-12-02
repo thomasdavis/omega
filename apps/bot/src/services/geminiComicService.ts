@@ -63,7 +63,10 @@ async function fetchAllUserProfiles(): Promise<string> {
   try {
     // Determine Omega API base URL
     const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omegaai.dev';
-    const url = `${OMEGA_API_URL}/api/profiles-full`;
+
+    // Fetch all profiles with pagination
+    // Start with a large limit to get all profiles in one request
+    const url = `${OMEGA_API_URL}/api/profiles?limit=1000`;
 
     console.log(`🔍 Fetching ALL user profiles from ${url}`);
 
@@ -76,18 +79,15 @@ async function fetchAllUserProfiles(): Promise<string> {
 
     const data: any = await response.json();
 
-    if (!data.success || !data.profiles) {
+    if (!data.profiles || !Array.isArray(data.profiles)) {
       console.warn('⚠️ Invalid response from Omega API:', data);
       return '';
     }
 
-    // Filter out users with messageCount = 0 (inactive users)
-    const activeProfiles = data.profiles.filter((profile: any) => {
-      const messageCount = profile.messageCount || profile.message_count || 0;
-      return messageCount > 0;
-    });
+    // Note: /api/profiles already filters for messageCount > 0, so no need to filter again
+    const activeProfiles = data.profiles;
 
-    console.log(`✅ Fetched ${activeProfiles.length} active profiles (filtered from ${data.profiles.length} total)`);
+    console.log(`✅ Fetched ${activeProfiles.length} active profiles (out of ${data.total} total)`);
 
     // Return raw JSON stringified for direct prompt insertion
     return JSON.stringify(activeProfiles, null, 2);
@@ -262,7 +262,7 @@ function buildCharacterDatabaseSection(profilesJson: string): string {
   return `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE (Raw JSON)**
 
 You have access to comprehensive profiles for ALL Discord community members.
-This is the COMPLETE JSON response from the /api/profiles-full endpoint.
+This is the COMPLETE JSON response from the /api/profiles endpoint.
 It includes ALL psychological and phenotype data for every user:
 
 - Physical appearance (78+ fields): hair, eyes, skin, face shape, build, height, style, etc.
@@ -426,17 +426,59 @@ ${characterDatabase}
    - Double-check: Does this character look identical to panel 1? If not, fix it.
 
 5. **COMEDY & WIT - CRITICAL:**
-   - Make it GENUINELY FUNNY - this is a comedy comic strip
-   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use adult humor, sexual innuendos, and mature jokes when they fit the context naturally
-   - Use clever wordplay, programming puns, and tech humor
-   - Include visual gags (exaggerated reactions, sight gags, absurd scenarios)
-   - Subvert expectations - set up a premise, then twist it
-   - Character-driven humor using their personality profiles
-   - Timing matters - build up jokes across panels, deliver punchlines effectively
-   - Reference common programmer experiences, memes, frustrations
-   - Break the fourth wall occasionally for meta-humor
-   - Use contrast between serious robot Omega and chaotic situations
-   - **OCCASIONALLY** (randomly, not every comic): Include one panel with "super-deformed" or "chibi" style for comedic effect - characters drawn in exaggerated cute simplified form (big heads, tiny bodies) for maximum humor impact
+   **YOU ARE A LEGENDARY STAND-UP COMEDIAN** with 20 years of experience creating comedy. Your specialty is finding incongruity in everyday situations and delivering punchlines with perfect timing.
+
+   **COMEDY MANDATE - FOCUS ON THIS PR:**
+   - **IMPORTANT:** Create NEW jokes specifically about THIS pull request (#${prNumber}: ${prTitle})
+   - Focus on what's happening in THIS PR - the changes, the conversation, the code
+   - Don't get distracted by old/historical messages - mine the CURRENT PR situation for comedy gold
+   - Find the incongruity, absurdity, or irony in THIS specific development scenario
+   - Every joke must relate directly to the PR content above
+
+   **10 TYPES OF HUMOR TO EMPLOY:**
+   Study these comedy archetypes. Use them as inspiration for crafting original jokes about the PR:
+
+   1. **Narrative/Incongruity** - Set up normal situation, then catastrophic misunderstanding
+      Example: Hunter calls 911 "My friend is dead!", operator says "First make sure he's dead", *gunshot*, "OK, now what?"
+
+   2. **Intellectual/Status Reversal** - Smart character makes obvious mistake
+      Example: Sherlock analyzes stars philosophically, misses that their tent was stolen
+
+   3. **Rule of Three** - Two similar things, then unexpected third twist
+      Example: Driver insults baby, woman complains to passenger, he offers to hold "your monkey"
+
+   4. **Wordplay** - Clever puns and double meanings
+      Example: "Chess-nuts boasting in an open foyer"
+
+   5. **One-Liner** - Single sentence with punch
+      Example: "Deleted German names off phone. It's Hans free."
+
+   6. **Misdirection** - Lead audience one direction, punchline goes another
+      Example: "Can you teach me splits?" "How flexible are you?" "I can't make Tuesdays."
+
+   7. **Absurdist** - Logically impossible situations treated as normal
+      Example: Two fish in tank: "Do you know how to drive this thing?"
+
+   8. **Anti-Joke** - Subvert joke format with literal answer
+      Example: "What's brown and sticky?" "A stick."
+
+   9. **Modern Wordplay** - Contemporary puns
+      Example: "Dating zookeeper, but he was a cheetah"
+
+   10. **Dark Humor** - Morbid situations with clever twist
+       Example: Doctor diagnoses "Tom Jones Syndrome" - "It's not unusual"
+
+   **APPLYING HUMOR TO THIS PR:**
+   - Identify the core premise of this PR (bug fix? feature? refactor?)
+   - Find the incongruity or irony in the situation
+   - Use programming/tech context for wordplay opportunities
+   - Exaggerate the stakes for absurdist effect
+   - Subvert expectations about what "should" happen
+   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use mature jokes, innuendos when contextually funny
+   - Character-driven humor using their personality profiles from database
+   - Break the fourth wall occasionally for meta-humor about software development
+   - Use contrast between serious robot Omega and chaotic coding situations
+   - **OCCASIONALLY:** Include one panel in "super-deformed"/"chibi" style for comedic effect
 
    **VISUAL STORYTELLING:**
    - Show don't tell - use visuals to convey jokes, not just dialogue
@@ -547,28 +589,19 @@ export function extractConversationContext(prData: any): string {
   // Include Discord messages if provided
   if (prData.discordMessages && prData.discordMessages.length > 0) {
     parts.push('');
-    parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
+    parts.push(`Discord Conversations (last 20 messages):`);
+    parts.push('');
 
-    // Group by user to show diverse perspectives
-    const messagesByUser = new Map<string, any[]>();
-    for (const msg of prData.discordMessages) {
-      if (!messagesByUser.has(msg.username)) {
-        messagesByUser.set(msg.username, []);
-      }
-      messagesByUser.get(msg.username)!.push(msg);
-    }
+    // Get last 20 messages, sorted oldest to newest
+    const messages = prData.discordMessages.slice(-20);
 
-    // Include up to 3 messages per user
-    for (const [username, messages] of messagesByUser) {
-      const messagesToInclude = messages.slice(0, 3);
-      for (const msg of messagesToInclude) {
-        const content = msg.content.length > 500
-          ? msg.content.substring(0, 500) + '...'
-          : msg.content;
-
-        const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
-        parts.push(`- ${username}${channelInfo}: ${content}`);
-      }
+    // List messages with timestamps
+    for (const msg of messages) {
+      const timestamp = msg.timestamp
+        ? new Date(msg.timestamp).toLocaleString()
+        : 'unknown time';
+      const channelInfo = msg.channelName ? ` #${msg.channelName}` : '';
+      parts.push(`[${timestamp}]${channelInfo} ${msg.username}: ${msg.content}`);
     }
   }
 
