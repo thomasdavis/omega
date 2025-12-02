@@ -102,7 +102,7 @@ jobs:
 
       - name: Build agent package
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
-        run: pnpm build --filter=agent
+        run: pnpm build --filter=@repo/agent
 
       - name: Generate Comic
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
