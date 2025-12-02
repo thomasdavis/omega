@@ -588,28 +588,19 @@ export function extractConversationContext(prData: any): string {
   // Include Discord messages if provided
   if (prData.discordMessages && prData.discordMessages.length > 0) {
     parts.push('');
-    parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
+    parts.push(`Discord Conversations (last 20 messages):`);
+    parts.push('');
 
-    // Group by user to show diverse perspectives
-    const messagesByUser = new Map<string, any[]>();
-    for (const msg of prData.discordMessages) {
-      if (!messagesByUser.has(msg.username)) {
-        messagesByUser.set(msg.username, []);
-      }
-      messagesByUser.get(msg.username)!.push(msg);
-    }
+    // Get last 20 messages, sorted oldest to newest
+    const messages = prData.discordMessages.slice(-20);
 
-    // Include up to 3 messages per user
-    for (const [username, messages] of messagesByUser) {
-      const messagesToInclude = messages.slice(0, 3);
-      for (const msg of messagesToInclude) {
-        const content = msg.content.length > 500
-          ? msg.content.substring(0, 500) + '...'
-          : msg.content;
-
-        const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
-        parts.push(`- ${username}${channelInfo}: ${content}`);
-      }
+    // List messages with timestamps
+    for (const msg of messages) {
+      const timestamp = msg.timestamp
+        ? new Date(msg.timestamp).toLocaleString()
+        : 'unknown time';
+      const channelInfo = msg.channelName ? ` #${msg.channelName}` : '';
+      parts.push(`[${timestamp}]${channelInfo} ${msg.username}: ${msg.content}`);
     }
   }
 
