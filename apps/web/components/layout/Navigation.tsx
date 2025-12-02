@@ -9,6 +9,7 @@ const navLinks = [
   { href: '/messages', label: 'Messages' },
   { href: '/artifacts', label: 'Artifacts' },
   { href: '/documents', label: 'Documents' },
+  { href: '/todos', label: 'Todos' },
   { href: '/blog', label: 'Blog' },
   { href: '/comics', label: 'Comics' },
   { href: '/profiles', label: 'Profiles' },
