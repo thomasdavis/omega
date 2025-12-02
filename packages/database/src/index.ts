@@ -9,6 +9,7 @@ export * from './mongodb/tools/index.js';
 
 // PostgreSQL
 export { getPostgresPool } from './postgres/client.js';
+export { prisma, getPrismaClient, connectPrisma, disconnectPrisma } from './postgres/prismaClient.js';
 export * from './postgres/tools/index.js';
 
 // Backward compatibility: getDatabase now returns PostgreSQL pool

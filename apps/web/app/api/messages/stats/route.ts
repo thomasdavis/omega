@@ -1,47 +1,50 @@
 import { NextResponse } from 'next/server';
-import { getPostgresPool } from '@repo/database';
+import { prisma } from '@repo/database';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const pool = await getPostgresPool();
+    const twentyFourHoursAgo = BigInt(Math.floor(Date.now() / 1000) - 24 * 60 * 60);
 
-    const [totalResult, byTypeResult, byUserResult, recentResult] = await Promise.all([
+    const [total, byType, topUsers, last24Hours] = await Promise.all([
       // Total messages
-      pool.query('SELECT COUNT(*) as total FROM messages'),
+      prisma.message.count(),
 
       // Messages by sender type
-      pool.query(`
-        SELECT sender_type, COUNT(*) as count
-        FROM messages
-        GROUP BY sender_type
-        ORDER BY count DESC
-      `),
+      prisma.message.groupBy({
+        by: ['senderType'],
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+      }),
 
       // Top users by message count
-      pool.query(`
-        SELECT username, user_id, COUNT(*) as count
-        FROM messages
-        WHERE username IS NOT NULL
-        GROUP BY username, user_id
-        ORDER BY count DESC
-        LIMIT 10
-      `),
+      prisma.message.groupBy({
+        by: ['username', 'userId'],
+        where: { username: { not: null } },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 10,
+      }),
 
       // Recent activity (last 24 hours)
-      pool.query(`
-        SELECT COUNT(*) as count
-        FROM messages
-        WHERE timestamp > EXTRACT(EPOCH FROM NOW() - INTERVAL '24 hours')
-      `),
+      prisma.message.count({
+        where: { timestamp: { gt: twentyFourHoursAgo } },
+      }),
     ]);
 
     return NextResponse.json({
-      total: parseInt(totalResult.rows[0].total, 10),
-      byType: byTypeResult.rows,
-      topUsers: byUserResult.rows,
-      last24Hours: parseInt(recentResult.rows[0].count, 10),
+      total,
+      byType: byType.map((item) => ({
+        sender_type: item.senderType,
+        count: String(item._count.id),
+      })),
+      topUsers: topUsers.map((item) => ({
+        username: item.username,
+        user_id: item.userId,
+        count: String(item._count.id),
+      })),
+      last24Hours,
     });
   } catch (error) {
     console.error('Error fetching message stats:', error);

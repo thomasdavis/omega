@@ -1,0 +1,323 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// MESSAGES TABLE
+// ============================================================================
+
+model Message {
+  id              String  @id
+  timestamp       BigInt
+  senderType      String  @map("sender_type")
+  userId          String? @map("user_id")
+  username        String?
+  channelId       String? @map("channel_id")
+  channelName     String? @map("channel_name")
+  messageContent  String  @map("message_content")
+  toolName        String? @map("tool_name")
+  metadata        Json?
+  conversationId  String? @map("conversation_id")
+  parentMessageId String? @map("parent_message_id")
+
+  createdAt BigInt @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+
+  @@index([timestamp(sort: Desc)])
+  @@index([userId])
+  @@index([channelId])
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ============================================================================
+// QUERIES TABLE
+// ============================================================================
+
+model Query {
+  id             String  @id
+  userId         String  @map("user_id")
+  username       String?
+  channelId      String  @map("channel_id")
+  channelName    String? @map("channel_name")
+  queryText      String  @map("query_text")
+  responseText   String? @map("response_text")
+  timestamp      BigInt
+  executionTime  Int?    @map("execution_time")
+  success        Boolean @default(true)
+  errorMessage   String? @map("error_message")
+  metadata       Json?
+  conversationId String? @map("conversation_id")
+
+  createdAt BigInt @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+
+  @@index([timestamp(sort: Desc)])
+  @@index([userId])
+  @@index([channelId])
+  @@map("queries")
+}
+
+// ============================================================================
+// DOCUMENTS TABLE
+// ============================================================================
+
+model Document {
+  id              String  @id
+  title           String
+  content         String
+  contentType     String  @map("content_type")
+  ownerId         String  @map("owner_id")
+  ownerUsername   String? @map("owner_username")
+  channelId       String? @map("channel_id")
+  channelName     String? @map("channel_name")
+  isPublic        Boolean @default(false) @map("is_public")
+  metadata        Json?
+  version         Int     @default(1)
+  lastEditedBy    String? @map("last_edited_by")
+
+  createdAt       BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+  updatedAt       BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("updated_at")
+
+  collaborators   DocumentCollaborator[]
+
+  @@index([ownerId])
+  @@index([channelId])
+  @@index([createdAt(sort: Desc)])
+  @@map("documents")
+}
+
+// ============================================================================
+// DOCUMENT_COLLABORATORS TABLE
+// ============================================================================
+
+model DocumentCollaborator {
+  id            String   @id
+  documentId    String   @map("document_id")
+  userId        String   @map("user_id")
+  username      String?
+  permission    String   @default("view")
+
+  addedAt       BigInt   @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("added_at")
+
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([userId])
+  @@map("document_collaborators")
+}
+
+// ============================================================================
+// USER_PROFILES TABLE
+// ============================================================================
+
+model UserProfile {
+  userId                        String  @id @map("user_id")
+  username                      String
+  globalName                    String? @map("global_name")
+  discriminator                 String?
+
+  // === EMOTIONAL STATE ===
+  currentFeelings               Json?   @map("current_feelings")
+  emotionalState                String? @map("emotional_state")
+  emotionalTrend                String? @map("emotional_trend")
+  emotionalVolatility           Float?  @map("emotional_volatility")
+  stressLevel                   Int?    @map("stress_level")
+  moodHistory                   Json?   @map("mood_history")
+
+  // === PERSONALITY TRAITS ===
+  bigFiveOpenness               Float?  @map("big_five_openness")
+  bigFiveConscientiousness      Float?  @map("big_five_conscientiousness")
+  bigFiveExtraversion           Float?  @map("big_five_extraversion")
+  bigFiveAgreeableness          Float?  @map("big_five_agreeableness")
+  bigFiveNeuroticism            Float?  @map("big_five_neuroticism")
+  personalityConfidence         Float?  @map("personality_confidence")
+  mbtiType                      String? @map("mbti_type")
+  mbtiConfidence                Float?  @map("mbti_confidence")
+  enneagramType                 String? @map("enneagram_type")
+  enneagramWing                 String? @map("enneagram_wing")
+  enneagramConfidence           Float?  @map("enneagram_confidence")
+  dominantTraits                Json?   @map("dominant_traits")
+  personalityNotes              String? @map("personality_notes")
+
+  // === COGNITIVE PATTERNS ===
+  thinkingStyle                 String? @map("thinking_style")
+  decisionMakingStyle           String? @map("decision_making_style")
+  problemSolvingApproach        String? @map("problem_solving_approach")
+  learningStyle                 String? @map("learning_style")
+  communicationStyle            String? @map("communication_style")
+  conflictStyle                 String? @map("conflict_style")
+  creativityLevel               Int?    @map("creativity_level")
+  analyticalLevel               Int?    @map("analytical_level")
+
+  // === INTERESTS & VALUES ===
+  interests                     Json?
+  hobbies                       Json?
+  values                        Json?
+  goals                         Json?
+  fears                         Json?
+  motivations                   Json?
+  strengthsWeaknesses           Json?   @map("strengths_weaknesses")
+
+  // === SOCIAL PATTERNS ===
+  socialStyle                   String? @map("social_style")
+  relationshipPatterns          Json?   @map("relationship_patterns")
+  attachmentStyle               String? @map("attachment_style")
+  socialEnergyLevel             Int?    @map("social_energy_level")
+  groupDynamicsRole             String? @map("group_dynamics_role")
+
+  // === LINGUISTIC PATTERNS ===
+  vocabularyComplexity          Float?  @map("vocabulary_complexity")
+  sentimentTrend                Float?  @map("sentiment_trend")
+  formalityLevel                Float?  @map("formality_level")
+  humorStyle                    String? @map("humor_style")
+  sarcasmFrequency              Float?  @map("sarcasm_frequency")
+  emojiUsagePattern             Json?   @map("emoji_usage_pattern")
+  typingPatterns                Json?   @map("typing_patterns")
+  commonPhrases                 Json?   @map("common_phrases")
+
+  // === BEHAVIORAL PATTERNS ===
+  activityPattern               Json?   @map("activity_pattern")
+  responseTimeAvg               Int?    @map("response_time_avg")
+  messageLengthAvg              Int?    @map("message_length_avg")
+  topicPreferences              Json?   @map("topic_preferences")
+  conversationInitiationRate    Float?  @map("conversation_initiation_rate")
+
+  // === LIFE CONTEXT ===
+  lifeStage                     String? @map("life_stage")
+  lifeCircumstances             Json?   @map("life_circumstances")
+  recentLifeEvents              Json?   @map("recent_life_events")
+  supportNetwork                Json?   @map("support_network")
+
+  // === MENTAL HEALTH INDICATORS ===
+  anxietyIndicators             Json?   @map("anxiety_indicators")
+  depressionIndicators          Json?   @map("depression_indicators")
+  wellbeingScore                Int?    @map("wellbeing_score")
+  copingMechanisms              Json?   @map("coping_mechanisms")
+  riskFactors                   Json?   @map("risk_factors")
+  protectiveFactors             Json?   @map("protective_factors")
+
+  // === CULTURAL BACKGROUND ===
+  culturalBackground            String? @map("cultural_background")
+  culturalValues                Json?   @map("cultural_values")
+  culturalCommunicationStyle    String? @map("cultural_communication_style")
+  culturalConfidence            Float?  @map("cultural_confidence")
+
+  // === ASTROLOGICAL DATA ===
+  zodiacSign                    String? @map("zodiac_sign")
+  zodiacElement                 String? @map("zodiac_element")
+  zodiacModality                String? @map("zodiac_modality")
+  birthDate                     String? @map("birth_date")
+  astrologicalConfidence        Float?  @map("astrological_confidence")
+
+  // === BEHAVIORAL PREDICTIONS ===
+  predictedBehaviors            Json?   @map("predicted_behaviors")
+  predictionConfidence          Float?  @map("prediction_confidence")
+  predictionTimeframe           String? @map("prediction_timeframe")
+  lastPredictionAt              BigInt? @map("last_prediction_at")
+  predictionAccuracyScore       Float?  @map("prediction_accuracy_score")
+
+  // === PSYCHO-CULTURAL-ASTROLOGICAL INTEGRATION ===
+  integratedProfileSummary      String? @map("integrated_profile_summary")
+  profileIntegrationConfidence  Float?  @map("profile_integration_confidence")
+  worldModelAdjustments         Json?   @map("world_model_adjustments")
+  personalModelAdjustments      Json?   @map("personal_model_adjustments")
+
+  // === PHYSICAL PHENOTYPE ANALYSIS ===
+  uploadedPhotoUrl              String? @map("uploaded_photo_url")
+  uploadedPhotoMetadata         Json?   @map("uploaded_photo_metadata")
+  aiAppearanceDescription       String? @map("ai_appearance_description")
+  appearanceConfidence          Float?  @default(0.0) @map("appearance_confidence")
+
+  aiDetectedGender              String? @map("ai_detected_gender")
+  genderConfidence              Float?  @map("gender_confidence")
+  estimatedAgeRange             String? @map("estimated_age_range")
+  ageConfidence                 Float?  @map("age_confidence")
+
+  faceShape                     String? @map("face_shape")
+  facialSymmetryScore           Int?    @map("facial_symmetry_score")
+  jawlineProminence             String? @map("jawline_prominence")
+  cheekboneProminence           String? @map("cheekbone_prominence")
+
+  hairColor                     String? @map("hair_color")
+  hairTexture                   String? @map("hair_texture")
+  hairLength                    String? @map("hair_length")
+  hairStyle                     String? @map("hair_style")
+  hairDensity                   String? @map("hair_density")
+  facialHair                    String? @map("facial_hair")
+
+  eyeColor                      String? @map("eye_color")
+  eyeShape                      String? @map("eye_shape")
+  eyeSpacing                    String? @map("eye_spacing")
+  eyebrowShape                  String? @map("eyebrow_shape")
+  eyebrowThickness              String? @map("eyebrow_thickness")
+
+  noseShape                     String? @map("nose_shape")
+  noseSize                      String? @map("nose_size")
+
+  lipFullness                   String? @map("lip_fullness")
+  smileType                     String? @map("smile_type")
+
+  skinTone                      String? @map("skin_tone")
+  skinTexture                   String? @map("skin_texture")
+  complexionQuality             String? @map("complexion_quality")
+
+  bodyType                      String? @map("body_type")
+  buildDescription              String? @map("build_description")
+  heightEstimate                String? @map("height_estimate")
+  posture                       String?
+
+  distinctiveFeatures           Json?   @map("distinctive_features")
+  clothingStyle                 String? @map("clothing_style")
+  accessories                   Json?
+
+  attractivenessAssessment      String? @map("attractiveness_assessment")
+  approachabilityScore          Int?    @map("approachability_score")
+  perceivedConfidenceLevel      String? @map("perceived_confidence_level")
+  aestheticArchetype            String? @map("aesthetic_archetype")
+
+  // === TRACKING & METADATA ===
+  firstSeenAt                   BigInt  @map("first_seen_at")
+  lastInteractionAt             BigInt  @map("last_interaction_at")
+  lastAnalyzedAt                BigInt? @map("last_analyzed_at")
+  lastPhotoAnalyzedAt           BigInt? @map("last_photo_analyzed_at")
+  messageCount                  Int     @default(0) @map("message_count")
+
+  createdAt                     BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+  updatedAt                     BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("updated_at")
+
+  analysisHistory               UserAnalysisHistory[]
+
+  @@index([userId])
+  @@index([lastAnalyzedAt])
+  @@map("user_profiles")
+}
+
+// ============================================================================
+// USER_ANALYSIS_HISTORY TABLE
+// ============================================================================
+
+model UserAnalysisHistory {
+  id                      String  @id
+  userId                  String  @map("user_id")
+  analysisTimestamp       BigInt  @map("analysis_timestamp")
+
+  feelingsSnapshot        Json?   @map("feelings_snapshot")
+  personalitySnapshot     Json?   @map("personality_snapshot")
+  messageCountAtAnalysis  Int?    @map("message_count_at_analysis")
+  changesSummary          String? @map("changes_summary")
+
+  createdAt               BigInt  @default(dbgenerated("EXTRACT(EPOCH FROM NOW())::BIGINT")) @map("created_at")
+
+  userProfile             UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([analysisTimestamp(sort: Desc)])
+  @@map("user_analysis_history")
+}

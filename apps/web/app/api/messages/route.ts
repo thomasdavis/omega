@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgresPool } from '@repo/database';
+import { prisma } from '@repo/database';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,70 +13,54 @@ export async function GET(request: NextRequest) {
     const channelId = searchParams.get('channel_id');
     const search = searchParams.get('search');
 
-    const pool = await getPostgresPool();
-
-    // Build dynamic query
-    let query = 'SELECT * FROM messages WHERE 1=1';
-    const params: any[] = [];
-    let paramIndex = 1;
+    // Build Prisma where clause
+    const where: any = {};
 
     if (senderType) {
-      query += ` AND sender_type = $${paramIndex++}`;
-      params.push(senderType);
+      where.senderType = senderType;
     }
 
     if (userId) {
-      query += ` AND user_id = $${paramIndex++}`;
-      params.push(userId);
+      where.userId = userId;
     }
 
     if (channelId) {
-      query += ` AND channel_id = $${paramIndex++}`;
-      params.push(channelId);
+      where.channelId = channelId;
     }
 
     if (search) {
-      query += ` AND (message_content ILIKE $${paramIndex++} OR username ILIKE $${paramIndex++})`;
-      params.push(`%${search}%`, `%${search}%`);
-      paramIndex++; // Account for second parameter
+      where.OR = [
+        { messageContent: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
-    query += ` ORDER BY timestamp DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
-    params.push(limit, offset);
-
-    // Get total count
-    let countQuery = 'SELECT COUNT(*) as total FROM messages WHERE 1=1';
-    const countParams: any[] = [];
-    let countParamIndex = 1;
-
-    if (senderType) {
-      countQuery += ` AND sender_type = $${countParamIndex++}`;
-      countParams.push(senderType);
-    }
-
-    if (userId) {
-      countQuery += ` AND user_id = $${countParamIndex++}`;
-      countParams.push(userId);
-    }
-
-    if (channelId) {
-      countQuery += ` AND channel_id = $${countParamIndex++}`;
-      countParams.push(channelId);
-    }
-
-    if (search) {
-      countQuery += ` AND (message_content ILIKE $${countParamIndex++} OR username ILIKE $${countParamIndex++})`;
-      countParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    const [messagesResult, countResult] = await Promise.all([
-      pool.query(query, params),
-      pool.query(countQuery, countParams),
+    const [messages, total] = await Promise.all([
+      prisma.message.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.message.count({ where }),
     ]);
 
+    // Convert Prisma messages to match the expected format
+    const formattedMessages = messages.map((msg) => ({
+      id: msg.id,
+      timestamp: Number(msg.timestamp),
+      sender_type: msg.senderType,
+      user_id: msg.userId,
+      username: msg.username,
+      channel_id: msg.channelId,
+      channel_name: msg.channelName,
+      message_content: msg.messageContent,
+      tool_name: msg.toolName,
+    }));
+
     return NextResponse.json({
-      messages: messagesResult.rows,
-      total: parseInt(countResult.rows[0].total, 10),
+      messages: formattedMessages,
+      total,
       limit,
       offset,
     });
