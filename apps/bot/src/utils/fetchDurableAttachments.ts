@@ -42,22 +42,32 @@ export async function fetchMessageWithDurableAttachments(
 ): Promise<RESTMessage | null> {
   try {
     console.log(`🔄 Re-fetching message ${message.id} via REST for durable attachment URLs...`);
+    console.log(`   Channel: ${message.channelId}`);
 
     // Use REST API with the critical flag
+    // Note: Discord.js REST client expects query as a plain object or URLSearchParams
     const restMessage = await client.rest.get(
       Routes.channelMessage(message.channelId, message.id),
       {
-        query: new URLSearchParams([
-          ['with_application_state', 'true']
-        ])
+        query: new URLSearchParams({
+          with_application_state: 'true'
+        })
       }
     ) as RESTMessage;
 
     console.log(`✅ Got REST message with ${restMessage.attachments?.length || 0} attachment(s)`);
 
+    if (restMessage.attachments && restMessage.attachments.length > 0) {
+      console.log(`   Durable URLs obtained for ${restMessage.attachments.length} attachment(s)`);
+      restMessage.attachments.forEach((att, i) => {
+        console.log(`   [${i + 1}] ${att.filename} - ID: ${att.id}`);
+      });
+    }
+
     return restMessage;
   } catch (error) {
     console.error('❌ Failed to fetch message via REST:', error);
+    console.error('   This will cause attachment caching to fail - tools won\'t have access to attachments');
     return null;
   }
 }

@@ -238,7 +238,10 @@ export async function handleMessage(message: Message): Promise<void> {
           const restAttachment = restMessage.attachments[i];
           const gatewayAttachment = Array.from(message.attachments.values())[i];
 
-          if (!gatewayAttachment) continue;
+          if (!gatewayAttachment) {
+            console.warn(`   ⚠️  Gateway attachment ${i} missing - skipping`);
+            continue;
+          }
 
           try {
             // Download from REST URL (durable, won't 404)
@@ -254,11 +257,19 @@ export async function handleMessage(message: Message): Promise<void> {
               id: gatewayAttachment.id,
               timestamp: Date.now(),
             });
+
+            console.log(`   ✅ Cached attachment [${gatewayAttachment.id}] ${restAttachment.filename}`);
           } catch (error) {
-            console.error(`   ❌ Failed to download ${restAttachment.filename}:`, error);
+            console.error(`   ❌ Failed to download attachment [${gatewayAttachment.id}] ${restAttachment.filename}:`, error);
+            console.error(`   ⚠️  Tools won't be able to access this attachment!`);
             // Continue with other attachments
           }
         }
+      } else if (!restMessage) {
+        console.error(`   ❌ Failed to fetch message via REST - attachment caching skipped`);
+        console.error(`   ⚠️  Tools won't be able to access these ${message.attachments.size} attachment(s)!`);
+      } else if (!restMessage.attachments || restMessage.attachments.length === 0) {
+        console.warn(`   ⚠️  REST message has no attachments (expected ${message.attachments.size})`);
       }
 
       const attachmentInfo = Array.from(message.attachments.values())
