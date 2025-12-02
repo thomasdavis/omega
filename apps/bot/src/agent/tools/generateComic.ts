@@ -10,8 +10,8 @@ import {
   generateComicFromIssue,
   generateImageWithGemini,
   generateComicWithUsers,
-} from '../../services/geminiImageService.js';
-import { postComicToDiscord } from '../../services/discordWebhookService.js';
+  postComicToDiscord,
+} from '@repo/agent';
 import { getUserCharacters } from '../../lib/userAppearance.js';
 import { getDatabase } from '@repo/database';// OLD:client.js';
 

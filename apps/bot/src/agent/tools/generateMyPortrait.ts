@@ -7,8 +7,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { getUserProfile, getOrCreateUserProfile } from '@repo/database';// OLD:userProfileService.js';
-import { analyzeUser } from '../../services/userProfileAnalysis.js';
-import { generateImageWithGemini } from '../../services/geminiImageService.js';
+import { analyzeUser, generateImageWithGemini } from '@repo/agent';
 import { buildPortraitPrompt, buildGenericPortraitPrompt } from '../../lib/portraitPrompts.js';
 import { getDetailedCharacterDescription } from '../../lib/userAppearance.js';
 import { randomUUID } from 'crypto';

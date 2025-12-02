@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 import { getDatabase } from '@repo/database';// OLD:client.js';
-import { generateImageWithGemini } from '../../services/geminiImageService.js';
+import { generateImageWithGemini } from '@repo/agent';
 import { OMEGA_MODEL } from '../../config/models.js';
 
 export const generateUserAvatarTool = tool({
