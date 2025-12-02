@@ -11,8 +11,7 @@ import { updateUserProfile, getOrCreateUserProfile } from '@repo/database';// OL
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { getUploadsDir } from '@repo/shared';
-import { getCachedAttachment } from '../utils/attachmentCache.js';
+import { getUploadsDir, getCachedAttachment } from '@repo/shared';
 
 // Initialize Gemini Vision
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');

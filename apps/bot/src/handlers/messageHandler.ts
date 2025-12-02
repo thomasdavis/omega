@@ -20,7 +20,7 @@ import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/databa
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
-import { setCachedAttachment, type CachedAttachment } from '../utils/attachmentCache.js';
+import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 
 export async function handleMessage(message: Message): Promise<void> {
