@@ -128,7 +128,7 @@ export const githubCreateIssueTool = tool({
     title: z.string().describe('The title of the issue'),
     body: z.string().describe('The detailed description of the issue, with context and requirements'),
     labels: z.array(z.string()).optional().describe('Labels to apply (e.g., ["enhancement", "bug", "documentation"])'),
-    conversationContext: z.string().optional().describe('Optional: Recent conversation messages that may contain relevant URLs, curl commands, or code snippets to include in the issue'),
+    conversationContext: z.string().optional().describe('Optional: The past 20 Discord messages (unfiltered) to provide full conversation context for the issue'),
   }),
   execute: async ({ title, body, labels, conversationContext }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
@@ -193,11 +193,11 @@ Created from Discord #omega channel`;
 
     // Add Discord conversation context section if provided
     if (conversationContext) {
-      formattedBody += `\n\n## Discord Conversation Context
+      formattedBody += `\n\n## Discord Conversation Context (Past 20 Messages)
 \`\`\`
 ${conversationContext}
 \`\`\`
-_This conversation context includes usernames and messages for comic generation and implementation reference._`;
+_Unfiltered conversation history for full context._`;
     }
 
     // Add links section if any links were found
