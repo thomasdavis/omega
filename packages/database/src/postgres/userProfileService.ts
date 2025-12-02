@@ -27,6 +27,22 @@ export async function getUserProfile(userId: string): Promise<UserProfileRecord 
  * Create a new user profile
  */
 export async function createUserProfile(userId: string, username: string): Promise<string> {
+  // Validate userId is a Discord Snowflake (numeric string, 17-20 digits)
+  if (!/^\d{17,20}$/.test(userId)) {
+    throw new Error(
+      `Invalid userId: "${userId}" - Discord IDs must be 17-20 digit numeric strings. ` +
+      `Possible parameter swap detected (userId="${userId}", username="${username}").`
+    );
+  }
+
+  // Validate username is not a numeric Discord ID (likely parameter swap)
+  if (/^\d{17,20}$/.test(username)) {
+    throw new Error(
+      `Invalid username: "${username}" - Username appears to be a Discord ID. ` +
+      `Possible parameter swap detected (userId="${userId}", username="${username}").`
+    );
+  }
+
   const id = randomUUID();
   const now = BigInt(Math.floor(Date.now() / 1000));
 
@@ -84,6 +100,11 @@ export async function getOrCreateUserProfile(
 
   if (!profile) {
     await createUserProfile(userId, username);
+    profile = await getUserProfile(userId);
+  } else if (profile.username !== username) {
+    // User changed their Discord username - update it
+    console.log(`📝 Username changed for ${userId}: "${profile.username}" → "${username}"`);
+    await updateUserProfile(userId, { username });
     profile = await getUserProfile(userId);
   }
 

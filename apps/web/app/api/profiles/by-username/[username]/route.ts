@@ -24,8 +24,10 @@ export async function GET(
   try {
     const { username } = await params;
 
+    // Find profile with most data (highest message count) to handle potential duplicates
     const profile = await prisma.userProfile.findFirst({
       where: { username },
+      orderBy: { messageCount: 'desc' }, // Return profile with most messages
     });
 
     if (!profile) {
