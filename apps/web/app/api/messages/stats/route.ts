@@ -35,11 +35,11 @@ export async function GET() {
 
     return NextResponse.json({
       total,
-      byType: byType.map((item) => ({
+      byType: byType.map((item: typeof byType[number]) => ({
         sender_type: item.senderType,
         count: String(item._count.id),
       })),
-      topUsers: topUsers.map((item) => ({
+      topUsers: topUsers.map((item: typeof topUsers[number]) => ({
         username: item.username,
         user_id: item.userId,
         count: String(item._count.id),
