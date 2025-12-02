@@ -182,8 +182,8 @@ export async function handleMessage(message: Message): Promise<void> {
       // User profile already tracked at start of function
 
       await saveAIMessage({
-        userId: message.author.id,
-        username: message.author.username,
+        userId: message.client.user!.id,
+        username: message.client.user!.username,
         channelId: message.channel.id,
         channelName: channelName,
         guildId: message.guild?.id,
@@ -369,14 +369,15 @@ export async function handleMessage(message: Message): Promise<void> {
       for (const toolCall of result.toolCalls) {
         try {
           await saveToolExecution({
-            userId: message.author.id,
-            username: message.author.username,
+            userId: message.client.user!.id,
+            username: message.client.user!.username,
             channelId: message.channel.id,
             channelName: channelName,
             guildId: message.guild?.id,
             toolName: toolCall.toolName,
             toolArgs: toolCall.args,
             toolResult: toolCall.result,
+            parentMessageId: message.id,
           });
         } catch (dbError) {
           console.error(`⚠️  Failed to persist tool execution (${toolCall.toolName}) to database:`, dbError);
@@ -534,8 +535,8 @@ export async function handleMessage(message: Message): Promise<void> {
       // Persist AI response to database
       try {
         await saveAIMessage({
-          userId: message.author.id,
-          username: message.author.username,
+          userId: message.client.user!.id,
+          username: message.client.user!.username,
           channelId: message.channel.id,
           channelName: channelName,
           guildId: message.guild?.id,
