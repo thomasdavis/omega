@@ -5,6 +5,15 @@ import {
   getDocumentCount,
 } from '@repo/database';
 
+// Helper to convert BigInt fields to numbers for JSON serialization
+function serializeDocument(doc: any) {
+  return {
+    ...doc,
+    created_at: typeof doc.created_at === 'bigint' ? Number(doc.created_at) : doc.created_at,
+    updated_at: typeof doc.updated_at === 'bigint' ? Number(doc.updated_at) : doc.updated_at,
+  };
+}
+
 // GET /api/documents - List all documents with pagination
 export async function GET(request: Request) {
   try {
@@ -17,8 +26,12 @@ export async function GET(request: Request) {
     const documents = await listDocuments({ createdBy, limit, offset });
     const totalCount = await getDocumentCount({ createdBy });
 
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocuments = documents.map(serializeDocument);
+
     return NextResponse.json({
-      documents,
+      success: true,
+      documents: serializedDocuments,
       pagination: {
         page,
         limit,
@@ -30,6 +43,7 @@ export async function GET(request: Request) {
     console.error('Error listing documents:', error);
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to list documents',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -62,7 +76,10 @@ export async function POST(request: Request) {
       isPublic: true, // Default to public for now
     });
 
-    return NextResponse.json(document, { status: 201 });
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocument = serializeDocument(document);
+
+    return NextResponse.json(serializedDocument, { status: 201 });
   } catch (error) {
     console.error('Error creating document:', error);
     return NextResponse.json(

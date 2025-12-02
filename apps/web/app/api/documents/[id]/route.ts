@@ -6,6 +6,15 @@ import {
   deleteDocument,
 } from '@repo/database';
 
+// Helper to convert BigInt fields to numbers for JSON serialization
+function serializeDocument(doc: any) {
+  return {
+    ...doc,
+    created_at: typeof doc.created_at === 'bigint' ? Number(doc.created_at) : doc.created_at,
+    updated_at: typeof doc.updated_at === 'bigint' ? Number(doc.updated_at) : doc.updated_at,
+  };
+}
+
 // GET /api/documents/:id - Get a document by ID
 export async function GET(
   request: Request,
@@ -22,7 +31,10 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(document);
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocument = serializeDocument(document);
+
+    return NextResponse.json(serializedDocument);
   } catch (error) {
     console.error('Error fetching document:', error);
     return NextResponse.json(
