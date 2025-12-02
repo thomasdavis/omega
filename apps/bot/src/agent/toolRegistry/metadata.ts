@@ -579,7 +579,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'remind me to finish the report',
       'add a new todo'
     ],
-    category: 'productivity'
+    category: 'database'
   },
 
   {
@@ -594,7 +594,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'list completed tasks',
       'show incomplete todos'
     ],
-    category: 'productivity'
+    category: 'database'
   },
 
   {
@@ -609,7 +609,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'get details for todo 10',
       'view task number 7'
     ],
-    category: 'productivity'
+    category: 'database'
   },
 
   {
@@ -624,7 +624,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'mark todo 7 as done',
       'change task 2 to incomplete'
     ],
-    category: 'productivity'
+    category: 'database'
   },
 
   {
@@ -639,7 +639,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'clear this task',
       'delete the task about groceries'
     ],
-    category: 'productivity'
+    category: 'database'
   },
 
   // ===== GITHUB TOOLS (4) =====
