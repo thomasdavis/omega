@@ -112,12 +112,11 @@ async function main() {
       client.login(process.env.DISCORD_BOT_TOKEN);
     });
 
-    // Fetch last 20 messages before PR creation date
+    // Fetch last 20 messages (unfiltered)
     let discordMessages: any[] = [];
     let discordUserIds: string[] = [];
     try {
-      const prCreatedAt = new Date(pr.created_at);
-      console.log(`📅 Fetching last 20 messages before PR created at ${prCreatedAt.toISOString()}`);
+      console.log(`📅 Fetching last 20 messages from Discord (unfiltered)`);
 
       // Get the channel
       const channel = await client.channels.fetch(discordChannelId);
@@ -130,13 +129,12 @@ async function main() {
         limit: 100, // Fetch recent messages
       });
 
-      // Convert Collection to array, sort by time, and take last 30
+      // Convert Collection to array, sort by time, and take last 20 (unfiltered)
       const recentMessages = Array.from(messages.values())
-        .filter(msg => !msg.author.bot) // Exclude bot messages
         .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
-        .slice(-30); // Take last 30
+        .slice(-20); // Take last 20 messages unfiltered
 
-      console.log(`   📊 Fetched ${recentMessages.length} recent messages (excluding bots)`);
+      console.log(`   📊 Fetched ${recentMessages.length} recent messages (unfiltered)`);
       if (recentMessages.length > 0) {
         const oldest = new Date(recentMessages[0].createdTimestamp);
         const newest = new Date(recentMessages[recentMessages.length - 1].createdTimestamp);
@@ -150,8 +148,9 @@ async function main() {
         timestamp: msg.createdTimestamp,
       }));
 
-      // Extract unique Discord user IDs for character appearance lookups (already filtered bots above)
+      // Extract unique Discord user IDs for character appearance lookups (filter bots for this)
       discordUserIds = [...new Set(recentMessages
+        .filter(msg => !msg.author.bot) // Only non-bot users for character lookup
         .map(msg => msg.author.id)
         .filter((userId): userId is string => Boolean(userId))
       )];
