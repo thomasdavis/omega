@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getPusher } from '@/lib/pusher';
+import { applyUpdate } from '@/lib/yjsStore';
 
 // POST /api/documents/:id/yjs-update - Receive Yjs update from client and broadcast to others
 export async function POST(
@@ -21,6 +22,10 @@ export async function POST(
         { status: 400 }
       );
     }
+
+    // Decode and apply the update to the server's Yjs document
+    const updateBytes = Uint8Array.from(Buffer.from(update, 'base64'));
+    applyUpdate(id, updateBytes);
 
     // Broadcast to other clients via Pusher
     const pusher = getPusher();

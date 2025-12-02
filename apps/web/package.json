@@ -17,7 +17,8 @@
     "next": "^15.1.0",
     "pusher": "^5.2.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "yjs": "^13.6.20"
   },
   "devDependencies": {
     "@types/mime-types": "^3.0.1",

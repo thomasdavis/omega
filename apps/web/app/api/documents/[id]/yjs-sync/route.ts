@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { updateDocumentContent } from '@repo/database';
+import { getTextContent } from '@/lib/yjsStore';
 
 // POST /api/documents/:id/yjs-sync - Save document content to database
 export async function POST(
@@ -9,12 +10,13 @@ export async function POST(
   try {
     const { id } = await params;
 
-    // Check if content is provided in the request body
-    const body = await request.json().catch(() => ({}));
+    // Get content from the server's shared Yjs document
+    // This is the authoritative state
+    const content = getTextContent(id);
 
-    if (body.content !== undefined) {
-      // Save the content to database
-      await updateDocumentContent(id, body.content);
+    if (content !== undefined && content !== null) {
+      // Save the authoritative content to database
+      await updateDocumentContent(id, content);
     }
 
     return NextResponse.json({ success: true });
