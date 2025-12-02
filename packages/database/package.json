@@ -11,7 +11,6 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
     "mongodb": "^7.0.0",
     "pg": "^8.16.3",
     "zod": "^3.23.8",

@@ -5,7 +5,7 @@
  */
 
 import { getPostgresPool } from './client.js';
-import { UserProfileRecord, UserAnalysisHistoryRecord } from '../libsql/schema.js';
+import { UserProfileRecord, UserAnalysisHistoryRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 
 /**

@@ -5,7 +5,7 @@
  */
 
 import { getPostgresPool } from './client.js';
-import type { DocumentRecord, DocumentCollaboratorRecord } from '../libsql/schema.js';
+import type { DocumentRecord, DocumentCollaboratorRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 
 /**
@@ -27,10 +27,11 @@ export async function createDocument(params: {
     title: params.title,
     content: params.content || '',
     created_by: params.createdBy,
-    created_by_username: params.createdByUsername,
+    created_by_username: params.createdByUsername || null,
     created_at: timestamp,
     updated_at: timestamp,
-    is_public: params.isPublic ? 1 : 0,
+    is_public: params.isPublic !== false,
+    metadata: null,
   };
 
   await pool.query(

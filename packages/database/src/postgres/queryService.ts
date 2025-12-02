@@ -4,7 +4,7 @@
  */
 
 import { getPostgresPool } from './client.js';
-import type { QueryRecord } from '../libsql/schema.js';
+import type { QueryRecord } from './schema.js';
 import { randomUUID } from 'crypto';
 import { analyzeQuery } from '@repo/shared';
 
