@@ -1,0 +1,155 @@
+name: Auto-Update Pull Requests
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for proper rebasing
+
+      - name: Update all open PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            console.log('🔍 Fetching all open pull requests...');
+
+            // Get all open pull requests
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+
+            console.log(`Found ${pullRequests.length} open PR(s)`);
+
+            if (pullRequests.length === 0) {
+              console.log('✨ No open PRs to update');
+              return;
+            }
+
+            let successCount = 0;
+            let skipCount = 0;
+            let failCount = 0;
+
+            for (const pr of pullRequests) {
+              const prNumber = pr.number;
+              const prTitle = pr.title;
+              const baseBranch = pr.base.ref;
+              const headBranch = pr.head.ref;
+              const headRepo = pr.head.repo?.full_name;
+
+              console.log(`\n📋 PR #${prNumber}: ${prTitle}`);
+              console.log(`   Base: ${baseBranch} | Head: ${headBranch}`);
+
+              // Skip if base is not main (shouldn't happen with our query, but just in case)
+              if (baseBranch !== 'main') {
+                console.log(`   ⏭️  Skipped (base is not main)`);
+                skipCount++;
+                continue;
+              }
+
+              // Skip if PR is from a fork (we don't have write access to fork branches)
+              if (headRepo !== `${owner}/${repo}`) {
+                console.log(`   ⏭️  Skipped (PR is from fork: ${headRepo})`);
+                skipCount++;
+                continue;
+              }
+
+              try {
+                // Check if PR branch is behind main
+                const { data: comparison } = await github.rest.repos.compareCommitsWithBasehead({
+                  owner,
+                  repo,
+                  basehead: `${headBranch}...main`
+                });
+
+                if (comparison.behind_by === 0) {
+                  console.log(`   ✅ Already up to date (${comparison.ahead_by} commits ahead)`);
+                  skipCount++;
+                  continue;
+                }
+
+                console.log(`   🔄 Branch is ${comparison.behind_by} commit(s) behind main`);
+
+                // Update the PR branch using GitHub's update-branch API
+                // This merges main into the PR branch (not a rebase, but safer)
+                try {
+                  await github.rest.pulls.updateBranch({
+                    owner,
+                    repo,
+                    pull_number: prNumber
+                  });
+
+                  console.log(`   ✅ Successfully updated PR #${prNumber}`);
+                  successCount++;
+                } catch (updateError) {
+                  // If update-branch fails, try manual merge
+                  console.log(`   ⚠️  update-branch failed, trying manual merge...`);
+
+                  // Get the latest commit SHA from main
+                  const { data: mainRef } = await github.rest.git.getRef({
+                    owner,
+                    repo,
+                    ref: 'heads/main'
+                  });
+                  const mainSha = mainRef.object.sha;
+
+                  // Merge main into the PR branch
+                  await github.rest.repos.merge({
+                    owner,
+                    repo,
+                    base: headBranch,
+                    head: 'main',
+                    commit_message: `Merge main into ${headBranch} (auto-update)`
+                  });
+
+                  console.log(`   ✅ Successfully merged main into PR #${prNumber}`);
+                  successCount++;
+                }
+              } catch (error) {
+                console.log(`   ❌ Failed to update: ${error.message}`);
+
+                // Check if it's a merge conflict
+                if (error.message.includes('merge conflict') || error.message.includes('409')) {
+                  console.log(`   ⚠️  Merge conflict detected - manual resolution required`);
+
+                  // Add a comment to the PR
+                  try {
+                    await github.rest.issues.createComment({
+                      owner,
+                      repo,
+                      issue_number: prNumber,
+                      body: `⚠️ **Auto-update failed due to merge conflicts**\n\nThis PR has conflicts with \`main\` that need to be resolved manually.\n\nTo update this PR:\n\`\`\`bash\ngit checkout ${headBranch}\ngit pull origin main\n# Resolve conflicts\ngit push\n\`\`\``
+                    });
+                    console.log(`   📝 Added conflict comment to PR #${prNumber}`);
+                  } catch (commentError) {
+                    console.log(`   ⚠️  Failed to add comment: ${commentError.message}`);
+                  }
+                }
+
+                failCount++;
+              }
+            }
+
+            console.log(`\n📊 Summary:`);
+            console.log(`   ✅ Updated: ${successCount}`);
+            console.log(`   ⏭️  Skipped: ${skipCount}`);
+            console.log(`   ❌ Failed: ${failCount}`);
+            console.log(`   📋 Total: ${pullRequests.length}`);
