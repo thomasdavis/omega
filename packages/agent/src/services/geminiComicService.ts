@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { OMEGA_APPEARANCE } from '../lib/omegaAppearance.js';
 import { getComicsDir } from '../utils/storage.js';
+import { generateScreenplay } from './screenplayService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -120,11 +121,29 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     console.log('📊 Fetching complete user profile database for comic context...');
     const profilesJson = await fetchAllUserProfiles();
 
+    // Generate screenplay first to ensure proper character attribution
+    console.log('📝 Generating screenplay for character attribution...');
+    const screenplayResult = await generateScreenplay({
+      conversationContext,
+      prNumber,
+      prTitle,
+      prAuthor,
+      characterProfiles: profilesJson,
+    });
+
+    let screenplay = '';
+    if (screenplayResult.success && screenplayResult.screenplay) {
+      screenplay = screenplayResult.screenplay;
+      console.log('✅ Screenplay generated successfully');
+    } else {
+      console.warn('⚠️ Screenplay generation failed, proceeding without it:', screenplayResult.error);
+    }
+
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Build the prompt for comic generation with character data
-    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson);
+    // Build the prompt for comic generation with character data and screenplay
+    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson, screenplay);
 
     console.log('📝 Comic generation prompt (first 200 chars):', prompt.substring(0, 200) + '...');
     console.log('\n');
@@ -292,7 +311,8 @@ function buildComicPrompt(
   prNumber: number,
   prTitle: string,
   prAuthor: string,
-  profilesJson: string = ''
+  profilesJson: string = '',
+  screenplay: string = ''
 ): string {
   // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
@@ -362,6 +382,21 @@ function buildComicPrompt(
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
 
+  // Build screenplay section if available
+  const screenplaySection = screenplay
+    ? `
+
+**PRE-SCRIPTED SCREENPLAY (For Character Attribution):**
+
+The following screenplay has been pre-written to ensure accurate character attribution and dialogue assignment. Use this as your PRIMARY REFERENCE for who says what:
+
+${screenplay}
+
+**CRITICAL:** Follow the screenplay's character attribution exactly. Every line of dialogue in the screenplay is explicitly tagged with the correct speaker. Do not mix up who says what.
+
+`
+    : '';
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -373,7 +408,7 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
-${characterDatabase}
+${characterDatabase}${screenplaySection}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
