@@ -18,7 +18,12 @@ export async function GET(
     }
 
     // Return the MIDI binary data
-    return new NextResponse(midiFile.midiData, {
+    // Convert Buffer to Uint8Array for NextResponse
+    const midiBuffer = Buffer.isBuffer(midiFile.midiData)
+      ? new Uint8Array(midiFile.midiData)
+      : midiFile.midiData;
+
+    return new NextResponse(midiBuffer, {
       headers: {
         'Content-Type': 'audio/midi',
         'Content-Disposition': `attachment; filename="${midiFile.filename}"`,
