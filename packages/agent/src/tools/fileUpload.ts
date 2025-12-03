@@ -10,6 +10,14 @@ import { writeFileSync, statSync, readFileSync, existsSync, unlinkSync } from 'f
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '@repo/shared';
+import {
+  addToQueue,
+  removeFromQueue,
+  updateQueueItem,
+  loadQueue,
+  logTransfer,
+  type TransferQueueItem as PersistentTransferQueueItem,
+} from './transferQueue.js';
 
 // Public uploads directory - use centralized storage utility (fallback)
 const UPLOADS_DIR = getUploadsDir();
@@ -73,23 +81,16 @@ interface FileIndexEntry {
 }
 
 /**
- * Background transfer queue for automatic Railway → GitHub migration
+ * Background transfer constants
  */
-interface TransferQueueItem {
-  filename: string;
-  buffer: Buffer;
-  originalName: string;
-  mimeType?: string;
-  uploadedBy?: string;
-  description?: string;
-  tags?: string[];
-  retries: number;
-  scheduledAt: number;
-}
-
-const transferQueue: TransferQueueItem[] = [];
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [5000, 15000, 60000]; // 5s, 15s, 1m
+
+/**
+ * In-memory processing state (not persisted)
+ * Only tracks currently processing items to prevent concurrent processing
+ */
+const processingFiles = new Set<string>();
 
 /**
  * Schedule a file for background transfer to GitHub
@@ -97,7 +98,6 @@ const RETRY_DELAYS = [5000, 15000, 60000]; // 5s, 15s, 1m
  */
 function scheduleBackgroundTransfer(
   filename: string,
-  buffer: Buffer,
   originalName: string,
   mimeType?: string,
   uploadedBy?: string,
@@ -112,9 +112,9 @@ function scheduleBackgroundTransfer(
 
   console.log(`📋 Scheduling background transfer for ${filename}`);
 
-  transferQueue.push({
+  // Add to persistent queue (no buffer needed, will read from Railway storage)
+  addToQueue({
     filename,
-    buffer,
     originalName,
     mimeType,
     uploadedBy,
@@ -132,18 +132,43 @@ function scheduleBackgroundTransfer(
  * Process the transfer queue with retry logic
  */
 async function processTransferQueue(): Promise<void> {
-  if (transferQueue.length === 0) {
+  const queue = loadQueue();
+
+  if (queue.length === 0) {
     return;
   }
 
-  const item = transferQueue[0];
+  const item = queue[0];
+
+  // Prevent concurrent processing of same file
+  if (processingFiles.has(item.filename)) {
+    return;
+  }
+
+  processingFiles.add(item.filename);
 
   try {
     console.log(`🔄 Attempting background transfer: ${item.filename} (attempt ${item.retries + 1}/${MAX_RETRIES + 1})`);
 
+    // Read file from Railway storage
+    const railwayFilePath = join(UPLOADS_DIR, item.filename);
+
+    if (!existsSync(railwayFilePath)) {
+      console.error(`❌ File not found in Railway storage: ${item.filename}`);
+      logTransfer(item.filename, 'failure', 'File not found', item.retries);
+      removeFromQueue(item.filename);
+      processingFiles.delete(item.filename);
+
+      // Process next item
+      setTimeout(() => processTransferQueue(), 1000);
+      return;
+    }
+
+    const buffer = readFileSync(railwayFilePath);
+
     // Attempt upload to GitHub
     const metadata = await uploadToGitHub(
-      item.buffer,
+      buffer,
       item.filename,
       item.originalName,
       item.mimeType,
@@ -153,10 +178,10 @@ async function processTransferQueue(): Promise<void> {
     );
 
     console.log(`✅ Background transfer successful: ${item.filename} → ${metadata.githubUrl}`);
+    logTransfer(item.filename, 'success', undefined, item.retries);
 
     // CLEANUP: Delete from Railway after successful background transfer
     try {
-      const railwayFilePath = join(UPLOADS_DIR, item.filename);
       const railwayMetadataPath = join(UPLOADS_DIR, `${item.filename}.json`);
 
       if (existsSync(railwayFilePath)) {
@@ -173,32 +198,56 @@ async function processTransferQueue(): Promise<void> {
     }
 
     // Remove from queue on success
-    transferQueue.shift();
+    removeFromQueue(item.filename);
+    processingFiles.delete(item.filename);
 
     // Process next item if any
-    if (transferQueue.length > 0) {
-      setTimeout(() => processTransferQueue(), 1000);
-    }
+    setTimeout(() => processTransferQueue(), 1000);
   } catch (error) {
     console.error(`❌ Background transfer failed for ${item.filename}:`, error);
 
-    item.retries++;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const newRetries = item.retries + 1;
 
-    if (item.retries > MAX_RETRIES) {
+    if (newRetries > MAX_RETRIES) {
       console.error(`⚠️  Max retries reached for ${item.filename}, removing from queue`);
-      transferQueue.shift();
+      logTransfer(item.filename, 'failure', `Max retries: ${errorMessage}`, newRetries);
+      removeFromQueue(item.filename);
+      processingFiles.delete(item.filename);
 
       // Process next item
-      if (transferQueue.length > 0) {
-        setTimeout(() => processTransferQueue(), 1000);
-      }
+      setTimeout(() => processTransferQueue(), 1000);
     } else {
-      // Schedule retry with exponential backoff
-      const delay = RETRY_DELAYS[item.retries - 1] || 60000;
+      // Update retry count and schedule retry with exponential backoff
+      updateQueueItem(item.filename, {
+        retries: newRetries,
+        lastAttempt: Date.now(),
+      });
+      logTransfer(item.filename, 'failure', errorMessage, newRetries);
+      processingFiles.delete(item.filename);
+
+      const delay = RETRY_DELAYS[newRetries - 1] || 60000;
       console.log(`⏰ Scheduling retry for ${item.filename} in ${delay}ms`);
 
       setTimeout(() => processTransferQueue(), delay);
     }
+  }
+}
+
+/**
+ * Initialize file transfer system on bot startup
+ * Resumes any pending transfers from previous session
+ */
+export function initializeFileTransferSystem(): void {
+  console.log('🔄 Initializing file transfer system...');
+
+  const queue = loadQueue();
+
+  if (queue.length > 0) {
+    console.log(`📋 Resuming ${queue.length} pending transfer(s) from previous session`);
+    processTransferQueue();
+  } else {
+    console.log('✅ No pending transfers to resume');
   }
 }
 
@@ -676,12 +725,12 @@ export const fileUploadTool = tool({
           console.error('⚠️  GitHub upload failed, file remains in Railway storage:', githubError);
           // File stays in Railway storage for manual transfer later
           // Schedule background transfer to GitHub (automatic hook)
-          scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
+          scheduleBackgroundTransfer(metadata.filename, originalName, mimeType, uploadedBy, description, tags);
         }
       } else {
         console.log('⚠️  GitHub not configured, file remains in Railway storage');
         // Schedule background transfer to GitHub (automatic hook)
-        scheduleBackgroundTransfer(metadata.filename, dataBuffer, originalName, mimeType, uploadedBy, description, tags);
+        scheduleBackgroundTransfer(metadata.filename, originalName, mimeType, uploadedBy, description, tags);
       }
 
       return {

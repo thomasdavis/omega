@@ -11,7 +11,7 @@ import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@r
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
-import { preloadCoreTools } from '@repo/agent';
+import { preloadCoreTools, initializeFileTransferSystem } from '@repo/agent';
 
 dotenv.config();
 
@@ -38,6 +38,14 @@ try {
 } catch (error) {
   console.error('⚠️  Failed to preload core tools (continuing anyway):', error);
   // Don't exit - bot can still work, just slower on first call
+}
+
+// Initialize file transfer system
+try {
+  initializeFileTransferSystem();
+} catch (error) {
+  console.error('⚠️  Failed to initialize file transfer system:', error);
+  // Don't exit - bot can still work
 }
 
 // Validate environment variables
