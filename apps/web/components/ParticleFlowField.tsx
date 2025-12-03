@@ -40,54 +40,52 @@ export default function ParticleFlowField() {
           omegaPoints = [];
           const centerX = p.width / 2;
           const centerY = p.height / 2;
-          const scale = p.min(p.width, p.height) * 0.2;
+          const scale = p.min(p.width, p.height) * 0.18;
 
-          // Create Ω shape - proper omega symbol
-          // Main horseshoe curve (upper arc)
-          for (let angle = p.PI * 0.15; angle <= p.PI * 0.85; angle += 0.01) {
-            const radius = scale * 1.8;
+          // Create Ω shape - like the Unicode character
+          // Top curved part (semicircle/horseshoe)
+          for (let angle = 0; angle <= p.PI; angle += 0.008) {
+            const radius = scale * 1.5;
             const x = centerX + p.cos(angle) * radius;
-            const y = centerY + p.sin(angle) * radius - scale * 0.5;
+            const y = centerY - scale * 0.8 + p.sin(angle) * radius;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left vertical leg
-          for (let i = 0; i < 40; i++) {
-            const t = i / 39;
-            const startX = centerX + p.cos(p.PI * 0.85) * scale * 1.8;
-            const startY = centerY + p.sin(p.PI * 0.85) * scale * 1.8 - scale * 0.5;
-            const x = startX;
-            const y = startY + t * scale * 1.3;
+          // Left vertical stem going down
+          const leftStartX = centerX - scale * 1.5;
+          const leftStartY = centerY - scale * 0.8;
+          for (let i = 0; i < 50; i++) {
+            const t = i / 49;
+            const x = leftStartX;
+            const y = leftStartY + t * scale * 1.8;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Right vertical leg
-          for (let i = 0; i < 40; i++) {
-            const t = i / 39;
-            const startX = centerX + p.cos(p.PI * 0.15) * scale * 1.8;
-            const startY = centerY + p.sin(p.PI * 0.15) * scale * 1.8 - scale * 0.5;
-            const x = startX;
-            const y = startY + t * scale * 1.3;
+          // Right vertical stem going down
+          const rightStartX = centerX + scale * 1.5;
+          const rightStartY = centerY - scale * 0.8;
+          for (let i = 0; i < 50; i++) {
+            const t = i / 49;
+            const x = rightStartX;
+            const y = rightStartY + t * scale * 1.8;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left bottom serif (small horizontal foot)
-          for (let i = 0; i < 8; i++) {
-            const t = i / 7;
-            const baseX = centerX + p.cos(p.PI * 0.85) * scale * 1.8;
-            const baseY = centerY + p.sin(p.PI * 0.85) * scale * 1.8 - scale * 0.5 + scale * 1.3;
-            const x = baseX - t * scale * 0.4;
-            const y = baseY;
+          // Left bottom foot (horizontal outward)
+          const leftFootY = centerY + scale * 1.0;
+          for (let i = 0; i < 12; i++) {
+            const t = i / 11;
+            const x = leftStartX - t * scale * 0.5;
+            const y = leftFootY;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Right bottom serif (small horizontal foot)
-          for (let i = 0; i < 8; i++) {
-            const t = i / 7;
-            const baseX = centerX + p.cos(p.PI * 0.15) * scale * 1.8;
-            const baseY = centerY + p.sin(p.PI * 0.15) * scale * 1.8 - scale * 0.5 + scale * 1.3;
-            const x = baseX + t * scale * 0.4;
-            const y = baseY;
+          // Right bottom foot (horizontal outward)
+          const rightFootY = centerY + scale * 1.0;
+          for (let i = 0; i < 12; i++) {
+            const t = i / 11;
+            const x = rightStartX + t * scale * 0.5;
+            const y = rightFootY;
             omegaPoints.push(p.createVector(x, y));
           }
         };
@@ -244,12 +242,12 @@ export default function ParticleFlowField() {
           p.rect(0, 0, p.width, p.height);
           p.blendMode(p.ADD); // Back to additive for particles
 
-          // Update omega attraction cycle - FASTER cycle
-          // Cycle: 240 frames (~4s at 60fps) flowing freely
-          //        120 frames (~2s) attracting to omega
-          //        120 frames (~2s) holding omega shape
-          //        120 frames (~2s) dispersing
-          omegaCyclePhase = (p.frameCount % 600) / 600;
+          // Update omega attraction cycle - VERY FAST 2.5s total cycle
+          // Cycle: 60 frames (~1s at 60fps) flowing freely
+          //        30 frames (~0.5s) attracting to omega
+          //        30 frames (~0.5s) holding omega shape
+          //        30 frames (~0.5s) dispersing
+          omegaCyclePhase = (p.frameCount % 150) / 150;
 
           if (omegaCyclePhase < 0.4) {
             // Free flow phase (0-40% of cycle)
