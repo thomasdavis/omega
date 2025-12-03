@@ -1,11 +1,13 @@
 /**
  * Task Scheduler
- * Schedules daily blog generation and behavioral prediction updates using node-cron
+ * Schedules daily blog generation, behavioral prediction updates, and user analysis using node-cron
  */
 
 import cron from 'node-cron';
 import { generateDailyBlog } from './dailyBlogService.js';
 import { batchUpdatePredictions } from './behavioralPredictionService.js';
+import { getAllUserProfiles } from '../database/userProfileService.js';
+import { analyzeUser } from './userProfileAnalysis.js';
 
 /**
  * Initialize scheduled tasks
@@ -52,6 +54,23 @@ export function initializeScheduler(): void {
   });
 
   console.log('✅ Behavioral prediction updates scheduled every 6 hours');
+
+  // Schedule daily user analysis at 00:00 UTC
+  // This runs comprehensive psychological analysis on all users with messages
+  const userAnalysisSchedule = '0 0 * * *'; // 00:00 UTC daily
+
+  cron.schedule(userAnalysisSchedule, async () => {
+    console.log('⏰ Cron job triggered: Daily user analysis');
+
+    try {
+      await runUserAnalysis();
+      console.log('✅ Daily user analysis completed');
+    } catch (error) {
+      console.error('❌ Error in daily user analysis cron job:', error);
+    }
+  });
+
+  console.log('✅ Daily user analysis scheduled at 00:00 UTC');
 }
 
 /**
@@ -85,4 +104,78 @@ export async function triggerDailyBlogNow(): Promise<{ success: boolean; filenam
 export async function triggerPredictionUpdateNow(): Promise<void> {
   console.log('🔨 Manual trigger: Updating behavioral predictions now...');
   await batchUpdatePredictions(100);
+}
+
+/**
+ * Run comprehensive user analysis for all users
+ * This is the core logic from analyze-all-users.ts script
+ */
+async function runUserAnalysis(): Promise<void> {
+  console.log('🔍 Starting analysis for all users...');
+
+  try {
+    // Fetch all users
+    console.log('👥 Fetching all user profiles...');
+    const users = await getAllUserProfiles();
+    console.log(`✅ Found ${users.length} users`);
+
+    if (users.length === 0) {
+      console.log('⚠️  No users found in database');
+      return;
+    }
+
+    // Analyze each user
+    let successCount = 0;
+    let skipCount = 0;
+    let errorCount = 0;
+
+    for (let i = 0; i < users.length; i++) {
+      const user = users[i];
+      const progress = `[${i + 1}/${users.length}]`;
+
+      console.log(`${progress} Analyzing ${user.username} (${user.user_id})...`);
+
+      // Skip users with 0 messages (nothing to analyze)
+      if (user.message_count === 0) {
+        console.log(`   ⏭️  Skipped (no messages)`);
+        skipCount++;
+        continue;
+      }
+
+      try {
+        // Run comprehensive analysis
+        await analyzeUser(user.user_id, user.username);
+        console.log(`   ✅ Analysis complete`);
+        successCount++;
+      } catch (error) {
+        console.error(`   ❌ Error analyzing user:`, error);
+        errorCount++;
+      }
+
+      // Add small delay to avoid overwhelming the database
+      if (i < users.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    // Summary
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🎉 User Analysis Complete!');
+    console.log(`Total users:     ${users.length}`);
+    console.log(`✅ Analyzed:     ${successCount}`);
+    console.log(`⏭️  Skipped:      ${skipCount} (no messages)`);
+    console.log(`❌ Errors:       ${errorCount}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  } catch (error) {
+    console.error('❌ Fatal error in user analysis:', error);
+    throw error;
+  }
+}
+
+/**
+ * Manual trigger for user analysis (can be called via Discord command or API)
+ */
+export async function triggerUserAnalysisNow(): Promise<void> {
+  console.log('🔨 Manual trigger: Running user analysis now...');
+  await runUserAnalysis();
 }
