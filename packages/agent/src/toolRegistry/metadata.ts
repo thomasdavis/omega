@@ -1616,6 +1616,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'translateToLeetspeak',
+    name: 'Translate to Leetspeak',
+    description: 'Translate text to l33tspeak (leetspeak/1337speak) with multiple complexity levels',
+    keywords: ['leetspeak', 'l33t', '1337', 'leet', 'translate', 'convert', 'hacker', 'gamer', 'internet slang'],
+    tags: ['specialized', 'translation', 'fun', 'text'],
+    examples: [
+      'translate to leetspeak',
+      'convert to l33t',
+      'make this 1337',
+      'leetspeak translation',
+      'convert to leet'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'marketPrediction',
     name: 'Market Prediction',
     description: 'Generate market predictions and analysis',

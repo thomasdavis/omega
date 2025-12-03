@@ -143,6 +143,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   codeQuery: { path: './tools/codeQuery.js', exportName: 'codeQueryTool' },
   getOmegaManifest: { path: './tools/getOmegaManifest.js', exportName: 'getOmegaManifestTool' },
   translateToSpanish: { path: './tools/translateToSpanish.js', exportName: 'translateToSpanishTool' },
+  translateToLeetspeak: { path: './tools/translateToLeetspeak.js', exportName: 'translateToLeetspeakTool' },
   marketPrediction: { path: './tools/marketPrediction.js', exportName: 'marketPredictionTool' },
   introspectFeelings: { path: './tools/introspectFeelings.js', exportName: 'introspectFeelingsTool' },
   createLiveDocument: { path: './tools/createLiveDocument.js', exportName: 'createLiveDocumentTool' },
