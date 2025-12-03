@@ -9,6 +9,7 @@
     "prebuild": "node scripts/generate-deployment-info.js",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "mkdir -p dist/public && cp -r public/* dist/public/ && cp omega-manifest.json dist/",
+    "analyze-users": "node dist/scripts/analyze-all-users.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
