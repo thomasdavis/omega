@@ -914,6 +914,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'abcToMidi',
+    name: 'ABC to MIDI Converter',
+    description: 'Convert ABC musical notation to MIDI format and save as downloadable artifact',
+    keywords: ['abc', 'midi', 'convert', 'music', 'notation', 'playable', 'audio', 'file'],
+    tags: ['content', 'music', 'conversion', 'artifact'],
+    examples: [
+      'convert abc to midi',
+      'make midi from sheet music',
+      'create playable music file',
+      'convert notation to midi',
+      'save as midi'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateMarkdown',
     name: 'Generate Markdown',
     description: 'Generate formatted markdown documents',
