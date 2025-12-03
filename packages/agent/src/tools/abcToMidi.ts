@@ -52,18 +52,23 @@ async function convertAndSaveMidi(
       throw new Error('Failed to parse ABC notation - no musical content found');
     }
 
-    // Use abcjs's synth.getMidiFile which returns base64-encoded MIDI
-    const midiBase64 = abcjs.synth.getMidiFile(abcNotation, {
+    // Get raw MIDI bytes using binary output type
+    // getMidiFile returns an ARRAY of results (one per tune)
+    const midiResult = abcjs.synth.getMidiFile(abcNotation, {
       chordsOff: false,
       program: 0,
+      midiOutputType: 'binary', // Returns Uint8Array instead of base64 or HTML
     });
 
-    if (!midiBase64 || typeof midiBase64 !== 'string') {
-      throw new Error('Failed to generate MIDI data from ABC notation');
+    // Handle array return - take first tune
+    const midiBinary = Array.isArray(midiResult) ? midiResult[0] : midiResult;
+
+    if (!(midiBinary instanceof Uint8Array)) {
+      throw new Error(`Failed to generate MIDI data: unexpected type ${typeof midiBinary}`);
     }
 
-    // Convert base64 to Buffer
-    const midiBuffer = Buffer.from(midiBase64, 'base64');
+    // Convert Uint8Array to Node Buffer
+    const midiBuffer = Buffer.from(midiBinary);
 
     // Save to database
     const savedRecord = await saveMidiFile({
