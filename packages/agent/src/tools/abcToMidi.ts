@@ -40,10 +40,15 @@ async function convertAndSaveMidi(
   }
 
   try {
-    // Parse ABC notation first
-    const visualObj = abcjs.renderAbc('*', abcNotation, { add_classes: true })[0];
+    // Parse ABC notation (server-side, no DOM required)
+    const parsedTunes = abcjs.parseOnly(abcNotation);
 
-    if (!visualObj || !visualObj.lines || visualObj.lines.length === 0) {
+    if (!parsedTunes || parsedTunes.length < 1) {
+      throw new Error('Failed to parse ABC notation');
+    }
+
+    const firstTune = parsedTunes[0];
+    if (!firstTune || !firstTune.lines || firstTune.lines.length < 1) {
       throw new Error('Failed to parse ABC notation - no musical content found');
     }
 
