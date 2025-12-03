@@ -267,3 +267,44 @@ model AgentSynthesis {
   @@index([generatedAt(sort: Desc)], map: "idx_agent_synthesis_generated_at")
   @@map("agent_syntheses")
 }
+
+model AbcSheetMusic {
+  id               String  @id @default(uuid())
+  title            String
+  composer         String?
+  key              String?
+  timeSignature    String? @map("time_signature")
+  tempo            String?
+  abcNotation      String  @map("abc_notation") @db.Text
+  description      String?
+  musicalStructure String? @map("musical_structure")
+  metadata         Json?
+  createdBy        String? @map("created_by")
+  createdByUsername String? @map("created_by_username")
+  createdAt        BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([createdAt(sort: Desc)], map: "idx_abc_sheet_music_created_at")
+  @@index([createdBy], map: "idx_abc_sheet_music_created_by")
+  @@map("abc_sheet_music")
+}
+
+model MidiFile {
+  id                String  @id @default(uuid())
+  title             String
+  description       String?
+  midiData          Bytes   @map("midi_data")
+  abcNotation       String? @map("abc_notation") @db.Text
+  abcSheetMusicId   String? @map("abc_sheet_music_id")
+  filename          String
+  fileSize          Int     @map("file_size")
+  artifactPath      String? @map("artifact_path")
+  metadata          Json?
+  createdBy         String? @map("created_by")
+  createdByUsername String? @map("created_by_username")
+  createdAt         BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([createdAt(sort: Desc)], map: "idx_midi_files_created_at")
+  @@index([createdBy], map: "idx_midi_files_created_by")
+  @@index([abcSheetMusicId], map: "idx_midi_files_abc_sheet_music_id")
+  @@map("midi_files")
+}

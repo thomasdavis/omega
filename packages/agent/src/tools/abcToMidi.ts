@@ -16,6 +16,7 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getArtifactsDir } from '@repo/shared';
 import abcjs from 'abcjs';
+import { saveMidiFile } from '@repo/database';
 
 // Artifacts directory - use centralized storage utility
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -33,11 +34,12 @@ interface MidiMetadata {
 /**
  * Convert ABC notation to MIDI and save as artifact
  */
-function convertAndSaveMidi(
+async function convertAndSaveMidi(
   abcNotation: string,
   title: string,
-  description: string
-): MidiMetadata {
+  description: string,
+  abcSheetMusicId?: string
+): Promise<MidiMetadata> {
   // Validate ABC notation has required headers
   if (!abcNotation.includes('X:') || !abcNotation.includes('K:')) {
     throw new Error('Invalid ABC notation: missing required headers (X: and K:)');
@@ -77,6 +79,27 @@ function convertAndSaveMidi(
     const metadataPath = join(ARTIFACTS_DIR, `${id}.json`);
     writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
 
+    // Save to database
+    try {
+      await saveMidiFile({
+        title,
+        description,
+        midiData: midiBuffer,
+        abcNotation,
+        abcSheetMusicId,
+        filename,
+        artifactPath: filepath,
+        metadata: {
+          id,
+          type: 'midi',
+        },
+      });
+      console.log(`   💾 Saved MIDI to database: ${id}`);
+    } catch (dbError) {
+      console.error('   ⚠️  Failed to save MIDI to database:', dbError);
+      // Continue even if database save fails
+    }
+
     return metadata;
   } catch (error) {
     throw new Error(`MIDI conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -89,8 +112,9 @@ export const abcToMidiTool = tool({
     abcNotation: z.string().describe('ABC notation to convert to MIDI. Should include all required headers (X:, T:, M:, L:, K:) and note data. Can be obtained from generateSheetMusic tool.'),
     title: z.string().optional().describe('Title for the MIDI file (defaults to extracting from ABC notation T: header)'),
     description: z.string().optional().describe('Description of the MIDI file'),
+    abcSheetMusicId: z.string().optional().describe('Optional ID of the ABC sheet music record this MIDI is generated from'),
   }),
-  execute: async ({ abcNotation, title, description }) => {
+  execute: async ({ abcNotation, title, description, abcSheetMusicId }) => {
     try {
       console.log('🎵 ABC to MIDI: Converting ABC notation to MIDI...');
 
@@ -108,7 +132,7 @@ export const abcToMidiTool = tool({
       console.log(`   📝 ABC notation length: ${abcNotation.length} chars`);
 
       // Convert and save
-      const metadata = convertAndSaveMidi(abcNotation, midiTitle, midiDescription);
+      const metadata = await convertAndSaveMidi(abcNotation, midiTitle, midiDescription, abcSheetMusicId);
 
       // Get server URL from environment or use default
       const serverUrl = process.env.ARTIFACT_SERVER_URL
