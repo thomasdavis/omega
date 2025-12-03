@@ -19,6 +19,9 @@ COPY packages ./packages
 # Copy web app
 COPY apps/web ./apps/web
 
+# Copy assets directory (includes SoundFont for MP3 generation)
+COPY assets ./assets
+
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 

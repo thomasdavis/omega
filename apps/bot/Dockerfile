@@ -18,6 +18,9 @@ COPY packages ./packages
 # Copy bot package
 COPY apps/bot ./apps/bot
 
+# Copy assets directory (includes SoundFont for MP3 generation)
+COPY assets ./assets
+
 # Install dependencies (will install packages too)
 RUN pnpm install --frozen-lockfile
 
