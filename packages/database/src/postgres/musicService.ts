@@ -34,7 +34,7 @@ export interface CreateAbcSheetMusicInput {
   abcNotation: string;
   description?: string;
   musicalStructure?: string;
-  metadata?: Prisma.JsonValue | null;
+  metadata?: Prisma.InputJsonValue | null;
   createdBy?: string;
   createdByUsername?: string;
 }
@@ -122,7 +122,7 @@ export interface CreateMidiFileInput {
   abcSheetMusicId?: string;
   filename: string;
   artifactPath?: string;
-  metadata?: Prisma.JsonValue | null;
+  metadata?: Prisma.InputJsonValue | null;
   createdBy?: string;
   createdByUsername?: string;
 }
