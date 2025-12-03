@@ -1,0 +1,133 @@
+name: Close Issues and PRs with 'needs close' Label
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  close-labeled-items:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues with 'needs close' label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            console.log('🔍 Searching for issues with "needs close" label...');
+
+            // Get all open issues with 'needs close' label
+            const issues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              labels: 'needs close',
+              per_page: 100
+            });
+
+            console.log(`Found ${issues.data.length} issue(s) to process`);
+
+            for (const issue of issues.data) {
+              const issueNumber = issue.number;
+              console.log(`\n📋 Processing issue #${issueNumber}: ${issue.title}`);
+
+              // Check if this is a PR or an issue
+              if (issue.pull_request) {
+                console.log(`  → This is a PR, closing it...`);
+
+                // Close the PR
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: issueNumber,
+                  state: 'closed'
+                });
+
+                console.log(`  ✅ PR #${issueNumber} closed`);
+              } else {
+                console.log(`  → This is an issue, checking for associated PRs...`);
+
+                // Find PRs that reference this issue
+                const timeline = await github.rest.issues.listEventsForTimeline({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  per_page: 100
+                });
+
+                // Look for cross-referenced PRs
+                const referencedPRs = timeline.data
+                  .filter(event => event.event === 'cross-referenced' && event.source?.issue?.pull_request)
+                  .map(event => event.source.issue.number);
+
+                // Also search for PRs that mention this issue in title or body
+                const searchQuery = `repo:${owner}/${repo} is:pr is:open ${issueNumber}`;
+                const searchResults = await github.rest.search.issuesAndPullRequests({
+                  q: searchQuery
+                });
+
+                const mentionedPRs = searchResults.data.items
+                  .filter(item => item.pull_request)
+                  .map(item => item.number);
+
+                // Combine and deduplicate PR numbers
+                const allPRs = [...new Set([...referencedPRs, ...mentionedPRs])];
+
+                if (allPRs.length > 0) {
+                  console.log(`  → Found ${allPRs.length} associated PR(s): ${allPRs.join(', ')}`);
+
+                  for (const prNumber of allPRs) {
+                    try {
+                      // Add 'needs close' label to PR
+                      console.log(`    → Adding 'needs close' label to PR #${prNumber}`);
+                      await github.rest.issues.addLabels({
+                        owner,
+                        repo,
+                        issue_number: prNumber,
+                        labels: ['needs close']
+                      });
+
+                      // Close the PR
+                      console.log(`    → Closing PR #${prNumber}`);
+                      await github.rest.pulls.update({
+                        owner,
+                        repo,
+                        pull_number: prNumber,
+                        state: 'closed'
+                      });
+
+                      console.log(`    ✅ PR #${prNumber} labeled and closed`);
+                    } catch (error) {
+                      console.log(`    ⚠️ Failed to process PR #${prNumber}: ${error.message}`);
+                    }
+                  }
+                } else {
+                  console.log(`  → No associated PRs found`);
+                }
+
+                // Close the issue
+                console.log(`  → Closing issue #${issueNumber}`);
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  state: 'closed'
+                });
+
+                console.log(`  ✅ Issue #${issueNumber} closed`);
+              }
+            }
+
+            if (issues.data.length === 0) {
+              console.log('✨ No issues or PRs with "needs close" label found');
+            } else {
+              console.log(`\n✅ Processed ${issues.data.length} item(s) successfully`);
+            }
