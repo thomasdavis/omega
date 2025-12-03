@@ -23,7 +23,15 @@ const nextConfig = {
         'pg': 'commonjs pg',
         'aws4': 'commonjs aws4', // MongoDB optional dependency
       });
+
+      // Completely exclude Paper.js from server-side bundle
+      config.externals.push('paper');
     }
+
+    // Configure Paper.js to use browser version only
+    config.resolve = config.resolve || {};
+    config.resolve.alias = config.resolve.alias || {};
+    config.resolve.alias.canvas = false;
 
     // Ignore README and LICENSE files
     config.module = config.module || {};

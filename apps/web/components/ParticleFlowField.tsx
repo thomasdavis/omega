@@ -3,354 +3,246 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * ParticleFlowField Component
+ * ParticleFlowField Component - Paper.js Version
  *
- * A stunning interactive particle flow field visualization using P5.js.
- * Features warm-toned particles that occasionally swirl into the Ω symbol.
+ * A stunning interactive particle flow field visualization using Paper.js.
+ * Features warm-toned particles that periodically swirl into the Ω symbol.
  *
  * Key features:
- * - 1500 larger particles with multi-layered Perlin noise flow field
+ * - 1500 larger particles with flow field
  * - Warm color palette (reds, oranges, browns, whites)
- * - Periodic attraction to Ω symbol shape
+ * - Periodic attraction to Ω symbol shape (sampled from SVG)
  * - Mouse interaction for particle attraction
- * - Additive blend mode for glowing effect
+ * - Screen blend mode for glowing effect
  * - Responsive canvas that fills the viewport
  */
 export default function ParticleFlowField() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    // Dynamically import P5.js only on client side
-    import('p5').then((p5Module) => {
-      const p5 = p5Module.default;
+    if (!canvasRef.current) return;
 
-      const sketch = (p: any) => {
-        const particles: Particle[] = [];
-        let zOff = 0; // Time dimension for 3D Perlin noise
-        const numParticles = 1500;
-        const noiseScale = 0.005; // Controls flow field granularity
-        let omegaPoints: any[] = []; // Points defining Ω symbol shape
-        let attractToOmega = 0; // 0-1 value for omega attraction strength
-        let omegaCyclePhase = 0; // Current phase in the omega attraction cycle
+    // Dynamically import Paper.js only on client side
+    import('paper').then((paperModule) => {
+      const paper = paperModule.default;
 
-        /**
-         * Generate Ω symbol points for particle attraction
-         *
-         * Ω is an almost-full circle with a gap at the bottom, plus legs and feet.
-         */
-        const generateOmegaPoints = () => {
-          omegaPoints = [];
+      // Install Paper.js in the local scope
+      paper.setup(canvasRef.current!);
 
-          const centerX = p.width / 2;
-          const centerY = p.height / 2;
+      // ---------- CONFIG ----------
+      const NUM_PARTICLES = 1500;
+      const FLOW_SCALE = 0.0025;
+      const MAX_SPEED = 5;
+      const CYCLE_SECONDS = 9;
+      const SWIRL_SECONDS = 5;
 
-          // Overall size of the symbol
-          const scale = p.min(p.width, p.height) * 0.15;
+      // Warm color palette
+      const COLORS = [
+        new paper.Color({ hue: 0, saturation: 0.7, brightness: 1.0, alpha: 0.12 }),
+        new paper.Color({ hue: 15, saturation: 0.9, brightness: 0.95, alpha: 0.12 }),
+        new paper.Color({ hue: 25, saturation: 0.75, brightness: 1.0, alpha: 0.12 }),
+        new paper.Color({ hue: 30, saturation: 0.6, brightness: 0.95, alpha: 0.12 }),
+        new paper.Color({ hue: 20, saturation: 0.2, brightness: 1.0, alpha: 0.10 }),
+        new paper.Color({ hue: 15, saturation: 0.4, brightness: 0.8, alpha: 0.12 })
+      ];
 
-          // Ellipse radii for the curved Ω body - more compact
-          const radiusX = scale * 1.2;  // horizontal spread
-          const radiusY = scale * 1.2;  // vertical spread (circular)
+      let omegaPoints: paper.Point[] = [];
+      let particles: Particle[] = [];
+      let omegaReady = false;
 
-          // Lift the Ω body higher so there's room for legs below
-          const omegaCenterY = centerY - scale * 0.6;
+      // ---------- EASING ----------
+      function easeInOutCubic(t: number): number {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      }
 
-          // ---- 1. Curved Ω body: almost full circle, with a LARGER bottom gap ----
+      // ---------- PARTICLE CLASS ----------
+      class Particle {
+        position: paper.Point;
+        velocity: paper.Point;
+        acceleration: paper.Point;
+        maxSpeed: number;
+        radius: number;
+        target: paper.Point | null;
+        shape: paper.Path.Circle;
 
-          const bottomAngle = p.HALF_PI;       // π/2 → bottom
-          const gapHalf = p.PI / 3;           // BIGGER gap - half-width (~60°)
-          const leftGapAngle = bottomAngle + gapHalf;   // left side of gap
-          const rightGapAngle = bottomAngle - gapHalf;  // right side of gap
+        constructor() {
+          this.position = paper.Point.random().multiply(paper.view.size);
+          this.velocity = new paper.Point(0, 0);
+          this.acceleration = new paper.Point(0, 0);
+          this.maxSpeed = MAX_SPEED;
+          this.radius = 3 + Math.random() * 5;
+          this.target = null;
 
-          const step = 0.02;
-
-          // Left side → top → right side (across the top of the circle)
-          // First: from left gap up around to 2π
-          for (let angle = leftGapAngle; angle <= p.TWO_PI; angle += step) {
-            const x = centerX + p.cos(angle) * radiusX;
-            const y = omegaCenterY + p.sin(angle) * radiusY;
-            omegaPoints.push(p.createVector(x, y));
-          }
-
-          // Then: from 0 back down to right gap
-          for (let angle = 0; angle <= rightGapAngle; angle += step) {
-            const x = centerX + p.cos(angle) * radiusX;
-            const y = omegaCenterY + p.sin(angle) * radiusY;
-            omegaPoints.push(p.createVector(x, y));
-          }
-
-          // ---- 2. Compute leg start positions at the gap endpoints ----
-
-          const leftLegStartX =
-            centerX + p.cos(leftGapAngle) * radiusX;
-          const leftLegStartY =
-            omegaCenterY + p.sin(leftGapAngle) * radiusY;
-
-          const rightLegStartX =
-            centerX + p.cos(rightGapAngle) * radiusX;
-          const rightLegStartY =
-            omegaCenterY + p.sin(rightGapAngle) * radiusY;
-
-          // ---- 3. Vertical legs ----
-
-          const legHeight = scale * 1.8;  // Longer legs
-          const legSteps = 40;
-
-          // Left leg – straight down
-          for (let i = 0; i <= legSteps; i++) {
-            const t = i / legSteps;
-            const y = leftLegStartY + t * legHeight;
-            omegaPoints.push(p.createVector(leftLegStartX, y));
-          }
-
-          // Right leg – straight down
-          for (let i = 0; i <= legSteps; i++) {
-            const t = i / legSteps;
-            const y = rightLegStartY + t * legHeight;
-            omegaPoints.push(p.createVector(rightLegStartX, y));
-          }
-
-          // ---- 4. Feet (small serifs at the bottom) ----
-
-          const footY = Math.max(leftLegStartY, rightLegStartY) + legHeight;
-          const footLength = scale * 0.6;
-          const footSteps = 15;
-
-          // Left foot – horizontal, extending left
-          for (let i = 0; i <= footSteps; i++) {
-            const t = i / footSteps;
-            const x = leftLegStartX - t * footLength;
-            omegaPoints.push(p.createVector(x, footY));
-          }
-
-          // Right foot – horizontal, extending right
-          for (let i = 0; i <= footSteps; i++) {
-            const t = i / footSteps;
-            const x = rightLegStartX + t * footLength;
-            omegaPoints.push(p.createVector(x, footY));
-          }
-        };
-
-        /**
-         * Particle Class
-         * Represents a single particle with physics-based movement
-         */
-        class Particle {
-          pos: any; // p5.Vector - current position
-          vel: any; // p5.Vector - velocity
-          acc: any; // p5.Vector - acceleration
-          maxSpeed: number = 5; // Increased from 3 to 5 for faster movement
-          size: number;
-          omegaTarget: any; // Assigned Ω symbol point for attraction
-
-          constructor() {
-            // Random initial position across canvas
-            this.pos = p.createVector(p.random(p.width), p.random(p.height));
-            this.vel = p.createVector(0, 0);
-            this.acc = p.createVector(0, 0);
-            // Larger particles (3-8 pixels)
-            this.size = p.random(3, 8);
-            // Assign random omega point as target
-            this.omegaTarget = null;
-          }
-
-          /**
-           * Update particle physics
-           * - Applies flow field force from multi-layered Perlin noise
-           * - Applies omega symbol attraction during cycle phases
-           * - Applies mouse attraction force when pressed
-           * - Updates position using velocity and acceleration
-           */
-          update() {
-            // Omega attraction force (periodic swirling into symbol)
-            if (attractToOmega > 0 && omegaPoints.length > 0) {
-              // Assign omega target if not yet assigned
-              if (!this.omegaTarget) {
-                this.omegaTarget = p.random(omegaPoints);
-              }
-
-              const omegaDir = p5.Vector.sub(this.omegaTarget, this.pos);
-              const dist = omegaDir.mag();
-              omegaDir.normalize();
-              // Stronger attraction for faster formation
-              const strength = attractToOmega * 1.5 * (1 / (dist * 0.01 + 1));
-              omegaDir.mult(strength);
-              this.acc.add(omegaDir);
-            } else {
-              // Reset omega target when not attracting
-              this.omegaTarget = null;
-            }
-
-            // Multi-layered Perlin noise for complex flow patterns (when not fully attracted to omega)
-            const noiseStrength = 1 - attractToOmega * 0.7;
-
-            // Base noise layer
-            let noiseValue = p.noise(
-              this.pos.x * noiseScale,
-              this.pos.y * noiseScale,
-              zOff
-            );
-            // Second octave at 2x frequency for detail (0.5 amplitude)
-            noiseValue += 0.5 * p.noise(
-              this.pos.x * noiseScale * 2,
-              this.pos.y * noiseScale * 2,
-              zOff
-            );
-
-            // Convert noise to angle (0-1 mapped to 0-2π)
-            const angle = noiseValue * p.TWO_PI * 2;
-
-            // Create force vector from angle
-            const force = p5.Vector.fromAngle(angle);
-            force.mult(0.25 * noiseStrength); // Increased force for faster movement
-            this.acc.add(force);
-
-            // Mouse attraction: inverse distance relationship
-            if (p.mouseIsPressed) {
-              const mouse = p.createVector(p.mouseX, p.mouseY);
-              const dir = p5.Vector.sub(mouse, this.pos);
-              const dist = dir.mag();
-              dir.normalize();
-              // Attraction strength inversely proportional to distance
-              // Formula: strength * (1 / (distance + 1))
-              const strength = 0.05 * (1 / (dist + 1));
-              dir.mult(strength);
-              this.acc.add(dir);
-            }
-
-            // Apply physics
-            this.vel.add(this.acc);
-            this.vel.limit(this.maxSpeed);
-            this.pos.add(this.vel);
-            this.acc.mult(0); // Reset acceleration each frame
-
-            // Edge wrapping for infinite canvas effect
-            this.edges();
-          }
-
-          /**
-           * Render particle with current color
-           * Uses additive blend mode for glowing trail effect
-           */
-          display(col: any) {
-            p.fill(col);
-            p.noStroke();
-            p.circle(this.pos.x, this.pos.y, this.size);
-          }
-
-          /**
-           * Wrap particle position around canvas edges
-           * Creates seamless infinite space
-           */
-          edges() {
-            if (this.pos.x > p.width) this.pos.x = 0;
-            if (this.pos.x < 0) this.pos.x = p.width;
-            if (this.pos.y > p.height) this.pos.y = 0;
-            if (this.pos.y < 0) this.pos.y = p.height;
-          }
+          this.shape = new paper.Path.Circle(this.position, this.radius);
+          this.shape.fillColor = COLORS[Math.floor(Math.random() * COLORS.length)].clone() as paper.Color;
+          this.shape.blendMode = 'screen'; // additive-ish
         }
 
-        /**
-         * P5.js setup function
-         * Initializes canvas and particles
-         */
-        p.setup = () => {
-          p.createCanvas(p.windowWidth, p.windowHeight);
-          p.colorMode(p.HSB, 360, 100, 100, 100);
-          p.blendMode(p.ADD); // Additive blending for glowing effect
+        applyForce(f: paper.Point) {
+          this.acceleration = this.acceleration.add(f);
+        }
 
-          // Generate omega symbol points
-          generateOmegaPoints();
-
-          // Initialize particle array
-          for (let i = 0; i < numParticles; i++) {
-            particles.push(new Particle());
-          }
-
-          // Initial black background
-          p.background(0);
-        };
-
-        /**
-         * P5.js draw loop
-         * Renders background fade and updates all particles
-         */
-        p.draw = () => {
-          // Semi-transparent black rectangle for trail fade effect
-          // Alpha=5 creates long, ethereal trails
-          p.blendMode(p.BLEND);
-          p.fill(0, 5);
-          p.rect(0, 0, p.width, p.height);
-          p.blendMode(p.ADD); // Back to additive for particles
-
-          // Update omega attraction cycle
-          // Cycle: 300 frames (~5s at 60fps) attracting/swirling to omega
-          //        240 frames (~4s) holding omega shape
-          //        Total: 9 seconds per cycle
-          const totalCycleFrames = 540; // 9 seconds at 60fps
-          omegaCyclePhase = (p.frameCount % totalCycleFrames) / totalCycleFrames;
-
-          if (omegaCyclePhase < 0.556) {
-            // Swirling/attracting phase (0-55.6% = 5 seconds) - gradual ease in
-            const t = omegaCyclePhase / 0.556;
-            attractToOmega = p.easeInOutCubic(t);
+        update(attractStrength: number, time: number) {
+          // Ω attraction
+          if (attractStrength > 0 && omegaPoints.length > 0) {
+            if (!this.target) {
+              this.target = omegaPoints[Math.floor(Math.random() * omegaPoints.length)];
+            }
+            const dir = this.target.subtract(this.position);
+            const d = dir.length;
+            if (d > 0.0001) {
+              const normalizedDir = dir.normalize();
+              const strength = attractStrength * 1.8 / (d * 0.01 + 1);
+              this.applyForce(normalizedDir.multiply(strength));
+            }
           } else {
-            // Hold omega shape (55.6-100% = 4 seconds)
-            attractToOmega = 1;
+            this.target = null;
           }
 
-          // Warm color palette: reds, oranges, browns, whites
-          // Using HSB color space for smooth transitions
-          const colors: any[] = [
-            p.color(0, 70, 100, 12),    // Bright red
-            p.color(15, 85, 95, 12),    // Red-orange
-            p.color(25, 75, 100, 12),   // Orange
-            p.color(30, 60, 95, 12),    // Burnt orange
-            p.color(20, 20, 100, 10),   // Warm white
-            p.color(15, 40, 80, 12),    // Brown-red
-          ];
+          // Flow field (simple swirl)
+          const flowStrength = 1 - attractStrength * 0.7;
+          if (flowStrength > 0) {
+            const angle =
+              this.position.x * FLOW_SCALE +
+              this.position.y * FLOW_SCALE +
+              time * 0.4;
+            const flow = new paper.Point(Math.cos(angle), Math.sin(angle))
+              .multiply(0.4 * flowStrength);
+            this.applyForce(flow);
+          }
 
-          // Update time dimension for noise evolution - faster
-          zOff += 0.004;
+          // Apply physics
+          this.velocity = this.velocity.add(this.acceleration);
+          if (this.velocity.length > this.maxSpeed) {
+            this.velocity = this.velocity.normalize(this.maxSpeed);
+          }
 
-          // Update and render all particles
-          particles.forEach((particle, index) => {
-            // Cycle through color palette
-            const colorIndex = index % colors.length;
-            particle.update();
-            particle.display(colors[colorIndex]);
-          });
-        };
+          this.position = this.position.add(this.velocity);
+          this.acceleration = this.acceleration.multiply(0);
+          this.shape.position = this.position;
 
-        /**
-         * Cubic ease in/out function for smooth transitions
-         */
-        p.easeInOutCubic = (t: number) => {
-          return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        };
+          // Wrap around edges
+          const w = paper.view.size.width;
+          const h = paper.view.size.height;
+          if (this.position.x < 0) this.position.x += w;
+          if (this.position.x > w) this.position.x -= w;
+          if (this.position.y < 0) this.position.y += h;
+          if (this.position.y > h) this.position.y -= h;
+        }
+      }
 
-        /**
-         * Handle window resize
-         * Recreates canvas and resets background
-         */
-        p.windowResized = () => {
-          p.resizeCanvas(p.windowWidth, p.windowHeight);
-          generateOmegaPoints(); // Regenerate omega points for new canvas size
-          p.background(0);
-        };
+      // ---------- Ω POINT SAMPLING ----------
+      function sampleOmegaPoints(omegaItem: paper.Item) {
+        omegaPoints = [];
+
+        // If omega.svg has a group/compound path, flatten it
+        let shape: any = omegaItem;
+        if (shape.children && shape.children.length) {
+          shape = shape.reduce(); // merge children into one compound path
+        }
+
+        shape.strokeColor = null;
+        shape.fillColor = null; // keep it invisible
+        shape.position = paper.view.center;
+
+        // Scale nicely relative to viewport
+        const targetWidth = Math.min(paper.view.size.width, paper.view.size.height) * 0.35;
+        const scale = targetWidth / shape.bounds.width;
+        shape.scale(scale, paper.view.center);
+
+        // Sample along the entire length
+        const len = shape.length;
+        const pointCount = 800; // adjust detail
+        const step = len / pointCount;
+
+        for (let i = 0; i < len; i += step) {
+          const pt = shape.getPointAt(i);
+          if (pt) omegaPoints.push(pt.clone());
+        }
+
+        omegaItem.remove(); // remove original path from scene
+      }
+
+      // ---------- INIT PARTICLES ----------
+      function initParticles() {
+        particles.forEach(p => p.shape.remove());
+        particles = [];
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          particles.push(new Particle());
+        }
+      }
+
+      // ---------- IMPORT Ω SVG ----------
+      paper.project.importSVG('/omega.svg', {
+        onLoad: (item: paper.Item) => {
+          sampleOmegaPoints(item);
+          initParticles();
+          omegaReady = true;
+        }
+      });
+
+      // ---------- MAIN LOOP ----------
+      let frameCount = 0;
+      paper.view.onFrame = (event: any) => {
+        if (!omegaReady) return;
+
+        // Fade trails with a translucent black fill using the raw canvas
+        const canvas = paper.view.element as HTMLCanvasElement;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // lower alpha = longer trails
+          ctx.fillRect(0, 0, paper.view.size.width, paper.view.size.height);
+          ctx.restore();
+        }
+
+        const time = event.time; // seconds
+        const framesPerCycle = CYCLE_SECONDS * 60;
+        const framesSwirl = SWIRL_SECONDS * 60;
+        const frame = frameCount % framesPerCycle;
+        frameCount++;
+
+        let attractStrength;
+        if (frame < framesSwirl) {
+          const t = frame / framesSwirl; // 0 → 1 over swirl phase
+          attractStrength = easeInOutCubic(t);
+        } else {
+          attractStrength = 1; // hold Ω
+        }
+
+        particles.forEach(p => p.update(attractStrength, time));
       };
 
-      // Create P5 instance attached to container
-      if (containerRef.current) {
-        new p5(sketch, containerRef.current);
-      }
+      // ---------- RESIZE ----------
+      paper.view.onResize = () => {
+        // On resize, we should re-import & resample Ω, then reset particles
+        paper.project.clear();
+        omegaPoints = [];
+        particles = [];
+        omegaReady = false;
+        paper.project.importSVG('/omega.svg', {
+          onLoad: (item: paper.Item) => {
+            sampleOmegaPoints(item);
+            initParticles();
+            omegaReady = true;
+          }
+        });
+      };
     });
+
+    // Cleanup
+    return () => {
+      // Paper.js cleanup would go here if needed
+    };
   }, []);
 
   return (
-    <div
-      ref={containerRef}
+    <canvas
+      ref={canvasRef}
       className="fixed inset-0 -z-10"
       style={{ width: '100vw', height: '100vh' }}
+      data-paper-resize="true"
     />
   );
 }

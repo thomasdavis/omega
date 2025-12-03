@@ -156,6 +156,9 @@ importers:
       p5:
         specifier: ^2.1.1
         version: 2.1.1
+      paper:
+        specifier: ^0.12.18
+        version: 0.12.18
       pusher:
         specifier: ^5.2.0
         version: 5.2.0
@@ -178,6 +181,9 @@ importers:
       '@types/p5':
         specifier: ^1.7.7
         version: 1.7.7
+      '@types/paper':
+        specifier: ^0.12.3
+        version: 0.12.3
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.7
@@ -2178,6 +2184,10 @@ packages:
 
   '@types/p5@1.7.7':
     resolution: {integrity: sha512-WFuP7jqc5CkkMtCK/NphgvMnJz1Qi9CMuK7t6xLu/tuXkRdGQA4q4AD0dUYcChC0Oibe8PE8gbKSFPNF0BqVNw==}
+
+  '@types/paper@0.12.3':
+    resolution: {integrity: sha512-kU00AqWZcpb6b5Fnnrilurk3NfdkuyZXG4v+L9GF5+6zAfTYIThXDcieCtjdHFl/HlLfqZr5Zbf+tKvGX3FyFw==}
+    deprecated: This is a stub types definition. paper provides its own type definitions, so you do not need this installed.
 
   '@types/pg@8.15.6':
     resolution: {integrity: sha512-NoaMtzhxOrubeL/7UZuNTrejB4MPAJ0RpxZqXQf2qXuVlTPuG6Y8p4u9dKRaue4yjmC7ZhzVO2/Yyyn25znrPQ==}
@@ -5060,6 +5070,10 @@ packages:
 
   pako@2.1.0:
     resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
+  paper@0.12.18:
+    resolution: {integrity: sha512-ZSLIEejQTJZuYHhSSqAf4jXOnii0kPhCJGAnYAANtdS72aNwXJ9cP95tZHgq1tnNpvEwgQhggy+4OarviqTCGw==}
+    engines: {node: '>=8.0.0'}
 
   parent-module@1.0.1:
     resolution: {integrity: sha512-GQ2EWRpQV8/o+Aw8YqtfZZPfNRWZYkbidE9k5rpl/hC3vtHHBfGm2Ifi6qWV+coDGkrUKZAxE3Lot5kcsRlh+g==}
@@ -8737,6 +8751,10 @@ snapshots:
 
   '@types/p5@1.7.7': {}
 
+  '@types/paper@0.12.3':
+    dependencies:
+      paper: 0.12.18
+
   '@types/pg@8.15.6':
     dependencies:
       '@types/node': 22.19.1
@@ -12278,6 +12296,8 @@ snapshots:
   pako@1.0.11: {}
 
   pako@2.1.0: {}
+
+  paper@0.12.18: {}
 
   parent-module@1.0.1:
     dependencies:
