@@ -52,7 +52,7 @@ export async function closeAssociatedPRs(
     if (branchSearchResponse.ok) {
       const allPRs: any = await branchSearchResponse.json();
       const branchPRs = allPRs.filter((pr: any) =>
-        pr.head.ref.startsWith(branchPattern)
+        pr.head && pr.head.ref && pr.head.ref.startsWith(branchPattern)
       );
 
       // Merge with search results, avoiding duplicates
@@ -85,7 +85,12 @@ export async function closeAssociatedPRs(
           closedPRs.push(pr.number);
           console.log(`✅ Closed PR #${pr.number}`);
 
-          // Delete the branch if it exists
+          // Delete the branch if it exists and head.ref is available
+          if (!pr.head || !pr.head.ref) {
+            console.log(`⏭️  Skipping branch deletion for PR #${pr.number} (head branch already deleted)`);
+            continue;
+          }
+
           const branchName = pr.head.ref;
           const deleteResponse = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO}/git/refs/heads/${branchName}`,
