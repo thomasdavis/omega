@@ -237,7 +237,8 @@ function buildClaudeComment(issue: any, ageInDays: number, ageInHours: number): 
   comment += `## Your Decision\n\n`;
   comment += `Please choose one of the following actions:\n\n`;
   comment += `1. **Mark for closure** by adding the \`needs close\` label and commenting why (too old, out of scope, breaking, etc.)\n`;
-  comment += `   - Use the GitHub API or gh CLI to add the label: \`needs close\`\n`;
+  comment += `   - Use the GitHub API to add the label (you have access to GITHUB_TOKEN for authentication)\n`;
+  comment += `   - Example: POST to /repos/OWNER/REPO/issues/NUMBER/labels with body: {"labels": ["needs close"]}\n`;
   comment += `   - An automated system will close labeled issues within 5 minutes\n`;
   comment += `2. **Implement the fix** following all guidelines above and ensure the build passes\n\n`;
   comment += `You have full authority to make this decision based on your assessment of value vs. risk.\n`;
