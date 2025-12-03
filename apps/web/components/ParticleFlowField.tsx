@@ -35,64 +35,98 @@ export default function ParticleFlowField() {
 
         /**
          * Generate Ω symbol points for particle attraction
+         *
+         * Ω is an almost-full circle with a gap at the bottom, plus legs and feet.
          */
         const generateOmegaPoints = () => {
           omegaPoints = [];
+
           const centerX = p.width / 2;
           const centerY = p.height / 2;
-          const scale = p.min(p.width, p.height) * 0.15;
 
-          const radius = scale * 1.4;
-          const arcBaseY = centerY - scale * 0.5; // y of the arc endpoints
+          // Overall size of the symbol
+          const scale = p.min(p.width, p.height) * 0.18;
 
-          // === Top horseshoe / arch (∩) ===
-          // Go left → right: 0 to PI
-          for (let angle = 0; angle <= p.PI; angle += 0.01) {
-            const x = centerX + p.cos(angle) * radius;
+          // Ellipse radii for the curved Ω body
+          const radiusX = scale * 1.5;  // horizontal spread
+          const radiusY = scale * 1.2;  // vertical spread
 
-            // SUBTRACT sin(...) so the middle of the arc goes UP (not down)
-            const y = arcBaseY - p.sin(angle) * radius * 0.85;
+          // Slightly lift the Ω body so there's room for legs below
+          const omegaCenterY = centerY - scale * 0.2;
 
+          // ---- 1. Curved Ω body: almost full circle, with a bottom gap ----
+
+          const bottomAngle = p.HALF_PI;       // π/2 → bottom
+          const gapHalf = p.PI / 4;           // half-width of gap (~45°)
+          const leftGapAngle = bottomAngle + gapHalf;   // left side of gap
+          const rightGapAngle = bottomAngle - gapHalf;  // right side of gap
+
+          const step = 0.02;
+
+          // Left side → top → right side (across the top of the circle)
+          // First: from left gap up around to 2π
+          for (let angle = leftGapAngle; angle <= p.TWO_PI; angle += step) {
+            const x = centerX + p.cos(angle) * radiusX;
+            const y = omegaCenterY + p.sin(angle) * radiusY;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // === Legs ===
-          // Endpoints of the arch are at angle 0 and PI, which both have sin = 0,
-          // so they sit exactly at (±radius, arcBaseY)
-          const leftLegStartX = centerX - radius;
-          const rightLegStartX = centerX + radius;
-          const legStartY = arcBaseY;
-          const legHeight = scale * 1.5;
+          // Then: from 0 back down to right gap
+          for (let angle = 0; angle <= rightGapAngle; angle += step) {
+            const x = centerX + p.cos(angle) * radiusX;
+            const y = omegaCenterY + p.sin(angle) * radiusY;
+            omegaPoints.push(p.createVector(x, y));
+          }
 
-          // Left leg - straight down
-          for (let i = 0; i < 45; i++) {
-            const t = i / 44;
-            const y = legStartY + t * legHeight;
+          // ---- 2. Compute leg start positions at the gap endpoints ----
+
+          const leftLegStartX =
+            centerX + p.cos(leftGapAngle) * radiusX;
+          const leftLegStartY =
+            omegaCenterY + p.sin(leftGapAngle) * radiusY;
+
+          const rightLegStartX =
+            centerX + p.cos(rightGapAngle) * radiusX;
+          const rightLegStartY =
+            omegaCenterY + p.sin(rightGapAngle) * radiusY;
+
+          // ---- 3. Vertical legs ----
+
+          const legHeight = scale * 1.4;
+          const legSteps = 40;
+
+          // Left leg – straight down
+          for (let i = 0; i <= legSteps; i++) {
+            const t = i / legSteps;
+            const y = leftLegStartY + t * legHeight;
             omegaPoints.push(p.createVector(leftLegStartX, y));
           }
 
-          // Right leg - straight down
-          for (let i = 0; i < 45; i++) {
-            const t = i / 44;
-            const y = legStartY + t * legHeight;
+          // Right leg – straight down
+          for (let i = 0; i <= legSteps; i++) {
+            const t = i / legSteps;
+            const y = rightLegStartY + t * legHeight;
             omegaPoints.push(p.createVector(rightLegStartX, y));
           }
 
-          // === Feet ===
-          const footBaseY = legStartY + legHeight; // bottom of legs
+          // ---- 4. Feet (small serifs at the bottom) ----
 
-          // Left foot - horizontal line extending left
-          for (let i = 0; i < 15; i++) {
-            const t = i / 14;
-            const x = leftLegStartX - t * scale * 0.5;
-            omegaPoints.push(p.createVector(x, footBaseY));
+          const footY = Math.max(leftLegStartY, rightLegStartY) + legHeight;
+          const footLength = scale * 0.6;
+          const footSteps = 15;
+
+          // Left foot – horizontal, extending left
+          for (let i = 0; i <= footSteps; i++) {
+            const t = i / footSteps;
+            const x = leftLegStartX - t * footLength;
+            omegaPoints.push(p.createVector(x, footY));
           }
 
-          // Right foot - horizontal line extending right
-          for (let i = 0; i < 15; i++) {
-            const t = i / 14;
-            const x = rightLegStartX + t * scale * 0.5;
-            omegaPoints.push(p.createVector(x, footBaseY));
+          // Right foot – horizontal, extending right
+          for (let i = 0; i <= footSteps; i++) {
+            const t = i / footSteps;
+            const x = rightLegStartX + t * footLength;
+            omegaPoints.push(p.createVector(x, footY));
           }
         };
 
