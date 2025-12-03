@@ -40,53 +40,54 @@ export default function ParticleFlowField() {
           omegaPoints = [];
           const centerX = p.width / 2;
           const centerY = p.height / 2;
-          const scale = p.min(p.width, p.height) * 0.18;
+          const scale = p.min(p.width, p.height) * 0.15;
 
-          // Create Ω shape - like the Unicode character
-          // Top curved part (semicircle/horseshoe)
-          for (let angle = 0; angle <= p.PI; angle += 0.008) {
-            const radius = scale * 1.5;
+          // Ω Character breakdown:
+          // 1. Top curved horseshoe (open at bottom)
+          // 2. Two straight vertical legs extending from the curve endpoints
+          // 3. Two small horizontal feet at the bottom
+
+          // Top horseshoe curve - full semicircle on top
+          // Angle from PI (left) to 0 (right) to create upward-opening arc
+          for (let angle = p.PI; angle >= 0; angle -= 0.01) {
+            const radius = scale * 1.4;
             const x = centerX + p.cos(angle) * radius;
-            const y = centerY - scale * 0.8 + p.sin(angle) * radius;
+            const y = centerY - scale * 0.5 + p.sin(angle) * radius * 0.85; // Slightly flatten
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left vertical stem going down
-          const leftStartX = centerX - scale * 1.5;
-          const leftStartY = centerY - scale * 0.8;
-          for (let i = 0; i < 50; i++) {
-            const t = i / 49;
-            const x = leftStartX;
-            const y = leftStartY + t * scale * 1.8;
-            omegaPoints.push(p.createVector(x, y));
+          // Left leg - straight down from left side of curve
+          const leftLegStartX = centerX - scale * 1.4;
+          const leftLegStartY = centerY - scale * 0.5;
+          for (let i = 0; i < 45; i++) {
+            const t = i / 44;
+            const y = leftLegStartY + t * scale * 1.5;
+            omegaPoints.push(p.createVector(leftLegStartX, y));
           }
 
-          // Right vertical stem going down
-          const rightStartX = centerX + scale * 1.5;
-          const rightStartY = centerY - scale * 0.8;
-          for (let i = 0; i < 50; i++) {
-            const t = i / 49;
-            const x = rightStartX;
-            const y = rightStartY + t * scale * 1.8;
-            omegaPoints.push(p.createVector(x, y));
+          // Right leg - straight down from right side of curve
+          const rightLegStartX = centerX + scale * 1.4;
+          const rightLegStartY = centerY - scale * 0.5;
+          for (let i = 0; i < 45; i++) {
+            const t = i / 44;
+            const y = rightLegStartY + t * scale * 1.5;
+            omegaPoints.push(p.createVector(rightLegStartX, y));
           }
 
-          // Left bottom foot (horizontal outward)
-          const leftFootY = centerY + scale * 1.0;
-          for (let i = 0; i < 12; i++) {
-            const t = i / 11;
-            const x = leftStartX - t * scale * 0.5;
-            const y = leftFootY;
-            omegaPoints.push(p.createVector(x, y));
+          // Left foot - horizontal line extending left from bottom of left leg
+          const leftFootBaseY = centerY + scale * 1.0;
+          for (let i = 0; i < 15; i++) {
+            const t = i / 14;
+            const x = leftLegStartX - t * scale * 0.5;
+            omegaPoints.push(p.createVector(x, leftFootBaseY));
           }
 
-          // Right bottom foot (horizontal outward)
-          const rightFootY = centerY + scale * 1.0;
-          for (let i = 0; i < 12; i++) {
-            const t = i / 11;
-            const x = rightStartX + t * scale * 0.5;
-            const y = rightFootY;
-            omegaPoints.push(p.createVector(x, y));
+          // Right foot - horizontal line extending right from bottom of right leg
+          const rightFootBaseY = centerY + scale * 1.0;
+          for (let i = 0; i < 15; i++) {
+            const t = i / 14;
+            const x = rightLegStartX + t * scale * 0.5;
+            omegaPoints.push(p.createVector(x, rightFootBaseY));
           }
         };
 
@@ -242,27 +243,20 @@ export default function ParticleFlowField() {
           p.rect(0, 0, p.width, p.height);
           p.blendMode(p.ADD); // Back to additive for particles
 
-          // Update omega attraction cycle - VERY FAST 2.5s total cycle
-          // Cycle: 60 frames (~1s at 60fps) flowing freely
-          //        30 frames (~0.5s) attracting to omega
-          //        30 frames (~0.5s) holding omega shape
-          //        30 frames (~0.5s) dispersing
-          omegaCyclePhase = (p.frameCount % 150) / 150;
+          // Update omega attraction cycle
+          // Cycle: 300 frames (~5s at 60fps) attracting/swirling to omega
+          //        240 frames (~4s) holding omega shape
+          //        Total: 9 seconds per cycle
+          const totalCycleFrames = 540; // 9 seconds at 60fps
+          omegaCyclePhase = (p.frameCount % totalCycleFrames) / totalCycleFrames;
 
-          if (omegaCyclePhase < 0.4) {
-            // Free flow phase (0-40% of cycle)
-            attractToOmega = 0;
-          } else if (omegaCyclePhase < 0.6) {
-            // Attraction phase (40-60% of cycle) - ease in
-            const t = (omegaCyclePhase - 0.4) / 0.2;
+          if (omegaCyclePhase < 0.556) {
+            // Swirling/attracting phase (0-55.6% = 5 seconds) - gradual ease in
+            const t = omegaCyclePhase / 0.556;
             attractToOmega = p.easeInOutCubic(t);
-          } else if (omegaCyclePhase < 0.8) {
-            // Hold omega shape (60-80% of cycle)
-            attractToOmega = 1;
           } else {
-            // Disperse phase (80-100% of cycle) - ease out
-            const t = (omegaCyclePhase - 0.8) / 0.2;
-            attractToOmega = 1 - p.easeInOutCubic(t);
+            // Hold omega shape (55.6-100% = 4 seconds)
+            attractToOmega = 1;
           }
 
           // Warm color palette: reds, oranges, browns, whites
