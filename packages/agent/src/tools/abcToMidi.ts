@@ -4,7 +4,7 @@
  * Features:
  * - Converts ABC musical notation to MIDI format using abcjs library
  * - Validates ABC notation structure
- * - Saves MIDI files to artifacts directory with shareable URLs
+ * - Saves MIDI files to database with downloadable URLs
  * - Stores metadata (title, description, ABC notation)
  * - Integrates with existing music tools (generateSheetMusic)
  */
@@ -60,7 +60,7 @@ async function convertAndSaveMidi(
     // Convert base64 to Buffer
     const midiBuffer = Buffer.from(midiBase64, 'base64');
 
-    // Save to database only (no filesystem artifacts)
+    // Save to database
     const savedRecord = await saveMidiFile({
       title,
       description,
@@ -93,7 +93,7 @@ async function convertAndSaveMidi(
 }
 
 export const abcToMidiTool = tool({
-  description: 'Convert ABC musical notation to MIDI format and upload as an artifact. Takes ABC notation (text-based music notation) and generates a playable MIDI file that can be downloaded and used in DAWs, music notation software, MIDI players, and other music applications. Perfect for converting sheet music from generateSheetMusic into playable audio files.',
+  description: 'Convert ABC musical notation to MIDI format. Takes ABC notation (text-based music notation) and generates a playable MIDI file that can be downloaded and used in DAWs, music notation software, MIDI players, and other music applications. Perfect for converting sheet music from generateSheetMusic into playable audio files.',
   inputSchema: z.object({
     abcNotation: z.string().describe('ABC notation to convert to MIDI. Should include all required headers (X:, T:, M:, L:, K:) and note data. Can be obtained from generateSheetMusic tool.'),
     title: z.string().optional().describe('Title for the MIDI file (defaults to extracting from ABC notation T: header)'),
@@ -123,7 +123,7 @@ export const abcToMidiTool = tool({
       // Get server URL from environment or use default
       const serverUrl = process.env.ARTIFACT_SERVER_URL
         || (process.env.NODE_ENV === 'production' ? 'https://omegaai.dev' : 'http://localhost:3001');
-      const downloadUrl = `${serverUrl}/artifacts/${metadata.id}`;
+      const downloadUrl = `${serverUrl}/api/midi/${metadata.id}`;
 
       console.log(`   ✅ MIDI file created: ${metadata.filename}`);
       console.log(`   🔗 Download URL: ${downloadUrl}`);
@@ -165,7 +165,7 @@ export const abcToMidiTool = tool({
 
       return {
         success: true,
-        artifactId: metadata.id,
+        id: metadata.id,
         type: 'midi',
         title: midiTitle,
         description: midiDescription,
