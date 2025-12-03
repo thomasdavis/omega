@@ -582,7 +582,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
-  // ===== GITHUB TOOLS (9) =====
+  // ===== GITHUB TOOLS (10) =====
   {
     id: 'githubCreateIssue',
     name: 'GitHub Create Issue',
@@ -594,6 +594,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'file a bug report',
       'open an issue',
       'report a bug on GitHub'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubFixIssues',
+    name: 'GitHub Fix Issues',
+    description: 'Request Claude to fix specific GitHub issues by commenting with detailed guidance on whether to close or fix them',
+    keywords: ['github', 'issue', 'fix', 'repair', 'resolve', 'claude', 'auto', 'self-evolving'],
+    tags: ['github', 'issue', 'automation', 'ai'],
+    examples: [
+      'fix GitHub issue 123',
+      'request Claude to fix issues',
+      'have Claude resolve issue',
+      'auto-fix GitHub issues'
     ],
     category: 'github'
   },

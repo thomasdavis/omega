@@ -60,12 +60,13 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgDropIndex: { path: '@repo/database', exportName: 'pgDropIndexTool' },
   analyzeMessageWords: { path: '@repo/database', exportName: 'analyzeMessageWordsTool' },
 
-  // GitHub tools (9)
+  // GitHub tools (10)
   githubCreateIssue: { path: './tools/github/createIssue.js', exportName: 'githubCreateIssueTool' },
   githubUpdateIssue: { path: './tools/github/updateIssue.js', exportName: 'githubUpdateIssueTool' },
   githubCloseIssue: { path: './tools/github/closeIssue.js', exportName: 'githubCloseIssueTool' },
   githubListIssues: { path: './tools/github/listIssues.js', exportName: 'githubListIssuesTool' },
   githubCloseAllIssues: { path: './tools/github/closeAllIssues.js', exportName: 'githubCloseAllIssuesTool' },
+  githubFixIssues: { path: './tools/github/fixIssues.js', exportName: 'githubFixIssuesTool' },
   githubMergePR: { path: './tools/github/mergePR.js', exportName: 'githubMergePRTool' },
   githubListPullRequests: { path: './tools/github/listPullRequests.js', exportName: 'githubListPullRequestsTool' },
   githubClosePullRequest: { path: './tools/github/closePullRequest.js', exportName: 'githubClosePullRequestTool' },
