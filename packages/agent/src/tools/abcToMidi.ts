@@ -11,15 +11,9 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { writeFileSync } from 'fs';
-import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { getArtifactsDir } from '@repo/shared';
 import abcjs from 'abcjs';
 import { saveMidiFile } from '@repo/database';
-
-// Artifacts directory - use centralized storage utility
-const ARTIFACTS_DIR = getArtifactsDir();
 
 interface MidiMetadata {
   id: string;
@@ -32,7 +26,7 @@ interface MidiMetadata {
 }
 
 /**
- * Convert ABC notation to MIDI and save as artifact
+ * Convert ABC notation to MIDI and save to database
  */
 async function convertAndSaveMidi(
   abcNotation: string,
@@ -56,49 +50,34 @@ async function convertAndSaveMidi(
       throw new Error('Failed to generate MIDI data from ABC notation');
     }
 
-    // Generate unique ID and filename
-    const id = randomUUID();
-    const filename = `${id}.mid`;
-    const filepath = join(ARTIFACTS_DIR, filename);
-
-    // Convert Uint8Array to Buffer and save
+    // Convert Uint8Array to Buffer
     const midiBuffer = Buffer.from(midiData);
-    writeFileSync(filepath, midiBuffer);
 
-    // Save metadata
+    // Save to database only (no filesystem artifacts)
+    const savedRecord = await saveMidiFile({
+      title,
+      description,
+      midiData: midiBuffer,
+      abcNotation,
+      abcSheetMusicId,
+      filename: `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.mid`,
+      metadata: {
+        type: 'midi',
+      },
+    });
+
+    console.log(`   💾 Saved MIDI to database: ${savedRecord.id}`);
+
+    // Return metadata
     const metadata: MidiMetadata = {
-      id,
+      id: savedRecord.id,
       type: 'midi',
       title,
       description,
       abcNotation,
-      createdAt: new Date().toISOString(),
-      filename,
+      createdAt: new Date(Number(savedRecord.createdAt) * 1000).toISOString(),
+      filename: savedRecord.filename,
     };
-
-    const metadataPath = join(ARTIFACTS_DIR, `${id}.json`);
-    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
-
-    // Save to database
-    try {
-      await saveMidiFile({
-        title,
-        description,
-        midiData: midiBuffer,
-        abcNotation,
-        abcSheetMusicId,
-        filename,
-        artifactPath: filepath,
-        metadata: {
-          id,
-          type: 'midi',
-        },
-      });
-      console.log(`   💾 Saved MIDI to database: ${id}`);
-    } catch (dbError) {
-      console.error('   ⚠️  Failed to save MIDI to database:', dbError);
-      // Continue even if database save fails
-    }
 
     return metadata;
   } catch (error) {

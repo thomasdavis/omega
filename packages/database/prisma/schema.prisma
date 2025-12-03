@@ -269,19 +269,19 @@ model AgentSynthesis {
 }
 
 model AbcSheetMusic {
-  id               String  @id @default(uuid())
-  title            String
-  composer         String?
-  key              String?
-  timeSignature    String? @map("time_signature")
-  tempo            String?
-  abcNotation      String  @map("abc_notation") @db.Text
-  description      String?
-  musicalStructure String? @map("musical_structure")
-  metadata         Json?
-  createdBy        String? @map("created_by")
+  id                Int     @id @default(autoincrement())
+  title             String
+  composer          String?
+  key               String?
+  timeSignature     String? @map("time_signature")
+  tempo             String?
+  abcNotation       String  @map("abc_notation") @db.Text
+  description       String?
+  musicalStructure  String? @map("musical_structure")
+  metadata          Json?
+  createdBy         String? @map("created_by")
   createdByUsername String? @map("created_by_username")
-  createdAt        BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([createdAt(sort: Desc)], map: "idx_abc_sheet_music_created_at")
   @@index([createdBy], map: "idx_abc_sheet_music_created_by")
@@ -289,19 +289,19 @@ model AbcSheetMusic {
 }
 
 model MidiFile {
-  id                String  @id @default(uuid())
+  id                Int      @id @default(autoincrement())
   title             String
   description       String?
-  midiData          Bytes   @map("midi_data")
-  abcNotation       String? @map("abc_notation") @db.Text
-  abcSheetMusicId   String? @map("abc_sheet_music_id")
+  midiData          Bytes    @map("midi_data")
+  abcNotation       String?  @map("abc_notation") @db.Text
+  abcSheetMusicId   Int?     @map("abc_sheet_music_id")
   filename          String
-  fileSize          Int     @map("file_size")
-  artifactPath      String? @map("artifact_path")
+  fileSize          Int?     @map("file_size")
+  artifactPath      String?  @map("artifact_path")
   metadata          Json?
-  createdBy         String? @map("created_by")
-  createdByUsername String? @map("created_by_username")
-  createdAt         BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  createdBy         String?  @map("created_by")
+  createdByUsername String?  @map("created_by_username")
+  createdAt         DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at") @db.Timestamptz(6)
 
   @@index([createdAt(sort: Desc)], map: "idx_midi_files_created_at")
   @@index([createdBy], map: "idx_midi_files_created_by")
