@@ -6,11 +6,12 @@ import { useEffect, useRef } from 'react';
  * ParticleFlowField Component
  *
  * A stunning interactive particle flow field visualization using P5.js.
- * Features ethereal, fluid dynamics with glowing trails and cosmic vibes.
+ * Features warm-toned particles that occasionally swirl into the Ω symbol.
  *
  * Key features:
- * - 1500 particles with multi-layered Perlin noise flow field
- * - Dynamic cycling colors (HSV pentadic palette)
+ * - 1500 larger particles with multi-layered Perlin noise flow field
+ * - Warm color palette (reds, oranges, browns, whites)
+ * - Periodic attraction to Ω symbol shape
  * - Mouse interaction for particle attraction
  * - Additive blend mode for glowing effect
  * - Responsive canvas that fills the viewport
@@ -28,6 +29,59 @@ export default function ParticleFlowField() {
         let zOff = 0; // Time dimension for 3D Perlin noise
         const numParticles = 1500;
         const noiseScale = 0.005; // Controls flow field granularity
+        let omegaPoints: any[] = []; // Points defining Ω symbol shape
+        let attractToOmega = 0; // 0-1 value for omega attraction strength
+        let omegaCyclePhase = 0; // Current phase in the omega attraction cycle
+
+        /**
+         * Generate Ω symbol points for particle attraction
+         */
+        const generateOmegaPoints = () => {
+          omegaPoints = [];
+          const centerX = p.width / 2;
+          const centerY = p.height / 2;
+          const scale = p.min(p.width, p.height) * 0.25;
+
+          // Create Ω shape using parametric equations
+          // Upper arc (like a horseshoe/omega shape)
+          for (let angle = p.PI * 0.3; angle <= p.PI * 0.7; angle += 0.02) {
+            const x = centerX + p.cos(angle) * scale * 1.5;
+            const y = centerY + p.sin(angle) * scale * 1.5 - scale * 0.3;
+            omegaPoints.push(p.createVector(x, y));
+          }
+
+          // Left vertical segment
+          for (let i = 0; i < 30; i++) {
+            const t = i / 29;
+            const x = centerX - scale * 1.2;
+            const y = centerY - scale * 0.3 + t * scale * 1.2;
+            omegaPoints.push(p.createVector(x, y));
+          }
+
+          // Right vertical segment
+          for (let i = 0; i < 30; i++) {
+            const t = i / 29;
+            const x = centerX + scale * 1.2;
+            const y = centerY - scale * 0.3 + t * scale * 1.2;
+            omegaPoints.push(p.createVector(x, y));
+          }
+
+          // Left bottom foot (horizontal)
+          for (let i = 0; i < 10; i++) {
+            const t = i / 9;
+            const x = centerX - scale * 1.2 - t * scale * 0.3;
+            const y = centerY + scale * 0.9;
+            omegaPoints.push(p.createVector(x, y));
+          }
+
+          // Right bottom foot (horizontal)
+          for (let i = 0; i < 10; i++) {
+            const t = i / 9;
+            const x = centerX + scale * 1.2 + t * scale * 0.3;
+            const y = centerY + scale * 0.9;
+            omegaPoints.push(p.createVector(x, y));
+          }
+        };
 
         /**
          * Particle Class
@@ -39,24 +93,49 @@ export default function ParticleFlowField() {
           acc: any; // p5.Vector - acceleration
           maxSpeed: number = 3;
           size: number;
+          omegaTarget: any; // Assigned Ω symbol point for attraction
 
           constructor() {
             // Random initial position across canvas
             this.pos = p.createVector(p.random(p.width), p.random(p.height));
             this.vel = p.createVector(0, 0);
             this.acc = p.createVector(0, 0);
-            // Variable size for depth perception (1-4 pixels)
-            this.size = p.random(1, 4);
+            // Larger particles (3-8 pixels)
+            this.size = p.random(3, 8);
+            // Assign random omega point as target
+            this.omegaTarget = null;
           }
 
           /**
            * Update particle physics
            * - Applies flow field force from multi-layered Perlin noise
+           * - Applies omega symbol attraction during cycle phases
            * - Applies mouse attraction force when pressed
            * - Updates position using velocity and acceleration
            */
           update() {
-            // Multi-layered Perlin noise for complex flow patterns
+            // Omega attraction force (periodic swirling into symbol)
+            if (attractToOmega > 0 && omegaPoints.length > 0) {
+              // Assign omega target if not yet assigned
+              if (!this.omegaTarget) {
+                this.omegaTarget = p.random(omegaPoints);
+              }
+
+              const omegaDir = p5.Vector.sub(this.omegaTarget, this.pos);
+              const dist = omegaDir.mag();
+              omegaDir.normalize();
+              // Attraction strength based on omega cycle and distance
+              const strength = attractToOmega * 0.8 * (1 / (dist * 0.01 + 1));
+              omegaDir.mult(strength);
+              this.acc.add(omegaDir);
+            } else {
+              // Reset omega target when not attracting
+              this.omegaTarget = null;
+            }
+
+            // Multi-layered Perlin noise for complex flow patterns (when not fully attracted to omega)
+            const noiseStrength = 1 - attractToOmega * 0.7;
+
             // Base noise layer
             let noiseValue = p.noise(
               this.pos.x * noiseScale,
@@ -75,7 +154,7 @@ export default function ParticleFlowField() {
 
             // Create force vector from angle
             const force = p5.Vector.fromAngle(angle);
-            force.mult(0.15); // Force multiplier for smooth movement
+            force.mult(0.15 * noiseStrength); // Force multiplier for smooth movement
             this.acc.add(force);
 
             // Mouse attraction: inverse distance relationship
@@ -132,6 +211,9 @@ export default function ParticleFlowField() {
           p.colorMode(p.HSB, 360, 100, 100, 100);
           p.blendMode(p.ADD); // Additive blending for glowing effect
 
+          // Generate omega symbol points
+          generateOmegaPoints();
+
           // Initialize particle array
           for (let i = 0; i < numParticles; i++) {
             particles.push(new Particle());
@@ -153,17 +235,39 @@ export default function ParticleFlowField() {
           p.rect(0, 0, p.width, p.height);
           p.blendMode(p.ADD); // Back to additive for particles
 
-          // Dynamic color cycling: pentadic harmony (72° spacing)
-          // baseHue rotates slowly over time (0.1° per frame)
-          const baseHue = (p.frameCount * 0.1) % 360;
+          // Update omega attraction cycle
+          // Cycle: 600 frames (~10s at 60fps) flowing freely
+          //        300 frames (~5s) attracting to omega
+          //        300 frames (~5s) holding omega shape
+          //        300 frames (~5s) dispersing
+          omegaCyclePhase = (p.frameCount % 1500) / 1500;
 
-          // 5-color palette with equal spacing (360/5 = 72°)
-          const colors: any[] = [];
-          for (let i = 0; i < 5; i++) {
-            const hue = (baseHue + i * 72) % 360;
-            // High saturation (80), full value (100), low alpha (8) for glow
-            colors.push(p.color(hue, 80, 100, 8));
+          if (omegaCyclePhase < 0.4) {
+            // Free flow phase (0-40% of cycle)
+            attractToOmega = 0;
+          } else if (omegaCyclePhase < 0.6) {
+            // Attraction phase (40-60% of cycle) - ease in
+            const t = (omegaCyclePhase - 0.4) / 0.2;
+            attractToOmega = p.easeInOutCubic(t);
+          } else if (omegaCyclePhase < 0.8) {
+            // Hold omega shape (60-80% of cycle)
+            attractToOmega = 1;
+          } else {
+            // Disperse phase (80-100% of cycle) - ease out
+            const t = (omegaCyclePhase - 0.8) / 0.2;
+            attractToOmega = 1 - p.easeInOutCubic(t);
           }
+
+          // Warm color palette: reds, oranges, browns, whites
+          // Using HSB color space for smooth transitions
+          const colors: any[] = [
+            p.color(0, 70, 100, 12),    // Bright red
+            p.color(15, 85, 95, 12),    // Red-orange
+            p.color(25, 75, 100, 12),   // Orange
+            p.color(30, 60, 95, 12),    // Burnt orange
+            p.color(20, 20, 100, 10),   // Warm white
+            p.color(15, 40, 80, 12),    // Brown-red
+          ];
 
           // Update time dimension for noise evolution
           zOff += 0.002;
@@ -178,11 +282,19 @@ export default function ParticleFlowField() {
         };
 
         /**
+         * Cubic ease in/out function for smooth transitions
+         */
+        p.easeInOutCubic = (t: number) => {
+          return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        };
+
+        /**
          * Handle window resize
          * Recreates canvas and resets background
          */
         p.windowResized = () => {
           p.resizeCanvas(p.windowWidth, p.windowHeight);
+          generateOmegaPoints(); // Regenerate omega points for new canvas size
           p.background(0);
         };
       };
