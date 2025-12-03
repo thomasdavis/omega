@@ -40,18 +40,25 @@ async function convertAndSaveMidi(
   }
 
   try {
-    // Convert ABC notation to MIDI using abcjs
-    const midiData = abcjs.synth.getMidiFile(abcNotation, {
+    // Parse ABC notation first
+    const visualObj = abcjs.renderAbc('*', abcNotation, { add_classes: true })[0];
+
+    if (!visualObj || !visualObj.lines || visualObj.lines.length === 0) {
+      throw new Error('Failed to parse ABC notation - no musical content found');
+    }
+
+    // Use abcjs's synth.getMidiFile which returns base64-encoded MIDI
+    const midiBase64 = abcjs.synth.getMidiFile(abcNotation, {
       chordsOff: false,
-      program: 0, // Piano
+      program: 0,
     });
 
-    if (!midiData || midiData.length === 0) {
+    if (!midiBase64 || typeof midiBase64 !== 'string') {
       throw new Error('Failed to generate MIDI data from ABC notation');
     }
 
-    // Convert Uint8Array to Buffer
-    const midiBuffer = Buffer.from(midiData);
+    // Convert base64 to Buffer
+    const midiBuffer = Buffer.from(midiBase64, 'base64');
 
     // Save to database only (no filesystem artifacts)
     const savedRecord = await saveMidiFile({
