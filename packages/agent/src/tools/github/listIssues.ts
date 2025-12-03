@@ -43,7 +43,7 @@ export const githubListIssuesTool = tool({
         };
       }
 
-      const issues: any[] = await response.json();
+      const issues = await response.json() as any[];
 
       // Filter out pull requests (GitHub API returns PRs as issues)
       const actualIssues = issues.filter(issue => !issue.pull_request);

@@ -43,7 +43,7 @@ export const githubListPullRequestsTool = tool({
         };
       }
 
-      const prs: any[] = await response.json();
+      const prs = await response.json() as any[];
 
       const formattedPRs = prs.map(pr => ({
         number: pr.number,

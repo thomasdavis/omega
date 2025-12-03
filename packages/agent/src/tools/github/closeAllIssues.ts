@@ -51,7 +51,7 @@ export const githubCloseAllIssuesTool = tool({
         };
       }
 
-      const issues: any[] = await response.json();
+      const issues = await response.json() as any[];
 
       // Filter out pull requests
       const actualIssues = issues.filter(issue => !issue.pull_request);

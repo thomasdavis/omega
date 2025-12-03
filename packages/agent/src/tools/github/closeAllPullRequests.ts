@@ -51,7 +51,7 @@ export const githubCloseAllPullRequestsTool = tool({
         };
       }
 
-      const prs: any[] = await response.json();
+      const prs = await response.json() as any[];
 
       if (prs.length === 0) {
         return {
