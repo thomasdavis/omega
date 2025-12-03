@@ -94,6 +94,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   csvToChart: { path: './tools/csvToChart.js', exportName: 'csvToChartTool' },
   generateSongLyrics: { path: './tools/generateSongLyrics.js', exportName: 'generateSongLyricsTool' },
   generateSheetMusic: { path: './tools/generateSheetMusic.js', exportName: 'generateSheetMusicTool' },
+  abcToMidi: { path: './tools/abcToMidi.js', exportName: 'abcToMidiTool' },
   generateMarkdown: { path: './tools/generateMarkdown.js', exportName: 'generateMarkdownTool' },
   generateCrossword: { path: './tools/generateCrossword.js', exportName: 'generateCrosswordTool' },
   generateMarketingCopy: { path: './tools/generateMarketingCopy.js', exportName: 'generateMarketingCopyTool' },
