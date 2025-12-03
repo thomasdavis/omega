@@ -42,52 +42,57 @@ export default function ParticleFlowField() {
           const centerY = p.height / 2;
           const scale = p.min(p.width, p.height) * 0.15;
 
-          // Ω Character breakdown:
-          // 1. Top curved horseshoe (open at bottom)
-          // 2. Two straight vertical legs extending from the curve endpoints
-          // 3. Two small horizontal feet at the bottom
+          const radius = scale * 1.4;
+          const arcBaseY = centerY - scale * 0.5; // y of the arc endpoints
 
-          // Top horseshoe curve - full semicircle on top
-          // Angle from PI (left) to 0 (right) to create upward-opening arc
-          for (let angle = p.PI; angle >= 0; angle -= 0.01) {
-            const radius = scale * 1.4;
+          // === Top horseshoe / arch (∩) ===
+          // Go left → right: 0 to PI
+          for (let angle = 0; angle <= p.PI; angle += 0.01) {
             const x = centerX + p.cos(angle) * radius;
-            const y = centerY - scale * 0.5 + p.sin(angle) * radius * 0.85; // Slightly flatten
+
+            // SUBTRACT sin(...) so the middle of the arc goes UP (not down)
+            const y = arcBaseY - p.sin(angle) * radius * 0.85;
+
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left leg - straight down from left side of curve
-          const leftLegStartX = centerX - scale * 1.4;
-          const leftLegStartY = centerY - scale * 0.5;
+          // === Legs ===
+          // Endpoints of the arch are at angle 0 and PI, which both have sin = 0,
+          // so they sit exactly at (±radius, arcBaseY)
+          const leftLegStartX = centerX - radius;
+          const rightLegStartX = centerX + radius;
+          const legStartY = arcBaseY;
+          const legHeight = scale * 1.5;
+
+          // Left leg - straight down
           for (let i = 0; i < 45; i++) {
             const t = i / 44;
-            const y = leftLegStartY + t * scale * 1.5;
+            const y = legStartY + t * legHeight;
             omegaPoints.push(p.createVector(leftLegStartX, y));
           }
 
-          // Right leg - straight down from right side of curve
-          const rightLegStartX = centerX + scale * 1.4;
-          const rightLegStartY = centerY - scale * 0.5;
+          // Right leg - straight down
           for (let i = 0; i < 45; i++) {
             const t = i / 44;
-            const y = rightLegStartY + t * scale * 1.5;
+            const y = legStartY + t * legHeight;
             omegaPoints.push(p.createVector(rightLegStartX, y));
           }
 
-          // Left foot - horizontal line extending left from bottom of left leg
-          const leftFootBaseY = centerY + scale * 1.0;
+          // === Feet ===
+          const footBaseY = legStartY + legHeight; // bottom of legs
+
+          // Left foot - horizontal line extending left
           for (let i = 0; i < 15; i++) {
             const t = i / 14;
             const x = leftLegStartX - t * scale * 0.5;
-            omegaPoints.push(p.createVector(x, leftFootBaseY));
+            omegaPoints.push(p.createVector(x, footBaseY));
           }
 
-          // Right foot - horizontal line extending right from bottom of right leg
-          const rightFootBaseY = centerY + scale * 1.0;
+          // Right foot - horizontal line extending right
           for (let i = 0; i < 15; i++) {
             const t = i / 14;
             const x = rightLegStartX + t * scale * 0.5;
-            omegaPoints.push(p.createVector(x, rightFootBaseY));
+            omegaPoints.push(p.createVector(x, footBaseY));
           }
         };
 
