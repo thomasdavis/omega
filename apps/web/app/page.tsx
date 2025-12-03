@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import ParticleFlowField from '@/components/ParticleFlowField';
 
 export default function Home() {
   const features = [
@@ -42,8 +43,11 @@ export default function Home() {
 
   return (
     <>
+      {/* Particle Flow Field Background */}
+      <ParticleFlowField />
+
       {/* Page Header */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+      <div className="border-b border-zinc-800 bg-zinc-900/30 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <h1 className="text-5xl font-light text-white tracking-tight">Omega AI Dashboard</h1>
           <p className="mt-3 text-zinc-400 font-light max-w-2xl">
@@ -59,7 +63,7 @@ export default function Home() {
             <Link
               key={feature.title}
               href={feature.href}
-              className="group block bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 p-8"
+              className="group block bg-zinc-900/60 backdrop-blur-md border border-zinc-800 hover:border-teal-500/50 transition-all duration-300 p-8 hover:shadow-lg hover:shadow-teal-500/10"
             >
               {/* Icon */}
               <div className="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300">
