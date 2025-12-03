@@ -17,6 +17,7 @@
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
     "@slidev/cli": "^0.50.0",
+    "abcjs": "^6.5.2",
     "ai": "6.0.0-beta.99",
     "discord.js": "^14.24.2",
     "fish-joke-generator": "^1.1.0",
