@@ -31,4 +31,7 @@ export { analyzeDocumentAndCreateIssueTool } from './tools/analyzeDocumentAndCre
 export { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 export { marketPredictionTool } from './tools/marketPrediction.js';
 
+// File transfer system initialization
+export { initializeFileTransferSystem } from './tools/fileUpload.js';
+
 export const AGENT_PACKAGE_VERSION = '1.0.0';

@@ -75,6 +75,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // File management tools
   listUploadedFiles: { path: './tools/listUploadedFiles.js', exportName: 'listUploadedFilesTool' },
   transferRailwayFiles: { path: './tools/transferRailwayFiles.js', exportName: 'transferRailwayFilesTool' },
+  transferQueueManagement: { path: './tools/transferQueueManagement.js', exportName: 'transferQueueManagement' },
   uploadAndCommitFile: { path: './tools/uploadAndCommitFile.js', exportName: 'uploadAndCommitFileTool' },
   commitFile: { path: './tools/commitFile.js', exportName: 'commitFileTool' },
   listRepositoryFiles: { path: './tools/listRepositoryFiles.js', exportName: 'listRepositoryFilesTool' },
