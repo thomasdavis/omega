@@ -40,45 +40,54 @@ export default function ParticleFlowField() {
           omegaPoints = [];
           const centerX = p.width / 2;
           const centerY = p.height / 2;
-          const scale = p.min(p.width, p.height) * 0.25;
+          const scale = p.min(p.width, p.height) * 0.2;
 
-          // Create Ω shape using parametric equations
-          // Upper arc (like a horseshoe/omega shape)
-          for (let angle = p.PI * 0.3; angle <= p.PI * 0.7; angle += 0.02) {
-            const x = centerX + p.cos(angle) * scale * 1.5;
-            const y = centerY + p.sin(angle) * scale * 1.5 - scale * 0.3;
+          // Create Ω shape - proper omega symbol
+          // Main horseshoe curve (upper arc)
+          for (let angle = p.PI * 0.15; angle <= p.PI * 0.85; angle += 0.01) {
+            const radius = scale * 1.8;
+            const x = centerX + p.cos(angle) * radius;
+            const y = centerY + p.sin(angle) * radius - scale * 0.5;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left vertical segment
-          for (let i = 0; i < 30; i++) {
-            const t = i / 29;
-            const x = centerX - scale * 1.2;
-            const y = centerY - scale * 0.3 + t * scale * 1.2;
+          // Left vertical leg
+          for (let i = 0; i < 40; i++) {
+            const t = i / 39;
+            const startX = centerX + p.cos(p.PI * 0.85) * scale * 1.8;
+            const startY = centerY + p.sin(p.PI * 0.85) * scale * 1.8 - scale * 0.5;
+            const x = startX;
+            const y = startY + t * scale * 1.3;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Right vertical segment
-          for (let i = 0; i < 30; i++) {
-            const t = i / 29;
-            const x = centerX + scale * 1.2;
-            const y = centerY - scale * 0.3 + t * scale * 1.2;
+          // Right vertical leg
+          for (let i = 0; i < 40; i++) {
+            const t = i / 39;
+            const startX = centerX + p.cos(p.PI * 0.15) * scale * 1.8;
+            const startY = centerY + p.sin(p.PI * 0.15) * scale * 1.8 - scale * 0.5;
+            const x = startX;
+            const y = startY + t * scale * 1.3;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Left bottom foot (horizontal)
-          for (let i = 0; i < 10; i++) {
-            const t = i / 9;
-            const x = centerX - scale * 1.2 - t * scale * 0.3;
-            const y = centerY + scale * 0.9;
+          // Left bottom serif (small horizontal foot)
+          for (let i = 0; i < 8; i++) {
+            const t = i / 7;
+            const baseX = centerX + p.cos(p.PI * 0.85) * scale * 1.8;
+            const baseY = centerY + p.sin(p.PI * 0.85) * scale * 1.8 - scale * 0.5 + scale * 1.3;
+            const x = baseX - t * scale * 0.4;
+            const y = baseY;
             omegaPoints.push(p.createVector(x, y));
           }
 
-          // Right bottom foot (horizontal)
-          for (let i = 0; i < 10; i++) {
-            const t = i / 9;
-            const x = centerX + scale * 1.2 + t * scale * 0.3;
-            const y = centerY + scale * 0.9;
+          // Right bottom serif (small horizontal foot)
+          for (let i = 0; i < 8; i++) {
+            const t = i / 7;
+            const baseX = centerX + p.cos(p.PI * 0.15) * scale * 1.8;
+            const baseY = centerY + p.sin(p.PI * 0.15) * scale * 1.8 - scale * 0.5 + scale * 1.3;
+            const x = baseX + t * scale * 0.4;
+            const y = baseY;
             omegaPoints.push(p.createVector(x, y));
           }
         };
@@ -91,7 +100,7 @@ export default function ParticleFlowField() {
           pos: any; // p5.Vector - current position
           vel: any; // p5.Vector - velocity
           acc: any; // p5.Vector - acceleration
-          maxSpeed: number = 3;
+          maxSpeed: number = 5; // Increased from 3 to 5 for faster movement
           size: number;
           omegaTarget: any; // Assigned Ω symbol point for attraction
 
@@ -124,8 +133,8 @@ export default function ParticleFlowField() {
               const omegaDir = p5.Vector.sub(this.omegaTarget, this.pos);
               const dist = omegaDir.mag();
               omegaDir.normalize();
-              // Attraction strength based on omega cycle and distance
-              const strength = attractToOmega * 0.8 * (1 / (dist * 0.01 + 1));
+              // Stronger attraction for faster formation
+              const strength = attractToOmega * 1.5 * (1 / (dist * 0.01 + 1));
               omegaDir.mult(strength);
               this.acc.add(omegaDir);
             } else {
@@ -154,7 +163,7 @@ export default function ParticleFlowField() {
 
             // Create force vector from angle
             const force = p5.Vector.fromAngle(angle);
-            force.mult(0.15 * noiseStrength); // Force multiplier for smooth movement
+            force.mult(0.25 * noiseStrength); // Increased force for faster movement
             this.acc.add(force);
 
             // Mouse attraction: inverse distance relationship
@@ -235,12 +244,12 @@ export default function ParticleFlowField() {
           p.rect(0, 0, p.width, p.height);
           p.blendMode(p.ADD); // Back to additive for particles
 
-          // Update omega attraction cycle
-          // Cycle: 600 frames (~10s at 60fps) flowing freely
-          //        300 frames (~5s) attracting to omega
-          //        300 frames (~5s) holding omega shape
-          //        300 frames (~5s) dispersing
-          omegaCyclePhase = (p.frameCount % 1500) / 1500;
+          // Update omega attraction cycle - FASTER cycle
+          // Cycle: 240 frames (~4s at 60fps) flowing freely
+          //        120 frames (~2s) attracting to omega
+          //        120 frames (~2s) holding omega shape
+          //        120 frames (~2s) dispersing
+          omegaCyclePhase = (p.frameCount % 600) / 600;
 
           if (omegaCyclePhase < 0.4) {
             // Free flow phase (0-40% of cycle)
@@ -269,8 +278,8 @@ export default function ParticleFlowField() {
             p.color(15, 40, 80, 12),    // Brown-red
           ];
 
-          // Update time dimension for noise evolution
-          zOff += 0.002;
+          // Update time dimension for noise evolution - faster
+          zOff += 0.004;
 
           // Update and render all particles
           particles.forEach((particle, index) => {
