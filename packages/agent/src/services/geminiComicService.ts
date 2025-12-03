@@ -357,7 +357,32 @@ function buildComicPrompt(
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
 
-  // No conditional super-deformed instruction - it's now part of the main prompt
+  // 20% chance to include a chibi/super-deformed educational tile
+  const includesChibiEducationalTile = Math.random() < 0.2;
+  const chibiTileInstructions = includesChibiEducationalTile
+    ? `\n\n**SPECIAL INSTRUCTION FOR THIS COMIC:**
+Include one panel that features the humorous "ChatGPT explanation" style. This panel should show a character asking about or noticing a chibi/super-deformed art style, and another character (or a text box) responding with:
+
+"ChatGPT said:
+
+That effect is usually called 'super-deformed' (SD) or 'chibi.'
+
+💡 What it means
+
+Super-Deformed (SD): The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
+
+Chibi: The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect."
+
+This should be integrated naturally into the comic's narrative flow. For example:
+- A character suddenly appears in chibi form, and someone asks "Why are you suddenly so cute?"
+- The comic uses chibi style for a reaction panel, prompting the explanation
+- A character explains they're using "chibi mode" to deal with stress
+
+Make this panel visually interesting and comedically timed within the overall story.
+`
+    : '';
+
+  console.log(`🎲 Chibi educational tile: ${includesChibiEducationalTile ? 'ENABLED (20% chance)' : 'disabled'}`)
 
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
@@ -374,6 +399,7 @@ ${filteredContext}
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
 ${characterDatabase}
+${chibiTileInstructions}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
@@ -500,7 +526,6 @@ ${characterDatabase}
    - Character-driven humor using their personality profiles from database
    - Break the fourth wall occasionally for meta-humor about software development
    - Use contrast between serious robot Omega and chaotic coding situations
-   - **OCCASIONALLY:** Include one panel in "super-deformed"/"chibi" style for comedic effect
 
    **VISUAL STORYTELLING:**
    - Show don't tell - use visuals to convey jokes, not just dialogue
