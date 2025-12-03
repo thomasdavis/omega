@@ -258,3 +258,168 @@ export async function listMidiFilesMetadata(
     },
   });
 }
+
+// ============================================
+// MP3 File Operations
+// ============================================
+
+export interface Mp3FileRecord {
+  id: number;
+  title: string;
+  description?: string | null;
+  mp3Data: Buffer;
+  abcNotation?: string | null;
+  abcSheetMusicId?: number | null;
+  filename: string;
+  fileSize?: number | null;
+  artifactPath?: string | null;
+  metadata?: Prisma.JsonValue | null;
+  createdBy?: string | null;
+  createdByUsername?: string | null;
+  createdAt: Date;
+}
+
+export interface CreateMp3FileInput {
+  title: string;
+  description?: string;
+  mp3Data: Buffer;
+  abcNotation?: string;
+  abcSheetMusicId?: number;
+  filename: string;
+  artifactPath?: string;
+  metadata?: Prisma.InputJsonValue | null;
+  createdBy?: string;
+  createdByUsername?: string;
+}
+
+/**
+ * Save MP3 file to database
+ */
+export async function saveMp3File(
+  input: CreateMp3FileInput
+): Promise<Mp3FileRecord> {
+  const record = await prisma.mp3File.create({
+    data: {
+      title: input.title,
+      description: input.description,
+      mp3Data: input.mp3Data,
+      abcNotation: input.abcNotation,
+      abcSheetMusicId: input.abcSheetMusicId,
+      filename: input.filename,
+      fileSize: input.mp3Data.length,
+      artifactPath: input.artifactPath,
+      metadata: input.metadata ?? undefined,
+      createdBy: input.createdBy,
+      createdByUsername: input.createdByUsername,
+    },
+  });
+
+  return record;
+}
+
+/**
+ * Get MP3 file by ID
+ */
+export async function getMp3File(id: number): Promise<Mp3FileRecord | null> {
+  return await prisma.mp3File.findUnique({
+    where: { id },
+  });
+}
+
+/**
+ * List recent MP3 files
+ */
+export async function listMp3Files(
+  limit = 50,
+  offset = 0
+): Promise<Mp3FileRecord[]> {
+  return await prisma.mp3File.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+}
+
+/**
+ * Get MP3 files count
+ */
+export async function getMp3FileCount(): Promise<number> {
+  return await prisma.mp3File.count();
+}
+
+/**
+ * Get MP3 file metadata (without binary data)
+ */
+export async function getMp3FileMetadata(id: number): Promise<{
+  id: number;
+  title: string;
+  description: string | null;
+  abcNotation: string | null;
+  abcSheetMusicId: number | null;
+  filename: string;
+  fileSize: number | null;
+  artifactPath: string | null;
+  metadata: Prisma.JsonValue | null;
+  createdBy: string | null;
+  createdByUsername: string | null;
+  createdAt: Date;
+} | null> {
+  return await prisma.mp3File.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      abcNotation: true,
+      abcSheetMusicId: true,
+      filename: true,
+      fileSize: true,
+      artifactPath: true,
+      metadata: true,
+      createdBy: true,
+      createdByUsername: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * List MP3 files metadata (without binary data)
+ */
+export async function listMp3FilesMetadata(
+  limit = 50,
+  offset = 0
+): Promise<Array<{
+  id: number;
+  title: string;
+  description: string | null;
+  abcNotation: string | null;
+  abcSheetMusicId: number | null;
+  filename: string;
+  fileSize: number | null;
+  artifactPath: string | null;
+  metadata: Prisma.JsonValue | null;
+  createdBy: string | null;
+  createdByUsername: string | null;
+  createdAt: Date;
+}>> {
+  return await prisma.mp3File.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      abcNotation: true,
+      abcSheetMusicId: true,
+      filename: true,
+      fileSize: true,
+      artifactPath: true,
+      metadata: true,
+      createdBy: true,
+      createdByUsername: true,
+      createdAt: true,
+    },
+  });
+}

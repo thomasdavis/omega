@@ -96,6 +96,12 @@ export {
   getMidiFileCount,
   getMidiFileMetadata,
   listMidiFilesMetadata,
+  saveMp3File,
+  getMp3File,
+  listMp3Files,
+  getMp3FileCount,
+  getMp3FileMetadata,
+  listMp3FilesMetadata,
 } from './postgres/musicService.js';
 
 // Export music service types
@@ -104,6 +110,8 @@ export type {
   CreateAbcSheetMusicInput,
   MidiFileRecord,
   CreateMidiFileInput,
+  Mp3FileRecord,
+  CreateMp3FileInput,
 } from './postgres/musicService.js';
 
 // Database Adapter (PostgreSQL-only after migration)

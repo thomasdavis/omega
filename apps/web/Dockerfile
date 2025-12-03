@@ -28,8 +28,8 @@ RUN pnpm build --filter=web
 # Production image
 FROM node:22-alpine
 
-# Install OpenSSL compatibility for Prisma
-RUN apk add --no-cache openssl libc6-compat
+# Install OpenSSL compatibility for Prisma + FluidSynth for audio rendering
+RUN apk add --no-cache openssl libc6-compat fluidsynth
 
 RUN npm install -g pnpm@9.0.0
 

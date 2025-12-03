@@ -256,6 +256,9 @@ importers:
       fish-joke-generator:
         specifier: ^1.1.0
         version: 1.1.0(openai@4.104.0(ws@8.18.3)(zod@3.25.76))(zod@3.25.76)
+      lamejs:
+        specifier: ^1.2.1
+        version: 1.2.1
       minimatch:
         specifier: ^10.1.1
         version: 10.1.1
@@ -4544,6 +4547,9 @@ packages:
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
 
+  lamejs@1.2.1:
+    resolution: {integrity: sha512-s7bxvjvYthw6oPLCm5pFxvA84wUROODB8jEO2+CE1adhKgrIvVOlmMgY8zyugxGrvRaDHNJanOiS21/emty6dQ==}
+
   langium@3.3.1:
     resolution: {integrity: sha512-QJv/h939gDpvT+9SiLVlY7tZC3xB2qK57v0J04Sh9wpMb6MP1q8gB21L3WIo8T5P1MSMg3Ep14L7KkDCFG3y4w==}
     engines: {node: '>=16.0.0'}
@@ -6346,6 +6352,9 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
+
+  use-strict@1.0.1:
+    resolution: {integrity: sha512-IeiWvvEXfW5ltKVMkxq6FvNf2LojMKvB2OCeja6+ct24S1XOmQw2dGr2JyndwACWAGJva9B7yPHwAmeA9QCqAQ==}
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -11755,6 +11764,10 @@ snapshots:
 
   kolorist@1.8.0: {}
 
+  lamejs@1.2.1:
+    dependencies:
+      use-strict: 1.0.1
+
   langium@3.3.1:
     dependencies:
       chevrotain: 11.0.3
@@ -13881,6 +13894,8 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.3.27
+
+  use-strict@1.0.1: {}
 
   util-deprecate@1.0.2: {}
 

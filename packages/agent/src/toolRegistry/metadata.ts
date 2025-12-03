@@ -931,6 +931,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'abcToMp3',
+    name: 'ABC to MP3 Converter',
+    description: 'Convert ABC notation to high-quality MP3 audio with realistic piano sound using FluidSynth and SoundFont',
+    keywords: ['abc', 'mp3', 'audio', 'convert', 'music', 'piano', 'sound', 'playable', 'notation', 'high quality', 'fluidsynth', 'soundfont'],
+    tags: ['content', 'music', 'conversion', 'audio', 'artifact'],
+    examples: [
+      'convert to MP3',
+      'make MP3 file',
+      'create high quality audio',
+      'abc to mp3',
+      'convert abc to audio',
+      'generate mp3 from sheet music',
+      'realistic piano audio',
+      'playable music file'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateMarkdown',
     name: 'Generate Markdown',
     description: 'Generate formatted markdown documents',
