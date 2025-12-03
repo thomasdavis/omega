@@ -244,6 +244,9 @@ importers:
       '@slidev/cli':
         specifier: ^0.50.0
         version: 0.50.0(@babel/parser@7.28.5)(@nuxt/kit@3.20.1(magicast@0.3.5))(@types/markdown-it@14.1.2)(@types/node@20.19.25)(@vue/compiler-sfc@3.5.24)(magicast@0.3.5)(playwright-chromium@1.56.1)(postcss@8.5.6)(react@19.2.0)(rollup@4.53.3)(terser@5.44.1)(tsx@4.20.6)
+      abcjs:
+        specifier: ^6.5.2
+        version: 6.5.2
       ai:
         specifier: 6.0.0-beta.99
         version: 6.0.0-beta.99(zod@3.25.76)
@@ -2744,6 +2747,9 @@ packages:
 
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
+
+  abcjs@6.5.2:
+    resolution: {integrity: sha512-XLDZPy/4TZbOqPsLwuu0Umsl79NTAcObEkboPxdYZXI8/fU6PNh59SAnkZOnEPVbyT8EXfBUjgNoe/uKd3T0xQ==}
 
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
@@ -9678,6 +9684,8 @@ snapshots:
   '@xtuc/ieee754@1.2.0': {}
 
   '@xtuc/long@4.2.2': {}
+
+  abcjs@6.5.2: {}
 
   abort-controller@3.0.0:
     dependencies:
