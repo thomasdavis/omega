@@ -363,7 +363,7 @@ export const transferRailwayFilesTool = tool({
   - Preserves original metadata (uploader, timestamp, description, tags)
   - Generates sensible defaults if metadata is missing
   - Supports batch transfer or single file transfer
-  - Safe: Won't delete Railway files unless explicitly requested
+  - Automatically cleans up Railway files after successful transfer (configurable)
   - Idempotent: Can be run multiple times safely
 
   Requirements:
@@ -371,10 +371,10 @@ export const transferRailwayFilesTool = tool({
   - Railway storage must be accessible (/data/uploads in production)`,
   inputSchema: z.object({
     filename: z.string().optional().describe('Specific filename to transfer (leave empty to scan all Railway files)'),
-    deleteAfterTransfer: z.boolean().optional().default(false).describe('Delete Railway file after successful transfer to GitHub'),
+    deleteAfterTransfer: z.boolean().optional().default(true).describe('Delete Railway file after successful transfer to GitHub (default: true)'),
     dryRun: z.boolean().optional().default(false).describe('Preview what would be transferred without actually transferring'),
   }),
-  execute: async ({ filename, deleteAfterTransfer = false, dryRun = false }) => {
+  execute: async ({ filename, deleteAfterTransfer = true, dryRun = false }) => {
     try {
       if (!GITHUB_TOKEN) {
         return {
