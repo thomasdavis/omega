@@ -11,8 +11,11 @@ import { writeFile, unlink } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { tmpdir } from 'os';
 import { join } from 'path';
-// @ts-ignore - lamejs doesn't have types
-import lamejs from 'lamejs';
+import { createRequire } from 'module';
+
+// Use createRequire for CommonJS module compatibility
+const require = createRequire(import.meta.url);
+const lamejs = require('lamejs');
 
 const execAsync = promisify(exec);
 
