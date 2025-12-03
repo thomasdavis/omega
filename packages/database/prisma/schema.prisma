@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model Message {
+  id                  String  @id
+  timestamp           BigInt
+  senderType          String  @map("sender_type")
+  userId              String? @map("user_id")
+  username            String?
+  channelId           String? @map("channel_id")
+  channelName         String? @map("channel_name")
+  guildId             String? @map("guild_id")
+  messageContent      String  @map("message_content")
+  toolName            String? @map("tool_name")
+  toolArgs            String? @map("tool_args")
+  toolResult          String? @map("tool_result")
+  sessionId           String? @map("session_id")
+  parentMessageId     String? @map("parent_message_id")
+  metadata            Json?
+  aiSummary           String? @map("ai_summary")
+  sentimentAnalysis   Json?   @map("sentiment_analysis")
+  responseDecision    Json?   @map("response_decision")
+  interactionType     String? @map("interaction_type")
+  userIntent          String? @map("user_intent")
+  botPerception       String? @map("bot_perception")
+  conversationQuality String? @map("conversation_quality")
+  createdAt           BigInt? @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([channelId], map: "idx_messages_channel_id")
+  @@index([senderType], map: "idx_messages_sender_type")
+  @@index([sessionId], map: "idx_messages_session_id")
+  @@index([timestamp(sort: Desc)], map: "idx_messages_timestamp")
+  @@index([userId], map: "idx_messages_user_id")
+  @@map("messages")
+}
+
+model Query {
+  id                String  @id
+  timestamp         BigInt
+  userId            String  @map("user_id")
+  username          String
+  queryText         String  @map("query_text")
+  translatedSql     String? @map("translated_sql")
+  aiSummary         String? @map("ai_summary")
+  queryResult       Json?   @map("query_result")
+  resultCount       Int?    @map("result_count")
+  error             String?
+  executionTimeMs   Int?    @map("execution_time_ms")
+  sentimentAnalysis Json?   @map("sentiment_analysis")
+  queryComplexity   String? @map("query_complexity")
+  userSatisfaction  String? @map("user_satisfaction")
+  createdAt         BigInt? @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([timestamp(sort: Desc)], map: "idx_queries_timestamp")
+  @@index([userId], map: "idx_queries_user_id")
+  @@map("queries")
+}
+
+model Document {
+  id                String                 @id
+  title             String
+  content           String                 @default("")
+  createdBy         String                 @map("created_by")
+  createdByUsername String?                @map("created_by_username")
+  createdAt         BigInt?                @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt         BigInt?                @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+  isPublic          Boolean?               @default(true) @map("is_public")
+  metadata          Json?
+  collaborators     DocumentCollaborator[]
+
+  @@index([createdAt(sort: Desc)], map: "idx_documents_created_at")
+  @@index([createdBy], map: "idx_documents_created_by")
+  @@index([updatedAt(sort: Desc)], map: "idx_documents_updated_at")
+  @@map("documents")
+}
+
+model DocumentCollaborator {
+  id         String   @id
+  documentId String   @map("document_id")
+  userId     String   @map("user_id")
+  username   String?
+  role       String?  @default("editor")
+  joinedAt   BigInt?  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("joined_at")
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([documentId, userId], map: "idx_collaborators_unique")
+  @@index([documentId], map: "idx_collaborators_document_id")
+  @@index([userId], map: "idx_collaborators_user_id")
+  @@map("document_collaborators")
+}
+
+model UserProfile {
+  id                           String                @id
+  userId                       String                @unique @map("user_id")
+  username                     String
+  dominant_archetype           String?
+  secondary_archetypes         Json?
+  archetype_confidence         Float?                @db.Real
+  shadow_archetype             String?
+  openness_score               Int?
+  conscientiousness_score      Int?
+  extraversion_score           Int?
+  agreeableness_score          Int?
+  neuroticism_score            Int?
+  attachmentStyle              String?               @map("attachment_style")
+  attachment_confidence        Float?                @db.Real
+  emotional_awareness_score    Int?
+  empathy_score                Int?
+  emotional_regulation_score   Int?
+  communication_formality      String?
+  communication_assertiveness  String?
+  communication_engagement     String?
+  verbal_fluency_score         Int?
+  question_asking_frequency    Float?                @db.Real
+  analytical_thinking_score    Int?
+  creative_thinking_score      Int?
+  abstract_reasoning_score     Int?
+  concrete_thinking_score      Int?
+  social_dominance_score       Int?
+  cooperation_score            Int?
+  conflictStyle                String?               @map("conflict_style")
+  humorStyle                   String?               @map("humor_style")
+  messageLengthAvg             Float?                @map("message_length_avg") @db.Real
+  message_length_variance      Float?                @db.Real
+  response_latency_avg         Float?                @db.Real
+  emoji_usage_rate             Float?                @db.Real
+  punctuation_style            String?
+  capitalization_pattern       String?
+  technical_knowledge_level    String?
+  primary_interests            Json?
+  expertise_areas              Json?
+  affinity_score               Int?
+  trust_level                  Int?
+  emotional_bond               String?
+  omega_thoughts               String?
+  notable_patterns             Json?
+  overall_sentiment            String?
+  positive_interaction_ratio   Float?                @db.Real
+  negative_interaction_ratio   Float?                @db.Real
+  dominant_emotions            Json?
+  feelings_json                Json?
+  personality_facets           Json?
+  culturalBackground           String?               @map("cultural_background")
+  culturalValues               Json?                 @map("cultural_values")
+  culturalCommunicationStyle   String?               @map("cultural_communication_style")
+  culturalConfidence           Float?                @map("cultural_confidence") @db.Real
+  zodiacSign                   String?               @map("zodiac_sign")
+  zodiacElement                String?               @map("zodiac_element")
+  zodiacModality               String?               @map("zodiac_modality")
+  birthDate                    String?               @map("birth_date")
+  astrologicalConfidence       Float?                @map("astrological_confidence") @db.Real
+  predictedBehaviors           Json?                 @map("predicted_behaviors")
+  predictionConfidence         Float?                @map("prediction_confidence") @db.Real
+  predictionTimeframe          String?               @map("prediction_timeframe")
+  lastPredictionAt             BigInt?               @map("last_prediction_at")
+  predictionAccuracyScore      Float?                @map("prediction_accuracy_score") @db.Real
+  integratedProfileSummary     String?               @map("integrated_profile_summary")
+  profileIntegrationConfidence Float?                @map("profile_integration_confidence") @db.Real
+  worldModelAdjustments        Json?                 @map("world_model_adjustments")
+  personalModelAdjustments     Json?                 @map("personal_model_adjustments")
+  uploadedPhotoUrl             String?               @map("uploaded_photo_url")
+  uploadedPhotoMetadata        Json?                 @map("uploaded_photo_metadata")
+  aiAppearanceDescription      String?               @map("ai_appearance_description")
+  appearanceConfidence         Float?                @default(0.0) @map("appearance_confidence") @db.Real
+  aiDetectedGender             String?               @map("ai_detected_gender")
+  genderConfidence             Float?                @map("gender_confidence") @db.Real
+  estimatedAgeRange            String?               @map("estimated_age_range")
+  ageConfidence                Float?                @map("age_confidence") @db.Real
+  faceShape                    String?               @map("face_shape")
+  facialSymmetryScore          Int?                  @map("facial_symmetry_score")
+  jawlineProminence            String?               @map("jawline_prominence")
+  cheekboneProminence          String?               @map("cheekbone_prominence")
+  hairColor                    String?               @map("hair_color")
+  hairTexture                  String?               @map("hair_texture")
+  hairLength                   String?               @map("hair_length")
+  hairStyle                    String?               @map("hair_style")
+  hairDensity                  String?               @map("hair_density")
+  facialHair                   String?               @map("facial_hair")
+  eyeColor                     String?               @map("eye_color")
+  eyeShape                     String?               @map("eye_shape")
+  eyeSpacing                   String?               @map("eye_spacing")
+  eyebrowShape                 String?               @map("eyebrow_shape")
+  eyebrowThickness             String?               @map("eyebrow_thickness")
+  noseShape                    String?               @map("nose_shape")
+  noseSize                     String?               @map("nose_size")
+  lipFullness                  String?               @map("lip_fullness")
+  smileType                    String?               @map("smile_type")
+  skinTone                     String?               @map("skin_tone")
+  skinTexture                  String?               @map("skin_texture")
+  complexionQuality            String?               @map("complexion_quality")
+  bodyType                     String?               @map("body_type")
+  buildDescription             String?               @map("build_description")
+  heightEstimate               String?               @map("height_estimate")
+  posture                      String?
+  distinctiveFeatures          Json?                 @map("distinctive_features")
+  clothingStyle                String?               @map("clothing_style")
+  accessories                  Json?
+  attractivenessAssessment     String?               @map("attractiveness_assessment")
+  approachabilityScore         Int?                  @map("approachability_score")
+  perceivedConfidenceLevel     String?               @map("perceived_confidence_level")
+  aestheticArchetype           String?               @map("aesthetic_archetype")
+  firstSeenAt                  BigInt                @map("first_seen_at")
+  lastInteractionAt            BigInt                @map("last_interaction_at")
+  lastAnalyzedAt               BigInt?               @map("last_analyzed_at")
+  lastPhotoAnalyzedAt          BigInt?               @map("last_photo_analyzed_at")
+  messageCount                 Int?                  @default(0) @map("message_count")
+  createdAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+  analysisHistory              UserAnalysisHistory[]
+
+  @@index([lastAnalyzedAt], map: "idx_user_profiles_last_analyzed")
+  @@index([userId], map: "idx_user_profiles_user_id")
+  @@map("user_profiles")
+}
+
+model UserAnalysisHistory {
+  id                     String      @id
+  userId                 String      @map("user_id")
+  analysisTimestamp      BigInt      @map("analysis_timestamp")
+  feelingsSnapshot       Json?       @map("feelings_snapshot")
+  personalitySnapshot    Json?       @map("personality_snapshot")
+  messageCountAtAnalysis Int?        @map("message_count_at_analysis")
+  changesSummary         String?     @map("changes_summary")
+  createdAt              BigInt?     @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  userProfile            UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([analysisTimestamp(sort: Desc)], map: "idx_analysis_history_timestamp")
+  @@index([userId], map: "idx_analysis_history_user_id")
+  @@map("user_analysis_history")
+}
+
+model jokes {
+  id        Int    @id @default(autoincrement())
+  joke_text String
+}
+
+model TodoList {
+  id           Int      @id @default(autoincrement())
+  task         String
+  isCompleted  Boolean  @default(false) @map("is_completed")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_todo_list_created_at")
+  @@index([isCompleted], map: "idx_todo_list_is_completed")
+  @@map("todo_list")
+}
+
+model AgentSynthesis {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  username         String
+  synthesisContent String   @map("synthesis_content") @db.Text
+  messageCount     Int      @map("message_count")
+  generatedAt      BigInt   @map("generated_at")
+  createdAt        BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt        BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([userId], map: "idx_agent_synthesis_user_id")
+  @@index([generatedAt(sort: Desc)], map: "idx_agent_synthesis_generated_at")
+  @@map("agent_syntheses")
+}

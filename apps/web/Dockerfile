@@ -28,6 +28,9 @@ RUN pnpm build --filter=web
 # Production image
 FROM node:20-alpine
 
+# Install OpenSSL compatibility for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 RUN npm install -g pnpm@9.0.0
 
 WORKDIR /app
@@ -38,7 +41,11 @@ COPY --from=base /app/pnpm-workspace.yaml /app/package.json /app/pnpm-lock.yaml 
 # Copy package.json files for workspace
 COPY --from=base /app/packages/shared/package.json ./packages/shared/
 COPY --from=base /app/packages/database/package.json ./packages/database/
+COPY --from=base /app/packages/ui/package.json ./packages/ui/
 COPY --from=base /app/apps/web/package.json ./apps/web/
+
+# Copy Prisma schema for database package (needed for postinstall hook)
+COPY --from=base /app/packages/database/prisma ./packages/database/prisma
 
 # Install production dependencies
 RUN pnpm install --frozen-lockfile --prod
@@ -46,6 +53,7 @@ RUN pnpm install --frozen-lockfile --prod
 # Copy built packages
 COPY --from=base /app/packages/shared/dist ./packages/shared/dist
 COPY --from=base /app/packages/database/dist ./packages/database/dist
+COPY --from=base /app/packages/ui/dist ./packages/ui/dist
 
 # Copy built Next.js app
 COPY --from=base /app/apps/web/.next ./apps/web/.next
@@ -54,7 +62,6 @@ COPY --from=base /app/apps/web/next.config.js ./apps/web/
 
 # Start Next.js
 WORKDIR /app/apps/web
-ENV PORT=3000
 ENV NODE_ENV=production
-EXPOSE 3000
+ENV HOSTNAME=0.0.0.0
 CMD ["pnpm", "start"]

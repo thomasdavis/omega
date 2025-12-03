@@ -1,0 +1,31 @@
+/**
+ * Omega UI Global Styles
+ *
+ * Minimal global CSS for the design system.
+ * Most styling is done via Tailwind utilities.
+ */
+
+/* Base layer - minimal resets */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Component layer - for custom component styles if needed */
+@layer components {
+  /* Smooth scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus visible styles for accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}

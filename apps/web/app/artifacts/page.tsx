@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
+import Badge from '@/components/ui/Badge';
 
 interface Artifact {
   id: string;
@@ -31,66 +33,83 @@ export default function ArtifactsPage() {
   }, []);
 
   if (loading) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg">Loading artifacts...</p>
-      </main>
-    );
+    return <LoadingSpinner message="Loading artifacts..." />;
   }
 
   if (error) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-lg text-red-500">Error: {error}</p>
-        <Link href="/" className="mt-4 text-blue-500 hover:underline">
-          Go back home
-        </Link>
-      </main>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 text-xl mb-4">Error: {error}</p>
+          <p className="text-zinc-500">Failed to load artifacts</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <Link href="/" className="text-blue-500 hover:underline">
-            ← Back to home
-          </Link>
+    <>
+      {/* Page Header */}
+      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <h1 className="text-5xl font-light text-white tracking-tight">Artifacts</h1>
+          <p className="mt-3 text-zinc-400 font-light max-w-2xl">
+            Interactive HTML, SVG, and Markdown content created by Omega AI
+          </p>
         </div>
+      </div>
 
-        <h1 className="text-4xl font-bold mb-8">Artifacts</h1>
-
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-6 py-12">
         {artifacts.length === 0 ? (
-          <p className="text-lg text-gray-500">No artifacts found.</p>
+          <EmptyState
+            icon="🎨"
+            title="No artifacts found"
+            description="Artifacts will appear here when Omega creates interactive HTML, SVG, or Markdown content."
+          />
         ) : (
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
             {artifacts.map((artifact) => (
               <a
                 key={artifact.id}
                 href={`/api/artifacts/${artifact.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block p-6 rounded-lg border border-gray-300 hover:border-gray-500 hover:bg-gray-50 transition-colors"
+                className="group block bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-all duration-300 overflow-hidden"
               >
-                <div className="flex justify-between items-start mb-2">
-                  <h2 className="text-xl font-semibold truncate flex-1">
-                    {artifact.filename}
-                  </h2>
-                  <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
-                    {artifact.type}
-                  </span>
+                <div className="p-6">
+                  <div className="flex justify-between items-start gap-3 mb-4">
+                    <h2 className="text-xl font-light text-white truncate flex-1 group-hover:text-teal-400 transition-colors">
+                      {artifact.filename}
+                    </h2>
+                    <Badge variant="accent" className="shrink-0">
+                      {artifact.type}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-xs font-mono text-zinc-500">
+                    <p>
+                      Created: {new Date(artifact.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    <p>Size: {(artifact.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                  <div className="mt-4 text-teal-400 text-sm font-mono flex items-center gap-2">
+                    View Artifact
+                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500">
-                  Created: {new Date(artifact.createdAt).toLocaleString()}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Size: {(artifact.size / 1024).toFixed(2)} KB
-                </p>
               </a>
             ))}
           </div>
         )}
       </div>
-    </main>
+    </>
   );
 }

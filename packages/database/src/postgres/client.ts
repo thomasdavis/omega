@@ -23,11 +23,11 @@ export async function getPostgresPool(): Promise<Pool> {
 
   console.log('🔌 Connecting to PostgreSQL...');
 
-  // Use POSTGRES_URL or DATABASE_URL (Railway default)
-  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  // Use POSTGRES_URL, DATABASE_PUBLIC_URL (for external connections), or DATABASE_URL (Railway internal)
+  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error('POSTGRES_URL or DATABASE_URL environment variable not set');
+    throw new Error('POSTGRES_URL, DATABASE_PUBLIC_URL, or DATABASE_URL environment variable not set');
   }
 
   pgPool = new Pool({

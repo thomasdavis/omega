@@ -107,8 +107,8 @@ SQL Query:`,
       }
 
       // Execute the query
-      const db = getDatabase();
-      const result = await db.execute(sqlQuery);
+      const db = await getDatabase();
+      const result = await db.query(sqlQuery);
 
       const executionTime = Date.now() - startTime;
       const resultCount = result.rows.length;

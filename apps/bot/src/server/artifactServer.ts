@@ -37,7 +37,7 @@ import {
   getYjsState,
   syncYjsToDatabase,
 } from '../lib/yjsService.js';
-import { analyzeDocumentAndCreateIssueTool } from '../agent/tools/analyzeDocumentAndCreateIssue.js';
+import { analyzeDocumentAndCreateIssueTool } from '@repo/agent';
 
 // Use centralized storage utility for consistent paths
 const ARTIFACTS_DIR = getArtifactsDir();
@@ -1723,7 +1723,7 @@ function createApp(): express.Application {
   app.get('/api/tools', async (req: Request, res: Response) => {
     try {
       // Import tool metadata dynamically
-      const { TOOL_METADATA, CORE_TOOLS } = await import('../agent/toolRegistry/metadata.js');
+      const { TOOL_METADATA, CORE_TOOLS } = await import('@repo/agent');
 
       // Get query parameters
       const category = req.query.category as string;
@@ -1777,7 +1777,7 @@ function createApp(): express.Application {
   app.get('/tools', async (req: Request, res: Response) => {
     try {
       // Import tool metadata dynamically
-      const { TOOL_METADATA, CORE_TOOLS } = await import('../agent/toolRegistry/metadata.js');
+      const { TOOL_METADATA, CORE_TOOLS } = await import('@repo/agent');
 
       // Get query parameters
       const category = req.query.category as string;

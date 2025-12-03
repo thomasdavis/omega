@@ -19,14 +19,14 @@ import { getDatabase } from '@repo/database';// OLD:client.js';
  * Look up user profiles by usernames
  */
 async function getUserProfilesByUsernames(usernames: string[]): Promise<string[]> {
-  const db = getDatabase();
+  const db = await getDatabase();
   const userIds: string[] = [];
 
   for (const username of usernames) {
-    const result = await db.execute({
-      sql: 'SELECT user_id FROM user_profiles WHERE username = ? LIMIT 1',
-      args: [username],
-    });
+    const result = await db.query(
+      'SELECT user_id FROM user_profiles WHERE username = $1 LIMIT 1',
+      [username]
+    );
 
     if (result.rows.length > 0) {
       userIds.push((result.rows[0] as any).user_id);

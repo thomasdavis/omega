@@ -5,6 +5,27 @@ import {
   getDocumentCount,
 } from '@repo/database';
 
+// Helper to convert BigInt fields to numbers for JSON serialization
+function serializeDocument(doc: Record<string, unknown>) {
+  const serialized: Record<string, unknown> = { ...doc };
+
+  // Handle both camelCase (Prisma) and snake_case (mapped) field names
+  if (typeof serialized.createdAt === 'bigint') {
+    serialized.createdAt = Number(serialized.createdAt);
+  }
+  if (typeof serialized.updatedAt === 'bigint') {
+    serialized.updatedAt = Number(serialized.updatedAt);
+  }
+  if (typeof serialized.created_at === 'bigint') {
+    serialized.created_at = Number(serialized.created_at);
+  }
+  if (typeof serialized.updated_at === 'bigint') {
+    serialized.updated_at = Number(serialized.updated_at);
+  }
+
+  return serialized;
+}
+
 // GET /api/documents - List all documents with pagination
 export async function GET(request: Request) {
   try {
@@ -17,19 +38,27 @@ export async function GET(request: Request) {
     const documents = await listDocuments({ createdBy, limit, offset });
     const totalCount = await getDocumentCount({ createdBy });
 
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocuments = documents.map(serializeDocument);
+
+    // Ensure totalCount is a number (in case Prisma returns BigInt)
+    const total = typeof totalCount === 'bigint' ? Number(totalCount) : totalCount;
+
     return NextResponse.json({
-      documents,
+      success: true,
+      documents: serializedDocuments,
       pagination: {
         page,
         limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
     console.error('Error listing documents:', error);
     return NextResponse.json(
       {
+        success: false,
         error: 'Failed to list documents',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -62,7 +91,10 @@ export async function POST(request: Request) {
       isPublic: true, // Default to public for now
     });
 
-    return NextResponse.json(document, { status: 201 });
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocument = serializeDocument(document);
+
+    return NextResponse.json(serializedDocument, { status: 201 });
   } catch (error) {
     console.error('Error creating document:', error);
     return NextResponse.json(

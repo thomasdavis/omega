@@ -566,7 +566,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
-  // ===== GITHUB TOOLS (4) =====
+  {
+    id: 'analyzeMessageWords',
+    name: 'Analyze Message Words',
+    description: 'Count the most commonly used words in recent messages from the messages table',
+    keywords: ['messages', 'words', 'analyze', 'count', 'common', 'frequent', 'vocabulary', 'keywords', 'conversation', 'text analysis'],
+    tags: ['database', 'postgresql', 'analysis', 'messages', 'text'],
+    examples: [
+      'what are the most common words in recent messages',
+      'analyze message vocabulary',
+      'count frequent words in conversations',
+      'show top words in last 100 messages',
+      'keyword analysis of messages'
+    ],
+    category: 'database'
+  },
+
+  // ===== GITHUB TOOLS (10) =====
   {
     id: 'githubCreateIssue',
     name: 'GitHub Create Issue',
@@ -578,6 +594,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'file a bug report',
       'open an issue',
       'report a bug on GitHub'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubFixIssues',
+    name: 'GitHub Fix Issues',
+    description: 'Request Claude to fix specific GitHub issues by commenting with detailed guidance on whether to close or fix them',
+    keywords: ['github', 'issue', 'fix', 'repair', 'resolve', 'claude', 'auto', 'self-evolving'],
+    tags: ['github', 'issue', 'automation', 'ai'],
+    examples: [
+      'fix GitHub issue 123',
+      'request Claude to fix issues',
+      'have Claude resolve issue',
+      'auto-fix GitHub issues'
     ],
     category: 'github'
   },
@@ -613,6 +644,36 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'githubListIssues',
+    name: 'GitHub List Issues',
+    description: 'List GitHub issues from the repository with filtering by state',
+    keywords: ['github', 'issue', 'list', 'show', 'view', 'all', 'open', 'closed'],
+    tags: ['github', 'issue', 'project-management'],
+    examples: [
+      'list GitHub issues',
+      'show all issues',
+      'view open issues',
+      'list all issues'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubCloseAllIssues',
+    name: 'GitHub Close All Issues',
+    description: 'Close all open issues in the repository (destructive operation)',
+    keywords: ['github', 'issue', 'close', 'all', 'bulk', 'cleanup'],
+    tags: ['github', 'issue', 'project-management'],
+    examples: [
+      'close all GitHub issues',
+      'close all open issues',
+      'bulk close issues',
+      'cleanup all issues'
+    ],
+    category: 'github'
+  },
+
+  {
     id: 'githubMergePR',
     name: 'GitHub Merge PR',
     description: 'Merge a GitHub pull request',
@@ -623,6 +684,51 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'merge PR',
       'approve and merge',
       'merge GitHub PR'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubListPullRequests',
+    name: 'GitHub List Pull Requests',
+    description: 'List GitHub pull requests from the repository with filtering by state',
+    keywords: ['github', 'pull request', 'pr', 'list', 'show', 'view', 'all', 'open', 'closed'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'list pull requests',
+      'show all PRs',
+      'view open PRs',
+      'list GitHub PRs'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubClosePullRequest',
+    name: 'GitHub Close Pull Request',
+    description: 'Close a GitHub pull request without merging',
+    keywords: ['github', 'pull request', 'pr', 'close', 'reject', 'cancel'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'close pull request',
+      'reject PR',
+      'close GitHub PR',
+      'cancel PR'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubCloseAllPullRequests',
+    name: 'GitHub Close All Pull Requests',
+    description: 'Close all open pull requests in the repository (destructive operation)',
+    keywords: ['github', 'pull request', 'pr', 'close', 'all', 'bulk', 'cleanup'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'close all pull requests',
+      'close all PRs',
+      'bulk close PRs',
+      'cleanup all PRs'
     ],
     category: 'github'
   },
@@ -727,6 +833,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'write a haiku',
       'generate haiku',
       'create haiku poem'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'generatePersonalizedPoem',
+    name: 'Generate Personalized Poem',
+    description: 'Generate personalized poems based on user profile data including personality, interests, and characteristics',
+    keywords: ['personalized', 'poem', 'poetry', 'profile', 'personal', 'custom', 'me', 'my', 'about me'],
+    tags: ['content', 'poetry', 'writing', 'personalized'],
+    examples: [
+      'write me a poem',
+      'write a poem about me',
+      'create a personalized poem',
+      'generate a poem for me',
+      'make me a personal poem'
     ],
     category: 'content'
   },

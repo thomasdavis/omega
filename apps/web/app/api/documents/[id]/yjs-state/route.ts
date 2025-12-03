@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDocument } from '@repo/database';
+import { getYjsDoc, getState } from '@/lib/yjsStore';
 
 // GET /api/documents/:id/yjs-state - Get initial Yjs document state
-// TODO: Implement Yjs sync when real-time collaboration is needed
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -10,7 +10,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Check if document exists
+    // Check if document exists in database
     const document = await getDocument(id);
     if (!document) {
       return NextResponse.json(
@@ -19,14 +19,15 @@ export async function GET(
       );
     }
 
-    // TODO: Initialize Yjs document with database content when implemented
-    // initializeYjsDocument(id, document.content);
-    // const state = getYjsState(id);
-    // const stateBase64 = Buffer.from(state).toString('base64');
+    // Get or create shared Yjs document
+    // This ensures all clients start with the same Yjs state
+    getYjsDoc(id, document.content);
 
-    // For now, return a simple response with the content
+    // Get the current Yjs state
+    const state = getState(id);
+
     return NextResponse.json({
-      state: '', // Empty state for now
+      state: state || '',
       content: document.content,
     });
   } catch (error) {

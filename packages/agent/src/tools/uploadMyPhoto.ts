@@ -11,12 +11,11 @@ import { updateUserProfile, getOrCreateUserProfile } from '@repo/database';// OL
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { getUploadsDir } from '@repo/shared';
-import { getCachedAttachment } from '../utils/attachmentCache.js';
+import { getUploadsDir, getCachedAttachment } from '@repo/shared';
 
 // Initialize Gemini Vision
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const geminiVisionModel = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+const geminiVisionModel = genAI.getGenerativeModel({ model: 'gemini-3-pro-image-preview' });
 
 // GitHub configuration
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;

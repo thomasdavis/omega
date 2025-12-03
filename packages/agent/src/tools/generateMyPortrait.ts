@@ -153,7 +153,7 @@ export const generateMyPortraitTool = tool({
 
       // 4. Build portrait prompt
       let prompt: string;
-      if (profile.ai_appearance_description && profile.appearance_confidence > 0.7) {
+      if (profile.ai_appearance_description && (profile.appearance_confidence || 0) > 0.7) {
         // Use photo-based prompt
         console.log('   Using photo-based portrait prompt');
         prompt = buildPortraitPrompt(profile, feelings, personality, style);

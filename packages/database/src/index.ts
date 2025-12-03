@@ -3,19 +3,91 @@
  * Exports all database clients, schemas, and services
  */
 
-// LibSQL
-export { getDatabase, initializeDatabase, closeDatabase } from './libsql/client.js';
-export { initializeSchema } from './libsql/schema.js';
-export * from './libsql/schema.js';
-export * from './libsql/messageService.js';
-export * from './libsql/documentService.js';
-export * from './libsql/userProfileService.js';
-export * from './libsql/queryService.js';
-
 // MongoDB
 export { getMongoDatabase } from './mongodb/client.js';
 export * from './mongodb/tools/index.js';
 
 // PostgreSQL
-export { getPostgresPool } from './postgres/client.js';
+export { getPostgresPool, closePostgresPool } from './postgres/client.js';
+export { prisma, getPrismaClient, connectPrisma, disconnectPrisma } from './postgres/prismaClient.js';
 export * from './postgres/tools/index.js';
+
+// Todo List CRUD tools
+export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoTool } from './postgres/tools/todoList/index.js';
+
+// Backward compatibility: getDatabase now returns PostgreSQL pool
+export { getPostgresPool as getDatabase } from './postgres/client.js';
+
+// PostgreSQL Services (main exports)
+export * as pgMessageService from './postgres/messageService.js';
+export * as pgQueryService from './postgres/queryService.js';
+export * as pgDocumentService from './postgres/documentService.js';
+export * as pgUserProfileService from './postgres/userProfileService.js';
+
+// Export individual document service functions for backward compatibility
+export {
+  createDocument,
+  getDocument,
+  updateDocumentContent,
+  updateDocumentTitle,
+  deleteDocument,
+  listDocuments,
+  getDocumentCount,
+  addCollaborator,
+  removeCollaborator,
+  getDocumentCollaborators,
+  hasDocumentAccess,
+} from './postgres/documentService.js';
+
+// PostgreSQL Schema
+export { initializePostgresSchema } from './postgres/migrations/runMigration.js';
+
+// Export schema types
+export type {
+  MessageRecord,
+  QueryRecord,
+  DocumentRecord,
+  DocumentCollaboratorRecord,
+  UserProfileRecord,
+  UserAnalysisHistoryRecord,
+} from './postgres/schema.js';
+
+// Export user profile service functions for backward compatibility
+export {
+  getUserProfile,
+  createUserProfile,
+  updateUserProfile,
+  getOrCreateUserProfile,
+  getUsersNeedingAnalysis,
+  saveAnalysisHistory,
+  getAnalysisHistory,
+  incrementMessageCount,
+  getAllUserProfiles,
+} from './postgres/userProfileService.js';
+
+// Export message service functions for backward compatibility
+export {
+  saveHumanMessage,
+  saveAIMessage,
+  saveToolExecution,
+  queryMessages,
+  getMessageById,
+  getMessageCount,
+} from './postgres/messageService.js';
+
+// Export query service functions for backward compatibility
+export {
+  saveQuery,
+  getRecentQueries,
+  getQueryById,
+  getQueryCount,
+} from './postgres/queryService.js';
+
+// Database Adapter (PostgreSQL-only after migration)
+export {
+  messageService,
+  queryService,
+  documentService,
+  userProfileService,
+  DB_CONFIG,
+} from './adapter.js';

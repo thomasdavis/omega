@@ -8,6 +8,7 @@ export * from './types/index.js';
 
 // Utils
 export * from './utils/storage.js';
+export * from './attachmentCache.js';
 
 // Lib
 export * from './lib/messageAnalysis.js';

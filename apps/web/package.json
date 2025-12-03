@@ -4,24 +4,35 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
+    "prebuild": "cd ../../packages/database && pnpm build",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "next start --hostname 0.0.0.0",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
+    "@repo/ui": "workspace:*",
     "mime-types": "^3.0.2",
     "next": "^15.1.0",
+    "openai": "^4.104.0",
+    "p5": "^2.1.1",
+    "paper": "^0.12.18",
+    "pusher": "^5.2.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "three": "^0.181.2",
+    "yjs": "^13.6.20"
   },
   "devDependencies": {
     "@types/mime-types": "^3.0.1",
     "@types/node": "^20.0.0",
+    "@types/p5": "^1.7.7",
+    "@types/paper": "^0.12.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.181.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.1.0",

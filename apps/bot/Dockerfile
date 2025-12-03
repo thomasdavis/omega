@@ -27,6 +27,9 @@ RUN pnpm build --filter=bot
 # Production image
 FROM node:20-alpine
 
+# Install OpenSSL compatibility for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 RUN npm install -g pnpm@9.0.0
 
 WORKDIR /app
@@ -39,6 +42,9 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/database/package.json ./packages/database/
 COPY packages/agent/package.json ./packages/agent/
 COPY apps/bot/package.json ./apps/bot/
+
+# Copy Prisma schema for database package (needed for postinstall hook)
+COPY --from=base /app/packages/database/prisma ./packages/database/prisma
 
 # Install production dependencies for all packages
 RUN pnpm install --frozen-lockfile --prod

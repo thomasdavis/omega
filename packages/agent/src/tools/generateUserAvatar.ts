@@ -41,22 +41,19 @@ export const generateUserAvatarTool = tool({
       const limit = Math.min(messageLimit, 500);
 
       // Query user's messages from database
-      const db = getDatabase();
+      const db = await getDatabase();
       const messagesQuery = `
         SELECT message_content, timestamp, channel_name
         FROM messages
-        WHERE user_id = ?
+        WHERE user_id = $1
           AND sender_type = 'human'
           AND message_content IS NOT NULL
           AND message_content != ''
         ORDER BY timestamp DESC
-        LIMIT ?
+        LIMIT $2
       `;
 
-      const result = await db.execute({
-        sql: messagesQuery,
-        args: [userId, limit],
-      });
+      const result = await db.query(messagesQuery, [userId, limit]);
 
       const messages = result.rows as unknown as Array<{
         message_content: string;

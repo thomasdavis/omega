@@ -3,18 +3,24 @@
  */
 
 import { Message, AttachmentBuilder } from 'discord.js';
-import { runAgent } from '../agent/agent.js';
+import {
+  runAgent,
+  setExportMessageContext,
+  clearExportMessageContext,
+  setConversationDiagramContext,
+  clearConversationDiagramContext,
+  setSlidevMessageContext,
+  clearSlidevMessageContext,
+  setUnsandboxMessageContext,
+  clearUnsandboxMessageContext
+} from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
-import { setExportMessageContext, clearExportMessageContext } from '../agent/tools/exportConversation.js';
-import { setConversationDiagramContext, clearConversationDiagramContext } from '../agent/tools/conversationDiagram.js';
-import { setSlidevMessageContext, clearSlidevMessageContext } from '../agent/tools/conversationToSlidev.js';
-import { setUnsandboxMessageContext, clearUnsandboxMessageContext } from '../agent/tools/unsandbox.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
-import { setCachedAttachment, type CachedAttachment } from '../utils/attachmentCache.js';
+import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 
 export async function handleMessage(message: Message): Promise<void> {
@@ -114,6 +120,24 @@ export async function handleMessage(message: Message): Promise<void> {
   //   );
   // }
 
+  // Store ALL messages to database regardless of response decision
+  // This ensures we have a complete record of all Discord activity
+  try {
+    await saveHumanMessage({
+      userId: message.author.id,
+      username: message.author.username,
+      channelId: message.channel.id,
+      channelName: channelName,
+      guildId: message.guild?.id,
+      messageContent: message.content,
+      messageId: message.id,
+      responseDecision: decision,
+    });
+  } catch (dbError) {
+    console.error('⚠️  Failed to persist message to database:', dbError);
+    // Continue execution even if database write fails
+  }
+
   if (!decision.shouldRespond) {
     return;
   }
@@ -166,24 +190,12 @@ export async function handleMessage(message: Message): Promise<void> {
       }
     );
 
-    // Still persist the interaction to database
+    // Persist AI acknowledgment to database
+    // (Human message already persisted earlier)
     try {
-      await saveHumanMessage({
-        userId: message.author.id,
-        username: message.author.username,
-        channelId: message.channel.id,
-        channelName: channelName,
-        guildId: message.guild?.id,
-        messageContent: message.content,
-        messageId: message.id,
-        responseDecision: decision,
-      });
-
-      // User profile already tracked at start of function
-
       await saveAIMessage({
-        userId: message.author.id,
-        username: message.author.username,
+        userId: message.client.user!.id,
+        username: message.client.user!.username,
         channelId: message.channel.id,
         channelName: channelName,
         guildId: message.guild?.id,
@@ -206,24 +218,7 @@ export async function handleMessage(message: Message): Promise<void> {
     await message.channel.sendTyping();
   }
 
-  // Persist human message to database with decision reasoning
-  try {
-    await saveHumanMessage({
-      userId: message.author.id,
-      username: message.author.username,
-      channelId: message.channel.id,
-      channelName: channelName,
-      guildId: message.guild?.id,
-      messageContent: message.content,
-      messageId: message.id,
-      responseDecision: decision,
-    });
-
-    // User profile already tracked at start of function
-  } catch (dbError) {
-    console.error('⚠️  Failed to persist message to database:', dbError);
-    // Continue execution even if database write fails
-  }
+  // Human message already persisted to database earlier (before response decision)
 
   try {
     // Check for file attachments
@@ -243,7 +238,10 @@ export async function handleMessage(message: Message): Promise<void> {
           const restAttachment = restMessage.attachments[i];
           const gatewayAttachment = Array.from(message.attachments.values())[i];
 
-          if (!gatewayAttachment) continue;
+          if (!gatewayAttachment) {
+            console.warn(`   ⚠️  Gateway attachment ${i} missing - skipping`);
+            continue;
+          }
 
           try {
             // Download from REST URL (durable, won't 404)
@@ -259,11 +257,19 @@ export async function handleMessage(message: Message): Promise<void> {
               id: gatewayAttachment.id,
               timestamp: Date.now(),
             });
+
+            console.log(`   ✅ Cached attachment [${gatewayAttachment.id}] ${restAttachment.filename}`);
           } catch (error) {
-            console.error(`   ❌ Failed to download ${restAttachment.filename}:`, error);
+            console.error(`   ❌ Failed to download attachment [${gatewayAttachment.id}] ${restAttachment.filename}:`, error);
+            console.error(`   ⚠️  Tools won't be able to access this attachment!`);
             // Continue with other attachments
           }
         }
+      } else if (!restMessage) {
+        console.error(`   ❌ Failed to fetch message via REST - attachment caching skipped`);
+        console.error(`   ⚠️  Tools won't be able to access these ${message.attachments.size} attachment(s)!`);
+      } else if (!restMessage.attachments || restMessage.attachments.length === 0) {
+        console.warn(`   ⚠️  REST message has no attachments (expected ${message.attachments.size})`);
       }
 
       const attachmentInfo = Array.from(message.attachments.values())
@@ -369,14 +375,15 @@ export async function handleMessage(message: Message): Promise<void> {
       for (const toolCall of result.toolCalls) {
         try {
           await saveToolExecution({
-            userId: message.author.id,
-            username: message.author.username,
+            userId: message.client.user!.id,
+            username: message.client.user!.username,
             channelId: message.channel.id,
             channelName: channelName,
             guildId: message.guild?.id,
             toolName: toolCall.toolName,
             toolArgs: toolCall.args,
             toolResult: toolCall.result,
+            parentMessageId: message.id,
           });
         } catch (dbError) {
           console.error(`⚠️  Failed to persist tool execution (${toolCall.toolName}) to database:`, dbError);
@@ -534,8 +541,8 @@ export async function handleMessage(message: Message): Promise<void> {
       // Persist AI response to database
       try {
         await saveAIMessage({
-          userId: message.author.id,
-          username: message.author.username,
+          userId: message.client.user!.id,
+          username: message.client.user!.username,
           channelId: message.channel.id,
           channelName: channelName,
           guildId: message.guild?.id,

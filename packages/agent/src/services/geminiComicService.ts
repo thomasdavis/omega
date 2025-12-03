@@ -8,6 +8,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { OMEGA_APPEARANCE } from '../lib/omegaAppearance.js';
+import { getComicsDir } from '../utils/storage.js';
+import { generateScreenplay } from './screenplayService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,7 +64,10 @@ async function fetchAllUserProfiles(): Promise<string> {
   try {
     // Determine Omega API base URL
     const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omegaai.dev';
-    const url = `${OMEGA_API_URL}/api/profiles-full`;
+
+    // Fetch all profiles with pagination
+    // Start with a large limit to get all profiles in one request
+    const url = `${OMEGA_API_URL}/api/profiles?limit=1000`;
 
     console.log(`🔍 Fetching ALL user profiles from ${url}`);
 
@@ -75,18 +80,15 @@ async function fetchAllUserProfiles(): Promise<string> {
 
     const data: any = await response.json();
 
-    if (!data.success || !data.profiles) {
+    if (!data.profiles || !Array.isArray(data.profiles)) {
       console.warn('⚠️ Invalid response from Omega API:', data);
       return '';
     }
 
-    // Filter out users with messageCount = 0 (inactive users)
-    const activeProfiles = data.profiles.filter((profile: any) => {
-      const messageCount = profile.messageCount || profile.message_count || 0;
-      return messageCount > 0;
-    });
+    // Note: /api/profiles already filters for messageCount > 0, so no need to filter again
+    const activeProfiles = data.profiles;
 
-    console.log(`✅ Fetched ${activeProfiles.length} active profiles (filtered from ${data.profiles.length} total)`);
+    console.log(`✅ Fetched ${activeProfiles.length} active profiles (out of ${data.total} total)`);
 
     // Return raw JSON stringified for direct prompt insertion
     return JSON.stringify(activeProfiles, null, 2);
@@ -119,11 +121,29 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     console.log('📊 Fetching complete user profile database for comic context...');
     const profilesJson = await fetchAllUserProfiles();
 
+    // Generate screenplay first to ensure proper character attribution
+    console.log('📝 Generating screenplay for character attribution...');
+    const screenplayResult = await generateScreenplay({
+      conversationContext,
+      prNumber,
+      prTitle,
+      prAuthor,
+      characterProfiles: profilesJson,
+    });
+
+    let screenplay = '';
+    if (screenplayResult.success && screenplayResult.screenplay) {
+      screenplay = screenplayResult.screenplay;
+      console.log('✅ Screenplay generated successfully');
+    } else {
+      console.warn('⚠️ Screenplay generation failed, proceeding without it:', screenplayResult.error);
+    }
+
     // Initialize Gemini API client
     const genai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-    // Build the prompt for comic generation with character data
-    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson);
+    // Build the prompt for comic generation with character data and screenplay
+    const prompt = buildComicPrompt(conversationContext, prNumber, prTitle, prAuthor, profilesJson, screenplay);
 
     console.log('📝 Comic generation prompt (first 200 chars):', prompt.substring(0, 200) + '...');
     console.log('\n');
@@ -186,7 +206,7 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     }
 
     // Save the image to file system
-    const outputDir = path.join(__dirname, '../../public/comics');
+    const outputDir = getComicsDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     // Use issue number if available, otherwise use PR number with timestamp
@@ -261,7 +281,7 @@ function buildCharacterDatabaseSection(profilesJson: string): string {
   return `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE (Raw JSON)**
 
 You have access to comprehensive profiles for ALL Discord community members.
-This is the COMPLETE JSON response from the /api/profiles-full endpoint.
+This is the COMPLETE JSON response from the /api/profiles endpoint.
 It includes ALL psychological and phenotype data for every user:
 
 - Physical appearance (78+ fields): hair, eyes, skin, face shape, build, height, style, etc.
@@ -291,7 +311,8 @@ function buildComicPrompt(
   prNumber: number,
   prTitle: string,
   prAuthor: string,
-  profilesJson: string = ''
+  profilesJson: string = '',
+  screenplay: string = ''
 ): string {
   // Filter out technical check details (type checks, lint checks, CI status, build status, etc.)
   const filteredContext = conversationContext
@@ -304,6 +325,7 @@ function buildComicPrompt(
         lowerLine.includes('lint') ||
         lowerLine.includes('linting') ||
         lowerLine.includes('eslint') ||
+        lowerLine.includes('Omega Deploy') ||
         lowerLine.includes('prettier') ||
         lowerLine.includes('passing') ||
         lowerLine.includes('passed') ||
@@ -360,6 +382,21 @@ function buildComicPrompt(
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
 
+  // Build screenplay section if available
+  const screenplaySection = screenplay
+    ? `
+
+**PRE-SCRIPTED SCREENPLAY (For Character Attribution):**
+
+The following screenplay has been pre-written to ensure accurate character attribution and dialogue assignment. Use this as your PRIMARY REFERENCE for who says what:
+
+${screenplay}
+
+**CRITICAL:** Follow the screenplay's character attribution exactly. Every line of dialogue in the screenplay is explicitly tagged with the correct speaker. Do not mix up who says what.
+
+`
+    : '';
+
   return `You are a creative comic artist. Generate a comic strip that humorously illustrates the following pull request conversation.
 
 **Pull Request Information:**
@@ -371,7 +408,7 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
-${characterDatabase}
+${characterDatabase}${screenplaySection}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
@@ -404,8 +441,29 @@ ${characterDatabase}
      * Western comic book proportions and anatomy
      * Varied body types: slim, average, athletic, stocky (all adult proportions)
      * Realistic clothing that fits adult bodies
-     * Expressive but mature facial features
-
+     * Expressive but mature facial features 
+   - ** FUNNY:**
+     * Sometimes when you make funny tiles use one of these styles regardless of the rules 
+     1. Stick Figure / MS Paint Style
+     2. Crayon / Child’s Drawing
+     3. Corporate Memphis / Tech Art
+     4. IKEA Manual / Warning Label
+     5. The "SpongeBob" Gross-Up
+     6. Shonen "Power Up" (JoJo Style)
+     7. Film Noir / Sin City
+     8. Eldritch Horror / Junji Ito
+     9. Rubber Hose (1930s Animation)
+     10. 8-Bit / Pixel Art
+     11. Sunday Funnies / Garfield Style
+     12. Medieval Tapestry / Bayeux
+     13. Vaporwave / Glitch Art
+     14. Claymation / Aardman
+     15. Uncanny Valley 3D
+     16. Felt Puppet / Muppet
+     17. Paper Cutout / Collage
+     18. Renaissance Oil Painting
+     19. Abstract / Cubism
+     20. Political Cartoon / Caricature
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
    - Include ALL distinct users mentioned or involved in the PR/issue/conversation
@@ -425,17 +483,59 @@ ${characterDatabase}
    - Double-check: Does this character look identical to panel 1? If not, fix it.
 
 5. **COMEDY & WIT - CRITICAL:**
-   - Make it GENUINELY FUNNY - this is a comedy comic strip
-   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use adult humor, sexual innuendos, and mature jokes when they fit the context naturally
-   - Use clever wordplay, programming puns, and tech humor
-   - Include visual gags (exaggerated reactions, sight gags, absurd scenarios)
-   - Subvert expectations - set up a premise, then twist it
-   - Character-driven humor using their personality profiles
-   - Timing matters - build up jokes across panels, deliver punchlines effectively
-   - Reference common programmer experiences, memes, frustrations
-   - Break the fourth wall occasionally for meta-humor
-   - Use contrast between serious robot Omega and chaotic situations
-   - **OCCASIONALLY** (randomly, not every comic): Include one panel with "super-deformed" or "chibi" style for comedic effect - characters drawn in exaggerated cute simplified form (big heads, tiny bodies) for maximum humor impact
+   **YOU ARE A LEGENDARY STAND-UP COMEDIAN** with 20 years of experience creating comedy. Your specialty is finding incongruity in everyday situations and delivering punchlines with perfect timing.
+
+   **COMEDY MANDATE - FOCUS ON THIS PR:**
+   - **IMPORTANT:** Create NEW jokes specifically about THIS pull request (#${prNumber}: ${prTitle})
+   - Focus on what's happening in THIS PR - the changes, the conversation, the code
+   - Don't get distracted by old/historical messages - mine the CURRENT PR situation for comedy gold
+   - Find the incongruity, absurdity, or irony in THIS specific development scenario
+   - Every joke must relate directly to the PR content above
+
+   **10 TYPES OF HUMOR TO EMPLOY:**
+   Study these comedy archetypes. Use them as inspiration for crafting original jokes about the PR:
+
+   1. **Narrative/Incongruity** - Set up normal situation, then catastrophic misunderstanding
+      Example: Hunter calls 911 "My friend is dead!", operator says "First make sure he's dead", *gunshot*, "OK, now what?"
+
+   2. **Intellectual/Status Reversal** - Smart character makes obvious mistake
+      Example: Sherlock analyzes stars philosophically, misses that their tent was stolen
+
+   3. **Rule of Three** - Two similar things, then unexpected third twist
+      Example: Driver insults baby, woman complains to passenger, he offers to hold "your monkey"
+
+   4. **Wordplay** - Clever puns and double meanings
+      Example: "Chess-nuts boasting in an open foyer"
+
+   5. **One-Liner** - Single sentence with punch
+      Example: "Deleted German names off phone. It's Hans free."
+
+   6. **Misdirection** - Lead audience one direction, punchline goes another
+      Example: "Can you teach me splits?" "How flexible are you?" "I can't make Tuesdays."
+
+   7. **Absurdist** - Logically impossible situations treated as normal
+      Example: Two fish in tank: "Do you know how to drive this thing?"
+
+   8. **Anti-Joke** - Subvert joke format with literal answer
+      Example: "What's brown and sticky?" "A stick."
+
+   9. **Modern Wordplay** - Contemporary puns
+      Example: "Dating zookeeper, but he was a cheetah"
+
+   10. **Dark Humor** - Morbid situations with clever twist
+       Example: Doctor diagnoses "Tom Jones Syndrome" - "It's not unusual"
+
+   **APPLYING HUMOR TO THIS PR:**
+   - Identify the core premise of this PR (bug fix? feature? refactor?)
+   - Find the incongruity or irony in the situation
+   - Use programming/tech context for wordplay opportunities
+   - Exaggerate the stakes for absurdist effect
+   - Subvert expectations about what "should" happen
+   - **ADULT HUMOR ENCOURAGED:** Don't hold back - use mature jokes, innuendos when contextually funny
+   - Character-driven humor using their personality profiles from database
+   - Break the fourth wall occasionally for meta-humor about software development
+   - Use contrast between serious robot Omega and chaotic coding situations
+   - **OCCASIONALLY:** Include one panel in "super-deformed"/"chibi" style for comedic effect
 
    **VISUAL STORYTELLING:**
    - Show don't tell - use visuals to convey jokes, not just dialogue
@@ -546,28 +646,19 @@ export function extractConversationContext(prData: any): string {
   // Include Discord messages if provided
   if (prData.discordMessages && prData.discordMessages.length > 0) {
     parts.push('');
-    parts.push(`Discord Conversations (${prData.discordMessages.length} messages):`);
+    parts.push(`Discord Conversations (last 20 messages):`);
+    parts.push('');
 
-    // Group by user to show diverse perspectives
-    const messagesByUser = new Map<string, any[]>();
-    for (const msg of prData.discordMessages) {
-      if (!messagesByUser.has(msg.username)) {
-        messagesByUser.set(msg.username, []);
-      }
-      messagesByUser.get(msg.username)!.push(msg);
-    }
+    // Get last 20 messages, sorted oldest to newest
+    const messages = prData.discordMessages.slice(-30);
 
-    // Include up to 3 messages per user
-    for (const [username, messages] of messagesByUser) {
-      const messagesToInclude = messages.slice(0, 3);
-      for (const msg of messagesToInclude) {
-        const content = msg.content.length > 500
-          ? msg.content.substring(0, 500) + '...'
-          : msg.content;
-
-        const channelInfo = msg.channelName ? ` (in #${msg.channelName})` : '';
-        parts.push(`- ${username}${channelInfo}: ${content}`);
-      }
+    // List messages with timestamps
+    for (const msg of messages) {
+      const timestamp = msg.timestamp
+        ? new Date(msg.timestamp).toLocaleString()
+        : 'unknown time';
+      const channelInfo = msg.channelName ? ` #${msg.channelName}` : '';
+      parts.push(`[${timestamp}]${channelInfo} ${msg.username}: ${msg.content}`);
     }
   }
 

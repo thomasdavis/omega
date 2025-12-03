@@ -7,21 +7,23 @@ import { Client, GatewayIntentBits, Events, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
 import { initializeStorage } from './utils/storage.js';
-import { initializeDatabase, closeDatabase, initializeSchema } from '@repo/database';
+import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@repo/database';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
-import { preloadCoreTools } from './agent/toolLoader.js';
+import { preloadCoreTools } from '@repo/agent';
 
 dotenv.config();
 
 // Initialize persistent storage directories
 initializeStorage();
 
-// Initialize database
+// Initialize database connection and schema
 try {
-  initializeDatabase();
-  await initializeSchema();
+  // Initialize PostgreSQL connection pool
+  await getPostgresPool();
+  // Initialize schema (run migrations)
+  await initializePostgresSchema();
   console.log('✅ Database initialized and ready');
 } catch (error) {
   console.error('❌ Failed to initialize database:', error);
@@ -101,14 +103,14 @@ process.on('unhandledRejection', (error) => {
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   client.destroy();
-  await closeDatabase();
+  await closePostgresPool();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down...');
   client.destroy();
-  await closeDatabase();
+  await closePostgresPool();
   process.exit(0);
 });
 

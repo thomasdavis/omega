@@ -9,7 +9,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { content, userId, username } = body;
+    const { content } = body;
 
     if (!content) {
       return NextResponse.json(

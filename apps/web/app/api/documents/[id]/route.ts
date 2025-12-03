@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
 import {
   getDocument,
-  updateDocumentContent,
-  updateDocumentTitle,
   deleteDocument,
 } from '@repo/database';
+
+// Helper to convert BigInt fields to numbers for JSON serialization
+function serializeDocument(doc: Record<string, unknown>) {
+  const serialized: Record<string, unknown> = { ...doc };
+
+  // Handle both camelCase (Prisma) and snake_case (mapped) field names
+  if (typeof serialized.createdAt === 'bigint') {
+    serialized.createdAt = Number(serialized.createdAt);
+  }
+  if (typeof serialized.updatedAt === 'bigint') {
+    serialized.updatedAt = Number(serialized.updatedAt);
+  }
+  if (typeof serialized.created_at === 'bigint') {
+    serialized.created_at = Number(serialized.created_at);
+  }
+  if (typeof serialized.updated_at === 'bigint') {
+    serialized.updated_at = Number(serialized.updated_at);
+  }
+
+  return serialized;
+}
 
 // GET /api/documents/:id - Get a document by ID
 export async function GET(
@@ -22,7 +41,10 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(document);
+    // Convert BigInt fields to numbers for JSON serialization
+    const serializedDocument = serializeDocument(document);
+
+    return NextResponse.json(serializedDocument);
   } catch (error) {
     console.error('Error fetching document:', error);
     return NextResponse.json(

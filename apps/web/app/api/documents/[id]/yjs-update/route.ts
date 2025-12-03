@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
+import { getPusher } from '@/lib/pusher';
+import { applyUpdate } from '@/lib/yjsStore';
 
-// POST /api/documents/:id/yjs-update - Apply Yjs update from client
-// TODO: Implement Yjs sync when real-time collaboration is needed
+// POST /api/documents/:id/yjs-update - Receive Yjs update from client and broadcast to others
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +15,7 @@ export async function POST(
     if (!update || !clientId) {
       return NextResponse.json(
         {
+          success: false,
           error: 'Missing update or clientId',
           message: 'Both update and clientId are required',
         },
@@ -21,17 +23,26 @@ export async function POST(
       );
     }
 
-    // TODO: Apply Yjs update when implemented
-    // const updateBuffer = Buffer.from(update, 'base64');
-    // await applyYjsUpdate(id, updateBuffer);
+    // Decode and apply the update to the server's Yjs document
+    const updateBytes = Uint8Array.from(Buffer.from(update, 'base64'));
+    applyUpdate(id, updateBytes);
+
     // Broadcast to other clients via Pusher
+    const pusher = getPusher();
+    if (pusher) {
+      await pusher.trigger(`document-${id}`, 'yjs-update', {
+        update,
+        clientId,
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error applying Yjs update:', error);
+    console.error('Error handling Yjs update:', error);
     return NextResponse.json(
       {
-        error: 'Failed to apply update',
+        success: false,
+        error: 'Failed to process update',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
