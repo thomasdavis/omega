@@ -45,19 +45,19 @@ export default function ParticleFlowField() {
           const centerY = p.height / 2;
 
           // Overall size of the symbol
-          const scale = p.min(p.width, p.height) * 0.18;
+          const scale = p.min(p.width, p.height) * 0.15;
 
-          // Ellipse radii for the curved Ω body
-          const radiusX = scale * 1.5;  // horizontal spread
-          const radiusY = scale * 1.2;  // vertical spread
+          // Ellipse radii for the curved Ω body - more compact
+          const radiusX = scale * 1.2;  // horizontal spread
+          const radiusY = scale * 1.2;  // vertical spread (circular)
 
-          // Slightly lift the Ω body so there's room for legs below
-          const omegaCenterY = centerY - scale * 0.2;
+          // Lift the Ω body higher so there's room for legs below
+          const omegaCenterY = centerY - scale * 0.6;
 
-          // ---- 1. Curved Ω body: almost full circle, with a bottom gap ----
+          // ---- 1. Curved Ω body: almost full circle, with a LARGER bottom gap ----
 
           const bottomAngle = p.HALF_PI;       // π/2 → bottom
-          const gapHalf = p.PI / 4;           // half-width of gap (~45°)
+          const gapHalf = p.PI / 3;           // BIGGER gap - half-width (~60°)
           const leftGapAngle = bottomAngle + gapHalf;   // left side of gap
           const rightGapAngle = bottomAngle - gapHalf;  // right side of gap
 
@@ -92,7 +92,7 @@ export default function ParticleFlowField() {
 
           // ---- 3. Vertical legs ----
 
-          const legHeight = scale * 1.4;
+          const legHeight = scale * 1.8;  // Longer legs
           const legSteps = 40;
 
           // Left leg – straight down
