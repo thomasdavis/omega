@@ -13,7 +13,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "verify-transfers": "tsx scripts/verify-file-transfer.ts",
     "generate-diagram": "d2 architecture.d2 architecture.svg && d2 architecture.d2 architecture.png",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.21.0",
