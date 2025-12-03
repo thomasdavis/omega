@@ -1436,21 +1436,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
-    id: 'hackerNewsPhilosophy',
-    name: 'Hacker News Philosophy',
-    description: 'Discover philosophical content from Hacker News',
-    keywords: ['hackernews', 'philosophy', 'discover', 'articles', 'tech'],
-    tags: ['research', 'hackernews', 'philosophy'],
-    examples: [
-      'hacker news philosophy',
-      'find philosophical articles',
-      'discover HN philosophy',
-      'philosophical tech news'
-    ],
-    category: 'research'
-  },
-
-  {
     id: 'hackerNews',
     name: 'Hacker News',
     description: 'Get top stories from Hacker News',
@@ -1553,21 +1538,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'make recipe'
     ],
     category: 'content'
-  },
-
-  {
-    id: 'ooda',
-    name: 'OODA Loop',
-    description: 'OODA loop decision-making framework',
-    keywords: ['ooda', 'decision', 'framework', 'strategy', 'loop'],
-    tags: ['specialized', 'decision', 'strategy'],
-    examples: [
-      'ooda loop',
-      'decision framework',
-      'strategic thinking',
-      'ooda analysis'
-    ],
-    category: 'specialized'
   },
 
   {
