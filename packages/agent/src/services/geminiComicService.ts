@@ -377,7 +377,42 @@ function buildComicPrompt(
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
 
-  // No conditional super-deformed instruction - it's now part of the main prompt
+  // 20% chance to include special chibi/SD educational tile
+  const includeChibiEducationalTile = Math.random() < 0.2;
+  const chibiTileInstructions = includeChibiEducationalTile
+    ? `
+
+**SPECIAL INSTRUCTION - CHIBI/SD EDUCATIONAL TILE (20% RANDOM FEATURE):**
+
+This comic has been selected to include a humorous educational tile about the "super-deformed" (SD) or "chibi" art style.
+
+Include ONE panel (preferably in the middle, not first or last) that features this exact message styled as if ChatGPT is explaining it:
+
+---
+**ChatGPT said:**
+
+That effect is usually called "super-deformed" (SD) or "chibi."
+
+💡 **What it means**
+
+**Super-Deformed (SD):** The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
+
+**Chibi:** The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect.
+---
+
+**How to integrate this:**
+- Make this panel stand out visually (different background color, styled like an info card)
+- The message should appear as if it's explaining what's happening in the comic
+- This creates a "fourth wall break" meta-commentary effect
+- The panel replaces one middle panel of your story (adjust your narrative accordingly)
+- Keep the rest of the comic flowing naturally around this educational insert
+
+`
+    : '';
+
+  if (includeChibiEducationalTile) {
+    console.log('🎲 20% CHIBI/SD EDUCATIONAL TILE FEATURE ENABLED for this comic!');
+  }
 
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
@@ -408,7 +443,7 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
-${characterDatabase}${screenplaySection}
+${characterDatabase}${chibiTileInstructions}${screenplaySection}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
@@ -535,7 +570,6 @@ ${characterDatabase}${screenplaySection}
    - Character-driven humor using their personality profiles from database
    - Break the fourth wall occasionally for meta-humor about software development
    - Use contrast between serious robot Omega and chaotic coding situations
-   - **OCCASIONALLY:** Include one panel in "super-deformed"/"chibi" style for comedic effect
 
    **VISUAL STORYTELLING:**
    - Show don't tell - use visuals to convey jokes, not just dialogue
