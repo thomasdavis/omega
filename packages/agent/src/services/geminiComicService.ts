@@ -357,7 +357,32 @@ function buildComicPrompt(
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
 
-  // No conditional super-deformed instruction - it's now part of the main prompt
+  // 20% chance to include a humorous tile about super-deformed/chibi style
+  const includesChibiTile = Math.random() < 0.2;
+  const chibiTileInstruction = includesChibiTile
+    ? `\n\n**SPECIAL INSTRUCTION - HUMOROUS CHIBI/SD TILE (20% chance - ACTIVE THIS TIME):**
+
+One of the ${frameCount} panels should be a meta-commentary tile featuring the following humorous message:
+
+"ChatGPT said:
+
+That effect is usually called "super-deformed" (SD) or "chibi."
+
+💡 What it means
+
+Super-Deformed (SD): The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
+
+Chibi: The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect."
+
+**How to incorporate this:**
+- Replace one of the middle panels (not first or last) with this educational/humorous tile
+- Style it like a text-heavy informational card or "pop-up dictionary" panel
+- Use a different background color (light blue or yellow) to distinguish it from story panels
+- Keep the rest of the comic narrative flowing around this interruption
+- This creates a "fourth wall break" comedic effect
+- The tile should look like a screenshot from ChatGPT or a dictionary definition
+`
+    : '';
 
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
@@ -373,7 +398,7 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
-${characterDatabase}
+${characterDatabase}${chibiTileInstruction}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
