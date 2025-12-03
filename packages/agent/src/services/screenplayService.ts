@@ -42,7 +42,6 @@ export async function generateScreenplay(options: ScreenplayOptions): Promise<Sc
       model: openai(OMEGA_MODEL),
       prompt,
       temperature: 0.8,
-      maxTokens: 2000,
     });
 
     const screenplay = result.text;
