@@ -15,6 +15,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '@repo/shared';
+import { saveAbcSheetMusic } from '@repo/database';
 
 // Musical keys
 const MUSICAL_KEYS = [
@@ -300,6 +301,29 @@ export const generateSheetMusicTool = tool({
 
       console.log(`   ✨ Generated: "${sheetMusic.title}"`);
 
+      // Save to database
+      let savedRecord;
+      try {
+        savedRecord = await saveAbcSheetMusic({
+          title: sheetMusic.title,
+          composer: sheetMusic.composer,
+          key: sheetMusic.key,
+          timeSignature: sheetMusic.timeSignature,
+          tempo: sheetMusic.tempo,
+          abcNotation: sheetMusic.abcNotation,
+          description: sheetMusic.description,
+          musicalStructure: sheetMusic.musicalStructure,
+          metadata: {
+            includeChords,
+            contextUsed: !!conversationContext,
+          },
+        });
+        console.log(`   💾 Saved to database: ${savedRecord.id}`);
+      } catch (error) {
+        console.error('   ⚠️  Failed to save to database:', error);
+        // Continue even if database save fails
+      }
+
       // Build formatted output
       let formattedOutput = `**${sheetMusic.title}**\n`;
       formattedOutput += `*${sheetMusic.composer} | ${sheetMusic.key} ${sheetMusic.timeSignature} | ${sheetMusic.tempo}*\n\n`;
@@ -311,6 +335,7 @@ export const generateSheetMusicTool = tool({
 
       return {
         success: true,
+        id: savedRecord?.id,
         title: sheetMusic.title,
         composer: sheetMusic.composer,
         key: sheetMusic.key,
@@ -322,6 +347,7 @@ export const generateSheetMusicTool = tool({
         renderingInstructions: sheetMusic.renderingInstructions,
         includeChords,
         contextUsed: !!conversationContext,
+        savedToDatabase: !!savedRecord,
         formattedOutput,
         availableKeys: Array.from(MUSICAL_KEYS),
         availableTimeSignatures: Array.from(TIME_SIGNATURES),

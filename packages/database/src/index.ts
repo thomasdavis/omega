@@ -23,6 +23,7 @@ export * as pgMessageService from './postgres/messageService.js';
 export * as pgQueryService from './postgres/queryService.js';
 export * as pgDocumentService from './postgres/documentService.js';
 export * as pgUserProfileService from './postgres/userProfileService.js';
+export * as pgMusicService from './postgres/musicService.js';
 
 // Export individual document service functions for backward compatibility
 export {
@@ -82,6 +83,28 @@ export {
   getQueryById,
   getQueryCount,
 } from './postgres/queryService.js';
+
+// Export music service functions for backward compatibility
+export {
+  saveAbcSheetMusic,
+  getAbcSheetMusic,
+  listAbcSheetMusic,
+  getAbcSheetMusicCount,
+  saveMidiFile,
+  getMidiFile,
+  listMidiFiles,
+  getMidiFileCount,
+  getMidiFileMetadata,
+  listMidiFilesMetadata,
+} from './postgres/musicService.js';
+
+// Export music service types
+export type {
+  AbcSheetMusicRecord,
+  CreateAbcSheetMusicInput,
+  MidiFileRecord,
+  CreateMidiFileInput,
+} from './postgres/musicService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
