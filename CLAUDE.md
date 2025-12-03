@@ -64,3 +64,29 @@ railway run bash -c 'cd packages/database && DATABASE_URL=$DATABASE_PUBLIC_URL p
 # Quick push for development (not recommended for production)
 railway run bash -c 'cd packages/database && DATABASE_URL=$DATABASE_PUBLIC_URL pnpm prisma db push'
 ```
+
+### Direct Database Operations with Railway CLI
+
+**Execute SQL commands directly on production:**
+
+```bash
+# Single SQL command
+railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && psql "$DATABASE_URL" -c "ALTER TABLE table_name ADD COLUMN column_name TYPE;"'
+
+# Multiple commands with heredoc
+railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && psql "$DATABASE_URL" << '\''EOF'\''
+ALTER TABLE table_name ADD COLUMN IF NOT EXISTS column_name INTEGER;
+ALTER TABLE table_name ALTER COLUMN other_column TYPE TIMESTAMPTZ;
+SELECT column_name, data_type FROM information_schema.columns WHERE table_name = '\''table_name'\'';
+EOF'
+
+# Inspect table schema
+railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && psql "$DATABASE_URL" -c "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = '\''table_name'\'' ORDER BY ordinal_position;"'
+```
+
+**Common operations:**
+- `ALTER TABLE ADD COLUMN` - Add missing columns
+- `ALTER TABLE ALTER COLUMN TYPE` - Change column types
+- `ALTER TABLE DROP COLUMN` - Remove columns
+- `SELECT ... FROM information_schema.columns` - Inspect schema
+- Always use `IF NOT EXISTS` / `IF EXISTS` for idempotent migrations
