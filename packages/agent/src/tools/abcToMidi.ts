@@ -16,7 +16,7 @@ import abcjs from 'abcjs';
 import { saveMidiFile } from '@repo/database';
 
 interface MidiMetadata {
-  id: string;
+  id: number;
   type: 'midi';
   title: string;
   description: string;
@@ -32,7 +32,7 @@ async function convertAndSaveMidi(
   abcNotation: string,
   title: string,
   description: string,
-  abcSheetMusicId?: string
+  abcSheetMusicId?: number
 ): Promise<MidiMetadata> {
   // Validate ABC notation has required headers
   if (!abcNotation.includes('X:') || !abcNotation.includes('K:')) {

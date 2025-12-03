@@ -7,8 +7,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const midiId = parseInt(id, 10);
 
-    const metadata = await getMidiFileMetadata(id);
+    if (isNaN(midiId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid MIDI file ID' },
+        { status: 400 }
+      );
+    }
+
+    const metadata = await getMidiFileMetadata(midiId);
 
     if (!metadata) {
       return NextResponse.json(
@@ -17,10 +25,10 @@ export async function GET(
       );
     }
 
-    // Convert BigInt to string for JSON serialization
+    // Convert Date to ISO string for JSON serialization
     const serializedMetadata = {
       ...metadata,
-      createdAt: metadata.createdAt.toString(),
+      createdAt: metadata.createdAt.toISOString(),
     };
 
     return NextResponse.json({

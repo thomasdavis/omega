@@ -7,8 +7,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const midiId = parseInt(id, 10);
 
-    const midiFile = await getMidiFile(id);
+    if (isNaN(midiId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid MIDI file ID' },
+        { status: 400 }
+      );
+    }
+
+    const midiFile = await getMidiFile(midiId);
 
     if (!midiFile) {
       return NextResponse.json(

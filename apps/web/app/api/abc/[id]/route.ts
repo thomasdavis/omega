@@ -7,8 +7,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const sheetMusicId = parseInt(id, 10);
 
-    const sheetMusic = await getAbcSheetMusic(id);
+    if (isNaN(sheetMusicId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid ABC sheet music ID' },
+        { status: 400 }
+      );
+    }
+
+    const sheetMusic = await getAbcSheetMusic(sheetMusicId);
 
     if (!sheetMusic) {
       return NextResponse.json(
@@ -17,10 +25,10 @@ export async function GET(
       );
     }
 
-    // Convert BigInt to string for JSON serialization
+    // Convert Date to ISO string for JSON serialization
     const serializedSheetMusic = {
       ...sheetMusic,
-      createdAt: sheetMusic.createdAt.toString(),
+      createdAt: sheetMusic.createdAt.toISOString(),
     };
 
     return NextResponse.json({

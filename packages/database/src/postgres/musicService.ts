@@ -10,7 +10,7 @@ import type { Prisma } from '@prisma/client';
 // ============================================
 
 export interface AbcSheetMusicRecord {
-  id: string;
+  id: number;
   title: string;
   composer?: string | null;
   key?: string | null;
@@ -22,7 +22,7 @@ export interface AbcSheetMusicRecord {
   metadata?: Prisma.JsonValue | null;
   createdBy?: string | null;
   createdByUsername?: string | null;
-  createdAt: bigint;
+  createdAt: Date;
 }
 
 export interface CreateAbcSheetMusicInput {
@@ -67,7 +67,7 @@ export async function saveAbcSheetMusic(
 /**
  * Get ABC sheet music by ID
  */
-export async function getAbcSheetMusic(id: string): Promise<AbcSheetMusicRecord | null> {
+export async function getAbcSheetMusic(id: number): Promise<AbcSheetMusicRecord | null> {
   return await prisma.abcSheetMusic.findUnique({
     where: { id },
   });
@@ -99,19 +99,19 @@ export async function getAbcSheetMusicCount(): Promise<number> {
 // ============================================
 
 export interface MidiFileRecord {
-  id: string;
+  id: number;
   title: string;
   description?: string | null;
   midiData: Buffer;
   abcNotation?: string | null;
-  abcSheetMusicId?: string | null;
+  abcSheetMusicId?: number | null;
   filename: string;
-  fileSize: number;
+  fileSize?: number | null;
   artifactPath?: string | null;
   metadata?: Prisma.JsonValue | null;
   createdBy?: string | null;
   createdByUsername?: string | null;
-  createdAt: bigint;
+  createdAt: Date;
 }
 
 export interface CreateMidiFileInput {
@@ -119,7 +119,7 @@ export interface CreateMidiFileInput {
   description?: string;
   midiData: Buffer;
   abcNotation?: string;
-  abcSheetMusicId?: string;
+  abcSheetMusicId?: number;
   filename: string;
   artifactPath?: string;
   metadata?: Prisma.InputJsonValue | null;
@@ -155,7 +155,7 @@ export async function saveMidiFile(
 /**
  * Get MIDI file by ID
  */
-export async function getMidiFile(id: string): Promise<MidiFileRecord | null> {
+export async function getMidiFile(id: number): Promise<MidiFileRecord | null> {
   return await prisma.midiFile.findUnique({
     where: { id },
   });
@@ -185,19 +185,19 @@ export async function getMidiFileCount(): Promise<number> {
 /**
  * Get MIDI file metadata (without binary data)
  */
-export async function getMidiFileMetadata(id: string): Promise<{
-  id: string;
+export async function getMidiFileMetadata(id: number): Promise<{
+  id: number;
   title: string;
   description: string | null;
   abcNotation: string | null;
-  abcSheetMusicId: string | null;
+  abcSheetMusicId: number | null;
   filename: string;
-  fileSize: number;
+  fileSize: number | null;
   artifactPath: string | null;
   metadata: Prisma.JsonValue | null;
   createdBy: string | null;
   createdByUsername: string | null;
-  createdAt: bigint;
+  createdAt: Date;
 } | null> {
   return await prisma.midiFile.findUnique({
     where: { id },
@@ -225,18 +225,18 @@ export async function listMidiFilesMetadata(
   limit = 50,
   offset = 0
 ): Promise<Array<{
-  id: string;
+  id: number;
   title: string;
   description: string | null;
   abcNotation: string | null;
-  abcSheetMusicId: string | null;
+  abcSheetMusicId: number | null;
   filename: string;
-  fileSize: number;
+  fileSize: number | null;
   artifactPath: string | null;
   metadata: Prisma.JsonValue | null;
   createdBy: string | null;
   createdByUsername: string | null;
-  createdAt: bigint;
+  createdAt: Date;
 }>> {
   return await prisma.midiFile.findMany({
     orderBy: { createdAt: 'desc' },
