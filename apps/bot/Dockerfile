@@ -2,7 +2,7 @@
 # Build from repository root context
 # Now includes packages directory for monorepo workspace packages
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install pnpm
 RUN npm install -g pnpm@9.0.0
@@ -25,7 +25,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm build --filter=bot
 
 # Production image
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install OpenSSL compatibility for Prisma
 RUN apk add --no-cache openssl libc6-compat

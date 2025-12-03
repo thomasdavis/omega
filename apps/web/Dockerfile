@@ -2,7 +2,7 @@
 # Build from repository root context (Railway ALWAYS uses repo root for Docker builds)
 # Root Directory setting only determines which railway.toml to read, not Docker context!
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install pnpm
 RUN npm install -g pnpm@9.0.0
@@ -26,7 +26,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm build --filter=web
 
 # Production image
-FROM node:20-alpine
+FROM node:22-alpine
 
 # Install OpenSSL compatibility for Prisma
 RUN apk add --no-cache openssl libc6-compat
