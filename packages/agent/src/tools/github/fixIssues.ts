@@ -184,7 +184,7 @@ function buildClaudeComment(issue: any, ageInDays: number, ageInHours: number): 
   comment += `- The issue is **no longer reproducible** or relevant in the current codebase\n\n`;
 
   if (ageInDays >= 3) {
-    comment += `**Recommendation for older issues**: Given this issue is ${ageInDays} days old, strongly consider closing it with a brief explanation unless it's clearly still valuable.\n\n`;
+    comment += `**Recommendation for older issues**: Given this issue is ${ageInDays} days old, strongly consider adding the \`needs close\` label with a brief explanation unless it's clearly still valuable.\n\n`;
   }
 
   // Reasons to fix
@@ -230,13 +230,15 @@ function buildClaudeComment(issue: any, ageInDays: number, ageInHours: number): 
   comment += `⚠️ **Important**: If you implement a fix and the build passes, this will be **automatically merged**.\n\n`;
   comment += `Therefore:\n`;
   comment += `- Only proceed if you are **confident** in the implementation\n`;
-  comment += `- When in doubt, **close the issue** with an explanation\n`;
+  comment += `- When in doubt, **add the \`needs close\` label** with an explanation\n`;
   comment += `- Humans are watching - they'll reopen if needed\n\n`;
 
   // Call to action
   comment += `## Your Decision\n\n`;
   comment += `Please choose one of the following actions:\n\n`;
-  comment += `1. **Close this issue** with a comment explaining why (too old, out of scope, breaking, etc.)\n`;
+  comment += `1. **Mark for closure** by adding the \`needs close\` label and commenting why (too old, out of scope, breaking, etc.)\n`;
+  comment += `   - Use the GitHub API or gh CLI to add the label: \`needs close\`\n`;
+  comment += `   - An automated system will close labeled issues within 5 minutes\n`;
   comment += `2. **Implement the fix** following all guidelines above and ensure the build passes\n\n`;
   comment += `You have full authority to make this decision based on your assessment of value vs. risk.\n`;
 
