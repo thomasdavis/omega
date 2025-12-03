@@ -21,6 +21,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   search: { path: './tools/search.js', exportName: 'searchTool' },
   calculator: { path: './tools/calculator.js', exportName: 'calculatorTool' },
   artifact: { path: './tools/artifact.js', exportName: 'artifactTool' },
+  createPage: { path: './tools/createPage.js', exportName: 'createPageTool' },
   unsandbox: { path: './tools/unsandbox.js', exportName: 'unsandboxTool' },
   webFetch: { path: './tools/webFetch.js', exportName: 'webFetchTool' },
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },

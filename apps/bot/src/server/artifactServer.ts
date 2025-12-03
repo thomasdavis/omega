@@ -9,6 +9,8 @@ import { join } from 'path';
 import { getArtifactsDir, getUploadsDir, getPublicDir } from '../utils/storage.js';
 import { generateTTS, validateTTSRequest, type TTSRequest } from '../lib/tts.js';
 import { getBlogPosts, getBlogPost, renderBlogPost, renderBlogIndex } from '../lib/blogRenderer.js';
+import { getRoute } from '../lib/router.js';
+import { generatePage, generatePageFromMarkdown } from '../lib/pageTemplate.js';
 import {
   queryMessages,
   getMessageCount,
@@ -1528,6 +1530,39 @@ function createApp(): express.Application {
     } catch (error) {
       console.error('Error rendering blog post:', error);
       res.status(500).send('Error loading blog post');
+    }
+  });
+
+  // Named page routes (webserver framework)
+  app.get('/pages/:slug', (req: Request, res: Response) => {
+    try {
+      const { slug } = req.params;
+      const route = getRoute(slug);
+
+      if (!route) {
+        return res.status(404).send('Page not found');
+      }
+
+      let html: string;
+      if (route.contentType === 'markdown') {
+        html = generatePageFromMarkdown({
+          title: route.title,
+          markdown: route.content,
+          theme: route.theme,
+        });
+      } else {
+        html = generatePage({
+          title: route.title,
+          content: route.content,
+          theme: route.theme,
+        });
+      }
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      console.error('Error rendering page:', error);
+      res.status(500).send('Error loading page');
     }
   });
 

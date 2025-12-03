@@ -63,6 +63,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'createPage',
+    name: 'Create Page',
+    description: 'Create named pages with SEO-friendly URLs for the website (/pages/:slug)',
+    keywords: ['create', 'page', 'website', 'url', 'seo', 'about', 'features', 'site'],
+    tags: ['content', 'web', 'page', 'core'],
+    examples: [
+      'create an about page',
+      'make a features page',
+      'create a website page',
+      'add page to site',
+      'create permanent page'
+    ],
+    isCore: true,
+    category: 'content'
+  },
+
+  {
     id: 'unsandbox',
     name: 'Code Execution',
     description: 'Execute code in 42+ languages including Python, JavaScript, TypeScript, Rust, Go, etc.',
@@ -1922,6 +1939,7 @@ export const CORE_TOOLS: string[] = [
   'search',
   'calculator',
   'artifact',
+  'createPage',
   'unsandbox',
   'webFetch',
   'fileUpload',
