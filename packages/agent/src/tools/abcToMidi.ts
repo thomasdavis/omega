@@ -91,7 +91,7 @@ export const abcToMidiTool = tool({
     abcNotation: z.string().describe('ABC notation to convert to MIDI. Should include all required headers (X:, T:, M:, L:, K:) and note data. Can be obtained from generateSheetMusic tool.'),
     title: z.string().optional().describe('Title for the MIDI file (defaults to extracting from ABC notation T: header)'),
     description: z.string().optional().describe('Description of the MIDI file'),
-    abcSheetMusicId: z.string().optional().describe('Optional ID of the ABC sheet music record this MIDI is generated from'),
+    abcSheetMusicId: z.number().optional().describe('Optional ID of the ABC sheet music record this MIDI is generated from'),
   }),
   execute: async ({ abcNotation, title, description, abcSheetMusicId }) => {
     try {
