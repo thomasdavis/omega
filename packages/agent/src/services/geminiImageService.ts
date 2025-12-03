@@ -145,14 +145,17 @@ export async function generateComicWithUsers(
 
   const comicPrompt = `Create a humorous comic illustration:
 
-Scenario: ${scenario}
+PRIMARY FOCUS - Base the comic on this specific scenario:
+${scenario}
 
-Characters:
+Characters (secondary context for visual representation):
 ${characterDescriptions}
 
 Style: Digital comic art, vibrant colors, expressive cartoon characters, developer/tech humor
 Include: Speech bubbles, character interactions, visual humor, expressive faces
 Ensure: Each character is visually distinct and matches their description
+
+IMPORTANT: Focus primarily on illustrating the scenario above. Use character context only for accurate visual representation.
 
 Make it entertaining and capture the personalities!`;
 
@@ -170,13 +173,17 @@ export async function generateComicFromIssue(
   // Create a comic-style prompt from the issue
   const comicPrompt = `Create a humorous comic illustration about this software development task:
 
-Title: ${issueTitle}
+PRIMARY FOCUS - Illustrate this specific issue:
 
-Description: ${issueBody}
+Issue #${issueNumber}: ${issueTitle}
+
+${issueBody}
 
 Style: Digital comic art, vibrant colors, funny cartoon characters, developer humor
 Theme: Software development, coding, debugging, tech humor
 Include: Speech bubbles, expressive characters, visual jokes
+
+IMPORTANT: Focus the comic on the issue content above. Do not include unrelated conversation context.
 
 Make it entertaining and relatable to software developers!`;
 
