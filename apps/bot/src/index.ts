@@ -11,12 +11,15 @@ import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@r
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
-import { preloadCoreTools } from '@repo/agent';
+import { preloadCoreTools, initializeFileTransferSystem } from '@repo/agent';
 
 dotenv.config();
 
 // Initialize persistent storage directories
 initializeStorage();
+
+// Initialize file transfer system (resume pending transfers)
+initializeFileTransferSystem();
 
 // Initialize database connection and schema
 try {

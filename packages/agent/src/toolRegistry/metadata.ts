@@ -1183,6 +1183,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'transferQueueManagement',
+    name: 'Transfer Queue Management',
+    description: 'Monitor and manage the Railway → GitHub file transfer queue',
+    keywords: ['transfer', 'queue', 'railway', 'github', 'monitor', 'cleanup', 'orphaned'],
+    tags: ['file', 'railway', 'github', 'monitoring'],
+    examples: [
+      'show transfer queue status',
+      'view pending transfers',
+      'clean up orphaned files',
+      'show transfer history'
+    ],
+    category: 'file'
+  },
+
+  {
     id: 'uploadAndCommitFile',
     name: 'Upload and Commit File',
     description: 'Upload file and commit to git repository',

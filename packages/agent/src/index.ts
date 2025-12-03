@@ -17,6 +17,9 @@ export { setConversationDiagramContext, clearConversationDiagramContext } from '
 export { setSlidevMessageContext, clearSlidevMessageContext } from './tools/conversationToSlidev.js';
 export { setUnsandboxMessageContext, clearUnsandboxMessageContext } from './tools/unsandbox.js';
 
+// File transfer system initialization
+export { initializeFileTransferSystem } from './tools/fileUpload.js';
+
 // Services (re-export for bot to use)
 export * from './services/userProfileAnalysis.js';
 export * from './services/geminiImageService.js';
