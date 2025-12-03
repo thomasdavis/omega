@@ -38,11 +38,12 @@ The existing `omega` service will become `omega-web`.
 2. Click on the `omega` service
 3. Click "Settings" tab
 4. **Rename Service**: Change name from `omega` to `omega-web`
-5. **Root Directory**: Set to `apps/web`
-6. **Start Command**: Set to `cd apps/web && pnpm start`
-7. **Build Command**: Set to `cd ../.. && pnpm install && pnpm build --filter=web`
-8. **Port**: Ensure `PORT=3000` is set in environment variables (Railway auto-detects)
-9. Save changes
+5. **Root Directory**: Set to `apps/web` (Railway will read `apps/web/railway.toml`)
+6. **Builder**: Automatically uses Dockerfile from `railway.toml` configuration
+7. **Port**: Ensure `PORT=3000` is set in environment variables (Railway auto-detects)
+8. Save changes
+
+**Note:** Railway will automatically use the Dockerfile specified in `apps/web/railway.toml`. You don't need to manually set build/start commands as they're in the TOML file.
 
 ### Environment Variables for omega-web:
 
@@ -68,12 +69,13 @@ POSTGRES_URL=postgresql://...                # PostgreSQL (Railway plugin auto-s
 2. Click "+ New" → "Empty Service"
 3. **Service Name**: `omega-bot`
 4. **Settings**:
-   - **Root Directory**: `apps/bot`
-   - **Start Command**: `cd apps/bot && node dist/index.js`
-   - **Build Command**: `cd ../.. && pnpm install && pnpm build --filter=bot`
+   - **Root Directory**: Leave blank (Railway will read `/railway.toml` from repo root)
+   - **Builder**: Automatically uses Dockerfile from `railway.toml` configuration
    - **Watch Paths**: `apps/bot/**, packages/**`
 5. **Connect to GitHub**: Same repo as omega-web
 6. **Branch**: `main` (same as web service)
+
+**Note:** Railway will automatically use the Dockerfile specified in `/railway.toml`. You don't need to manually set build/start commands as they're in the TOML file.
 
 ### Environment Variables for omega-bot:
 
@@ -143,39 +145,53 @@ Both services need access to the same `/data` volume for artifacts, uploads, etc
 
 ## Step 4: Verify Configuration Files
 
-Railway should automatically detect `railway.json` in each service's root directory:
+Railway uses `railway.toml` configuration files with Dockerfile builders:
 
-### apps/web/railway.json
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "nixpacks",
-    "buildCommand": "cd ../.. && pnpm install && pnpm build --filter=web"
-  },
-  "deploy": {
-    "startCommand": "cd apps/web && pnpm start",
-    "restartPolicyType": "on-failure",
-    "restartPolicyMaxRetries": 10
-  }
-}
+### /railway.toml (for omega-bot service)
+```toml
+# This file is used when Root Directory is blank (omega-bot service)
+# dockerfilePath is ALWAYS relative to repo root
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/bot/Dockerfile"
+
+[deploy]
+startCommand = "node dist/index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[mounts]]
+mountPath = "/data"
 ```
 
-### apps/bot/railway.json
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "nixpacks",
-    "buildCommand": "cd ../.. && pnpm install && pnpm build --filter=bot"
-  },
-  "deploy": {
-    "startCommand": "cd apps/bot && node dist/index.js",
-    "restartPolicyType": "on-failure",
-    "restartPolicyMaxRetries": 10
-  }
-}
+### apps/web/railway.toml (for omega-web service)
+```toml
+# This file is used when Root Directory is set to "apps/web" (omega-web service)
+# dockerfilePath is ALWAYS relative to repo root, not the root directory
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/web/Dockerfile"
+
+[deploy]
+startCommand = "pnpm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[[mounts]]
+mountPath = "/data"
+
+[deploy.healthcheck]
+path = "/"
+timeout = 300
 ```
+
+**Important Notes:**
+- Railway prioritizes `railway.json` over `railway.toml` if both exist
+- Do NOT create `railway.json` files as they will conflict with the Dockerfile setup
+- Both services use Dockerfiles for proper monorepo build support
+- Dockerfiles are located at `apps/bot/Dockerfile` and `apps/web/Dockerfile`
 
 ## Step 5: Configure Databases
 
