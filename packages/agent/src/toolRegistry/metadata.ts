@@ -582,7 +582,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
-  // ===== GITHUB TOOLS (4) =====
+  // ===== GITHUB TOOLS (9) =====
   {
     id: 'githubCreateIssue',
     name: 'GitHub Create Issue',
@@ -629,6 +629,36 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'githubListIssues',
+    name: 'GitHub List Issues',
+    description: 'List GitHub issues from the repository with filtering by state',
+    keywords: ['github', 'issue', 'list', 'show', 'view', 'all', 'open', 'closed'],
+    tags: ['github', 'issue', 'project-management'],
+    examples: [
+      'list GitHub issues',
+      'show all issues',
+      'view open issues',
+      'list all issues'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubCloseAllIssues',
+    name: 'GitHub Close All Issues',
+    description: 'Close all open issues in the repository (destructive operation)',
+    keywords: ['github', 'issue', 'close', 'all', 'bulk', 'cleanup'],
+    tags: ['github', 'issue', 'project-management'],
+    examples: [
+      'close all GitHub issues',
+      'close all open issues',
+      'bulk close issues',
+      'cleanup all issues'
+    ],
+    category: 'github'
+  },
+
+  {
     id: 'githubMergePR',
     name: 'GitHub Merge PR',
     description: 'Merge a GitHub pull request',
@@ -639,6 +669,51 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'merge PR',
       'approve and merge',
       'merge GitHub PR'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubListPullRequests',
+    name: 'GitHub List Pull Requests',
+    description: 'List GitHub pull requests from the repository with filtering by state',
+    keywords: ['github', 'pull request', 'pr', 'list', 'show', 'view', 'all', 'open', 'closed'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'list pull requests',
+      'show all PRs',
+      'view open PRs',
+      'list GitHub PRs'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubClosePullRequest',
+    name: 'GitHub Close Pull Request',
+    description: 'Close a GitHub pull request without merging',
+    keywords: ['github', 'pull request', 'pr', 'close', 'reject', 'cancel'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'close pull request',
+      'reject PR',
+      'close GitHub PR',
+      'cancel PR'
+    ],
+    category: 'github'
+  },
+
+  {
+    id: 'githubCloseAllPullRequests',
+    name: 'GitHub Close All Pull Requests',
+    description: 'Close all open pull requests in the repository (destructive operation)',
+    keywords: ['github', 'pull request', 'pr', 'close', 'all', 'bulk', 'cleanup'],
+    tags: ['github', 'pr', 'project-management'],
+    examples: [
+      'close all pull requests',
+      'close all PRs',
+      'bulk close PRs',
+      'cleanup all PRs'
     ],
     category: 'github'
   },

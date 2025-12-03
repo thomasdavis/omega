@@ -8,7 +8,6 @@ import { streamText, stepCountIs } from 'ai';
 import { searchTool } from './tools/search.js';
 import { calculatorTool } from './tools/calculator.js';
 import { weatherTool } from './tools/weather.js';
-import { githubCreateIssueTool, githubUpdateIssueTool, githubCloseIssueTool, githubMergePRTool } from './tools/github.js';
 import { listRepositoryFilesTool } from './tools/listRepositoryFiles.js';
 import { webFetchTool } from './tools/webFetch.js';
 import { unsandboxTool, unsandboxSubmitTool, unsandboxStatusTool } from './tools/unsandbox.js';
