@@ -5,6 +5,8 @@
 
 import { TwitterApi } from 'twitter-api-v2';
 import { Buffer } from 'buffer';
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
 
 interface TwitterPostOptions {
   imageData: Buffer;
@@ -18,6 +20,44 @@ interface TwitterPostResult {
   tweetId?: string;
   tweetUrl?: string;
   error?: string;
+}
+
+/**
+ * Generates an engaging, concise tweet summary for a PR
+ * @param prTitle - The PR title (may be a branch name or description)
+ * @param prNumber - The PR number
+ * @returns A friendly, engaging summary (max 60 chars) or the original title if generation fails
+ */
+async function generateTweetSummary(prTitle: string, prNumber: number): Promise<string> {
+  try {
+    const prompt = `Generate a very short, engaging tweet summary (max 60 characters) for this GitHub PR:
+
+PR #${prNumber}: ${prTitle}
+
+Requirements:
+- Maximum 60 characters
+- Engaging and descriptive
+- No hashtags or emojis
+- Focus on what the PR does, not technical branch names
+- If the title is a branch name like "claude/issue-502-20251130-0533", create a meaningful description instead
+
+Return ONLY the summary text, nothing else.`;
+
+    const { text } = await generateText({
+      model: openai('gpt-4o-mini'),
+      prompt,
+      temperature: 0.7,
+    });
+
+    // Trim and limit to 60 chars
+    const summary = text.trim().substring(0, 60);
+    console.log(`✨ Generated tweet summary: "${summary}"`);
+    return summary;
+  } catch (error) {
+    console.warn('⚠️ Failed to generate tweet summary, using PR title:', error);
+    // Fallback to original title, truncated if needed
+    return prTitle.substring(0, 60);
+  }
 }
 
 /**
@@ -52,6 +92,10 @@ export async function postComicToTwitter(
       accessSecret: accessSecret,
     });
 
+    // Generate engaging tweet summary
+    console.log('✨ Generating tweet summary...');
+    const tweetSummary = await generateTweetSummary(prTitle, prNumber);
+
     // Upload media (image)
     console.log('📤 Uploading comic image to Twitter...');
     const mediaId = await client.v1.uploadMedia(imageData, {
@@ -59,8 +103,8 @@ export async function postComicToTwitter(
     });
     console.log(`✅ Media uploaded successfully. Media ID: ${mediaId}`);
 
-    // Format tweet text
-    const tweetText = `🎨 ${prTitle}\n\n🔗 ${prUrl}\n\n#DevComics #GitHub #OpenSource #AIGenerated`;
+    // Format tweet text with AI-generated summary
+    const tweetText = `🎨 ${tweetSummary}\n\n🔗 ${prUrl}\n\n#DevComics #GitHub #OpenSource #AIGenerated`;
 
     // Create tweet with media
     console.log('📝 Creating tweet with comic...');
