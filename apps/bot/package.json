@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "prebuild": "node scripts/generate-deployment-info.js",
+    "prebuild": "pnpm --filter @repo/shared --filter @repo/database --filter @repo/agent build && node scripts/generate-deployment-info.js",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "mkdir -p dist/public && cp -r public/* dist/public/ && cp omega-manifest.json dist/",
+    "pretype-check": "pnpm --filter @repo/shared --filter @repo/database --filter @repo/agent build",
     "type-check": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
     "lint:fix": "eslint src --ext .ts --fix",
