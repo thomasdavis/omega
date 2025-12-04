@@ -1732,6 +1732,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'autonomousInsightAgent',
+    name: 'Autonomous Insight Agent',
+    description: 'Autonomously analyze conversation history, user sentiment, bot internal state, and database activity to generate insights and recommendations for improving interactions',
+    keywords: ['autonomous', 'insight', 'analysis', 'recommendations', 'conversation', 'sentiment', 'bot', 'feelings', 'performance', 'improvements', 'patterns', 'trends', 'ai-ops'],
+    tags: ['ai-ops', 'analysis', 'insights', 'autonomous', 'recommendations'],
+    examples: [
+      'generate insights from the last 500 messages',
+      'analyze bot feelings and user interactions',
+      'recommend improvements based on conversation patterns',
+      'analyze conversation quality',
+      'show me insights from recent messages',
+      'what can you tell me about user engagement'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'createLiveDocument',
     name: 'Create Live Document',
     description: 'Create collaborative live documents',

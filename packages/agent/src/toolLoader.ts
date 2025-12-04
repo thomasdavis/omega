@@ -151,6 +151,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   translateToSpanish: { path: './tools/translateToSpanish.js', exportName: 'translateToSpanishTool' },
   marketPrediction: { path: './tools/marketPrediction.js', exportName: 'marketPredictionTool' },
   introspectFeelings: { path: './tools/introspectFeelings.js', exportName: 'introspectFeelingsTool' },
+  autonomousInsightAgent: { path: './tools/autonomousInsightAgent.js', exportName: 'autonomousInsightAgentTool' },
   createLiveDocument: { path: './tools/createLiveDocument.js', exportName: 'createLiveDocumentTool' },
   readLiveDocument: { path: './tools/readLiveDocument.js', exportName: 'readLiveDocumentTool' },
   reportMissingTool: { path: './tools/reportMissingTool.js', exportName: 'reportMissingToolTool' },
