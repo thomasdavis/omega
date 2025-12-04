@@ -51,6 +51,45 @@ async function getUserProfilesByUsernames(usernames: string[]): Promise<string[]
 }
 
 /**
+ * Fetch ALL user profiles from Omega HTTP API
+ * Returns the raw JSON response to include in prompt
+ */
+async function fetchAllUserProfiles(): Promise<string> {
+  try {
+    // Determine Omega API base URL
+    const OMEGA_API_URL = process.env.OMEGA_API_URL || 'https://omegaai.dev';
+
+    // Fetch all profiles with pagination
+    const url = `${OMEGA_API_URL}/api/profiles?limit=1000`;
+
+    console.log(`🔍 [fetchAllUserProfiles] Fetching from ${url}`);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.warn(`⚠️ [fetchAllUserProfiles] Failed to fetch: ${response.status} ${response.statusText}`);
+      return '';
+    }
+
+    const data: any = await response.json();
+
+    if (!data.profiles || !Array.isArray(data.profiles)) {
+      console.warn('⚠️ [fetchAllUserProfiles] Invalid response:', data);
+      return '';
+    }
+
+    const activeProfiles = data.profiles;
+    console.log(`✅ [fetchAllUserProfiles] Fetched ${activeProfiles.length} profiles (out of ${data.total} total)`);
+
+    // Return raw JSON stringified for prompt insertion
+    return JSON.stringify(activeProfiles, null, 2);
+  } catch (error) {
+    console.error('❌ [fetchAllUserProfiles] Error:', error);
+    return '';
+  }
+}
+
+/**
  * Generate style-specific prompt guidance
  */
 function getStyleGuidance(style: MangaStyle): string {
@@ -232,6 +271,33 @@ export const generateAnimeMangaTool = tool({
       allUserIds = [...new Set(allUserIds)];
       console.log(`🎭 [generateAnimeManga] Total unique user IDs after merge:`, allUserIds);
 
+      // Fetch ALL user profiles from API for complete character database
+      console.log('📊 [generateAnimeManga] Fetching complete user profile database...');
+      const profilesJson = await fetchAllUserProfiles();
+      const profileDatabase = profilesJson
+        ? `\n\n**COMPLETE DISCORD COMMUNITY CHARACTER DATABASE (Raw JSON)**
+
+You have access to comprehensive profiles for ALL Discord community members.
+This includes psychological and physical appearance data for every user:
+
+- Physical appearance: hair, eyes, skin, face, build, height, style, accessories
+- Psychological traits: archetypes, Big Five, communication patterns
+- Behavioral data: message patterns, emoji usage, sentiment
+- Relational data: affinity scores, Omega's thoughts about each user
+
+**Instructions:**
+- Parse this JSON to find characters mentioned in the scenario
+- Use their EXACT physical descriptions for accurate manga character design
+- Incorporate their psychological traits into dialogue and expressions
+- Keep character appearances CONSISTENT across all panels
+
+**FULL DATABASE:**
+\`\`\`json
+${profilesJson}
+\`\`\`
+`
+        : '';
+
       // Get character descriptions if we have users
       let characterDescriptions = '';
       if (allUserIds.length > 0) {
@@ -310,6 +376,7 @@ ${styleGuidance}
 
 MANGA STORY:
 ${scenario}${characterDescriptions}${issueContext}
+${profileDatabase}
 
 TECHNICAL SPECIFICATIONS:
 - Format: Vertical portrait orientation (suitable for scrolling)
@@ -335,6 +402,81 @@ MANGA TECHNIQUES TO USE:
 - Panel variation: Different panel sizes for pacing and emphasis
 - Background detail: Establish setting then focus on characters
 - Facial expressions: Exaggerated for comedy, subtle for drama
+
+FUNNY TILES / STYLE SHIFTS (REQUIRED):
+Each manga MUST contain at least 2 funny panels using DIFFERENT art styles for maximum comedic impact.
+Mix and match styles - the weirder the shift, the funnier it is:
+
+1. Stick Figure / MS Paint Style
+2. Crayon / Child's Drawing
+3. Corporate Memphis / Tech Art
+4. IKEA Manual / Warning Label
+5. The "SpongeBob" Gross-Up (detailed ugly close-up)
+6. Shonen "Power Up" (JoJo dramatic posing with auras)
+7. Film Noir / Sin City (high contrast shadows)
+8. Eldritch Horror / Junji Ito (disturbing spiral patterns)
+9. Rubber Hose (1930s Mickey Mouse animation)
+10. 8-Bit / Pixel Art
+11. Sunday Funnies / Garfield Style
+12. Medieval Tapestry / Bayeux
+13. Vaporwave / Glitch Art
+14. Claymation / Aardman (Wallace & Gromit)
+15. Uncanny Valley 3D (creepy CGI)
+16. Felt Puppet / Muppet
+17. Paper Cutout / Collage
+18. Renaissance Oil Painting
+19. Abstract / Cubism
+20. Political Cartoon / Caricature
+21. Infomercial Screenshot / "Before & After"
+22. Security Camera Footage / CCTV Grainy
+23. Courtroom Sketch Artist
+24. Cave Painting / Primitive Art
+25. Anime "Emotional Breakdown" (Speed Lines & Super Deformed)
+26. Victorian Etching / Penny Dreadful
+27. Egyptian Hieroglyphics
+28. Soviet Propaganda Poster
+29. Ransom Note / Cut-Out Letters
+30. Dashboard Warning Light / Car Manual Icon
+31. Windows XP Error Dialog / Blue Screen
+32. Police Lineup Mugshot / Height Chart
+33. Airport Security X-Ray Scanner
+34. 1990s Clipart / WordArt
+35. Medical Diagram / Gray's Anatomy
+36. Vintage Pulp Magazine Cover
+37. Assembly Instructions / LEGO Manual
+38. Tarot Card / Mystical Symbolism
+39. Food Network / Cooking Show Screenshot
+40. Bob Ross / Happy Little Accidents Painting
+
+20 TYPES OF HUMOR TO EMPLOY:
+You are a legendary comedian creating jokes for this manga. Use these archetypes:
+
+1. Narrative/Incongruity - Normal situation turns catastrophic
+2. Intellectual/Status Reversal - Smart character makes obvious mistake
+3. Rule of Three - Two similar, then unexpected twist
+4. Wordplay - Clever puns and double meanings
+5. One-Liner - Single sentence punch
+6. Misdirection - Lead one way, punchline goes another
+7. Absurdist - Impossible situations treated as normal
+8. Anti-Joke - Subvert format with literal answer
+9. Modern Wordplay - Contemporary puns
+10. Dark Humor - Morbid with clever twist
+11. Self-Deprecation - Character mocks own flaws
+12. Callback/Brick Joke - Setup early, payoff later
+13. Observational - Point out everyday absurdities
+14. Slapstick/Physical - Visual pratfalls, exaggerated reactions
+15. Parody/Satire - Mock well-known tropes
+16. Dramatic Irony - Audience knows what character doesn't
+17. Cringe Comedy - Uncomfortable situations for laughs
+18. Meta-Humor - Self-aware about being in manga
+19. Deadpan/Dry Wit - Absurd statements with seriousness
+20. Surreal/Non-Sequitur - Random unexpected elements
+
+CHARACTER CONSISTENCY (CRITICAL):
+- Once a character appears in panel 1, their appearance is LOCKED
+- Keep consistent: hair, clothing, accessories, facial features, body type
+- Only change: expressions, poses, positions
+- Reference character descriptions for EVERY panel they appear in
 
 WHAT TO AVOID:
 ✗ Horizontal/landscape orientation
