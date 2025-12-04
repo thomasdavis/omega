@@ -20,6 +20,7 @@ import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
+import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -514,21 +515,37 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
+      // Extract large code blocks before chunking
+      const { message: cleanedResponse, codeBlocks } = extractLargeCodeBlocks(result.response);
+
+      // Build attachments from extracted code blocks
+      const attachments: AttachmentBuilder[] = codeBlocks.map(block =>
+        new AttachmentBuilder(Buffer.from(block.content, 'utf-8'), { name: block.filename })
+      );
+
+      if (codeBlocks.length > 0) {
+        console.log(`📎 Extracted ${codeBlocks.length} large code block(s) as attachments`);
+        codeBlocks.forEach(block => {
+          console.log(`   - ${block.filename} (${block.lineCount} lines, ${block.charCount} chars)`);
+        });
+      }
+
       // Send as plain text message (chunked if needed for messages > 2000 chars)
       const channel = message.channel;
       let isFirstChunk = true;
       await sendChunkedMessage(
-        result.response,
+        cleanedResponse,
         async (chunk) => {
           if (isFirstChunk) {
-            // First chunk as a reply
+            // First chunk as a reply with attachments (if any)
             await message.reply({
               content: chunk,
+              files: attachments.length > 0 ? attachments : undefined,
               allowedMentions: { repliedUser: false }, // Don't ping the user
             });
             isFirstChunk = false;
           } else {
-            // Subsequent chunks as regular messages
+            // Subsequent chunks as regular messages (no attachments)
             if ('send' in channel) {
               await channel.send({ content: chunk });
             }
