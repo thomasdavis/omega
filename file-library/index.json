@@ -1,5 +1,17 @@
 [
   {
+    "id": "b1a93b48",
+    "filename": "scrabble_solver_fixed_756aa49b.c",
+    "originalName": "scrabble_solver_fixed.c",
+    "size": 4210,
+    "extension": ".c",
+    "uploadedAt": "2025-12-04T15:26:51.033Z",
+    "uploadedBy": "foxhop.",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/scrabble_solver_fixed_756aa49b.c",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/scrabble_solver_fixed_756aa49b.c",
+    "description": "Refined C scrabble solver code with jumble length fixed to 7, realistic letter distribution, 4+ letter words, 21 max hits limit, ascending score sort."
+  },
+  {
     "id": "0c3f9c21",
     "filename": "PXL_20251114_024546822_93dd0f64.jpg",
     "originalName": "PXL_20251114_024546822.jpg",
