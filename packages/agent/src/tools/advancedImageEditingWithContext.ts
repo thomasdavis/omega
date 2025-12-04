@@ -47,7 +47,7 @@ async function planEditSequence(editRequest: string): Promise<string[]> {
     console.log('🧠 Planning edit sequence with AI...');
 
     const result = await generateText({
-      model: aiSdkOpenai.chat('gpt-5-mini'),
+      model: aiSdkOpenai.chat('gpt-4.1-mini'),
       prompt: `You are an expert image editing assistant. Break down this complex image editing request into a sequence of simple, atomic editing steps. Each step should be a single, clear instruction that can be executed by an AI image editing model.
 
 Edit Request: "${editRequest}"
@@ -143,7 +143,7 @@ Features:
 - Works with Discord attachments and web URLs
 - Supports JPG and PNG formats
 
-Model: gpt-image-1 with gpt-5-mini for planning`,
+Model: gpt-image-1 with gpt-4.1-mini for planning`,
   inputSchema: z.object({
     imageUrl: z.string().describe('URL of the image to edit. Can be a Discord attachment URL (https://cdn.discordapp.com/...) or any web URL'),
     editRequest: z.string().describe('Complex editing request describing all desired changes. Can include multiple elements. Examples: "add a harem and the Spice Girls hanging out in a non-political way", "add a rainbow and a unicorn in a magical forest setting"'),

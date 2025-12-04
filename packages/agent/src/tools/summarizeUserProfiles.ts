@@ -111,7 +111,7 @@ Format your response in a clear, readable way with:
 Note: Null values indicate data not yet collected for that user.`;
 
       const aiResult = await generateText({
-        model: openai.chat('gpt-5-mini'),
+        model: openai.chat('gpt-4.1-mini'),
         prompt: prompt,
       });
 

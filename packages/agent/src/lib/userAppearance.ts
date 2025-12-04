@@ -37,10 +37,9 @@ export async function getUserCharacters(userIds: string[]): Promise<UserCharacte
       const profile = await getUserProfile(userId);
       if (!profile) return null;
 
-      const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
-      const personality = profile.personality_facets
-        ? JSON.parse(profile.personality_facets)
-        : null;
+      // Prisma Json fields are already parsed - don't call JSON.parse() again
+      const feelings = profile.feelings_json as any;
+      const personality = profile.personality_facets as any;
 
       return {
         username: profile.username,
@@ -100,8 +99,9 @@ export function getDetailedCharacterDescription(profile: UserProfileRecord): {
   personality: any;
   feelings: any;
 } {
+  // Prisma Json fields are already parsed - don't call JSON.parse() again
   const feelings = profile.feelings_json
-    ? JSON.parse(profile.feelings_json)
+    ? (profile.feelings_json as any)
     : {
         affinityScore: 50,
         trustLevel: 50,
@@ -109,7 +109,7 @@ export function getDetailedCharacterDescription(profile: UserProfileRecord): {
       };
 
   const personality = profile.personality_facets
-    ? JSON.parse(profile.personality_facets)
+    ? (profile.personality_facets as any)
     : {
         dominantArchetypes: ['Everyman'],
         communicationStyle: { formality: 'neutral' },
