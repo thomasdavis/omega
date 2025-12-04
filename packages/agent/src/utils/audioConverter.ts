@@ -11,11 +11,31 @@ import { writeFile, unlink } from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { createRequire } from 'module';
 
-// Use createRequire for CommonJS module compatibility
-const require = createRequire(import.meta.url);
-const lamejs = require('lamejs');
+// Lazy-load lamejs to avoid module resolution issues
+let lamejs: any = null;
+async function getLamejs() {
+  if (!lamejs) {
+    try {
+      // Try dynamic import first (ESM)
+      lamejs = await import('lamejs');
+      // Handle default export
+      if (lamejs.default) {
+        lamejs = lamejs.default;
+      }
+    } catch (e1) {
+      try {
+        // Fallback to createRequire for CommonJS
+        const { createRequire } = await import('module');
+        const require = createRequire(import.meta.url);
+        lamejs = require('lamejs');
+      } catch (e2) {
+        throw new Error(`Failed to load lamejs: ${e1}, ${e2}`);
+      }
+    }
+  }
+  return lamejs;
+}
 
 const execAsync = promisify(exec);
 
@@ -82,7 +102,7 @@ export async function midiToMp3Buffer(midiBuffer: Buffer): Promise<Buffer> {
     const wavData = parseWavBuffer(wavBuffer);
 
     // Step 6: Encode PCM to MP3 using lamejs
-    const mp3Buffer = encodePcmToMp3(
+    const mp3Buffer = await encodePcmToMp3(
       wavData.pcmData,
       wavData.sampleRate,
       wavData.numChannels,
@@ -189,14 +209,15 @@ function parseWavBuffer(wavBuffer: Buffer): {
  * @param bitsPerSample - Bits per sample (usually 16)
  * @returns Buffer containing MP3 data
  */
-function encodePcmToMp3(
+async function encodePcmToMp3(
   pcmData: Int16Array,
   sampleRate: number,
   numChannels: number,
   bitsPerSample: number
-): Buffer {
+): Promise<Buffer> {
+  const lamejsLib = await getLamejs();
   const kbps = 128; // MP3 bitrate
-  const mp3encoder = new lamejs.Mp3Encoder(numChannels, sampleRate, kbps);
+  const mp3encoder = new lamejsLib.Mp3Encoder(numChannels, sampleRate, kbps);
 
   const mp3Data: Int8Array[] = [];
   const samplesPerFrame = 1152; // Standard MP3 frame size
