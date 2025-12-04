@@ -1964,6 +1964,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'code execution status'
     ],
     category: 'development'
+  },
+
+  {
+    id: 'sentimentClassification',
+    name: 'Sentiment Classification',
+    description: 'Classify text sentiment as positive, negative, or neutral using Ax LLM SDK',
+    keywords: ['sentiment', 'classify', 'analysis', 'emotion', 'tone', 'positive', 'negative', 'neutral', 'review', 'feedback'],
+    tags: ['analysis', 'nlp', 'sentiment', 'text'],
+    examples: [
+      'analyze sentiment',
+      'classify sentiment',
+      'is this positive or negative',
+      'sentiment analysis',
+      'check sentiment of review'
+    ],
+    category: 'specialized'
   }
 ];
 

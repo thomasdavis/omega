@@ -132,6 +132,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   summarizeCommits: { path: './tools/summarizeCommits.js', exportName: 'summarizeCommitsTool' },
 
   // Research and utility tools
+  sentimentClassification: { path: './tools/sentimentClassification.js', exportName: 'sentimentClassificationTool' },
   weather: { path: './tools/weather.js', exportName: 'weatherTool' },
   linuxAdvantages: { path: './tools/linuxAdvantages.js', exportName: 'linuxAdvantagesTool' },
   jsonAgentGenerator: { path: './tools/jsonAgentGenerator.js', exportName: 'jsonAgentGeneratorTool' },
