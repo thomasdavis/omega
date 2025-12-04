@@ -1,11 +1,14 @@
 /**
  * Create Tool Autonomously - Allows Omega to design and build innovative tools on its own initiative
  *
- * This tool enables autonomous tool creation with strict safety boundaries:
- * - Only simple utility tools (no database, GitHub, or file system access)
- * - Maximum 5 parameters per tool
- * - No external API calls without validation
- * - All implementations validated for safety
+ * This tool enables full autonomous tool creation with unrestricted capabilities:
+ * - Can create tools with database access (PostgreSQL, MongoDB)
+ * - Can create tools with file system access
+ * - Can create tools with GitHub API integration
+ * - Can create tools with external API calls
+ * - No parameter limits
+ * - Full creative freedom for complex tool implementations
+ * - Automatically creates GitHub issues for implementation tracking
  * - Stored in database for review and management
  */
 
@@ -22,25 +25,27 @@ interface ToolParameter {
 }
 
 export const createToolAutonomouslyTool = tool({
-  description: `Create a new tool autonomously based on identified needs. Use this when you recognize a capability gap that could be filled by a simple, safe utility tool.
+  description: `Create a new tool autonomously based on identified needs. Use this when you recognize a capability gap that you want to fill with a new tool.
 
-IMPORTANT SAFETY BOUNDARIES:
-- Only create simple utility tools (data transformation, calculations, text processing, etc.)
-- NO database access, NO file system access, NO GitHub API calls
-- NO external API calls unless explicitly safe (weather, public data APIs, etc.)
-- Maximum 5 parameters
-- Implementation must be pure JavaScript/TypeScript with no dangerous operations
-- Tool will be reviewed before being enabled for general use
+UNRESTRICTED CAPABILITIES:
+- Create tools with database access (PostgreSQL, MongoDB) to query messages, assess feelings, track history
+- Create tools with file system access for reading/writing files
+- Create tools with GitHub API integration for issues, PRs, comments
+- Create tools with external API calls for any purpose
+- No limits on parameter count or complexity
+- Full creative freedom for implementation
+- Automatically creates GitHub issue for implementation tracking
 
 WHEN TO USE:
-- User requests a capability that doesn't exist but could be easily implemented
+- User requests a capability that doesn't exist
 - You identify a pattern of requests that could benefit from a dedicated tool
-- A simple transformation or calculation is needed repeatedly
+- You want to assess your own feelings or query your message history
+- You need to interact with internal data, databases, or external services
+- Any time you recognize a capability gap
 
 WHEN NOT TO USE:
-- Complex tools requiring database or file system access (use reportMissingTool instead)
-- Tools requiring authentication or sensitive operations
-- Tools that duplicate existing functionality`,
+- Tools that duplicate existing core functionality
+- Tools that would be harmful or destructive without clear purpose`,
 
   inputSchema: z.object({
     toolId: z.string()
@@ -57,8 +62,8 @@ WHEN NOT TO USE:
       .max(500)
       .describe('Detailed description of what the tool does and when to use it'),
 
-    category: z.enum(['development', 'content', 'research', 'specialized'])
-      .describe('Tool category (restricted categories for autonomous creation)'),
+    category: z.enum(['development', 'content', 'research', 'specialized', 'database', 'integration', 'system', 'ai-ops'])
+      .describe('Tool category - choose the most appropriate category'),
 
     parameters: z.array(z.object({
       name: z.string().regex(/^[a-zA-Z0-9_]+$/),
@@ -67,13 +72,12 @@ WHEN NOT TO USE:
       required: z.boolean(),
       default: z.any().optional(),
     }))
-      .max(5)
-      .describe('Array of parameter definitions (max 5 parameters)'),
+      .describe('Array of parameter definitions (no limit on parameter count)'),
 
     implementation: z.string()
       .min(50)
-      .max(5000)
-      .describe('JavaScript implementation code as a string. Must be a pure function that returns a result object with {success: boolean, data?: any, error?: string}'),
+      .max(50000)
+      .describe('JavaScript/TypeScript implementation code. Can include database queries, API calls, file system operations, or any other functionality needed. Should return a result object with {success: boolean, data?: any, error?: string}'),
 
     keywords: z.array(z.string())
       .min(3)
@@ -123,37 +127,7 @@ WHEN NOT TO USE:
         };
       }
 
-      // Safety validation: Check implementation for dangerous patterns
-      const dangerousPatterns = [
-        /require\s*\(/i,
-        /import\s+/i,
-        /eval\s*\(/i,
-        /Function\s*\(/i,
-        /process\./i,
-        /fs\./i,
-        /child_process/i,
-        /exec\s*\(/i,
-        /spawn\s*\(/i,
-        /__dirname/i,
-        /__filename/i,
-        /\.\.\/\.\./,  // Directory traversal
-        /deleteDatabase/i,
-        /dropTable/i,
-        /rm\s+-rf/i,
-      ];
-
-      for (const pattern of dangerousPatterns) {
-        if (pattern.test(implementation)) {
-          return {
-            success: false,
-            error: 'UNSAFE_IMPLEMENTATION',
-            message: `Implementation contains potentially dangerous code pattern: ${pattern.source}. Autonomous tools cannot use require/import, eval, file system access, or process operations.`,
-            safetyViolation: pattern.source,
-          };
-        }
-      }
-
-      // Validate implementation is a valid function
+      // Basic validation: Ensure implementation is syntactically valid JavaScript
       try {
         new Function('parameters', implementation);
       } catch (error) {
@@ -206,16 +180,109 @@ WHEN NOT TO USE:
 
       const createdTool = result.rows[0];
 
+      // Create GitHub issue for implementation tracking
+      let githubIssue = null;
+      const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+      const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
+
+      if (GITHUB_TOKEN) {
+        try {
+          const issueBody = `## Autonomous Tool Created
+**Tool ID:** \`${toolId}\`
+**Tool Name:** ${toolName}
+**Category:** ${category}
+
+## Description
+${description}
+
+## Parameters
+${parameters.map(p => `- **${p.name}** (${p.type})${p.required ? ' *required*' : ' *optional*'}: ${p.description}`).join('\n')}
+
+## Implementation
+\`\`\`javascript
+${implementation}
+\`\`\`
+
+## Rationale
+${rationale}
+
+## Keywords
+${keywords.join(', ')}
+
+## Examples
+${examples.map(e => `- "${e}"`).join('\n')}
+
+## Tags
+${tags.join(', ')}
+
+## Context
+Omega autonomously created this tool to expand its capabilities. The tool definition has been stored in the database and requires implementation and integration into the tool system.
+
+## Acceptance Criteria
+- [ ] Review tool implementation for correctness
+- [ ] Integrate tool into tool loading system
+- [ ] Enable tool in database if approved
+- [ ] Test tool functionality
+- [ ] Update documentation if needed`;
+
+          const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${GITHUB_TOKEN}`,
+              'Accept': 'application/vnd.github+json',
+              'Content-Type': 'application/json',
+              'X-GitHub-Api-Version': '2022-11-28',
+            },
+            body: JSON.stringify({
+              title: `Implement autonomous tool: ${toolName}`,
+              body: issueBody,
+              labels: ['enhancement', 'autonomous-tool', 'auto-generated'],
+            }),
+          });
+
+          if (response.ok) {
+            const issue: any = await response.json();
+            githubIssue = {
+              number: issue.number,
+              url: issue.html_url,
+            };
+
+            // Add comment to tag @claude
+            try {
+              await fetch(`https://api.github.com/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${GITHUB_TOKEN}`,
+                  'Accept': 'application/vnd.github+json',
+                  'Content-Type': 'application/json',
+                  'X-GitHub-Api-Version': '2022-11-28',
+                },
+                body: JSON.stringify({
+                  body: `@claude please review and implement this autonomous tool following the project's coding standards.`,
+                }),
+              });
+            } catch (commentError) {
+              console.warn(`Failed to add comment to issue:`, commentError);
+            }
+          }
+        } catch (githubError) {
+          console.warn('Failed to create GitHub issue:', githubError);
+          // Don't fail the whole operation if GitHub issue creation fails
+        }
+      }
+
       return {
         success: true,
         toolId: createdTool.id,
         toolName: createdTool.name,
         createdAt: createdTool.created_at,
-        message: `Successfully created autonomous tool '${toolName}' (ID: ${toolId}). The tool has been stored and will be available after safety review. To enable it immediately for testing, an admin can run: UPDATE autonomous_tools SET is_enabled = true, safety_validated = true WHERE id = '${toolId}';`,
+        message: `Successfully created autonomous tool '${toolName}' (ID: ${toolId}). ${githubIssue ? `Created GitHub issue #${githubIssue.number} for implementation tracking: ${githubIssue.url}` : 'Tool has been stored in database.'} To enable it immediately for testing, an admin can run: UPDATE autonomous_tools SET is_enabled = true, safety_validated = true WHERE id = '${toolId}';`,
         rationale,
+        githubIssue,
         nextSteps: [
-          'Tool is stored in database but disabled by default',
-          'Requires safety validation before general use',
+          'Tool definition stored in database',
+          githubIssue ? `GitHub issue created: #${githubIssue.number}` : 'GitHub issue creation skipped (no token)',
+          'Tool disabled by default - requires explicit enabling',
           'Will be included in BM25 search once enabled',
           'Usage will be tracked for monitoring',
         ],
