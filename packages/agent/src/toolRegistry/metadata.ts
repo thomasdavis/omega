@@ -871,6 +871,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateUnexpectedEvent',
+    name: 'Generate Unexpected Event',
+    description: 'Generate unexpected and surprising events, plot twists, challenges, or scenarios for creative inspiration, storytelling, and brainstorming',
+    keywords: ['unexpected', 'surprise', 'twist', 'event', 'plot', 'creative', 'random', 'challenge', 'idea', 'inspiration', 'story'],
+    tags: ['content', 'creative', 'writing', 'storytelling', 'gaming'],
+    examples: [
+      'generate an unexpected event',
+      'give me a surprising plot twist',
+      'create a random challenge',
+      'surprise me with a weird idea',
+      'generate a plot twist',
+      'create unexpected scenario',
+      'give me a creative challenge'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateCsv',
     name: 'Generate CSV',
     description: 'Generate CSV data files',
