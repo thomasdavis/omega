@@ -175,7 +175,7 @@ export const generateAnimeMangaTool = tool({
 
   The manga page must include at least 2 funny or expressive panels with humor, reactions, or entertaining moments.
 
-  Optionally posts to Discord and can reference GitHub issues.`,
+  Always posts to Discord automatically and can reference GitHub issues.`,
   inputSchema: z.object({
     scenario: z
       .string()
@@ -206,38 +206,41 @@ export const generateAnimeMangaTool = tool({
       .number()
       .optional()
       .describe('Optional GitHub issue number to reference in the manga'),
-    postToDiscord: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe('Whether to post the generated manga page to Discord'),
   }),
-  execute: async ({ scenario, style, panelCount, conversationParticipants, includeUserIds, issueNumber, postToDiscord }) => {
+  execute: async ({ scenario, style, panelCount, conversationParticipants, includeUserIds, issueNumber }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 
     try {
+      console.log('🎨 [generateAnimeManga] Starting manga generation...');
+      console.log(`📊 [generateAnimeManga] Style: ${style}, Panels: ${panelCount}`);
+      console.log(`📝 [generateAnimeManga] Scenario: ${scenario.substring(0, 100)}...`);
+
       // Merge conversation participants with explicit user IDs
       let allUserIds = [...(includeUserIds || [])];
+      console.log(`👥 [generateAnimeManga] Initial includeUserIds:`, includeUserIds);
 
       // Look up user IDs from conversation participants (usernames)
       if (conversationParticipants && conversationParticipants.length > 0) {
-        console.log(`Looking up ${conversationParticipants.length} conversation participants:`, conversationParticipants);
+        console.log(`🔍 [generateAnimeManga] Looking up ${conversationParticipants.length} conversation participants:`, conversationParticipants);
         const participantUserIds = await getUserProfilesByUsernames(conversationParticipants);
-        console.log(`Found ${participantUserIds.length} user profiles for participants`);
+        console.log(`✅ [generateAnimeManga] Found ${participantUserIds.length} user profiles for participants:`, participantUserIds);
         allUserIds = [...allUserIds, ...participantUserIds];
       }
 
       // Remove duplicates
       allUserIds = [...new Set(allUserIds)];
+      console.log(`🎭 [generateAnimeManga] Total unique user IDs after merge:`, allUserIds);
 
       // Get character descriptions if we have users
       let characterDescriptions = '';
       if (allUserIds.length > 0) {
-        console.log(`Including ${allUserIds.length} users as manga characters`);
+        console.log(`👤 [generateAnimeManga] Loading character profiles for ${allUserIds.length} users...`);
         const validProfiles = await getUserCharacters(allUserIds);
+        console.log(`✅ [generateAnimeManga] Loaded ${validProfiles.length} valid character profiles`);
 
         if (validProfiles.length > 0) {
+          console.log(`📋 [generateAnimeManga] Character profiles:`, validProfiles.map(p => ({ username: p.username, appearance: p.appearance?.substring(0, 50) || 'No appearance' })));
           characterDescriptions = `\n\nMANGA CHARACTERS (based on real conversation participants):
 ${validProfiles.map((profile, i) => `
 Character ${i + 1}: ${profile.username}
@@ -256,6 +259,7 @@ IMPORTANT: Draw these specific people as manga characters in the panels! Use the
       let issueTitle = '';
       let issueUrl = '';
       if (issueNumber && GITHUB_TOKEN) {
+        console.log(`🔗 [generateAnimeManga] Fetching GitHub issue #${issueNumber}...`);
         try {
           const issueResponse = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO}/issues/${issueNumber}`,
@@ -272,18 +276,22 @@ IMPORTANT: Draw these specific people as manga characters in the panels! Use the
             const issue: any = await issueResponse.json();
             issueTitle = issue.title;
             issueUrl = issue.html_url;
+            console.log(`✅ [generateAnimeManga] Loaded issue #${issueNumber}: ${issueTitle}`);
             issueContext = `\n\nGitHub Issue #${issueNumber} Context:
 Title: ${issueTitle}
 Body: ${issue.body || 'No description'}
 
 Incorporate this issue as part of the manga narrative.`;
+          } else {
+            console.warn(`⚠️ [generateAnimeManga] Failed to fetch issue #${issueNumber}: ${issueResponse.status} ${issueResponse.statusText}`);
           }
         } catch (error) {
-          console.warn('Failed to fetch issue details:', error);
+          console.warn('❌ [generateAnimeManga] Error fetching issue details:', error);
         }
       }
 
       // Build the comprehensive manga generation prompt
+      console.log(`📝 [generateAnimeManga] Building manga prompt with style guidance...`);
       const styleGuidance = getStyleGuidance(style);
 
       const mangaPrompt = `CREATE A VERTICAL ANIME MANGA PAGE
@@ -337,49 +345,76 @@ WHAT TO AVOID:
 
 Generate a professional, authentic vertical manga page that captures the essence of ${style} manga storytelling with humor and visual flair!`;
 
+      console.log(`🎨 [generateAnimeManga] Generating manga image with Gemini (prompt length: ${mangaPrompt.length} chars)...`);
+
       // Generate the manga page
       const imageResult = await generateImageWithGemini({
         prompt: mangaPrompt,
       });
 
       if (!imageResult || !imageResult.success) {
+        console.error(`❌ [generateAnimeManga] Failed to generate manga:`, imageResult?.error);
         return {
           success: false,
           error: imageResult?.error || 'Failed to generate manga page',
         };
       }
 
-      // Post to Discord if requested
+      console.log(`✅ [generateAnimeManga] Manga image generated successfully!`);
+      console.log(`📁 [generateAnimeManga] Image path: ${imageResult.imagePath}`);
+      console.log(`📦 [generateAnimeManga] Image buffer size: ${imageResult.imageBuffer?.length || 0} bytes`);
+
+      // Always post to Discord
       let discordPosted = false;
-      if (postToDiscord && imageResult.imageBuffer) {
+      console.log(`📤 [generateAnimeManga] Posting manga to Discord...`);
+
+      if (imageResult.imageBuffer) {
         const DISCORD_COMIC_WEBHOOK_URL = process.env.DISCORD_COMIC_WEBHOOK_URL;
 
-        if (issueNumber && issueTitle && issueUrl) {
-          // Post with issue context
-          const discordResult = await postComicToDiscord(
-            imageResult.imageBuffer,
-            issueNumber,
-            issueTitle,
-            issueUrl
-          );
-          discordPosted = discordResult.success;
-        } else if (DISCORD_COMIC_WEBHOOK_URL) {
-          // Post with generic message
-          const { sendDiscordWebhook } = await import('../services/discordWebhookService.js');
-          const result = await sendDiscordWebhook(DISCORD_COMIC_WEBHOOK_URL, {
-            content: `📖 Generated a new ${style} manga page with ${panelCount} panels!`,
-            files: [
-              {
-                name: `manga-${style}-${Date.now()}.png`,
-                data: imageResult.imageBuffer,
-              },
-            ],
-          });
-          discordPosted = result.success;
+        if (!DISCORD_COMIC_WEBHOOK_URL) {
+          console.warn(`⚠️ [generateAnimeManga] DISCORD_COMIC_WEBHOOK_URL not configured, skipping Discord post`);
+        } else {
+          if (issueNumber && issueTitle && issueUrl) {
+            // Post with issue context
+            console.log(`📤 [generateAnimeManga] Posting to Discord with issue #${issueNumber} context...`);
+            const discordResult = await postComicToDiscord(
+              imageResult.imageBuffer,
+              issueNumber,
+              issueTitle,
+              issueUrl
+            );
+            discordPosted = discordResult.success;
+            if (discordPosted) {
+              console.log(`✅ [generateAnimeManga] Successfully posted manga to Discord (with issue context)`);
+            } else {
+              console.error(`❌ [generateAnimeManga] Failed to post manga to Discord:`, discordResult.error);
+            }
+          } else {
+            // Post with generic message
+            console.log(`📤 [generateAnimeManga] Posting to Discord with generic message...`);
+            const { sendDiscordWebhook } = await import('../services/discordWebhookService.js');
+            const result = await sendDiscordWebhook(DISCORD_COMIC_WEBHOOK_URL, {
+              content: `📖 Generated a new ${style} manga page with ${panelCount} panels!`,
+              files: [
+                {
+                  name: `manga-${style}-${Date.now()}.png`,
+                  data: imageResult.imageBuffer,
+                },
+              ],
+            });
+            discordPosted = result.success;
+            if (discordPosted) {
+              console.log(`✅ [generateAnimeManga] Successfully posted manga to Discord`);
+            } else {
+              console.error(`❌ [generateAnimeManga] Failed to post manga to Discord:`, result.error);
+            }
+          }
         }
+      } else {
+        console.warn(`⚠️ [generateAnimeManga] No image buffer available, skipping Discord post`);
       }
 
-      return {
+      const result = {
         success: true,
         message: `Vertical ${style} manga page generated successfully with ${panelCount} panels${discordPosted ? ' and posted to Discord' : ''}`,
         imagePath: imageResult.imagePath,
@@ -391,7 +426,19 @@ Generate a professional, authentic vertical manga page that captures the essence
         issueUrl: issueUrl || undefined,
         availableStyles: Array.from(MANGA_STYLES),
       };
+
+      console.log(`🎉 [generateAnimeManga] Manga generation complete!`, {
+        success: true,
+        style,
+        panelCount,
+        charactersIncluded: allUserIds.length,
+        discordPosted,
+        issueNumber,
+      });
+
+      return result;
     } catch (error) {
+      console.error(`❌ [generateAnimeManga] Error during manga generation:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error generating manga',
