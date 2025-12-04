@@ -148,7 +148,42 @@ _Unfiltered conversation history for full context._`;
             'X-GitHub-Api-Version': '2022-11-28',
           },
           body: JSON.stringify({
-            body: `@claude please implement this request following the project's coding standards.`,
+            body: `@claude please implement this request. Take your time and follow these guidelines:
+
+**Research & Understanding:**
+- Thoroughly explore the codebase to understand existing patterns and architecture
+- Read relevant files completely before making changes
+- Identify similar implementations and follow their patterns
+- Use the Explore agent if you need to understand how something works
+
+**Implementation:**
+- Follow the project's coding standards and conventions (check CLAUDE.md for guidance)
+- Ensure type safety - all code must pass TypeScript checks
+- Write clean, maintainable code with clear variable names
+- Add comments only where logic isn't self-evident
+- Keep changes focused on the requirements - avoid over-engineering
+- Don't add unnecessary features, abstractions, or "improvements" beyond what was asked
+
+**Testing & Validation:**
+- Run \`pnpm type-check\` to ensure no TypeScript errors
+- Run \`pnpm build\` to verify everything compiles
+- Test the implementation locally if possible
+- Ensure no breaking changes to existing functionality
+
+**Before Submitting:**
+- Review all changes carefully
+- Make sure the PR description clearly explains what was implemented and why
+- Verify that your implementation matches the acceptance criteria
+- Ensure all CI checks will pass
+
+**Quality Standards:**
+- Prioritize correctness over speed
+- If requirements are unclear, ask questions before implementing
+- Follow existing file structure and naming conventions
+- Ensure proper error handling at system boundaries (user input, external APIs)
+- Trust internal code and framework guarantees
+
+Take as long as you need to do this properly. Quality over speed.`,
           }),
         });
 
