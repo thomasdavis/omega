@@ -90,6 +90,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   generateSonnet: { path: './tools/generateSonnet.js', exportName: 'generateSonnetTool' },
   generateHaiku: { path: './tools/generateHaiku.js', exportName: 'generateHaikuTool' },
   generatePersonalizedPoem: { path: './tools/generatePersonalizedPoem.js', exportName: 'generatePersonalizedPoemTool' },
+  generateUnexpectedEvent: { path: './tools/generateUnexpectedEvent.js', exportName: 'generateUnexpectedEventTool' },
   generateCsv: { path: './tools/generateCsv.js', exportName: 'generateCsvTool' },
   csvToChart: { path: './tools/csvToChart.js', exportName: 'csvToChartTool' },
   generateSongLyrics: { path: './tools/generateSongLyrics.js', exportName: 'generateSongLyricsTool' },
