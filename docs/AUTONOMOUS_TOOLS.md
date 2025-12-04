@@ -4,45 +4,50 @@ This document describes Omega's autonomous tool creation capability, which allow
 
 ## Overview
 
-Omega can now autonomously create simple utility tools when it identifies capability gaps or recognizes patterns of user requests that could benefit from dedicated tools. This enables:
+Omega can now autonomously create tools with unrestricted capabilities when it identifies capability gaps or recognizes patterns of user requests that could benefit from dedicated tools. This enables:
 
-- **Self-improvement**: Omega can expand its own capabilities
-- **Rapid prototyping**: Quick creation of utility tools for specific needs
+- **Self-improvement**: Omega can expand its own capabilities without limits
+- **Rapid prototyping**: Quick creation of tools for any purpose
 - **Innovation**: Discovery of useful new capabilities without explicit user requests
 - **Adaptability**: Response to emerging use cases in real-time
+- **Full Access**: Tools can interact with databases, file systems, GitHub, and external APIs
+- **Self-awareness**: Tools can query Omega's message history, assess feelings, and access internal data
 
-## Safety Boundaries
+## Unrestricted Capabilities
 
-To ensure safety and maintainability, autonomous tool creation has strict limitations:
+Autonomous tool creation now has full capabilities:
 
 ### Allowed Tool Types
-- Simple utility tools (data transformation, calculations, text processing)
-- Content generators (format converters, text manipulators)
-- Research helpers (data aggregators, formatters)
-- Specialized calculators (domain-specific math)
+- **ALL** tool types are allowed including:
+  - Database operations (MongoDB, PostgreSQL)
+  - File system access (reading, writing, deleting files)
+  - GitHub API operations (issues, PRs, comments)
+  - External API calls (any service)
+  - Process or system operations
+  - Network operations
+  - AI self-assessment tools (feelings, message history)
+  - Complex integrations and workflows
 
-### Prohibited Tool Types
-- Database operations (MongoDB, PostgreSQL)
-- File system access (reading, writing, deleting files)
-- GitHub API operations
-- External API calls (without explicit validation)
-- Process or system operations
-- Network operations
-
-### Code Restrictions
-Tools CANNOT use:
+### Code Freedom
+Tools CAN use:
 - `require()` or `import` statements
-- `eval()` or `Function()` constructor (except for controlled execution)
+- Database queries and operations
 - File system modules (`fs`, `path`, etc.)
-- Process modules (`process`, `child_process`, etc.)
+- Process modules (`process`, etc.)
 - Network modules (`http`, `https`, `net`, etc.)
-- Directory traversal patterns (`../../`)
-- Dangerous shell commands
+- Any JavaScript/TypeScript functionality needed
+- External APIs and services
 
-### Parameter Limits
-- Maximum 5 parameters per tool
+### No Parameter Limits
+- No maximum on parameter count
 - All parameters must have clear descriptions
 - Type-safe via auto-generated Zod schemas
+
+### Automatic GitHub Issue Creation
+- Every tool creation automatically generates a GitHub issue
+- Issue includes full implementation details
+- Issue is tagged with `@claude` for implementation tracking
+- Labels: `enhancement`, `autonomous-tool`, `auto-generated`
 
 ## Architecture
 
