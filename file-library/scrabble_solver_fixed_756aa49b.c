@@ -70,11 +70,11 @@ void generate_jumble(char* jumble, int length) {
 
 // Function to compare words by score (for sorting)
 int compare_by_score(const void* a, const void* b) {
-    const char** word_a = (const char**)a;
-    const char** word_b = (const char**)b;
-    int score_a = calculate_score(*word_a);
-    int score_b = calculate_score(*word_b);
-    return score_b - score_a; // Note: reversed for descending order
+    const char* word_a = (const char*)a;
+    const char* word_b = (const char*)b;
+    int score_a = calculate_score(word_a);
+    int score_b = calculate_score(word_b);
+    return score_a - score_b; // Ascending order (lowest to highest)
 }
 
 int main(int argc, char* argv[]) {
@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
         strncpy(jumble, argv[1], MAX_JUMBLE_LENGTH);
         jumble[MAX_JUMBLE_LENGTH] = '\0';
     } else {
-        generate_jumble(jumble, 6); // Generate a 6-letter jumble
+        generate_jumble(jumble, 7); // Generate a 7-letter jumble
     }
     
     printf("Jumble: %s\n", jumble);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[]) {
     // Sort words by score
     qsort(valid_words, valid_count, sizeof(char[MAX_WORD_LENGTH]), compare_by_score);
     
-    printf("\nBest words (highest scoring at bottom):\n");
+    printf("\nBest words (lowest to highest score):\n");
     for (int i = 0; i < valid_count; i++) {
         int score = calculate_score(valid_words[i]);
         printf("%s (score: %d)\n", valid_words[i], score);
