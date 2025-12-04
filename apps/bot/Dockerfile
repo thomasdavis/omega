@@ -30,10 +30,14 @@ RUN pnpm build --filter=bot
 # Production image
 FROM node:22-alpine
 
-# Install OpenSSL compatibility for Prisma + FluidSynth for audio rendering
-RUN apk add --no-cache openssl libc6-compat fluidsynth
+# Install OpenSSL compatibility for Prisma + FluidSynth for audio rendering + curl for downloads
+RUN apk add --no-cache openssl libc6-compat fluidsynth curl
 
 RUN npm install -g pnpm@9.0.0
+
+# Download SoundFont during build (148MB, too large for Git)
+RUN mkdir -p /app/assets/soundfonts && \
+    curl -L -o /app/assets/soundfonts/grand_piano.sf2 "https://github.com/urish/cinto/raw/master/media/FluidR3%20GM.sf2"
 
 WORKDIR /app
 
