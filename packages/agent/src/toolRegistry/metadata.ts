@@ -1104,6 +1104,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateAnimeManga',
+    name: 'Generate Anime Manga',
+    description: 'Generate vertical anime-style manga pages with multiple tiled panels, authentic Japanese manga art styles, and character integration',
+    keywords: ['anime', 'manga', 'comic', 'japanese', 'vertical', 'panel', 'generate', 'art', 'shonen', 'shoujo', 'seinen', 'josei', 'isekai', 'mecha', 'tile', 'page'],
+    tags: ['content', 'image', 'manga', 'anime', 'comic'],
+    examples: [
+      'generate anime manga',
+      'create manga page',
+      'make anime comic',
+      'generate vertical manga',
+      'create shonen manga',
+      'make shoujo manga page',
+      'generate isekai manga'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateStarSign',
     name: 'Generate Star Sign',
     description: 'Generate astrological readings and horoscopes',
