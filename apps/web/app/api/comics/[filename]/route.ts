@@ -4,12 +4,11 @@ import { join } from 'path';
 
 /**
  * Get the comics directory path
- * Reads from bot's public/comics directory in the monorepo
+ * Reads from web app's public/comics directory
  */
 function getComicsDir(): string {
-  // In production, the bot's public folder is in the same repo structure
-  // Railway builds from repo root, so we can access ../bot/public/comics
-  return join(process.cwd(), '../bot/public/comics');
+  // Next.js public directory
+  return join(process.cwd(), 'public/comics');
 }
 
 export async function GET(

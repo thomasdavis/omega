@@ -138,7 +138,7 @@ export function getComicsDir(localFallback?: string): string {
   }
 
   // Default local fallback path
-  const fallback = localFallback || join(process.cwd(), 'apps/bot/public/comics');
+  const fallback = localFallback || join(process.cwd(), 'apps/web/public/comics');
   if (!existsSync(fallback)) {
     mkdirSync(fallback, { recursive: true });
   }

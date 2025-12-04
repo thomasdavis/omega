@@ -176,11 +176,11 @@ jobs:
         run: |
           echo "::group::Committing comic to repository"
           # Check if any comics were generated
-          if [ -d "apps/bot/public/comics" ] && [ "$(ls -A apps/bot/public/comics)" ]; then
+          if [ -d "apps/web/public/comics" ] && [ "$(ls -A apps/web/public/comics)" ]; then
             echo "ℹ️ Comics found, preparing to commit"
 
             # Add all comics
-            git add apps/bot/public/comics/*.png
+            git add apps/web/public/comics/*.png
 
             # Check if there are changes to commit
             if ! git diff --cached --quiet; then
