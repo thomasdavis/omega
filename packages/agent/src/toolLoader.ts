@@ -44,7 +44,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   mongoListIndexes: { path: '@repo/database', exportName: 'mongoListIndexesTool' },
   mongoDropIndex: { path: '@repo/database', exportName: 'mongoDropIndexTool' },
 
-  // PostgreSQL tools (14) - imported from @repo/database
+  // PostgreSQL tools (15) - imported from @repo/database
   pgQuery: { path: '@repo/database', exportName: 'pgQueryTool' },
   pgInsert: { path: '@repo/database', exportName: 'pgInsertTool' },
   pgSelect: { path: '@repo/database', exportName: 'pgSelectTool' },
@@ -55,6 +55,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgCreateTable: { path: '@repo/database', exportName: 'pgCreateTableTool' },
   pgDropTable: { path: '@repo/database', exportName: 'pgDropTableTool' },
   pgDescribeTable: { path: '@repo/database', exportName: 'pgDescribeTableTool' },
+  pgDescribeSchema: { path: '@repo/database', exportName: 'pgDescribeSchemaTool' },
   pgCreateIndex: { path: '@repo/database', exportName: 'pgCreateIndexTool' },
   pgListIndexes: { path: '@repo/database', exportName: 'pgListIndexesTool' },
   pgDropIndex: { path: '@repo/database', exportName: 'pgDropIndexTool' },
