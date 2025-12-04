@@ -441,8 +441,11 @@ ${characterDatabase}${screenplaySection}
      * Varied body types: slim, average, athletic, stocky (all adult proportions)
      * Realistic clothing that fits adult bodies
      * Expressive but mature facial features 
-   - ** FUNNY:**
-     * Sometimes when you make funny tiles use one of these styles regardless of the rules
+   - ** FUNNY TILES (REQUIRED):**
+     * Each comic MUST contain at least 2 funny tiles using one of these styles (regardless of other rules)
+     * Mix and match different styles across panels for maximum comedic variety
+     * The weirder the style shift, the funnier it often is
+
      1. Stick Figure / MS Paint Style
      2. Crayon / Child's Drawing
      3. Corporate Memphis / Tech Art
@@ -473,6 +476,16 @@ ${characterDatabase}${screenplaySection}
      28. Soviet Propaganda Poster
      29. Ransom Note / Cut-Out Letters
      30. Dashboard Warning Light / Car Manual Icon
+     31. Windows XP Error Dialog / Blue Screen
+     32. Police Lineup Mugshot / Height Chart
+     33. Airport Security X-Ray Scanner
+     34. 1990s Clipart / WordArt
+     35. Medical Diagram / Gray's Anatomy
+     36. Vintage Pulp Magazine Cover / Lurid Colors
+     37. Assembly Instructions / LEGO Manual
+     38. Tarot Card / Mystical Symbolism
+     39. Food Network / Cooking Show Screenshot
+     40. Bob Ross / Happy Little Accidents Painting
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
    - Include ALL distinct users mentioned or involved in the PR/issue/conversation
