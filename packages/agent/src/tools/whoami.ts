@@ -21,7 +21,6 @@ export const whoamiTool = tool({
         'Answer questions and provide explanations',
         'Search the web for information',
         'Perform calculations',
-        'Execute code in 42+ programming languages (dynamically fetched from Unsandbox API)',
         'Write research essays with citations',
         'Create ASCII graphs and visualizations',
         'Generate interactive artifacts (HTML, SVG) with shareable preview links',
@@ -49,7 +48,6 @@ export const whoamiTool = tool({
           githubCreateIssue: 'Create GitHub issues for feature requests and improvements - simply tell me what you\'d like to see added or changed, and I\'ll create a properly formatted issue on the repository',
         },
         advancedTools: {
-          unsandbox: 'Execute code in a sandboxed environment - supports 42+ programming languages (dynamically fetched from Unsandbox API) including JavaScript, Python, TypeScript, Ruby, Go, Rust, Java, C++, C, PHP, Bash, and many more',
           researchEssay: 'Conduct comprehensive research and write well-structured essays with citations - customizable length, style, and depth',
           asciiGraph: 'Generate text-based data visualizations (bar charts, line graphs) perfect for Discord',
           artifact: 'Create interactive web artifacts (HTML pages, SVG graphics, Markdown docs) with shareable preview links - perfect for demos, visualizations, and rich content',
