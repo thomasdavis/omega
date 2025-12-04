@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^2.0.67",
-    "@ax-llm/ax": "^2.3.1",
+    "@ax-llm/ax": "^15.0.8",
     "@google/generative-ai": "^0.21.0",
     "@octokit/rest": "^21.0.0",
     "@repo/database": "workspace:*",

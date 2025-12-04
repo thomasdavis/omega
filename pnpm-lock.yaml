@@ -229,6 +229,9 @@ importers:
       '@ai-sdk/openai':
         specifier: ^2.0.67
         version: 2.0.67(zod@3.25.76)
+      '@ax-llm/ax':
+        specifier: ^15.0.8
+        version: 15.0.8
       '@google/generative-ai':
         specifier: ^0.21.0
         version: 0.21.0
@@ -478,6 +481,9 @@ packages:
 
   '@antfu/utils@9.3.0':
     resolution: {integrity: sha512-9hFT4RauhcUzqOE4f1+frMKLZrgNog5b06I7VmZQV1BkvwvqrbC8EBZf3L1eEL2AKb6rNKjER0sEvJiSP1FXEA==}
+
+  '@ax-llm/ax@15.0.8':
+    resolution: {integrity: sha512-jQnosobeW/Zrn5fxAlMKgd+hH1i81cGMMOLXx0ZE2C69+jf9+9gACIntIz+lCtgMbTAAySiV7SGNFPdew9BEcg==}
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -6783,6 +6789,11 @@ snapshots:
   '@antfu/utils@8.1.1': {}
 
   '@antfu/utils@9.3.0': {}
+
+  '@ax-llm/ax@15.0.8':
+    dependencies:
+      '@opentelemetry/api': 1.9.0
+      dayjs: 1.11.19
 
   '@babel/code-frame@7.27.1':
     dependencies:

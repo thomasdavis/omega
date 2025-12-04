@@ -7,7 +7,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { ai, ax } from '@ax-llm/ax';
-import { OMEGA_MODEL } from '@repo/shared';
 
 export const sentimentClassificationTool = tool({
   description: `Classify the sentiment of text as positive, negative, or neutral using AI.
@@ -41,18 +40,19 @@ export const sentimentClassificationTool = tool({
         };
       }
 
-      // Configure Ax with OpenAI
-      const program = new ax.Agent({
-        name: 'sentiment-classifier',
-        description: 'Analyze the given text and determine its sentiment. Consider the overall emotional tone, word choice, and context to classify the sentiment as positive, negative, or neutral.',
-        signature: 'review:string -> sentiment:"positive" | "negative" | "neutral"',
-        ai: ai({
-          apiKey: process.env.OPENAI_API_KEY,
-          model: OMEGA_MODEL,
-        }),
+      // Initialize AI client with OpenAI
+      const llm = ai({
+        name: 'openai',
+        apiKey: process.env.OPENAI_API_KEY,
       });
 
-      const result = await program.forward({ review });
+      // Create sentiment classifier agent with signature
+      const classifier = ax(
+        'review:string -> sentiment:class "positive, negative, neutral"'
+      );
+
+      // Execute the classifier
+      const result = await classifier.forward(llm, { review });
 
       console.log(`   Sentiment classified as: ${result.sentiment}`);
 
