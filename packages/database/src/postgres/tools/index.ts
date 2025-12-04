@@ -20,3 +20,6 @@ export { analyzeMessageWordsTool } from './analyzeMessageWords.js';
 
 // Todo List CRUD tools
 export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoTool } from './todoList/index.js';
+
+// Script Storage CRUD tools
+export { createScriptTool, listScriptsTool, getScriptTool, updateScriptTool, deleteScriptTool } from './scriptStorage/index.js';
