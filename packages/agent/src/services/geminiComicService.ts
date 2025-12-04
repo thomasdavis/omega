@@ -442,9 +442,9 @@ ${characterDatabase}${screenplaySection}
      * Realistic clothing that fits adult bodies
      * Expressive but mature facial features 
    - ** FUNNY:**
-     * Sometimes when you make funny tiles use one of these styles regardless of the rules 
+     * Sometimes when you make funny tiles use one of these styles regardless of the rules
      1. Stick Figure / MS Paint Style
-     2. Crayon / Child’s Drawing
+     2. Crayon / Child's Drawing
      3. Corporate Memphis / Tech Art
      4. IKEA Manual / Warning Label
      5. The "SpongeBob" Gross-Up
@@ -463,6 +463,16 @@ ${characterDatabase}${screenplaySection}
      18. Renaissance Oil Painting
      19. Abstract / Cubism
      20. Political Cartoon / Caricature
+     21. Infomercial Screenshot / "Before & After"
+     22. Security Camera Footage / CCTV Grainy
+     23. Courtroom Sketch Artist
+     24. Cave Painting / Primitive Art
+     25. Anime "Emotional Breakdown" (Speed Lines & Chibi)
+     26. Victorian Etching / Penny Dreadful
+     27. Egyptian Hieroglyphics
+     28. Soviet Propaganda Poster
+     29. Ransom Note / Cut-Out Letters
+     30. Dashboard Warning Light / Car Manual Icon
 4. **CHARACTER SELECTION FROM DATABASE:**
    - Review the complete character database above
    - Include ALL distinct users mentioned or involved in the PR/issue/conversation
@@ -491,7 +501,7 @@ ${characterDatabase}${screenplaySection}
    - Find the incongruity, absurdity, or irony in THIS specific development scenario
    - Every joke must relate directly to the PR content above
 
-   **10 TYPES OF HUMOR TO EMPLOY:**
+   **20 TYPES OF HUMOR TO EMPLOY:**
    Study these comedy archetypes. Use them as inspiration for crafting original jokes about the PR:
 
    1. **Narrative/Incongruity** - Set up normal situation, then catastrophic misunderstanding
@@ -523,6 +533,36 @@ ${characterDatabase}${screenplaySection}
 
    10. **Dark Humor** - Morbid situations with clever twist
        Example: Doctor diagnoses "Tom Jones Syndrome" - "It's not unusual"
+
+   11. **Self-Deprecation** - Character mocks their own flaws or failures
+       Example: "I asked the gym instructor which machine I should use to impress women. He said 'The ATM outside.'"
+
+   12. **Callback/Brick Joke** - Set up joke early, payoff much later (surprising return)
+       Example: Panel 1 mentions "the button that does nothing", Panel 6 someone presses it with catastrophic results
+
+   13. **Observational Humor** - Point out absurdities in everyday situations
+       Example: "Why do programmers prefer dark mode? Because light attracts bugs."
+
+   14. **Slapstick/Physical Comedy** - Visual pratfalls, exaggerated physical reactions
+       Example: Character confident about code working, immediately trips on cable and crashes server
+
+   15. **Parody/Satire** - Mock well-known tropes or situations
+       Example: "This meeting could have been an async Slack thread" in epic movie trailer style
+
+   16. **Dramatic Irony** - Audience knows something character doesn't
+       Example: Character celebrates fixing bug while merge conflict notification glows ominously behind them
+
+   17. **Cringe Comedy** - Uncomfortable social situations played for laughs
+       Example: Junior dev explaining basic concept to senior who literally wrote the library
+
+   18. **Meta-Humor** - Self-aware jokes about being in a comic/situation
+       Example: "Why are we even in a comic?" "Budget cuts - couldn't afford professional documentation"
+
+   19. **Deadpan/Dry Wit** - Deliver absurd statement with complete seriousness
+       Example: Robot says "I have calculated 847 ways this could fail" while everything is actively on fire
+
+   20. **Surreal/Non-Sequitur** - Random, unexpected element that makes no logical sense
+       Example: Serious coding discussion interrupted by penguin offering sandwiches, everyone acts like it's normal
 
    **APPLYING HUMOR TO THIS PR:**
    - Identify the core premise of this PR (bug fix? feature? refactor?)
