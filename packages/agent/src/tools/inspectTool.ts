@@ -21,9 +21,6 @@ const TOOL_FILE_MAP: Record<string, string> = {
   githubCloseIssue: 'github.ts',
   listRepositoryFiles: 'listRepositoryFiles.ts',
   webFetch: 'webFetch.ts',
-  unsandbox: 'unsandbox.ts',
-  unsandboxSubmit: 'unsandbox.ts',
-  unsandboxStatus: 'unsandbox.ts',
   researchEssay: 'researchEssay.ts',
   asciiGraph: 'asciiGraph.ts',
   renderChart: 'renderChart.ts',
@@ -274,7 +271,7 @@ export const inspectToolTool = tool({
   - "How does the search tool work?"
   - "Inspect the artifact tool"
   - "Analyze the generateHtmlPage tool"
-  - "What does the unsandbox tool do?"`,
+  - "What does the webFetch tool do?"`,
 
   inputSchema: z.object({
     toolName: z.string().describe('Name of the tool to inspect (e.g., "search", "calculator", "artifact")'),

@@ -15,7 +15,6 @@ export { TOOL_METADATA, CORE_TOOLS } from './toolRegistry/metadata.js';
 export { setExportMessageContext, clearExportMessageContext } from './tools/exportConversation.js';
 export { setConversationDiagramContext, clearConversationDiagramContext } from './tools/conversationDiagram.js';
 export { setSlidevMessageContext, clearSlidevMessageContext } from './tools/conversationToSlidev.js';
-export { setUnsandboxMessageContext, clearUnsandboxMessageContext } from './tools/unsandbox.js';
 
 // Services (re-export for bot to use)
 export * from './services/userProfileAnalysis.js';

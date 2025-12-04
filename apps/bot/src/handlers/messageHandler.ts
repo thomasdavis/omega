@@ -10,9 +10,7 @@ import {
   setConversationDiagramContext,
   clearConversationDiagramContext,
   setSlidevMessageContext,
-  clearSlidevMessageContext,
-  setUnsandboxMessageContext,
-  clearUnsandboxMessageContext
+  clearSlidevMessageContext
 } from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
@@ -294,11 +292,10 @@ export async function handleMessage(message: Message): Promise<void> {
         }))
       : [];
 
-    // Set message context for export, conversation diagram, slidev, and unsandbox tools
+    // Set message context for export, conversation diagram, and slidev tools
     setExportMessageContext(message);
     setConversationDiagramContext(message);
     setSlidevMessageContext(message);
-    setUnsandboxMessageContext(message);
 
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
@@ -367,7 +364,6 @@ export async function handleMessage(message: Message): Promise<void> {
     clearExportMessageContext();
     clearConversationDiagramContext();
     clearSlidevMessageContext();
-    clearUnsandboxMessageContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
     // Using plain text messages instead of embeds

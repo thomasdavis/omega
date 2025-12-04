@@ -10,7 +10,6 @@ import { z } from 'zod';
 import { readFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { getUnsandboxLanguageCount, formatUnsandboxLanguages } from '../lib/unsandbox/languages.js';
 
 // Get the directory path for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -62,31 +61,6 @@ export const getOmegaManifestTool = tool({
     try {
       const manifest = await loadOmegaManifest();
 
-      // Fetch dynamic language data from Unsandbox API
-      const languageCount = await getUnsandboxLanguageCount();
-      const languageList = await formatUnsandboxLanguages();
-
-      // Update code_execution capability with dynamic language info
-      const codeExecutionCapability = manifest.capabilities?.find(
-        (cap: any) => cap.name === 'code_execution'
-      );
-      if (codeExecutionCapability) {
-        codeExecutionCapability.description = `Execute code in ${languageCount} programming languages (${languageList}) via Unsandbox`;
-      }
-
-      // Update unsandbox tool description with dynamic language info
-      const unsandboxTool = manifest.tools?.find(
-        (tool: any) => tool.name === 'unsandbox'
-      );
-      if (unsandboxTool) {
-        const languageParam = unsandboxTool.parameters?.find(
-          (param: any) => param.name === 'language'
-        );
-        if (languageParam) {
-          languageParam.description = `Programming language (${languageList})`;
-        }
-      }
-
       if (params.format === 'summary') {
         // Return a summary view with key information
         return {
@@ -104,7 +78,6 @@ export const getOmegaManifestTool = tool({
             personality: manifest.personality?.tone,
             platform: manifest.metadata?.platform,
             deployment: manifest.metadata?.deployment,
-            supportedLanguages: languageCount,
           },
           capabilities: manifest.capabilities?.map((cap: any) => cap.name) || [],
           tools: manifest.tools?.map((tool: any) => tool.name) || [],
@@ -118,8 +91,6 @@ export const getOmegaManifestTool = tool({
         manifest,
         jsonString: JSON.stringify(manifest, null, 2),
         specificationUrl: 'https://jsonagents.org/',
-        languageCount,
-        languages: languageList,
       };
     } catch (error) {
       return {

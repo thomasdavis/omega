@@ -21,7 +21,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   search: { path: './tools/search.js', exportName: 'searchTool' },
   calculator: { path: './tools/calculator.js', exportName: 'calculatorTool' },
   artifact: { path: './tools/artifact.js', exportName: 'artifactTool' },
-  unsandbox: { path: './tools/unsandbox.js', exportName: 'unsandboxTool' },
   webFetch: { path: './tools/webFetch.js', exportName: 'webFetchTool' },
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },
   generateHtmlPage: { path: './tools/generateHtmlPage.js', exportName: 'generateHtmlPageTool' },
@@ -168,8 +167,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
   psychoAnalysis: { path: './tools/psychoAnalysis.js', exportName: 'psychoAnalysisTool' },
   psychoHistory: { path: './tools/psychoHistory.js', exportName: 'psychoHistoryTool' },
-  unsandboxSubmit: { path: './tools/unsandbox.js', exportName: 'unsandboxSubmitTool' },
-  unsandboxStatus: { path: './tools/unsandbox.js', exportName: 'unsandboxStatusTool' },
 
   // Autonomous tool management
   createToolAutonomously: { path: './tools/createToolAutonomously.js', exportName: 'createToolAutonomouslyTool' },
