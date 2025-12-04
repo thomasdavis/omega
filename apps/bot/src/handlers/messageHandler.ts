@@ -24,10 +24,13 @@ import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 
 export async function handleMessage(message: Message): Promise<void> {
-  // Ignore bot messages (including our own)
-  if (message.author.bot) {
+  // Ignore our own messages to prevent infinite loops
+  if (message.author.id === message.client.user?.id) {
     return;
   }
+
+  // Allow messages from other bots (like uncloseai) to be processed
+  // This enables bot-to-bot interaction in the channel
 
   // Fetch recent message history FIRST (for shouldRespond decision context)
   let messageHistory: Array<{ username: string; content: string; timestamp?: number }> = [];
