@@ -1,23 +1,12 @@
-name: Claude Code Review
+name: Claude - Code Review
 
 on:
   pull_request:
     types: [opened, synchronize]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
 
 jobs:
-  claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-
+  review-code-changes:
+    name: Review Code Changes with Claude
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -51,7 +40,24 @@ jobs:
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
 
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
           claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
 
+      - name: Review Summary
+        if: always()
+        run: |
+          echo "::group::Review Summary"
+          echo "## 🔍 Claude Code Review Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Reviewed by:** Claude Code" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.claude-review.outcome }}" == "success" ]; then
+            echo "✅ Review completed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::Claude Code review completed for PR #${{ github.event.pull_request.number }}"
+          else
+            echo "⚠️ Review may have encountered issues" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Claude Code review had issues for PR #${{ github.event.pull_request.number }}"
+          fi
+          echo "::endgroup::"

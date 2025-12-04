@@ -1,0 +1,235 @@
+name: Claude - Retry Failed CI
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Deploy (Main)", "CI - Pull Request Checks"]
+    types: [completed]
+
+jobs:
+  retry-with-claude:
+    name: Retry Failed CI with Claude
+    runs-on: ubuntu-latest
+
+    # Only run when CI fails
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Get PR info
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Getting PR information");
+            const run = context.payload.workflow_run;
+            console.log(`ℹ️ Workflow run ID: ${run.id}`);
+            console.log(`ℹ️ Workflow: ${run.name}`);
+            console.log(`ℹ️ Conclusion: ${run.conclusion}`);
+
+            const prs = await github.rest.actions.listWorkflowRunPullRequests({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+
+            if (prs.data.length === 0) {
+              console.log("::endgroup::");
+              core.setFailed("❌ No PR associated with this workflow run.");
+              return;
+            }
+
+            const pr = prs.data[0];
+            core.setOutput("number", pr.number);
+            core.setOutput("ref", pr.head.ref);
+            console.log(`✅ Found PR #${pr.number} (branch: ${pr.head.ref})`);
+            console.log("::endgroup::");
+
+      - name: Check if PR created by Claude
+        id: claude_origin
+        run: |
+          echo "::group::Checking PR origin"
+          BRANCH="${{ steps.pr.outputs.ref }}"
+          echo "ℹ️ Branch: $BRANCH"
+
+          if [[ "$BRANCH" == claude/* || "$BRANCH" == claude-* ]]; then
+            echo "is_claude=true" >> $GITHUB_OUTPUT
+            echo "✅ This is a Claude-created branch"
+          else
+            echo "is_claude=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Not a Claude branch - skipping retry"
+          fi
+          echo "::endgroup::"
+
+      - name: Stop if PR is not from Claude
+        if: steps.claude_origin.outputs.is_claude == 'false'
+        run: |
+          echo "::notice::Skipping retry - PR is not from Claude"
+          echo "📋 DECISION: Only Claude-created PRs are auto-retried"
+
+      - name: Count existing Claude retry comments
+        id: retry
+        if: steps.claude_origin.outputs.is_claude == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Counting retry attempts");
+            const prNumber = ${{ steps.pr.outputs.number }};
+            const { owner, repo } = context.repo;
+
+            console.log(`ℹ️ Checking PR #${prNumber} for existing retry comments`);
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: prNumber }
+            );
+
+            const retryComments = comments.filter(c =>
+              c.body.includes("[claude-retry]")
+            );
+
+            const count = retryComments.length;
+            core.setOutput("count", count);
+            console.log(`📊 Found ${count} previous retry attempt(s)`);
+            console.log("::endgroup::");
+
+      - name: Stop if Claude retry limit reached
+        if: steps.claude_origin.outputs.is_claude == 'true' && steps.retry.outputs.count >= 5
+        run: |
+          echo "::warning::Max retries (5) reached - stopping further Claude triggers"
+          echo "📋 DECISION: Retry limit reached, manual intervention required"
+          echo "ℹ️ PR #${{ steps.pr.outputs.number }} has reached maximum auto-retry attempts"
+
+      - name: Extract failing build/lint jobs
+        id: failures
+        if: steps.claude_origin.outputs.is_claude == 'true' && steps.retry.outputs.count < 5
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Extracting failure information");
+            const run = context.payload.workflow_run;
+
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+            });
+
+            const failed = jobs.data.jobs.filter(
+              (j) =>
+                j.conclusion === "failure" &&
+                (j.name.toLowerCase().includes("build") ||
+                 j.name.toLowerCase().includes("lint") ||
+                 j.name.toLowerCase().includes("type") ||
+                 j.name.toLowerCase().includes("test"))
+            );
+
+            console.log(`ℹ️ Total jobs: ${jobs.data.jobs.length}`);
+            console.log(`❌ Failed build/lint/test jobs: ${failed.length}`);
+
+            if (failed.length === 0) {
+              console.log("::endgroup::");
+              core.setFailed("CI failed but not on build/lint/type/test jobs.");
+              return;
+            }
+
+            let summary = "";
+            for (const job of failed) {
+              console.log(`📋 Failed job: ${job.name}`);
+              summary += `### ❌ Job: ${job.name}\n\n`;
+              summary += `**Status:** ${job.conclusion}\n`;
+              summary += `**Duration:** ${Math.round((new Date(job.completed_at) - new Date(job.started_at)) / 1000)}s\n\n`;
+              summary += "**Failed steps:**\n";
+
+              const failedSteps = job.steps?.filter(s => s.conclusion === 'failure') || [];
+              if (failedSteps.length > 0) {
+                for (const step of failedSteps) {
+                  summary += `- ❌ ${step.name}\n`;
+                }
+              } else {
+                summary += "- (No specific step information available)\n";
+              }
+              summary += `\n[View full logs](${job.html_url})\n\n`;
+            }
+
+            core.setOutput("summary", summary);
+            console.log("✅ Failure summary extracted");
+            console.log("::endgroup::");
+
+      - name: Ask Claude to fix CI
+        if: steps.claude_origin.outputs.is_claude == 'true' && steps.retry.outputs.count < 5
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Posting Claude retry comment");
+            const pr = ${{ steps.pr.outputs.number }};
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const summary = `${{ steps.failures.outputs.summary }}`;
+            const attempt = Number(${{ steps.retry.outputs.count }}) + 1;
+
+            console.log(`ℹ️ Creating retry comment on PR #${pr}`);
+            console.log(`ℹ️ Attempt ${attempt} of 5`);
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pr,
+              body: `[claude-retry] 🔄 **Attempt ${attempt} of 5**
+
+@claude please fix the failing CI checks.
+
+## Failed Jobs
+
+${summary}
+
+## What to do
+
+1. Review the failing jobs and their logs
+2. Identify the root cause of each failure
+3. Fix the issues in the code
+4. Run type checks and build locally to verify
+5. Push a new commit with the fixes
+
+The CI will automatically re-run when you push changes.`
+            });
+
+            console.log("✅ Claude retry comment posted");
+            console.log(`::notice::Posted retry comment on PR #${pr} (attempt ${attempt}/5)`);
+            console.log("::endgroup::");
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "::group::Workflow Summary"
+          echo "## 🔄 Claude Retry Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Conclusion:** ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ -n "${{ steps.pr.outputs.number }}" ]; then
+            echo "**PR:** #${{ steps.pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Branch:** \`${{ steps.pr.outputs.ref }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.claude_origin.outputs.is_claude }}" != "true" ]; then
+            echo "⏭️ **Skipped** - Not a Claude-created PR" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::Skipped retry - not a Claude PR"
+          elif [ "${{ steps.retry.outputs.count }}" -ge 5 ]; then
+            echo "🛑 **Stopped** - Max retry limit (5) reached" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Max retry attempts reached for PR #${{ steps.pr.outputs.number }}"
+          elif [ "${{ job.status }}" == "success" ]; then
+            ATTEMPT=$(( ${{ steps.retry.outputs.count }} + 1 ))
+            echo "✅ **Retry Triggered** - Attempt $ATTEMPT of 5" >> $GITHUB_STEP_SUMMARY
+            echo "**Action:** @claude comment posted to PR #${{ steps.pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::Claude retry triggered for PR #${{ steps.pr.outputs.number }} (attempt $ATTEMPT/5)"
+          else
+            echo "❌ **Failed** - Check logs for details" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Claude retry workflow had issues"
+          fi
+          echo "::endgroup::"

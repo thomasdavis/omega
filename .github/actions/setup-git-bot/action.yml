@@ -1,0 +1,14 @@
+name: Configure Git for Bot
+description: Configures git with github-actions bot identity for commits
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Git
+      shell: bash
+      run: |
+        echo "::group::Configuring Git identity"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        echo "✅ Git configured with bot identity"
+        echo "::endgroup::"

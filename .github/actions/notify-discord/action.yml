@@ -1,0 +1,60 @@
+name: Send Discord Notification
+description: Sends a formatted embed notification to Discord via webhook
+
+inputs:
+  webhook-url:
+    description: Discord webhook URL
+    required: true
+  title:
+    description: Embed title
+    required: true
+  description:
+    description: Embed description/message
+    required: false
+    default: ''
+  color:
+    description: Embed color (decimal format)
+    required: false
+    default: '3447003'
+  url:
+    description: URL to link the embed to
+    required: false
+    default: ''
+  fields:
+    description: JSON array of fields (optional)
+    required: false
+    default: '[]'
+
+runs:
+  using: composite
+  steps:
+    - name: Send Discord notification
+      shell: bash
+      run: |
+        echo "::group::Sending Discord notification"
+        echo "📤 Sending notification: ${{ inputs.title }}"
+
+        # Build the JSON payload
+        PAYLOAD=$(cat <<EOF
+        {
+          "embeds": [{
+            "title": "${{ inputs.title }}",
+            "description": "${{ inputs.description }}",
+            "color": ${{ inputs.color }}
+            $(if [ -n "${{ inputs.url }}" ]; then echo ', "url": "${{ inputs.url }}"'; fi)
+            $(if [ "${{ inputs.fields }}" != "[]" ]; then echo ', "fields": ${{ inputs.fields }}'; fi)
+          }]
+        }
+        EOF
+        )
+
+        # Send to Discord
+        if curl -X POST "${{ inputs.webhook-url }}" \
+          -H "Content-Type: application/json" \
+          -d "$PAYLOAD" \
+          --silent --fail; then
+          echo "✅ Discord notification sent successfully"
+        else
+          echo "::warning::Failed to send Discord notification"
+        fi
+        echo "::endgroup::"

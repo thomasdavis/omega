@@ -1,14 +1,13 @@
-name: Generate Comic on PR Merge
+name: Comic - Generate on Merge
 
 on:
   pull_request:
     types: [closed]
 
 jobs:
-  generate-comic:
-    # Only run when PR is merged (not just closed)
+  generate-and-post-comic:
+    name: Generate and Post Comic
     if: github.event.pull_request.merged == true
-    name: Generate Comic and Post to Discord
     runs-on: ubuntu-latest
 
     steps:
@@ -17,20 +16,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          echo "::group::Installing dependencies"
+          pnpm install --frozen-lockfile
+          echo "::endgroup::"
 
       - name: Generate comic and post to Discord + Twitter
+        id: generate
+        continue-on-error: true
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
@@ -44,14 +41,17 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           OMEGA_API_URL: ${{ secrets.OMEGA_API_URL || 'https://omega-vu7a.onrailway.app' }}
-          # Twitter credentials (optional - workflow continues if not set)
           TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
           TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
           TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
         run: |
+          echo "::group::Generating comic for PR #${{ github.event.pull_request.number }}"
+          echo "ℹ️ PR: ${{ github.event.pull_request.title }}"
+          echo "ℹ️ Author: ${{ github.event.pull_request.user.login }}"
           cd apps/bot
           npx tsx scripts/generate-pr-comic.ts
+          echo "::endgroup::"
 
       - name: Upload comic as artifact
         if: always()
@@ -62,7 +62,7 @@ jobs:
           retention-days: 30
           if-no-files-found: warn
 
-      - name: Comment on PR with comic generation result
+      - name: Comment on PR with result
         if: always()
         uses: actions/github-script@v7
         with:
@@ -104,10 +104,15 @@ jobs:
               body: comment
             });
 
-      - name: Workflow summary
+      - name: Workflow Summary
         if: always()
         run: |
+          echo "::group::Comic Generation Summary"
           echo "## 🎨 Comic Generation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Title:** ${{ github.event.pull_request.title }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.generate.outcome }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -f "apps/bot/comic-result.json" ]; then
@@ -115,3 +120,10 @@ jobs:
           else
             echo "❌ No result file generated" >> $GITHUB_STEP_SUMMARY
           fi
+
+          if [ "${{ steps.generate.outcome }}" == "success" ]; then
+            echo "::notice::Comic generated successfully for PR #${{ github.event.pull_request.number }}"
+          else
+            echo "::warning::Comic generation had issues for PR #${{ github.event.pull_request.number }}"
+          fi
+          echo "::endgroup::"

@@ -1,4 +1,4 @@
-name: Auto-Create Claude Code PR
+name: Claude - Create Pull Request
 
 on:
   push:
@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  create-pr:
-    name: Create PR from Claude Code branch
+  create-pull-request:
+    name: Create Pull Request from Claude Branch
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -25,18 +25,18 @@ jobs:
           ref: ${{ github.ref }}
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Setup Git for Bot
+        uses: ./.github/actions/setup-git-bot
 
       - name: Check if PR already exists
         id: check-pr
         env:
           GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
+          echo "::group::Checking for existing PR"
           BRANCH_NAME="${GITHUB_REF#refs/heads/}"
           echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "ℹ️ Branch: $BRANCH_NAME"
 
           # Check if a PR already exists for this branch
           PR_COUNT=$(gh pr list --head "$BRANCH_NAME" --json number --jq 'length')
@@ -46,26 +46,30 @@ jobs:
             PR_NUMBER=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number')
             echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "✅ PR already exists: #$PR_NUMBER"
+            echo "::notice::PR already exists: #$PR_NUMBER"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "No existing PR found, will create one"
+            echo "ℹ️ No existing PR found, will create one"
           fi
+          echo "::endgroup::"
 
       - name: Extract issue number from branch
         if: steps.check-pr.outputs.exists == 'false'
         id: extract-issue
         run: |
+          echo "::group::Extracting issue number"
           BRANCH_NAME="${{ steps.check-pr.outputs.branch }}"
           # Extract issue number from branch name like claude/issue-42-timestamp
           ISSUE_NUMBER=$(echo "$BRANCH_NAME" | sed -n 's/.*issue-\([0-9]\+\).*/\1/p')
 
           if [ -z "$ISSUE_NUMBER" ]; then
-            echo "⚠️  Could not extract issue number from branch name: $BRANCH_NAME"
+            echo "⚠️ Could not extract issue number from branch name: $BRANCH_NAME"
             echo "number=" >> $GITHUB_OUTPUT
           else
             echo "number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
             echo "✅ Extracted issue number: #$ISSUE_NUMBER"
           fi
+          echo "::endgroup::"
 
       - name: Fetch issue details
         if: steps.check-pr.outputs.exists == 'false' && steps.extract-issue.outputs.number != ''
@@ -73,52 +77,47 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
+          echo "::group::Fetching issue details"
           ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
           ISSUE_TITLE=$(gh issue view "$ISSUE_NUMBER" --json title --jq '.title')
 
           if [ -z "$ISSUE_TITLE" ]; then
-            echo "⚠️  Could not fetch title for issue #$ISSUE_NUMBER"
+            echo "⚠️ Could not fetch title for issue #$ISSUE_NUMBER"
             echo "title=Claude Code Implementation" >> $GITHUB_OUTPUT
           else
             echo "title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
             echo "✅ Issue title: $ISSUE_TITLE"
           fi
+          echo "::endgroup::"
 
-      - name: Setup Node.js
+      - name: Setup Node.js and pnpm
         if: steps.check-pr.outputs.exists == 'false'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        if: steps.check-pr.outputs.exists == 'false'
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.0.0
+        uses: ./.github/actions/setup-node-pnpm
 
       - name: Merge main and resolve conflicts
         if: steps.check-pr.outputs.exists == 'false'
         continue-on-error: true
         run: |
-          echo "Fetching latest main branch..."
+          echo "::group::Merging main branch"
+          echo "ℹ️ Fetching latest main branch..."
           git fetch origin main
 
-          echo "Attempting to merge main into current branch..."
+          echo "ℹ️ Attempting to merge main into current branch..."
           if git merge origin/main --no-edit; then
             echo "✅ Merged main successfully without conflicts"
           else
-            echo "⚠️  Merge conflicts detected, auto-resolving..."
+            echo "::warning::Merge conflicts detected, auto-resolving..."
 
             # Get list of conflicted files
             CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
 
             if [ -n "$CONFLICTED_FILES" ]; then
-              echo "Conflicted files:"
+              echo "⚠️ Conflicted files:"
               echo "$CONFLICTED_FILES"
 
               # Resolve conflicts by preferring Claude's changes (ours)
               for file in $CONFLICTED_FILES; do
-                echo "Resolving conflict in $file (keeping Claude's version)..."
+                echo "🔧 Resolving conflict in $file (keeping Claude's version)..."
                 git checkout --ours "$file"
                 git add "$file"
               done
@@ -128,42 +127,47 @@ jobs:
               echo "✅ Auto-resolved conflicts and committed"
             fi
           fi
+          echo "::endgroup::"
 
       - name: Fix pnpm lockfile if needed
         if: steps.check-pr.outputs.exists == 'false'
         continue-on-error: true
         run: |
+          echo "::group::Checking lockfile integrity"
           if [ -f "pnpm-lock.yaml" ]; then
-            echo "Checking pnpm lockfile integrity..."
+            echo "ℹ️ Checking pnpm lockfile integrity..."
 
             if pnpm install --frozen-lockfile 2>&1 | grep -q "ERR_PNPM"; then
-              echo "⚠️  Lockfile out of sync, regenerating..."
+              echo "::warning::Lockfile out of sync, regenerating..."
               pnpm install --no-frozen-lockfile
 
               if git diff --quiet pnpm-lock.yaml; then
                 echo "✅ Lockfile is now in sync"
               else
-                echo "Committing updated lockfile..."
+                echo "🔧 Committing updated lockfile..."
                 git add pnpm-lock.yaml
-                git commit -m "Fix pnpm lockfile"
+                git commit -m "chore: fix pnpm lockfile"
                 echo "✅ Lockfile updated and committed"
               fi
             else
               echo "✅ Lockfile is valid"
             fi
           fi
+          echo "::endgroup::"
 
       - name: Push updates if any
         if: steps.check-pr.outputs.exists == 'false'
         continue-on-error: true
         run: |
+          echo "::group::Pushing updates"
           if git diff --quiet origin/${{ steps.check-pr.outputs.branch }}; then
-            echo "No changes to push"
+            echo "ℹ️ No changes to push"
           else
-            echo "Pushing merge and lockfile updates..."
+            echo "📤 Pushing merge and lockfile updates..."
             git push origin HEAD
             echo "✅ Pushed updates"
           fi
+          echo "::endgroup::"
 
       - name: Create Pull Request
         if: steps.check-pr.outputs.exists == 'false'
@@ -171,6 +175,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.CLAUDE_PAT }}
         run: |
+          echo "::group::Creating pull request"
           BRANCH_NAME="${{ steps.check-pr.outputs.branch }}"
           ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
           ISSUE_TITLE="${{ steps.issue-details.outputs.title }}"
@@ -211,7 +216,7 @@ jobs:
           🤖 Generated by Omega Bot"
 
           # Create the PR
-          echo "Creating pull request..."
+          echo "📝 Creating pull request..."
           PR_URL=$(gh pr create \
             --title "$PR_TITLE" \
             --body "$PR_BODY" \
@@ -222,10 +227,9 @@ jobs:
 
           echo "url=$PR_URL" >> $GITHUB_OUTPUT
           echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "✅ Created PR #$PR_NUMBER: $PR_URL"
-
-      # Auto-merge is now handled by auto-merge-claude.yml after CI passes
-      # This ensures we only merge if type checks, lints, and builds succeed
+          echo "✅ Created PR #$PR_NUMBER"
+          echo "::notice::Created PR #$PR_NUMBER: $PR_URL"
+          echo "::endgroup::"
 
       - name: Notify Discord of PR creation
         if: steps.check-pr.outputs.exists == 'false' && steps.create-pr.outputs.url != ''
@@ -233,6 +237,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          echo "::group::Sending Discord notification"
           PR_URL="${{ steps.create-pr.outputs.url }}"
           PR_NUMBER="${{ steps.create-pr.outputs.number }}"
           ISSUE_NUMBER="${{ steps.extract-issue.outputs.number }}"
@@ -266,12 +271,14 @@ jobs:
                 \"footer\": {\"text\": \"Omega Bot\"},
                 \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%S.000Z)\"
               }]
-            }" || echo "Failed to send Discord notification"
+            }" && echo "✅ Discord notification sent" || echo "::warning::Failed to send Discord notification"
+          echo "::endgroup::"
 
-      - name: Summary
+      - name: Workflow Summary
         if: always()
         run: |
-          echo "## 🤖 Auto-Create Claude PR Summary" >> $GITHUB_STEP_SUMMARY
+          echo "::group::Workflow Summary"
+          echo "## 🤖 Claude PR Creation Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ "${{ steps.check-pr.outputs.exists }}" == "true" ]; then
@@ -289,12 +296,13 @@ jobs:
 
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-            echo "1. ⏳ CI checks will run (type check, lint, build)" >> $GITHUB_STEP_SUMMARY
-            echo "2. ✅ If checks pass, auto-merge will be enabled automatically" >> $GITHUB_STEP_SUMMARY
-            echo "3. 🔧 If checks fail, @claude will be tagged to fix issues" >> $GITHUB_STEP_SUMMARY
-            echo "4. 🚀 Deployment will trigger automatically after merge" >> $GITHUB_STEP_SUMMARY
+            echo "1. ⏳ CI checks will run" >> $GITHUB_STEP_SUMMARY
+            echo "2. ✅ Auto-merge if checks pass" >> $GITHUB_STEP_SUMMARY
+            echo "3. 🔧 @claude tagged if checks fail" >> $GITHUB_STEP_SUMMARY
+            echo "4. 🚀 Auto-deploy after merge" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **PR Creation Failed**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Check the logs above for error details." >> $GITHUB_STEP_SUMMARY
           fi
+          echo "::endgroup::"

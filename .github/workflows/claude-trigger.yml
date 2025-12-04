@@ -1,0 +1,78 @@
+name: Claude - Trigger Entry Point
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request:
+    types: [labeled]
+
+jobs:
+  trigger-claude-code:
+    name: Trigger Claude Code
+    runs-on: ubuntu-latest
+
+    # Run if comment contains @claude OR issue body contains @claude OR label is claude-fix-needed
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'claude-fix-needed')
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log trigger information
+        run: |
+          echo "::group::Trigger Information"
+          echo "📋 Event: ${{ github.event_name }}"
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "📝 Comment on issue/PR #${{ github.event.issue.number }}"
+            echo "👤 By: ${{ github.event.comment.user.login }}"
+          elif [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
+            echo "📝 Review comment on PR #${{ github.event.pull_request.number }}"
+            echo "👤 By: ${{ github.event.comment.user.login }}"
+          elif [ "${{ github.event_name }}" == "issues" ]; then
+            echo "🆕 New issue #${{ github.event.issue.number }}"
+            echo "👤 By: ${{ github.event.issue.user.login }}"
+          elif [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "🏷️ Label added to PR #${{ github.event.pull_request.number }}"
+            echo "🏷️ Label: ${{ github.event.label.name }}"
+          fi
+          echo "::notice::Claude Code triggered via ${{ github.event_name }}"
+          echo "::endgroup::"
+
+      - name: Run Claude Code
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Execution Summary
+        if: always()
+        run: |
+          echo "::group::Execution Summary"
+          echo "## 🤖 Claude Code Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ${{ steps.claude.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.claude.outcome }}" == "success" ]; then
+            echo "✅ Claude Code executed successfully" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::Claude Code completed successfully"
+          else
+            echo "⚠️ Claude Code execution had issues" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Claude Code execution had issues"
+          fi
+          echo "::endgroup::"

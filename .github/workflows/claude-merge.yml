@@ -1,0 +1,253 @@
+name: Claude - Auto-Merge PRs
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Deploy (Main)", "CI - Pull Request Checks"]
+    types: [completed]
+
+jobs:
+  merge-pr-after-ci:
+    name: Merge PR After CI Passes
+    runs-on: ubuntu-latest
+
+    # Only run if CI workflow succeeded
+    if: github.event.workflow_run.conclusion == 'success'
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Get PR number
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Getting PR information");
+            console.log(`ℹ️ Workflow: ${context.payload.workflow_run.name}`);
+            console.log(`ℹ️ Branch: ${context.payload.workflow_run.head_branch}`);
+
+            const pulls = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.payload.workflow_run.head_branch}`,
+              state: 'open'
+            });
+
+            if (pulls.data.length === 0) {
+              console.log('⏭️ No open PR found for this branch');
+              console.log("::endgroup::");
+              return;
+            }
+
+            const pr = pulls.data[0];
+            core.setOutput('number', pr.number);
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('body', pr.body || '');
+            core.setOutput('title', pr.title || '');
+
+            console.log(`✅ Found PR #${pr.number}: ${pr.title}`);
+            console.log("::endgroup::");
+
+      - name: Check if Claude PR
+        id: check_claude
+        if: steps.pr.outputs.number != ''
+        run: |
+          echo "::group::Checking PR origin"
+          HEAD_REF="${{ steps.pr.outputs.head_ref }}"
+          echo "ℹ️ Branch: $HEAD_REF"
+
+          if [[ "$HEAD_REF" == claude/* ]]; then
+            echo "is_claude=true" >> $GITHUB_OUTPUT
+            echo "✅ This is a Claude-created PR"
+          else
+            echo "is_claude=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Not a Claude PR - skipping auto-merge"
+          fi
+          echo "::endgroup::"
+
+      - name: Check if PR is linked to an issue
+        id: check_issue
+        if: steps.check_claude.outputs.is_claude == 'true'
+        env:
+          PR_BODY: ${{ steps.pr.outputs.body }}
+        run: |
+          echo "::group::Checking issue linkage"
+          echo "ℹ️ Checking if PR body contains issue reference"
+
+          if echo "$PR_BODY" | grep -qiE "(fixes|closes|resolves) #[0-9]+"; then
+            echo "linked=true" >> $GITHUB_OUTPUT
+            echo "✅ PR is linked to an issue"
+            ISSUE_NUM=$(echo "$PR_BODY" | grep -oiE "(fixes|closes|resolves) #([0-9]+)" | grep -oE "[0-9]+" | head -1)
+            echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+            echo "ℹ️ Linked issue: #$ISSUE_NUM"
+          else
+            echo "linked=false" >> $GITHUB_OUTPUT
+            echo "⏭️ PR is not linked to an issue - skipping auto-merge"
+            echo "::notice::PR #${{ steps.pr.outputs.number }} not auto-merged - not linked to issue"
+          fi
+          echo "::endgroup::"
+
+      - name: Merge PR
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "::group::Merging PR"
+          PR_NUMBER="${{ steps.pr.outputs.number }}"
+
+          echo "✅ All conditions met for auto-merge"
+          echo "ℹ️ PR #$PR_NUMBER"
+          echo "ℹ️ Branch: ${{ steps.pr.outputs.head_ref }}"
+          echo "ℹ️ Linked issue: #${{ steps.check_issue.outputs.issue_number }}"
+
+          echo "🔀 Merging PR..."
+          gh pr merge "$PR_NUMBER" \
+            --repo ${{ github.repository }} \
+            --squash \
+            --delete-branch
+
+          echo "✅ PR #$PR_NUMBER merged successfully!"
+          echo "::notice::Auto-merged PR #$PR_NUMBER (closes #${{ steps.check_issue.outputs.issue_number }})"
+          echo "::endgroup::"
+
+      - name: Checkout repository
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Git for Bot
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        uses: ./.github/actions/setup-git-bot
+
+      - name: Setup Node.js and pnpm
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install dependencies
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        run: |
+          echo "::group::Installing dependencies"
+          echo "ℹ️ Installing with frozen lockfile"
+          pnpm install --frozen-lockfile
+          echo "✅ Dependencies installed"
+          echo "::endgroup::"
+
+      - name: Build agent package
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        run: |
+          echo "::group::Building agent package"
+          echo "ℹ️ Building @repo/agent package"
+          pnpm build --filter=@repo/agent
+          echo "✅ Agent package built"
+          echo "::endgroup::"
+
+      - name: Generate Comic
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        continue-on-error: true
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ secrets.DISCORD_CHANNEL_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_AUTHOR: ${{ github.actor }}
+          PR_URL: https://github.com/${{ github.repository }}/pull/${{ steps.pr.outputs.number }}
+          TWITTER_API_KEY: ${{ secrets.TWITTER_API_KEY }}
+          TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
+          TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
+          TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+        run: |
+          echo "::group::Generating comic"
+          echo "ℹ️ PR #${{ steps.pr.outputs.number }}: ${{ steps.pr.outputs.title }}"
+          cd apps/bot
+          if npx tsx scripts/generate-pr-comic.ts; then
+            echo "✅ Comic generated successfully"
+          else
+            echo "⚠️ Comic generation failed, but continuing..."
+            echo "::warning::Comic generation failed for PR #${{ steps.pr.outputs.number }}"
+          fi
+          echo "::endgroup::"
+
+      - name: Commit Comic to Repository
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        continue-on-error: true
+        run: |
+          echo "::group::Committing comic to repository"
+          # Check if any comics were generated
+          if [ -d "apps/bot/public/comics" ] && [ "$(ls -A apps/bot/public/comics)" ]; then
+            echo "ℹ️ Comics found, preparing to commit"
+
+            # Add all comics
+            git add apps/bot/public/comics/*.png
+
+            # Check if there are changes to commit
+            if ! git diff --cached --quiet; then
+              echo "📝 Committing comic..."
+              git commit -m "feat: Add generated comic for PR #${{ steps.pr.outputs.number }}" -m "Comic generated via Gemini API and posted to Discord." -m "🤖 Generated by Omega Bot"
+
+              # Pull with rebase to avoid conflicts, then push
+              if git pull --rebase origin main; then
+                git push origin main
+                echo "✅ Comic committed to repository"
+                echo "::notice::Comic for PR #${{ steps.pr.outputs.number }} committed to main"
+              else
+                echo "⚠️ Rebase failed, aborting push"
+                echo "::warning::Failed to push comic for PR #${{ steps.pr.outputs.number }}"
+                git rebase --abort
+              fi
+            else
+              echo "ℹ️ No new comics to commit"
+            fi
+          else
+            echo "⚠️ No comics directory or no comics generated"
+          fi
+          echo "::endgroup::"
+
+      - name: Comment on PR
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            console.log("::group::Posting merge comment");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.pr.outputs.number }},
+              body: '✅ **CI checks passed!** This PR has been automatically merged and deployed.'
+            });
+            console.log("✅ Comment posted");
+            console.log("::endgroup::");
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "::group::Workflow Summary"
+          echo "## 🔀 Auto-Merge Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.event.workflow_run.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.event.workflow_run.head_branch }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**CI Result:** ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -z "${{ steps.pr.outputs.number }}" ]; then
+            echo "⏭️ **Skipped** - No open PR found for branch" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check_claude.outputs.is_claude }}" != "true" ]; then
+            echo "⏭️ **Skipped** - Not a Claude-created PR" >> $GITHUB_STEP_SUMMARY
+            echo "**PR:** #${{ steps.pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.check_issue.outputs.linked }}" != "true" ]; then
+            echo "⏭️ **Skipped** - PR not linked to an issue" >> $GITHUB_STEP_SUMMARY
+            echo "**PR:** #${{ steps.pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **PR Merged Successfully**" >> $GITHUB_STEP_SUMMARY
+            echo "**PR:** #${{ steps.pr.outputs.number }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Issue:** #${{ steps.check_issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Title:** ${{ steps.pr.outputs.title }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Post-Merge Actions" >> $GITHUB_STEP_SUMMARY
+            echo "- 🎨 Comic generation attempted" >> $GITHUB_STEP_SUMMARY
+            echo "- 💬 Success comment posted" >> $GITHUB_STEP_SUMMARY
+            echo "::notice::Auto-merged and deployed PR #${{ steps.pr.outputs.number }}"
+          fi
+          echo "::endgroup::"

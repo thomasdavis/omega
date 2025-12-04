@@ -1,4 +1,4 @@
-name: PR Notifications to Discord
+name: Notify - Discord PR Events
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   notify-pr-created:
-    name: Notify Discord - PR Created
+    name: Notify PR Created
     runs-on: ubuntu-latest
     if: github.event.action == 'opened' && github.event.pull_request.user.login == 'claude-code[bot]'
 
@@ -14,9 +14,12 @@ jobs:
       - name: Extract issue number from PR body
         id: extract_issue
         run: |
+          echo "::group::Extracting issue number"
           PR_BODY="${{ github.event.pull_request.body }}"
           ISSUE_NUM=$(echo "$PR_BODY" | grep -oiE "(fixes|closes|resolves) #([0-9]+)" | grep -oE "[0-9]+" | head -1)
           echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+          echo "ℹ️ Extracted issue number: #$ISSUE_NUM"
+          echo "::endgroup::"
 
       - name: Send Discord notification
         uses: tsickert/discord-webhook@v6.0.0
@@ -34,8 +37,19 @@ jobs:
           embed-color: 3447003
           embed-url: ${{ github.event.pull_request.html_url }}
 
+      - name: Notification Summary
+        run: |
+          echo "::group::Notification Summary"
+          echo "## 📢 Discord Notification Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** PR Created" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Issue:** #${{ steps.extract_issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Discord notified of PR #${{ github.event.pull_request.number }} creation"
+          echo "::endgroup::"
+
   notify-pr-merged:
-    name: Notify Discord - PR Merged
+    name: Notify PR Merged
     runs-on: ubuntu-latest
     if: github.event.action == 'closed' && github.event.pull_request.merged == true
 
@@ -43,14 +57,20 @@ jobs:
       - name: Extract issue number from PR body
         id: extract_issue
         run: |
+          echo "::group::Extracting issue number"
           PR_BODY="${{ github.event.pull_request.body }}"
           ISSUE_NUM=$(echo "$PR_BODY" | grep -oiE "(fixes|closes|resolves) #([0-9]+)" | grep -oE "[0-9]+" | head -1)
           echo "issue_number=$ISSUE_NUM" >> $GITHUB_OUTPUT
+          echo "ℹ️ Extracted issue number: #$ISSUE_NUM"
+          echo "::endgroup::"
 
       - name: Get commit info
         id: commit
         run: |
+          echo "::group::Getting commit info"
           echo "sha=$(echo ${{ github.event.pull_request.merge_commit_sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
+          echo "ℹ️ Merge commit: $(echo ${{ github.event.pull_request.merge_commit_sha }} | cut -c1-7)"
+          echo "::endgroup::"
 
       - name: Send Discord notification
         uses: tsickert/discord-webhook@v6.0.0
@@ -63,8 +83,20 @@ jobs:
             **Merged by:** ${{ github.event.pull_request.merged_by.login }}
             **Commit:** `${{ steps.commit.outputs.sha }}`
 
-            Changes are being deployed to Fly.io...
+            Changes are being deployed to Railway...
 
             [View PR](${{ github.event.pull_request.html_url }})
           embed-color: 3066993
           embed-url: ${{ github.event.pull_request.html_url }}
+
+      - name: Notification Summary
+        run: |
+          echo "::group::Notification Summary"
+          echo "## 📢 Discord Notification Sent" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** PR Merged" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Issue:** #${{ steps.extract_issue.outputs.issue_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Merged by:** ${{ github.event.pull_request.merged_by.login }}" >> $GITHUB_STEP_SUMMARY
+          echo "::notice::Discord notified of PR #${{ github.event.pull_request.number }} merge"
+          echo "::endgroup::"

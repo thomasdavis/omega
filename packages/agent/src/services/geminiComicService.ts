@@ -377,49 +377,6 @@ function buildComicPrompt(
       layoutDescription = `${frameCount} panels in a clear grid layout`;
   }
 
-  // 20% chance to include chibi/SD educational tile
-  const includeChibiEducationalTile = Math.random() < 0.2;
-
-  const chibiTileInstructions = includeChibiEducationalTile
-    ? `
-
-**SPECIAL INSTRUCTION - CHIBI/SD EDUCATIONAL TILE (Active for this comic):**
-
-You MUST include exactly ONE panel that serves as a humorous "ChatGPT explanation" about the chibi/super-deformed art style. This panel should break the fourth wall and present the following information in a visually distinct way:
-
-**Content to include:**
-\`\`\`
-ChatGPT said:
-
-That effect is usually called "super-deformed" (SD) or "chibi."
-
-💡 What it means
-
-Super-Deformed (SD): The original Japanese/industry term. Characters shrink into tiny, exaggerated, cute versions of themselves—big heads, tiny bodies.
-
-Chibi: The more commonly used fan term today. Same idea: a mini, adorable, simplified version of the character for comedic effect.
-\`\`\`
-
-**How to integrate this tile:**
-- Replace one middle panel (NOT the first or last) with this educational content
-- Style it as an "info card" or "ChatGPT response box" with different background color
-- Make it look like a screenshot or interface element for meta-commentary
-- The panel should naturally flow from a character noticing/using/mentioning chibi art style
-- This creates a "fourth wall break" comedy effect
-- Example integration: Character uses chibi style → Next panel is this ChatGPT explanation → Comic continues
-
-**Visual style for this tile:**
-- Different background (white/light gray like a chat interface)
-- Text-heavy panel with clear typography
-- Icon or avatar for "ChatGPT" if appropriate
-- Border or styling that makes it look like a UI element inserted into the comic
-
-`
-    : '';
-
-  if (includeChibiEducationalTile) {
-    console.log('🎭 Chibi/SD educational tile ENABLED for this comic (20% chance triggered)');
-  }
 
   // Build character database section (raw JSON dump)
   const characterDatabase = buildCharacterDatabaseSection(profilesJson);
@@ -450,7 +407,7 @@ ${filteredContext}
 
 **Character Design - Omega (AI Assistant):**
 ${OMEGA_APPEARANCE}
-${characterDatabase}${screenplaySection}${chibiTileInstructions}
+${characterDatabase}${screenplaySection}
 
 **Instructions:**
 1. Create a comic with EXACTLY ${frameCount} panels based on the conversation complexity.
