@@ -303,6 +303,7 @@ CRITICAL REQUIREMENTS:
 ✓ MUST use authentic Japanese manga conventions
 ✓ MUST be in black and white with professional screentones
 ✓ MUST read from right to left within panels (Japanese style)
+✓ ALL TEXT MUST BE IN ENGLISH - Speech bubbles, dialogue, sound effects, captions
 ✓ Speech bubbles and sound effects required
 
 ${styleGuidance}
@@ -316,8 +317,8 @@ TECHNICAL SPECIFICATIONS:
 - Style: ${style.charAt(0).toUpperCase() + style.slice(1)} manga aesthetic
 - Reading: Right-to-left within panels (Japanese convention)
 - Medium: Black and white linework with screentones
-- Text: Include speech bubbles with dialogue
-- SFX: Japanese-style sound effects (onomatopoeia)
+- Text: Include speech bubbles with dialogue IN ENGLISH
+- SFX: Manga-style sound effects written in ENGLISH (e.g., "BOOM", "WHOOSH", "CRASH")
 - Humor: At least 2 panels must be funny or highly expressive
 
 PANEL COMPOSITION GUIDELINES:
