@@ -31,6 +31,16 @@ export const sentimentClassificationTool = tool({
     try {
       console.log(`🎭 Classifying sentiment for: "${review.substring(0, 50)}..."`);
 
+      // Validate API key is set
+      if (!process.env.OPENAI_API_KEY) {
+        console.error('❌ OPENAI_API_KEY environment variable is not set');
+        return {
+          success: false,
+          review,
+          error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY environment variable.',
+        };
+      }
+
       // Configure Ax with OpenAI
       const program = new ax.Agent({
         name: 'sentiment-classifier',
