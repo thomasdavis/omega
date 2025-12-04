@@ -13,6 +13,7 @@ import {
   clearSlidevMessageContext
 } from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
+import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
@@ -142,6 +143,57 @@ export async function handleMessage(message: Message): Promise<void> {
 
   if (!decision.shouldRespond) {
     return;
+  }
+
+  // INTENT GATE: Check if user reply is interactive (requires action) vs non-interactive (just commenting)
+  // This gate only applies to replies to Omega's messages
+  if (message.reference) {
+    try {
+      const repliedTo = await message.fetchReference();
+      if (repliedTo.author.id === message.client.user!.id) {
+        // User is replying to Omega's message - check intent
+        console.log('   🚪 Running intent gate (user replying to Omega)...');
+        const intentResult = await checkIntentGate(message, messageHistory, repliedTo.content);
+
+        // Store intent gate decision in database for telemetry
+        // This is included in the response decision field for tracking
+        try {
+          await saveHumanMessage({
+            userId: message.author.id,
+            username: message.author.username,
+            channelId: message.channel.id,
+            channelName: channelName,
+            guildId: message.guild?.id,
+            messageContent: message.content,
+            messageId: message.id,
+            responseDecision: {
+              shouldRespond: intentResult.shouldProceed,
+              confidence: intentResult.confidence,
+              reason: `Intent Gate: ${intentResult.reason}`,
+            },
+          });
+        } catch (dbError) {
+          console.error('⚠️  Failed to persist intent gate decision to database:', dbError);
+        }
+
+        if (!intentResult.shouldProceed) {
+          console.log(`   ✋ Intent gate blocked: ${intentResult.reason}`);
+          // Optionally, send a minimal acknowledgment if classification is non-interactive
+          if (intentResult.classification === 'non-interactive' && intentResult.confidence >= 90) {
+            const acknowledgment = '👍'; // Simple thumbs up for non-interactive comments
+            const channel = message.channel;
+            await message.react(acknowledgment);
+            console.log(`   ✅ Sent reaction acknowledgment (non-interactive comment detected)`);
+          }
+          return;
+        } else {
+          console.log(`   ✅ Intent gate passed: ${intentResult.reason}`);
+        }
+      }
+    } catch (refError) {
+      console.log('   ⚠️ Could not fetch referenced message for intent gate - continuing');
+      // Continue without intent gate if we can't fetch the reference
+    }
   }
 
   // If this is an error/deployment failure, trigger CONCERN feeling
