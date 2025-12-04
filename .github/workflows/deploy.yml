@@ -91,12 +91,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
-          gh pr comment "$PR_NUMBER" --body "🔧 **Lockfile Auto-Fixed**
+          gh pr comment "$PR_NUMBER" --body "$(cat <<'EOF'
+          🔧 **Lockfile Auto-Fixed**
 
-The \`pnpm-lock.yaml\` was out of sync with \`package.json\` changes.
+          The pnpm-lock.yaml was out of sync with package.json changes.
 
-✅ Automatically regenerated and committed the lockfile.
-🔄 CI checks will re-run with the updated lockfile."
+          ✅ Automatically regenerated and committed the lockfile.
+          🔄 CI checks will re-run with the updated lockfile.
+          EOF
+          )"
 
       - name: Type check
         run: pnpm type-check
