@@ -11,9 +11,9 @@ import {
   generateImageWithGemini,
   generateComicWithUsers,
 } from '../services/geminiImageService.js';
-import { postComicToDiscord } from '../services/discordWebhookService.js';
+import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
-import { getDatabase } from '@repo/database';// OLD:client.js';
+import { getDatabase } from '@repo/database';
 
 /**
  * Look up user profiles by usernames
@@ -49,7 +49,7 @@ export const generateComicTool = tool({
   CONTEXT USAGE: When creating comics about GitHub issues/PRs, focus primarily on the issue/PR content itself.
   Use conversation history selectively - only include relevant context that enhances the comic, not the entire conversation.
 
-  Optionally posts to Discord.`,
+  Always posts to Discord automatically.`,
   inputSchema: z.object({
     issueNumber: z
       .number()
@@ -71,13 +71,8 @@ export const generateComicTool = tool({
       .describe(
         'Array of Discord user IDs to include as characters in the comic (legacy - prefer conversationParticipants)'
       ),
-    postToDiscord: z
-      .boolean()
-      .optional()
-      .default(true)
-      .describe('Whether to post the generated comic to Discord'),
   }),
-  execute: async ({ issueNumber, customPrompt, conversationParticipants, includeUserIds, postToDiscord }) => {
+  execute: async ({ issueNumber, customPrompt, conversationParticipants, includeUserIds }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 
@@ -90,27 +85,38 @@ export const generateComicTool = tool({
     }
 
     try {
+      console.log('🎨 [generateComic] Starting comic generation...');
+      if (issueNumber) {
+        console.log(`📊 [generateComic] Issue: #${issueNumber}`);
+      } else if (customPrompt) {
+        console.log(`📝 [generateComic] Custom prompt: ${customPrompt.substring(0, 100)}...`);
+      }
+
       // Merge conversation participants with explicit user IDs
       let allUserIds = [...(includeUserIds || [])];
+      console.log(`👥 [generateComic] Initial includeUserIds:`, includeUserIds);
 
       // Look up user IDs from conversation participants (usernames)
       if (conversationParticipants && conversationParticipants.length > 0) {
-        console.log(`Looking up ${conversationParticipants.length} conversation participants:`, conversationParticipants);
+        console.log(`🔍 [generateComic] Looking up ${conversationParticipants.length} conversation participants:`, conversationParticipants);
         const participantUserIds = await getUserProfilesByUsernames(conversationParticipants);
-        console.log(`Found ${participantUserIds.length} user profiles for participants`);
+        console.log(`✅ [generateComic] Found ${participantUserIds.length} user profiles for participants:`, participantUserIds);
         allUserIds = [...allUserIds, ...participantUserIds];
       }
 
       // Remove duplicates
       allUserIds = [...new Set(allUserIds)];
+      console.log(`🎭 [generateComic] Total unique user IDs after merge:`, allUserIds);
 
       let imageResult;
       let issueTitle = '';
       let issueUrl = '';
 
       if (issueNumber) {
+        console.log(`🔗 [generateComic] Fetching GitHub issue #${issueNumber}...`);
         // Fetch issue details from GitHub
         if (!GITHUB_TOKEN) {
+          console.error(`❌ [generateComic] GITHUB_TOKEN not configured`);
           return {
             success: false,
             error: 'GITHUB_TOKEN is not configured',
@@ -129,6 +135,7 @@ export const generateComicTool = tool({
         );
 
         if (!issueResponse.ok) {
+          console.error(`❌ [generateComic] Failed to fetch issue #${issueNumber}: ${issueResponse.status}`);
           return {
             success: false,
             error: `Failed to fetch issue #${issueNumber}: ${issueResponse.status}`,
@@ -139,39 +146,47 @@ export const generateComicTool = tool({
         issueTitle = issue.title;
         issueUrl = issue.html_url;
         const issueBody = issue.body || '';
+        console.log(`✅ [generateComic] Loaded issue #${issueNumber}: ${issueTitle}`);
 
         // Check if we should include users in the issue comic
         if (allUserIds.length > 0) {
-          console.log(`Including ${allUserIds.length} users in issue comic`);
+          console.log(`👤 [generateComic] Loading character profiles for ${allUserIds.length} users...`);
 
           // Fetch user characters using shared module
           const validProfiles = await getUserCharacters(allUserIds);
+          console.log(`✅ [generateComic] Loaded ${validProfiles.length} valid character profiles`);
 
           if (validProfiles.length > 0) {
+            console.log(`🎨 [generateComic] Generating comic from issue WITH ${validProfiles.length} users...`);
             // Generate comic from issue WITH users
             // Focus on the issue itself, not full conversation history
             const scenario = `GitHub Issue #${issueNumber}: ${issueTitle}\n\n${issueBody}`;
             imageResult = await generateComicWithUsers(scenario, validProfiles);
           } else {
+            console.log(`🎨 [generateComic] Generating comic from issue without users (fallback)...`);
             // Generate comic from issue without users (fallback)
             imageResult = await generateComicFromIssue(issueTitle, issueBody, issueNumber);
           }
         } else {
+          console.log(`🎨 [generateComic] Generating comic from issue without users...`);
           // Generate comic from issue without users
           imageResult = await generateComicFromIssue(issueTitle, issueBody, issueNumber);
         }
       } else if (customPrompt) {
         // Check if we should include users
         if (allUserIds.length > 0) {
-          console.log(`Including ${allUserIds.length} users in custom prompt comic`);
+          console.log(`👤 [generateComic] Loading character profiles for ${allUserIds.length} users...`);
 
           // Fetch user characters using shared module
           const validProfiles = await getUserCharacters(allUserIds);
+          console.log(`✅ [generateComic] Loaded ${validProfiles.length} valid character profiles`);
 
           if (validProfiles.length > 0) {
+            console.log(`🎨 [generateComic] Generating comic with ${validProfiles.length} users...`);
             // Generate comic with users
             imageResult = await generateComicWithUsers(customPrompt, validProfiles);
           } else {
+            console.log(`🎨 [generateComic] Generating comic without users (no valid profiles)...`);
             // No valid profiles, generate without users
             const comicPrompt = `Create a humorous comic illustration:
 
@@ -187,6 +202,7 @@ Make it entertaining!`;
             });
           }
         } else {
+          console.log(`🎨 [generateComic] Generating comic from custom prompt without users...`);
           // Generate from custom prompt without users
           const comicPrompt = `Create a humorous comic illustration:
 
@@ -204,56 +220,84 @@ Make it entertaining!`;
       }
 
       if (!imageResult || !imageResult.success) {
+        console.error(`❌ [generateComic] Failed to generate comic:`, imageResult?.error);
         return {
           success: false,
           error: imageResult?.error || 'Failed to generate image',
         };
       }
 
-      // Post to Discord if requested and we have an image buffer
-      let discordPosted = false;
-      if (postToDiscord && imageResult.imageBuffer) {
-        if (issueNumber) {
-          const discordResult = await postComicToDiscord(
-            imageResult.imageBuffer,
-            issueNumber,
-            issueTitle,
-            issueUrl
-          );
+      console.log(`✅ [generateComic] Comic generated successfully!`);
+      console.log(`📁 [generateComic] Image path: ${imageResult.imagePath}`);
+      console.log(`📦 [generateComic] Image buffer size: ${imageResult.imageBuffer?.length || 0} bytes`);
 
-          if (discordResult.success) {
-            discordPosted = true;
-          } else {
-            console.warn('Failed to post to Discord:', discordResult.error);
-          }
+      // Always post to Discord using Discord client
+      let discordPosted = false;
+      let discordMessageId: string | undefined;
+      console.log(`📤 [generateComic] Posting comic to Discord...`);
+
+      if (imageResult.imageBuffer) {
+        const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
+        const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+
+        if (!DISCORD_BOT_TOKEN) {
+          console.warn(`⚠️ [generateComic] DISCORD_BOT_TOKEN not configured, skipping Discord post`);
+        } else if (!DISCORD_CHANNEL_ID) {
+          console.warn(`⚠️ [generateComic] DISCORD_CHANNEL_ID not configured, skipping Discord post`);
         } else {
-          // For custom prompts, post with generic message
-          const DISCORD_COMIC_WEBHOOK_URL = process.env.DISCORD_COMIC_WEBHOOK_URL;
-          if (DISCORD_COMIC_WEBHOOK_URL) {
-            const { sendDiscordWebhook } = await import('../services/discordWebhookService.js');
-            const result = await sendDiscordWebhook(DISCORD_COMIC_WEBHOOK_URL, {
-              content: '🎨 Generated a new comic!',
-              files: [
-                {
-                  name: `comic-${Date.now()}.png`,
-                  data: imageResult.imageBuffer,
-                },
-              ],
-            });
-            discordPosted = result.success;
+          // Build content message
+          let content = `🎨 **Comic Generated**\n`;
+          if (issueNumber && issueTitle) {
+            content += `🔗 **Issue #${issueNumber}:** ${issueTitle}\n${issueUrl}`;
+          } else if (customPrompt) {
+            content += `Custom prompt: ${customPrompt.substring(0, 100)}${customPrompt.length > 100 ? '...' : ''}`;
+          }
+          content += `\nCharacters: ${allUserIds.length}`;
+
+          console.log(`📤 [generateComic] Posting to Discord channel ${DISCORD_CHANNEL_ID}...`);
+
+          const discordResult = await postToDiscordChannel({
+            channelId: DISCORD_CHANNEL_ID,
+            content,
+            imageBuffer: imageResult.imageBuffer,
+            imageName: issueNumber ? `comic-issue-${issueNumber}-${Date.now()}.png` : `comic-${Date.now()}.png`,
+          });
+
+          discordPosted = discordResult.success;
+          discordMessageId = discordResult.messageId;
+
+          if (discordPosted) {
+            console.log(`✅ [generateComic] Successfully posted comic to Discord (message ID: ${discordMessageId})`);
+          } else {
+            console.error(`❌ [generateComic] Failed to post comic to Discord:`, discordResult.error);
           }
         }
+      } else {
+        console.warn(`⚠️ [generateComic] No image buffer available, skipping Discord post`);
       }
 
-      return {
+      const result = {
         success: true,
         message: `Comic generated successfully${discordPosted ? ' and posted to Discord' : ''}`,
         imagePath: imageResult.imagePath,
         postedToDiscord: discordPosted,
+        discordMessageId,
+        charactersIncluded: allUserIds.length,
         issueNumber: issueNumber,
         issueUrl: issueUrl || undefined,
       };
+
+      console.log(`🎉 [generateComic] Comic generation complete!`, {
+        success: true,
+        charactersIncluded: allUserIds.length,
+        discordPosted,
+        discordMessageId,
+        issueNumber,
+      });
+
+      return result;
     } catch (error) {
+      console.error(`❌ [generateComic] Error during comic generation:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error generating comic',
