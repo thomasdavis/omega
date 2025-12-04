@@ -403,12 +403,12 @@ When the user uploads an image with intent to save:
       await updateUserProfile(userId, {
         // Photo metadata
         uploaded_photo_url: rawUrl,
-        uploaded_photo_metadata: JSON.stringify({
+        uploaded_photo_metadata: {
           filename: `user-${userId}.jpg`,
           upload_date: Date.now(),
           file_size: buffer.length,
           github_url: githubUrl,
-        }),
+        },
         last_photo_analyzed_at: Math.floor(Date.now() / 1000),
 
         // Basic description and confidence

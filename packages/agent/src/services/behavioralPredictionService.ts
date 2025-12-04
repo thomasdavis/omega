@@ -366,7 +366,7 @@ export async function updateUserPredictions(userId: string): Promise<void> {
   await updateUserProfile(userId, {
     // Cultural data
     cultural_background: culturalData.background,
-    cultural_values: JSON.stringify(culturalData.values),
+    cultural_values: culturalData.values,
     cultural_communication_style: culturalData.communicationStyle,
     cultural_confidence: culturalData.confidence,
 
@@ -377,7 +377,7 @@ export async function updateUserPredictions(userId: string): Promise<void> {
     astrological_confidence: astroData.confidence,
 
     // Predictions
-    predicted_behaviors: JSON.stringify(predictions),
+    predicted_behaviors: predictions,
     prediction_confidence: avgConfidence,
     prediction_timeframe: 'next 30 days',
     last_prediction_at: Math.floor(Date.now() / 1000),

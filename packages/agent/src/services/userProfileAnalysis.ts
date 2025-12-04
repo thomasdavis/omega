@@ -177,13 +177,13 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     message_count: data.messageCount,
     last_analyzed_at: Math.floor(Date.now() / 1000),
 
-    // Legacy JSON fields (backward compatibility)
-    feelings_json: JSON.stringify(feelings),
-    personality_facets: JSON.stringify(personality),
+    // JSON fields (Prisma Json type - pass objects directly, not stringified)
+    feelings_json: feelings,
+    personality_facets: personality,
 
     // === JUNGIAN ANALYSIS ===
     dominant_archetype: personality.dominantArchetypes[0] || undefined,
-    secondary_archetypes: JSON.stringify(personality.dominantArchetypes.slice(1, 3)),
+    secondary_archetypes: personality.dominantArchetypes.slice(1, 3),
     archetype_confidence: 0.8, // High confidence from AI analysis
     shadow_archetype: undefined, // Could be enhanced in future
 
@@ -232,21 +232,21 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
 
     // === INTERESTS & EXPERTISE ===
     technical_knowledge_level: interestsExpertise.technicalKnowledge,
-    primary_interests: JSON.stringify(interestsExpertise.primaryInterests),
-    expertise_areas: JSON.stringify(interestsExpertise.expertiseAreas),
+    primary_interests: interestsExpertise.primaryInterests,
+    expertise_areas: interestsExpertise.expertiseAreas,
 
     // === RELATIONAL DYNAMICS (Omega's Feelings) ===
     affinity_score: feelings.affinityScore,
     trust_level: feelings.trustLevel,
     emotional_bond: feelings.sentiment === 'positive' ? 'friend' : feelings.sentiment === 'negative' ? 'stranger' : 'acquaintance',
     omega_thoughts: feelings.thoughts,
-    notable_patterns: JSON.stringify(feelings.notablePatterns),
+    notable_patterns: feelings.notablePatterns,
 
     // === SENTIMENT ANALYSIS (Aggregated) ===
     overall_sentiment: overallSentiment,
     positive_interaction_ratio: positiveRatio,
     negative_interaction_ratio: negativeRatio,
-    dominant_emotions: JSON.stringify(data.patterns.dominantEmotions),
+    dominant_emotions: data.patterns.dominantEmotions,
   });
 
   // Save history snapshot
