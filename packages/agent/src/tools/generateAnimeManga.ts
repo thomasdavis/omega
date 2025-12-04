@@ -7,7 +7,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { generateImageWithGemini } from '../services/geminiImageService.js';
-import { postComicToDiscord } from '../services/discordWebhookService.js';
+import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
 import { getDatabase } from '@repo/database';
 
@@ -364,50 +364,44 @@ Generate a professional, authentic vertical manga page that captures the essence
       console.log(`📁 [generateAnimeManga] Image path: ${imageResult.imagePath}`);
       console.log(`📦 [generateAnimeManga] Image buffer size: ${imageResult.imageBuffer?.length || 0} bytes`);
 
-      // Always post to Discord
+      // Always post to Discord using Discord client
       let discordPosted = false;
+      let discordMessageId: string | undefined;
       console.log(`📤 [generateAnimeManga] Posting manga to Discord...`);
 
       if (imageResult.imageBuffer) {
-        const DISCORD_COMIC_WEBHOOK_URL = process.env.DISCORD_COMIC_WEBHOOK_URL;
+        const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
+        const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
-        if (!DISCORD_COMIC_WEBHOOK_URL) {
-          console.warn(`⚠️ [generateAnimeManga] DISCORD_COMIC_WEBHOOK_URL not configured, skipping Discord post`);
+        if (!DISCORD_BOT_TOKEN) {
+          console.warn(`⚠️ [generateAnimeManga] DISCORD_BOT_TOKEN not configured, skipping Discord post`);
+        } else if (!DISCORD_CHANNEL_ID) {
+          console.warn(`⚠️ [generateAnimeManga] DISCORD_CHANNEL_ID not configured, skipping Discord post`);
         } else {
+          // Build content message
+          let content = `📖 **${style.charAt(0).toUpperCase() + style.slice(1)} Manga Page Generated**\n`;
+          content += `Panels: ${panelCount} | Characters: ${allUserIds.length}\n`;
+
           if (issueNumber && issueTitle && issueUrl) {
-            // Post with issue context
-            console.log(`📤 [generateAnimeManga] Posting to Discord with issue #${issueNumber} context...`);
-            const discordResult = await postComicToDiscord(
-              imageResult.imageBuffer,
-              issueNumber,
-              issueTitle,
-              issueUrl
-            );
-            discordPosted = discordResult.success;
-            if (discordPosted) {
-              console.log(`✅ [generateAnimeManga] Successfully posted manga to Discord (with issue context)`);
-            } else {
-              console.error(`❌ [generateAnimeManga] Failed to post manga to Discord:`, discordResult.error);
-            }
+            content += `\n🔗 **Issue #${issueNumber}:** ${issueTitle}\n${issueUrl}`;
+          }
+
+          console.log(`📤 [generateAnimeManga] Posting to Discord channel ${DISCORD_CHANNEL_ID}...`);
+
+          const discordResult = await postToDiscordChannel({
+            channelId: DISCORD_CHANNEL_ID,
+            content,
+            imageBuffer: imageResult.imageBuffer,
+            imageName: `manga-${style}-${panelCount}panel-${Date.now()}.png`,
+          });
+
+          discordPosted = discordResult.success;
+          discordMessageId = discordResult.messageId;
+
+          if (discordPosted) {
+            console.log(`✅ [generateAnimeManga] Successfully posted manga to Discord (message ID: ${discordMessageId})`);
           } else {
-            // Post with generic message
-            console.log(`📤 [generateAnimeManga] Posting to Discord with generic message...`);
-            const { sendDiscordWebhook } = await import('../services/discordWebhookService.js');
-            const result = await sendDiscordWebhook(DISCORD_COMIC_WEBHOOK_URL, {
-              content: `📖 Generated a new ${style} manga page with ${panelCount} panels!`,
-              files: [
-                {
-                  name: `manga-${style}-${Date.now()}.png`,
-                  data: imageResult.imageBuffer,
-                },
-              ],
-            });
-            discordPosted = result.success;
-            if (discordPosted) {
-              console.log(`✅ [generateAnimeManga] Successfully posted manga to Discord`);
-            } else {
-              console.error(`❌ [generateAnimeManga] Failed to post manga to Discord:`, result.error);
-            }
+            console.error(`❌ [generateAnimeManga] Failed to post manga to Discord:`, discordResult.error);
           }
         }
       } else {
@@ -419,6 +413,7 @@ Generate a professional, authentic vertical manga page that captures the essence
         message: `Vertical ${style} manga page generated successfully with ${panelCount} panels${discordPosted ? ' and posted to Discord' : ''}`,
         imagePath: imageResult.imagePath,
         postedToDiscord: discordPosted,
+        discordMessageId,
         style,
         panelCount,
         charactersIncluded: allUserIds.length,
@@ -433,6 +428,7 @@ Generate a professional, authentic vertical manga page that captures the essence
         panelCount,
         charactersIncluded: allUserIds.length,
         discordPosted,
+        discordMessageId,
         issueNumber,
       });
 

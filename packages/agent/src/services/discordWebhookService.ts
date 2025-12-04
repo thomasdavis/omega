@@ -1,10 +1,11 @@
 /**
  * Discord Webhook Service
  *
- * Utilities for posting messages and images to Discord via webhooks
+ * Utilities for posting messages and images to Discord via webhooks or Discord client
  */
 
 import { FormData } from 'undici';
+import { Client, GatewayIntentBits, TextChannel, AttachmentBuilder } from 'discord.js';
 
 export interface DiscordWebhookMessage {
   content?: string;
@@ -68,7 +69,7 @@ export async function sendDiscordWebhook(
 }
 
 /**
- * Post a generated comic image to Discord
+ * Post a generated comic image to Discord via webhook
  */
 export async function postComicToDiscord(
   imageBuffer: Buffer,
@@ -96,4 +97,117 @@ export async function postComicToDiscord(
       },
     ],
   });
+}
+
+/**
+ * Post content to Discord using Discord client (more reliable than webhooks)
+ * Creates a temporary Discord client, posts the message, then disconnects
+ */
+export async function postToDiscordChannel(options: {
+  channelId: string;
+  content: string;
+  imageBuffer?: Buffer;
+  imageName?: string;
+}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const { channelId, content, imageBuffer, imageName } = options;
+  const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+
+  if (!DISCORD_BOT_TOKEN) {
+    console.error('❌ [postToDiscordChannel] DISCORD_BOT_TOKEN not configured');
+    return {
+      success: false,
+      error: 'DISCORD_BOT_TOKEN is not configured',
+    };
+  }
+
+  if (!channelId) {
+    console.error('❌ [postToDiscordChannel] Channel ID not provided');
+    return {
+      success: false,
+      error: 'Channel ID is required',
+    };
+  }
+
+  console.log(`🤖 [postToDiscordChannel] Creating Discord client...`);
+
+  const client = new Client({
+    intents: [
+      GatewayIntentBits.Guilds,
+      GatewayIntentBits.GuildMessages,
+    ],
+  });
+
+  try {
+    // Wait for client to be ready
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Discord client connection timeout'));
+      }, 30000); // 30 second timeout
+
+      client.once('ready', () => {
+        clearTimeout(timeout);
+        console.log(`✅ [postToDiscordChannel] Discord bot connected as ${client.user?.tag}`);
+        resolve();
+      });
+
+      client.once('error', (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      });
+
+      client.login(DISCORD_BOT_TOKEN);
+    });
+
+    console.log(`📤 [postToDiscordChannel] Fetching channel ${channelId}...`);
+
+    // Fetch the channel
+    const channel = await client.channels.fetch(channelId);
+
+    if (!channel) {
+      throw new Error(`Channel ${channelId} not found`);
+    }
+
+    if (!channel.isTextBased() || !(channel instanceof TextChannel)) {
+      throw new Error(`Channel ${channelId} is not a text channel`);
+    }
+
+    console.log(`✅ [postToDiscordChannel] Channel fetched successfully`);
+
+    // Build message payload
+    const messagePayload: any = {
+      content,
+    };
+
+    // Add image attachment if provided
+    if (imageBuffer) {
+      const attachment = new AttachmentBuilder(imageBuffer, {
+        name: imageName || 'image.png',
+      });
+      messagePayload.files = [attachment];
+      console.log(`📎 [postToDiscordChannel] Attaching image: ${imageName || 'image.png'} (${imageBuffer.length} bytes)`);
+    }
+
+    console.log(`📤 [postToDiscordChannel] Sending message...`);
+
+    // Send the message
+    const message = await channel.send(messagePayload);
+
+    console.log(`✅ [postToDiscordChannel] Message sent successfully (ID: ${message.id})`);
+
+    return {
+      success: true,
+      messageId: message.id,
+    };
+  } catch (error) {
+    console.error('❌ [postToDiscordChannel] Error posting to Discord:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  } finally {
+    // Always cleanup the client
+    console.log(`🔌 [postToDiscordChannel] Disconnecting Discord client...`);
+    await client.destroy();
+    console.log(`✅ [postToDiscordChannel] Discord client disconnected`);
+  }
 }
