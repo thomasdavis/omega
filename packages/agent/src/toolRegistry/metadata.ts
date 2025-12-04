@@ -46,23 +46,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
-    id: 'artifact',
-    name: 'Create Artifact',
-    description: 'Create interactive HTML, SVG, or Markdown content with shareable links',
-    keywords: ['create', 'html', 'svg', 'interactive', 'webpage', 'website', 'artifact'],
-    tags: ['content', 'html', 'web', 'core'],
-    examples: [
-      'create an HTML page',
-      'make a button',
-      'build an interactive chart',
-      'create a webpage',
-      'generate an artifact'
-    ],
-    isCore: true,
-    category: 'content'
-  },
-
-  {
     id: 'unsandbox',
     name: 'Code Execution',
     description: 'Execute code in 42+ languages including Python, JavaScript, TypeScript, Rust, Go, etc.',
@@ -1534,21 +1517,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
-  {
-    id: 'listArtifacts',
-    name: 'List Artifacts',
-    description: 'List all created artifacts',
-    keywords: ['list', 'artifacts', 'show', 'view', 'created'],
-    tags: ['content', 'artifact', 'list'],
-    examples: [
-      'list artifacts',
-      'show all artifacts',
-      'view artifacts',
-      'list created content'
-    ],
-    category: 'content'
-  },
-
   // ===== CONVERSATION AND MESSAGING TOOLS =====
   {
     id: 'exportConversation',
@@ -2269,7 +2237,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
 export const CORE_TOOLS: string[] = [
   'search',
   'calculator',
-  'artifact',
   'unsandbox',
   'webFetch',
   'fileUpload',

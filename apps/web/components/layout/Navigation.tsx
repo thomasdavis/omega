@@ -7,7 +7,6 @@ import Logo from '@/components/shared/Logo';
 
 const navLinks = [
   { href: '/messages', label: 'Messages' },
-  { href: '/artifacts', label: 'Artifacts' },
   { href: '/documents', label: 'Documents' },
   { href: '/todos', label: 'Todos' },
   { href: '/blog', label: 'Blog' },

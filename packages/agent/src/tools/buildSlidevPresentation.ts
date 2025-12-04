@@ -10,10 +10,10 @@ import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { getArtifactsDir } from '@repo/shared';
+import { getDataDir } from '@repo/shared';
 
 const execAsync = promisify(exec);
-const ARTIFACTS_DIR = getArtifactsDir();
+const ARTIFACTS_DIR = getDataDir('artifacts');
 
 // Artifact metadata interface
 interface ArtifactMetadata {
