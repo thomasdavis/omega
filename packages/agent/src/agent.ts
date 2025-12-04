@@ -189,9 +189,9 @@ export async function runAgent(
       ? context.messageHistory.slice(-3).map(msg => msg.content)
       : [];
 
-    // SELECT tools using BM25 search
+    // SELECT tools using BM25 search (now async to include autonomous tools)
     console.log('🎯 Selecting relevant tools via BM25 search...');
-    const selectedToolIds = selectTools(userMessage, recentContext);
+    const selectedToolIds = await selectTools(userMessage, recentContext);
 
     // LOAD selected tools dynamically
     console.log('🔧 Loading selected tools...');

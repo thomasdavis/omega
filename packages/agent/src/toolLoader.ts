@@ -167,16 +167,23 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   psychoHistory: { path: './tools/psychoHistory.js', exportName: 'psychoHistoryTool' },
   unsandboxSubmit: { path: './tools/unsandbox.js', exportName: 'unsandboxSubmitTool' },
   unsandboxStatus: { path: './tools/unsandbox.js', exportName: 'unsandboxStatusTool' },
+
+  // Autonomous tool management
+  createToolAutonomously: { path: './tools/createToolAutonomously.js', exportName: 'createToolAutonomouslyTool' },
+  listAutonomousTools: { path: './tools/listAutonomousTools.js', exportName: 'listAutonomousToolsTool' },
+  manageAutonomousTool: { path: './tools/manageAutonomousTool.js', exportName: 'manageAutonomousToolTool' },
 };
 
 /**
  * Load tools by IDs
+ * Handles both core tools and autonomous tools
  *
  * @param toolIds - Array of tool IDs to load
  * @returns Object mapping tool IDs to tool objects
  */
 export async function loadTools(toolIds: string[]): Promise<Record<string, Tool>> {
   const tools: Record<string, Tool> = {};
+  const autonomousToolIds: string[] = [];
 
   for (const toolId of toolIds) {
     // Check cache first
@@ -188,7 +195,8 @@ export async function loadTools(toolIds: string[]): Promise<Record<string, Tool>
     // Get import config
     const importConfig = TOOL_IMPORT_MAP[toolId];
     if (!importConfig) {
-      console.warn(`⚠️  Unknown tool ID: ${toolId} (skipping)`);
+      // Might be an autonomous tool
+      autonomousToolIds.push(toolId);
       continue;
     }
 
@@ -207,6 +215,17 @@ export async function loadTools(toolIds: string[]): Promise<Record<string, Tool>
       tools[toolId] = tool;
     } catch (error) {
       console.error(`❌ Failed to load tool ${toolId}:`, error);
+    }
+  }
+
+  // Load autonomous tools
+  if (autonomousToolIds.length > 0) {
+    try {
+      const { loadAutonomousTools } = await import('./autonomousToolLoader.js');
+      const autonomousTools = await loadAutonomousTools(autonomousToolIds);
+      Object.assign(tools, autonomousTools);
+    } catch (error) {
+      console.warn('⚠️  Could not load autonomous tools:', error);
     }
   }
 
