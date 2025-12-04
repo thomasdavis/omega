@@ -19,27 +19,6 @@ export function isProductionWithVolume(): boolean {
 }
 
 /**
- * Get the artifacts directory path
- * Uses /data/artifacts in production with Railway volume, otherwise local path
- */
-export function getArtifactsDir(localFallback?: string): string {
-  if (isProductionWithVolume()) {
-    const dir = '/data/artifacts';
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true });
-    }
-    return dir;
-  }
-
-  // Default local fallback path
-  const fallback = localFallback || join(process.cwd(), 'apps/bot/artifacts');
-  if (!existsSync(fallback)) {
-    mkdirSync(fallback, { recursive: true });
-  }
-  return fallback;
-}
-
-/**
  * Get the uploads directory path
  * Uses /data/uploads in production with Railway volume, otherwise local path
  */
@@ -177,14 +156,12 @@ export function getPublicDir(): string {
 export function initializeStorage(): void {
   console.log('📁 Initializing storage directories...');
 
-  const artifactsDir = getArtifactsDir();
   const uploadsDir = getUploadsDir();
   const blogDir = getBlogDir();
   const contentIndexDir = getContentIndexDir();
   const comicsDir = getComicsDir();
   const publicDir = getPublicDir();
 
-  console.log(`   Artifacts: ${artifactsDir}`);
   console.log(`   Uploads: ${uploadsDir}`);
   console.log(`   Blog: ${blogDir}`);
   console.log(`   Content Index: ${contentIndexDir}`);

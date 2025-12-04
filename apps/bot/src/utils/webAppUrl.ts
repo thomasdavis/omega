@@ -44,14 +44,6 @@ export function getWebAppUrl(): string {
 }
 
 /**
- * Get full URL for an artifact
- * @param filename - The artifact filename (e.g., "abc-123.html")
- */
-export function getArtifactUrl(filename: string): string {
-  return `${getWebAppUrl()}/api/artifacts/${filename}`;
-}
-
-/**
  * Get full URL for an uploaded file
  * @param filename - The upload filename
  */

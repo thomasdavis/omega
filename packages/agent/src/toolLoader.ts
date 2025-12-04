@@ -20,7 +20,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // Core tools
   search: { path: './tools/search.js', exportName: 'searchTool' },
   calculator: { path: './tools/calculator.js', exportName: 'calculatorTool' },
-  artifact: { path: './tools/artifact.js', exportName: 'artifactTool' },
   webFetch: { path: './tools/webFetch.js', exportName: 'webFetchTool' },
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },
   generateHtmlPage: { path: './tools/generateHtmlPage.js', exportName: 'generateHtmlPageTool' },
@@ -121,7 +120,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   updateBlogPost: { path: './tools/updateBlogPost.js', exportName: 'updateBlogPostTool' },
   listBlogPosts: { path: './tools/listBlogPosts.js', exportName: 'listBlogPostsTool' },
   triggerDailyBlog: { path: './tools/triggerDailyBlog.js', exportName: 'triggerDailyBlogTool' },
-  listArtifacts: { path: './tools/listArtifacts.js', exportName: 'listArtifactsTool' },
 
   // Conversation and messaging tools
   exportConversation: { path: './tools/exportConversation.js', exportName: 'exportConversationTool' },
