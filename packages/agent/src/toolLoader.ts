@@ -105,6 +105,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   generateStandupSummary: { path: './tools/generateStandupSummary.js', exportName: 'generateStandupSummaryTool' },
   generateLegalDisclaimer: { path: './tools/generateLegalDisclaimer.js', exportName: 'generateLegalDisclaimerTool' },
   generateFilmScene: { path: './tools/generateFilmScene.js', exportName: 'generateFilmSceneTool' },
+  generateAnimeManga: { path: './tools/generateAnimeManga.js', exportName: 'generateAnimeMangaTool' },
   generateStarSign: { path: './tools/generateStarSign.js', exportName: 'generateStarSignTool' },
   recipeGenerator: { path: './tools/recipeGenerator.js', exportName: 'recipeGeneratorTool' },
 
