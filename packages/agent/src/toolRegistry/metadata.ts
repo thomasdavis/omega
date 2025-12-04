@@ -1,6 +1,6 @@
 /**
  * Tool Metadata Registry
- * Manually curated metadata for all 113 tools for BM25 search optimization
+ * Manually curated metadata for all 123 tools for BM25 search optimization
  */
 
 import { ToolMetadata } from './types.js';
@@ -353,7 +353,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
-  // ===== POSTGRESQL TOOLS (14) =====
+  // ===== POSTGRESQL TOOLS (16) =====
   {
     id: 'pgQuery',
     name: 'PostgreSQL Query',
@@ -578,6 +578,165 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'count frequent words in conversations',
       'show top words in last 100 messages',
       'keyword analysis of messages'
+    ],
+    category: 'database'
+  },
+
+  // ===== TODO LIST CRUD TOOLS (5) =====
+  {
+    id: 'createTodo',
+    name: 'Create Todo',
+    description: 'Create a new task in the todo list',
+    keywords: ['todo', 'task', 'create', 'add', 'reminder', 'list', 'track'],
+    tags: ['database', 'todo', 'task-management', 'crud'],
+    examples: [
+      'add task to todo list',
+      'create a reminder',
+      'add todo',
+      'create task',
+      'track something to do'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'listTodos',
+    name: 'List Todos',
+    description: 'List all tasks from the todo list with optional filtering',
+    keywords: ['todo', 'task', 'list', 'show', 'view', 'get', 'display'],
+    tags: ['database', 'todo', 'task-management', 'crud'],
+    examples: [
+      'show my todos',
+      'list tasks',
+      'what tasks do I have',
+      'show todo list',
+      'view my reminders'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'getTodo',
+    name: 'Get Todo',
+    description: 'Get a specific todo task by ID',
+    keywords: ['todo', 'task', 'get', 'retrieve', 'view', 'show', 'find'],
+    tags: ['database', 'todo', 'task-management', 'crud'],
+    examples: [
+      'get todo by id',
+      'show task details',
+      'retrieve todo',
+      'view specific task'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'updateTodo',
+    name: 'Update Todo',
+    description: 'Update an existing todo task',
+    keywords: ['todo', 'task', 'update', 'modify', 'edit', 'change', 'complete', 'mark'],
+    tags: ['database', 'todo', 'task-management', 'crud'],
+    examples: [
+      'update todo',
+      'mark task as complete',
+      'edit task',
+      'complete todo',
+      'modify task'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'deleteTodo',
+    name: 'Delete Todo',
+    description: 'Delete a todo task',
+    keywords: ['todo', 'task', 'delete', 'remove', 'destroy', 'clear'],
+    tags: ['database', 'todo', 'task-management', 'crud'],
+    examples: [
+      'delete todo',
+      'remove task',
+      'delete task',
+      'clear todo'
+    ],
+    category: 'database'
+  },
+
+  // ===== SCRIPT STORAGE CRUD TOOLS (5) =====
+  {
+    id: 'createScript',
+    name: 'Create Script',
+    description: 'Create and store a new script in the database',
+    keywords: ['script', 'code', 'save', 'store', 'create', 'add', 'upload', 'persist'],
+    tags: ['database', 'script', 'storage', 'crud', 'code'],
+    examples: [
+      'save this script',
+      'store this code',
+      'create a new script',
+      'save Python script',
+      'upload script to database'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'listScripts',
+    name: 'List Scripts',
+    description: 'List stored scripts with optional filtering by user, language, or name',
+    keywords: ['script', 'code', 'list', 'show', 'view', 'get', 'display', 'browse'],
+    tags: ['database', 'script', 'storage', 'crud', 'code'],
+    examples: [
+      'show my scripts',
+      'list all scripts',
+      'what scripts do I have',
+      'show Python scripts',
+      'list stored code'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'getScript',
+    name: 'Get Script',
+    description: 'Retrieve a specific script by ID or name',
+    keywords: ['script', 'code', 'get', 'retrieve', 'view', 'show', 'load', 'find'],
+    tags: ['database', 'script', 'storage', 'crud', 'code'],
+    examples: [
+      'get script by id',
+      'show script called backup_tool',
+      'retrieve my Python script',
+      'load script',
+      'view script content'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'updateScript',
+    name: 'Update Script',
+    description: 'Update an existing script in storage',
+    keywords: ['script', 'code', 'update', 'modify', 'edit', 'change', 'save'],
+    tags: ['database', 'script', 'storage', 'crud', 'code'],
+    examples: [
+      'update script',
+      'modify my script',
+      'edit script content',
+      'change script description',
+      'update stored code'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'deleteScript',
+    name: 'Delete Script',
+    description: 'Delete a script from storage',
+    keywords: ['script', 'code', 'delete', 'remove', 'destroy', 'clear'],
+    tags: ['database', 'script', 'storage', 'crud', 'code'],
+    examples: [
+      'delete script',
+      'remove my script',
+      'delete stored code',
+      'clear old scripts'
     ],
     category: 'database'
   },

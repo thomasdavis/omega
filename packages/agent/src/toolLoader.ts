@@ -42,7 +42,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   mongoListIndexes: { path: '@repo/database', exportName: 'mongoListIndexesTool' },
   mongoDropIndex: { path: '@repo/database', exportName: 'mongoDropIndexTool' },
 
-  // PostgreSQL tools (15) - imported from @repo/database
+  // PostgreSQL tools (16) - imported from @repo/database
   pgQuery: { path: '@repo/database', exportName: 'pgQueryTool' },
   pgInsert: { path: '@repo/database', exportName: 'pgInsertTool' },
   pgSelect: { path: '@repo/database', exportName: 'pgSelectTool' },
@@ -58,6 +58,20 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgListIndexes: { path: '@repo/database', exportName: 'pgListIndexesTool' },
   pgDropIndex: { path: '@repo/database', exportName: 'pgDropIndexTool' },
   analyzeMessageWords: { path: '@repo/database', exportName: 'analyzeMessageWordsTool' },
+
+  // Todo List CRUD tools (5) - imported from @repo/database
+  createTodo: { path: '@repo/database', exportName: 'createTodoTool' },
+  listTodos: { path: '@repo/database', exportName: 'listTodosTool' },
+  getTodo: { path: '@repo/database', exportName: 'getTodoTool' },
+  updateTodo: { path: '@repo/database', exportName: 'updateTodoTool' },
+  deleteTodo: { path: '@repo/database', exportName: 'deleteTodoTool' },
+
+  // Script Storage CRUD tools (5) - imported from @repo/database
+  createScript: { path: '@repo/database', exportName: 'createScriptTool' },
+  listScripts: { path: '@repo/database', exportName: 'listScriptsTool' },
+  getScript: { path: '@repo/database', exportName: 'getScriptTool' },
+  updateScript: { path: '@repo/database', exportName: 'updateScriptTool' },
+  deleteScript: { path: '@repo/database', exportName: 'deleteScriptTool' },
 
   // GitHub tools (10)
   githubCreateIssue: { path: './tools/github/createIssue.js', exportName: 'githubCreateIssueTool' },
