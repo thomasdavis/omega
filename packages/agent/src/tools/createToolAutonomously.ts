@@ -17,13 +17,22 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const createToolAutonomouslyTool = tool({
-  description: `Autonomously suggest a new tool idea by creating a GitHub issue. Use this when you identify a capability gap or have a creative idea for a new tool that would be useful.
+  description: `Autonomously suggest a new tool idea by creating a GitHub issue. Use this when you identify a capability gap OR just want to be creative and suggest something fun and useful!
 
 WHEN TO USE:
 - You recognize a need for a capability that doesn't exist
 - User requests something that would be better as a dedicated tool
-- You have a creative idea that would make you more useful
+- You have a creative/wacky idea that would make you more useful
 - You identify patterns that could benefit from a tool
+- You want to be innovative and suggest something fun (emoji tools, text effects, creative utilities)
+- You just feel like being creative - go wild with ideas!
+
+BE CREATIVE:
+- If there's no obvious need from the conversation, make up something fun!
+- Think about wacky but useful tools (ASCII art generators, fun text transformers, creative utilities)
+- Suggest tools that would make interactions more fun or expressive
+- Don't be afraid to suggest playful or experimental ideas
+- Examples: emoji generators, text art, meme creators, quirky formatters, fun calculators
 
 WHEN NOT TO USE:
 - For tools that duplicate existing functionality
@@ -35,17 +44,17 @@ The tool idea will be posted as a GitHub issue and @claude will implement it.`,
     toolName: z.string()
       .min(3)
       .max(100)
-      .describe('Creative name for the proposed tool (e.g., "JSON Formatter", "Sentiment Analyzer", "Code Minifier")'),
+      .describe('Creative name for the proposed tool (e.g., "Emoji Story Generator", "Rainbow Text Transformer", "Vibe Check Calculator")'),
 
     description: z.string()
       .min(50)
       .max(1000)
-      .describe('Detailed description of what the tool would do and how it would be used'),
+      .describe('Detailed description of what the tool would do and how it would be used. Be creative and fun if you want!'),
 
     useCase: z.string()
       .min(30)
       .max(500)
-      .describe('Explain the specific use case or problem this tool would solve'),
+      .describe('Explain the specific use case or problem this tool would solve (or just explain why it would be fun/useful!)'),
 
     category: z.enum(['development', 'content', 'research', 'specialized', 'database', 'integration', 'system', 'ai-ops', 'utility'])
       .describe('Category that best fits this tool'),
