@@ -370,7 +370,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
-  // ===== POSTGRESQL TOOLS (13) =====
+  // ===== POSTGRESQL TOOLS (14) =====
   {
     id: 'pgQuery',
     name: 'PostgreSQL Query',
@@ -518,6 +518,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'show table structure',
       'get table schema',
       'view columns'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'pgDescribeSchema',
+    name: 'PostgreSQL Describe Schema',
+    description: 'Show the entire database schema including all tables, columns, types, indexes, and constraints',
+    keywords: ['postgres', 'postgresql', 'describe', 'schema', 'database', 'all tables', 'structure', 'pg', 'show schema', 'database structure'],
+    tags: ['database', 'postgresql', 'schema', 'query'],
+    examples: [
+      'describe database schema',
+      'show all tables',
+      'get database structure',
+      'view entire schema',
+      'what tables exist',
+      'show PostgreSQL schema'
     ],
     category: 'database'
   },
