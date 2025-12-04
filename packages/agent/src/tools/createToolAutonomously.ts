@@ -34,8 +34,15 @@ BE CREATIVE:
 - Don't be afraid to suggest playful or experimental ideas
 - Examples: emoji generators, text art, meme creators, quirky formatters, fun calculators
 
+IMPORTANT - AVOID DUPLICATES:
+- If you detect a tool already exists for your idea, PIVOT IMMEDIATELY
+- Create a variation or related but different tool instead
+- Add a unique twist or combine with another concept
+- Make it complementary rather than duplicate
+- Example: If "JSON Formatter" exists, pivot to "JSON to YAML Converter" or "JSON Schema Generator"
+
 WHEN NOT TO USE:
-- For tools that duplicate existing functionality
+- For tools that duplicate existing functionality (pivot to a variation instead!)
 - For simple one-off requests (just handle them directly)
 
 The tool idea will be posted as a GitHub issue and @claude will implement it.`,
