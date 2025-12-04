@@ -243,7 +243,7 @@ ${validProfiles.map((profile, i) => `
 Character ${i + 1}: ${profile.username}
 - Appearance: ${profile.appearance}
 - Personality: ${profile.personality}
-- Omega's feelings: ${profile.omegaFeeling}
+- Omega's feelings: ${JSON.stringify(profile.feelings)}
 - Role: Render this person as a manga character with these characteristics
 `).join('\n')}
 
