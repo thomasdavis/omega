@@ -27,15 +27,15 @@ const CONFIG = {
  * @param recentMessages - Recent conversation history (optional)
  * @returns Array of tool IDs to load
  */
-export function selectTools(
+export async function selectTools(
   currentMessage: string,
   recentMessages: string[] = []
-): string[] {
+): Promise<string[]> {
   // Build search query from current message + context
   const searchQuery = buildSearchQuery(currentMessage, recentMessages);
 
-  // Perform BM25 search
-  const rankedTools = searchTools(searchQuery, CONFIG.MAX_TOOLS);
+  // Perform BM25 search (now async to include autonomous tools)
+  const rankedTools = await searchTools(searchQuery, CONFIG.MAX_TOOLS);
 
   // Combine core tools + ranked tools
   const selectedTools = [

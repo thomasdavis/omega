@@ -1998,6 +1998,55 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'generate ideas based on context'
     ],
     category: 'specialized'
+  },
+
+  // ===== AUTONOMOUS TOOL MANAGEMENT =====
+  {
+    id: 'createToolAutonomously',
+    name: 'Create Tool Autonomously',
+    description: 'Create a new tool autonomously based on identified capability gaps. Enables autonomous innovation with strict safety boundaries. Only for simple utility tools (data transformation, calculations, text processing).',
+    keywords: ['create', 'tool', 'autonomous', 'build', 'new', 'capability', 'innovation', 'self-improvement', 'utility', 'generate'],
+    tags: ['admin', 'autonomous', 'tool-creation', 'innovation'],
+    examples: [
+      'create a tool to convert JSON to YAML',
+      'build a new utility tool',
+      'I need a tool that can format phone numbers',
+      'create a tool autonomously',
+      'make a custom tool'
+    ],
+    category: 'admin'
+  },
+
+  {
+    id: 'listAutonomousTools',
+    name: 'List Autonomous Tools',
+    description: 'View all autonomously created tools with status, usage statistics, and metadata. See what tools Omega has built on its own.',
+    keywords: ['list', 'autonomous', 'tools', 'view', 'show', 'created', 'custom', 'self-made', 'statistics'],
+    tags: ['admin', 'autonomous', 'monitoring', 'tools'],
+    examples: [
+      'list autonomous tools',
+      'show me tools you created',
+      'what tools have you built',
+      'list custom tools',
+      'show autonomous creations'
+    ],
+    category: 'admin'
+  },
+
+  {
+    id: 'manageAutonomousTool',
+    name: 'Manage Autonomous Tool',
+    description: 'Manage autonomously created tools: enable, disable, validate for safety, or delete them. Provides control over which autonomous tools are active.',
+    keywords: ['manage', 'autonomous', 'tool', 'enable', 'disable', 'delete', 'validate', 'control', 'safety'],
+    tags: ['admin', 'autonomous', 'management', 'control'],
+    examples: [
+      'enable autonomous tool',
+      'disable that tool',
+      'validate tool for safety',
+      'delete autonomous tool',
+      'manage custom tool'
+    ],
+    category: 'admin'
   }
 ];
 
