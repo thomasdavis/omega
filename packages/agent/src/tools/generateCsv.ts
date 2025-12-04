@@ -7,10 +7,10 @@ import { z } from 'zod';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { getArtifactsDir } from '@repo/shared';
+import { getDataDir } from '@repo/shared';
 
 // Artifacts directory - use centralized storage utility
-const ARTIFACTS_DIR = getArtifactsDir();
+const ARTIFACTS_DIR = getDataDir('artifacts');
 
 interface CsvMetadata {
   id: string;
