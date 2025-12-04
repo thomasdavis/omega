@@ -84,16 +84,25 @@ export const axllmExecutorTool = tool({
 
       console.log(`✅ Task completed successfully`);
 
-      // Extract the output field (usually 'output' or 'result')
-      const outputKey = Object.keys(result).find(key =>
-        key === 'output' || key === 'result' || key === 'response'
-      ) || Object.keys(result)[0];
+      // Extract the output field name from the DSL signature
+      // DSL format: "inputs -> fieldName:type description"
+      const outputFieldMatch = dslSignature.match(/-> ([a-z_]+):/);
+      const expectedFieldName = outputFieldMatch ? outputFieldMatch[1] : null;
+
+      // Try to find the output field in the result
+      // Priority: expected field name > common alternatives > first field
+      const outputKey = expectedFieldName && result[expectedFieldName]
+        ? expectedFieldName
+        : Object.keys(result).find(key =>
+            key === 'result' || key === 'response' || key === 'output'
+          ) || Object.keys(result)[0];
 
       return {
         success: true,
         task,
         result: result[outputKey],
         dslUsed: dslSignature,
+        outputFieldName: outputKey,
         fullOutput: result,
         note: 'Task executed using the Ax LLM framework with dynamically generated DSL',
       };
@@ -114,7 +123,7 @@ export const axllmExecutorTool = tool({
 /**
  * Generate a dynamic DSL signature based on the task and output format
  *
- * DSL signature format: "input1:type, input2:type -> output:type description"
+ * DSL signature format: "input1:type, input2:type -> outputFieldName:type description"
  *
  * @param task - The task description
  * @param outputFormat - The desired output format
@@ -130,27 +139,85 @@ function generateDSLSignature(task: string, outputFormat: string): string {
     inputs.push('context:string');
   }
 
+  // Generate a task-specific output field name (non-generic)
+  const outputFieldName = generateOutputFieldName(task);
+
   // Determine output type based on format
-  let outputType = 'output:string';
+  let outputType = 'string';
 
   if (outputFormat === 'list') {
-    outputType = 'output:list';
+    outputType = 'list';
   } else if (outputFormat === 'json') {
-    outputType = 'output:json';
+    outputType = 'json';
   } else {
     // Analyze task to determine if output should be structured
     if (/\b(list|items|points|steps|bullet)\b/i.test(task)) {
-      outputType = 'output:list';
+      outputType = 'list';
     } else if (/\b(json|structure|object|data|entities)\b/i.test(task)) {
-      outputType = 'output:json';
+      outputType = 'json';
     }
   }
+
+  // Combine field name and type
+  const outputSpec = `${outputFieldName}:${outputType}`;
 
   // Generate description based on task
   const description = generateOutputDescription(task);
 
   // Construct full DSL signature
-  return `${inputs.join(', ')} -> ${outputType} ${description}`;
+  return `${inputs.join(', ')} -> ${outputSpec} ${description}`;
+}
+
+/**
+ * Generate a task-specific output field name (non-generic)
+ * This ensures the DSL signature passes validation by avoiding generic names like "output"
+ *
+ * @param task - The task description
+ * @returns A specific field name based on the task type
+ */
+function generateOutputFieldName(task: string): string {
+  const taskLower = task.toLowerCase();
+
+  // Map common task patterns to specific output field names
+  if (taskLower.includes('joke') || taskLower.includes('humor')) {
+    return 'joke';
+  } else if (taskLower.includes('summarize') || taskLower.includes('summary')) {
+    return 'summary';
+  } else if (taskLower.includes('translate') || taskLower.includes('translation')) {
+    return 'translation';
+  } else if (taskLower.includes('generate') || taskLower.includes('create')) {
+    return 'generated_content';
+  } else if (taskLower.includes('extract')) {
+    return 'extracted_data';
+  } else if (taskLower.includes('analyze') || taskLower.includes('analysis')) {
+    return 'analysis';
+  } else if (taskLower.includes('compare') || taskLower.includes('comparison')) {
+    return 'comparison';
+  } else if (taskLower.includes('explain') || taskLower.includes('explanation')) {
+    return 'explanation';
+  } else if (taskLower.includes('list')) {
+    return 'items';
+  } else if (taskLower.includes('classify') || taskLower.includes('classification')) {
+    return 'classification';
+  } else if (taskLower.includes('find') || taskLower.includes('search')) {
+    return 'findings';
+  } else if (taskLower.includes('transform') || taskLower.includes('convert')) {
+    return 'transformed_text';
+  } else if (taskLower.includes('evaluate') || taskLower.includes('evaluation')) {
+    return 'evaluation';
+  } else if (taskLower.includes('recommend') || taskLower.includes('suggestion')) {
+    return 'recommendation';
+  }
+
+  // Fallback: use "result" with a qualifier based on first verb/noun
+  // Try to extract first meaningful word as qualifier
+  const words = taskLower.match(/\b[a-z]{4,}\b/g);
+  if (words && words.length > 0) {
+    return `${words[0]}_result`;
+  }
+
+  // Last resort fallback (still better than just "output")
+  return 'task_result';
 }
 
 /**
