@@ -1,6 +1,6 @@
 /**
  * Sentiment Classification Tool
- * Uses Ax LLM SDK to classify text sentiment
+ * Uses Ax LLM SDK v15+ to classify text sentiment
  * DSL: review:string -> sentiment:class "positive, negative, neutral"
  */
 
