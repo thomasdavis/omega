@@ -78,7 +78,6 @@ export const getOmegaManifestTool = tool({
             personality: manifest.personality?.tone,
             platform: manifest.metadata?.platform,
             deployment: manifest.metadata?.deployment,
-            supportedLanguages: languageCount,
           },
           capabilities: manifest.capabilities?.map((cap: any) => cap.name) || [],
           tools: manifest.tools?.map((tool: any) => tool.name) || [],
@@ -92,8 +91,6 @@ export const getOmegaManifestTool = tool({
         manifest,
         jsonString: JSON.stringify(manifest, null, 2),
         specificationUrl: 'https://jsonagents.org/',
-        languageCount,
-        languages: languageList,
       };
     } catch (error) {
       return {
