@@ -1980,6 +1980,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'check sentiment of review'
     ],
     category: 'specialized'
+  },
+
+  {
+    id: 'axllmExecutor',
+    name: 'AxLLM Generic Executor',
+    description: 'Execute arbitrary AI tasks using dynamic DSL generation with Ax LLM framework. Can handle jokes, summaries, translations, creative content, and more with context awareness.',
+    keywords: ['axllm', 'dsl', 'dynamic', 'generic', 'ai', 'joke', 'summarize', 'translate', 'generate', 'creative', 'contextual', 'flexible'],
+    tags: ['ai', 'nlp', 'generation', 'analysis', 'flexible'],
+    examples: [
+      'make a joke about the conversation',
+      'axllm tool to generate a joke',
+      'summarize this text',
+      'create a creative story',
+      'translate this to French',
+      'extract key points',
+      'generate ideas based on context'
+    ],
+    category: 'specialized'
   }
 ];
 
