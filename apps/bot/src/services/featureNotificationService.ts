@@ -4,7 +4,7 @@ import {
   markNotificationSent,
   markNotificationFailed,
   type NotificationRecord,
-} from '@repo/database/services/notificationService';
+} from '@repo/database';
 
 /**
  * Format notification message for Discord
