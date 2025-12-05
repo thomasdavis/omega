@@ -1,0 +1,81 @@
+name: Self-Evolution - Daily Reflection
+
+on:
+  # Scheduled daily at 02:00 UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Manual trigger for testing
+  workflow_dispatch:
+
+# Required permissions
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+
+jobs:
+  self-evolution:
+    name: Run Daily Self-Evolution
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for analysis
+          token: ${{ secrets.CLAUDE_PAT }}
+
+      - name: Setup Git for Bot
+        uses: ./.github/actions/setup-git-bot
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run self-evolution orchestrator
+        env:
+          GITHUB_TOKEN: ${{ secrets.CLAUDE_PAT }}
+          GITHUB_REPO: ${{ github.repository }}
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          echo "::group::Running self-evolution orchestrator"
+          tsx scripts/self_evolution/run.ts
+          echo "::endgroup::"
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "## 🤖 Self-Evolution Daily Run" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u +%H:%M:%S) UTC" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "**Status:** ✅ Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Safety Constraints" >> $GITHUB_STEP_SUMMARY
+          echo "- Max LOC: 500" >> $GITHUB_STEP_SUMMARY
+          echo "- Max Files: 10" >> $GITHUB_STEP_SUMMARY
+          echo "- Max Directories: 4" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Allowlist" >> $GITHUB_STEP_SUMMARY
+          echo "- \`prompts/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`docs/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`apps/bot/src/agent/tools\` (new files only)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`.github/workflows/\` (new workflows only)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`config/feature-flags.*\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Blocklist" >> $GITHUB_STEP_SUMMARY
+          echo "- Core runtime entrypoints" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment scripts" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment files" >> $GITHUB_STEP_SUMMARY
+          echo "- Database migrations (unless approved)" >> $GITHUB_STEP_SUMMARY
