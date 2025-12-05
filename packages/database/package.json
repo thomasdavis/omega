@@ -10,7 +10,8 @@
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "postinstall": "prisma generate",
-    "migrate": "tsx scripts/run-migration.ts"
+    "migrate": "tsx scripts/run-migration.ts",
+    "schema-request": "tsx scripts/schema-request.ts"
   },
   "dependencies": {
     "@prisma/client": "~5.22.0",
