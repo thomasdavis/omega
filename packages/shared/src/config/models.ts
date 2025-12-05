@@ -14,9 +14,9 @@
  * - 'gpt-4o' - More capable, higher cost
  * - 'gpt-4-turbo' - Previous generation
  */
-export const OMEGA_MODEL = 'gpt-5-mini';
+export const OMEGA_MODEL = 'gpt-5';
 
 /**
  * Model name for logging and display purposes
  */
-export const OMEGA_MODEL_DISPLAY_NAME = 'GPT-5 Mini';
+export const OMEGA_MODEL_DISPLAY_NAME = 'GPT-5';

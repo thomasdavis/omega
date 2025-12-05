@@ -94,7 +94,7 @@ export async function GET(
 
     // Call OpenAI to generate agent response
     const completion = await openai.chat.completions.create({
-      model: 'gpt-5-mini',
+      model: 'gpt-5',
       messages: [
         {
           role: 'system',

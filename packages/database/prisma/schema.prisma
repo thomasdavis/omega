@@ -471,3 +471,39 @@ model CollaborationPrediction {
   @@index([predictedAt(sort: Desc)], map: "idx_collaboration_predictions_predicted_at")
   @@map("collaboration_predictions")
 }
+
+model SchemaRegistry {
+  id              String   @id @default(uuid())
+  tableName       String   @unique @map("table_name")
+  owner           String?
+  schemaJson      Json     @map("schema_json")
+  status          String   @default("draft")
+  requestMetadata Json?    @map("request_metadata")
+  createdAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([status], map: "idx_schema_registry_status")
+  @@index([tableName], map: "idx_schema_registry_table_name")
+  @@index([createdAt(sort: Desc)], map: "idx_schema_registry_created_at")
+  @@map("schema_registry")
+}
+
+model SchemaAudit {
+  id              String  @id @default(uuid())
+  tableName       String  @map("table_name")
+  action          String
+  schemaJson      Json?   @map("schema_json")
+  sqlExecuted     String? @map("sql_executed") @db.Text
+  status          String  @default("pending")
+  errorMessage    String? @map("error_message") @db.Text
+  performedBy     String? @map("performed_by")
+  requestMetadata Json?   @map("request_metadata")
+  executedAt      BigInt  @map("executed_at")
+  createdAt       BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([tableName], map: "idx_schema_audit_table_name")
+  @@index([action], map: "idx_schema_audit_action")
+  @@index([status], map: "idx_schema_audit_status")
+  @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
+  @@map("schema_audit")
+}
