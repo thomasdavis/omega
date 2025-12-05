@@ -365,7 +365,25 @@ Use when users need help translating vague requirements into actionable technica
     userId: z.string().optional().describe('User ID for tracking'),
     username: z.string().optional().describe('Username for tracking'),
   }),
-  execute: async ({ request, depth = 'thorough', output = 'both', targetStack, constraints, autoCreateIssue, userId, username }) => {
+  execute: async ({
+    request,
+    depth = 'thorough',
+    output = 'both',
+    targetStack,
+    constraints,
+    autoCreateIssue,
+    userId,
+    username
+  }: {
+    request: string;
+    depth?: 'basic' | 'thorough' | 'comprehensive';
+    output?: 'markdown' | 'json' | 'both';
+    targetStack?: { runtime?: string; db?: string; deploy?: string };
+    constraints?: string[];
+    autoCreateIssue?: boolean;
+    userId?: string;
+    username?: string;
+  }) => {
     try {
       console.log(`🔧 [techTranslate] Starting translation for: "${request.substring(0, 100)}..."`);
       console.log(`📊 [techTranslate] Depth: ${depth}, Output: ${output}`);
@@ -426,15 +444,22 @@ Use when users need help translating vague requirements into actionable technica
         console.log(`🔗 [techTranslate] Creating GitHub issue...`);
         try {
           const { githubCreateIssueTool } = await import('./github/createIssue.js');
-          const issueResult = await githubCreateIssueTool.execute({
-            title: spec.title,
-            body: markdown || `# ${spec.title}\n\n${spec.summary}`,
-            labels: ['enhancement', 'tech-spec'],
-          });
-          if (issueResult.success) {
+          const issueResult = await githubCreateIssueTool.execute(
+            {
+              title: spec.title,
+              body: markdown || `# ${spec.title}\n\n${spec.summary}`,
+              labels: ['enhancement', 'tech-spec'],
+            },
+            {} // options parameter required by tool signature
+          );
+
+          // Handle potential AsyncIterable return type
+          if (Symbol.asyncIterator in Object(issueResult)) {
+            console.error(`❌ [techTranslate] Unexpected AsyncIterable response from githubCreateIssueTool`);
+          } else if ('success' in issueResult && issueResult.success) {
             issueUrl = issueResult.issueUrl;
             console.log(`✅ [techTranslate] GitHub issue created: ${issueUrl}`);
-          } else {
+          } else if ('error' in issueResult) {
             console.error(`❌ [techTranslate] Failed to create issue:`, issueResult.error);
           }
         } catch (issueError) {
