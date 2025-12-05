@@ -119,6 +119,7 @@ import { logError } from './utils/errorLogger.js';
 import { buildSystemPrompt } from './lib/systemPrompt.js';
 import { OMEGA_MODEL } from '@repo/shared';
 import { feelingsService } from './lib/feelings/index.js';
+import { statusManager } from './lib/status/index.js';
 import { selectTools } from './toolRouter.js';
 import { loadTools } from './toolLoader.js';
 
@@ -157,6 +158,12 @@ export async function runAgent(
   console.log('🤖 Running AI agent with tools...');
   console.log('🔍 DEBUG: userMessage =', userMessage);
   console.log('🔍 DEBUG: context =', JSON.stringify(context, null, 2));
+
+  // Update status: starting agent execution
+  statusManager.setState('thinking', {
+    user: context.username,
+    channel: context.channelName,
+  });
 
   try {
     // Build conversation history context
@@ -246,6 +253,15 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
             const toolCallId = toolCallItem.toolCallId;
             const args = toolCallItem.input || {};
 
+            // Update status: running tool
+            if (toolName === 'webFetch') {
+              statusManager.setState('waiting-network', { toolName });
+            } else if (toolName === 'generateUserImage' || toolName === 'editUserImage' || toolName === 'generateComic') {
+              statusManager.setState('generating-image', { toolName });
+            } else {
+              statusManager.setState('running-tool', { toolName });
+            }
+
             // Find the corresponding result
             const resultItem = toolResultItems.find(r => r.toolCallId === toolCallId);
             const result = resultItem?.output;
@@ -257,6 +273,9 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
               args,
               result,
             });
+
+            // After tool completes, return to thinking state
+            statusManager.setState('thinking');
           }
         }
       },
@@ -283,11 +302,21 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
     console.log(`🔍 DEBUG: finalText =`, finalText);
     console.log(`🔍 DEBUG: finalText.length =`, finalText?.length || 0);
 
+    // Update status: success
+    statusManager.setState('success');
+
+    // Reset to idle after a brief moment
+    setTimeout(() => {
+      statusManager.reset();
+    }, 3000);
+
     return {
       response: finalText,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
     };
   } catch (error) {
+    // Update status: error
+    statusManager.setError(error as Error);
     // Log the error with context
     logError(error, {
       operation: 'AI Agent execution',

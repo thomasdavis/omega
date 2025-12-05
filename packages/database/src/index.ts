@@ -28,6 +28,7 @@ export * as pgDocumentService from './postgres/documentService.js';
 export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
+export * as newImageService from './postgres/newImageService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
