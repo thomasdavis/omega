@@ -239,20 +239,23 @@ Model: gpt-image-1 with gpt-4.1-mini for planning`,
       // Save image metadata to database
       try {
         await saveGeneratedImage({
-          title: `Advanced Edited Image - ${new Date().toISOString()}`,
-          description: editRequest.substring(0, 500),
+          userId: userId || 'unknown',
+          username,
+          toolName: 'advancedImageEditingWithContext',
           prompt: editRequest,
-          revisedPrompt: undefined,
-          toolUsed: 'advancedImageEditingWithContext',
-          modelUsed: 'gpt-image-1',
-          filename,
-          artifactPath: filepath,
-          publicUrl: editedImageUrl,
-          format: 'png',
-          imageData: currentImageBuffer,
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId,
+          model: 'gpt-image-1',
+          storageUrl: editedImageUrl,
+          storageProvider: 'omega',
+          mimeType: 'image/png',
+          bytes: currentImageBuffer?.length,
+          status: 'success',
+          metadata: {
+            filename,
+            artifactPath: filepath,
+            description: editRequest.substring(0, 500),
+            timestamp: new Date().toISOString(),
+          },
+          messageId: discordMessageId,
         });
         console.log('💾 Image metadata saved to database');
       } catch (dbError) {
