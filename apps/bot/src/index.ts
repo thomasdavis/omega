@@ -11,6 +11,7 @@ import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@r
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
+import { initializeHeartbeat } from './services/statusService.js';
 import { preloadCoreTools } from '@repo/agent';
 
 dotenv.config();
@@ -66,6 +67,9 @@ initializePusher();
 
 // Initialize error monitoring and GitHub issue automation
 initializeErrorMonitoring();
+
+// Initialize status tracking and heartbeat
+initializeHeartbeat();
 
 // NOTE: Artifact server has been removed - it's now handled by the Next.js web app
 // All artifacts, uploads, documents, and blog posts are served via the omega-web service
