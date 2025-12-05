@@ -141,20 +141,23 @@ Model: gpt-image-1 (latest OpenAI image editing model)`,
       if (filename) {
         try {
           await saveGeneratedImage({
-            title: `Edited Image - ${new Date().toISOString()}`,
-            description: editPrompt.substring(0, 500),
+            userId: userId || 'unknown',
+            username,
+            toolName: 'imageEditor',
             prompt: editPrompt,
-            revisedPrompt: editPrompt,
-            toolUsed: 'imageEditor',
-            modelUsed: 'gpt-image-1',
-            filename,
-            artifactPath: filepath,
-            publicUrl: editedImageUrl,
-            format: 'png',
-            imageData: editedImageBuffer,
-            createdBy: userId,
-            createdByUsername: username,
-            discordMessageId,
+            model: 'gpt-image-1',
+            storageUrl: editedImageUrl,
+            storageProvider: 'omega',
+            mimeType: 'image/png',
+            bytes: editedImageBuffer?.length,
+            status: 'success',
+            metadata: {
+              filename,
+              artifactPath: filepath,
+              description: editPrompt.substring(0, 500),
+              timestamp: new Date().toISOString(),
+            },
+            messageId: discordMessageId,
           });
           console.log(`   💾 Image metadata saved to database`);
         } catch (dbError) {

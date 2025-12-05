@@ -6,48 +6,51 @@ import { prisma } from './prismaClient.js';
 import type { Prisma } from '@prisma/client';
 
 export interface GeneratedImageRecord {
-  id: number;
-  title: string;
-  description?: string | null;
-  imageData?: Buffer | null;
+  id: bigint;
+  requestId?: string | null;
+  userId: string;
+  username?: string | null;
+  toolName: string;
   prompt: string;
-  revisedPrompt?: string | null;
-  toolUsed: string;
-  modelUsed?: string | null;
-  filename: string;
-  fileSize?: number | null;
-  artifactPath?: string | null;
-  publicUrl?: string | null;
-  width?: number | null;
-  height?: number | null;
-  format?: string | null;
+  model?: string | null;
+  size?: string | null;
+  quality?: string | null;
+  style?: string | null;
+  n?: number | null;
+  storageUrl: string;
+  storageProvider?: string | null;
+  mimeType?: string | null;
+  bytes?: number | null;
+  sha256?: string | null;
+  tags: string[];
+  status: string;
+  error?: string | null;
   metadata?: Prisma.JsonValue | null;
-  createdBy?: string | null;
-  createdByUsername?: string | null;
-  discordMessageId?: string | null;
-  githubIssueNumber?: number | null;
+  messageId?: string | null;
   createdAt: Date;
 }
 
 export interface CreateGeneratedImageInput {
-  title: string;
-  description?: string;
-  imageData?: Buffer;
+  requestId?: string;
+  userId: string;
+  username?: string;
+  toolName?: string;
   prompt: string;
-  revisedPrompt?: string;
-  toolUsed: string;
-  modelUsed?: string;
-  filename: string;
-  artifactPath?: string;
-  publicUrl?: string;
-  width?: number;
-  height?: number;
-  format?: string;
+  model?: string;
+  size?: string;
+  quality?: string;
+  style?: string;
+  n?: number;
+  storageUrl: string;
+  storageProvider?: string;
+  mimeType?: string;
+  bytes?: number;
+  sha256?: string;
+  tags?: string[];
+  status?: string;
+  error?: string;
   metadata?: Prisma.InputJsonValue | null;
-  createdBy?: string;
-  createdByUsername?: string;
-  discordMessageId?: string;
-  githubIssueNumber?: number;
+  messageId?: string;
 }
 
 /**
@@ -58,25 +61,26 @@ export async function saveGeneratedImage(
 ): Promise<GeneratedImageRecord> {
   const record = await prisma.generatedImage.create({
     data: {
-      title: input.title,
-      description: input.description,
-      imageData: input.imageData,
+      requestId: input.requestId,
+      userId: input.userId,
+      username: input.username,
+      toolName: input.toolName || 'generateUserImage',
       prompt: input.prompt,
-      revisedPrompt: input.revisedPrompt,
-      toolUsed: input.toolUsed,
-      modelUsed: input.modelUsed,
-      filename: input.filename,
-      fileSize: input.imageData?.length,
-      artifactPath: input.artifactPath,
-      publicUrl: input.publicUrl,
-      width: input.width,
-      height: input.height,
-      format: input.format,
+      model: input.model,
+      size: input.size,
+      quality: input.quality,
+      style: input.style,
+      n: input.n ?? 1,
+      storageUrl: input.storageUrl,
+      storageProvider: input.storageProvider || 'omega',
+      mimeType: input.mimeType,
+      bytes: input.bytes,
+      sha256: input.sha256,
+      tags: input.tags || [],
+      status: input.status || 'success',
+      error: input.error,
       metadata: input.metadata ?? undefined,
-      createdBy: input.createdBy,
-      createdByUsername: input.createdByUsername,
-      discordMessageId: input.discordMessageId,
-      githubIssueNumber: input.githubIssueNumber,
+      messageId: input.messageId,
     },
   });
 
@@ -86,7 +90,7 @@ export async function saveGeneratedImage(
 /**
  * Get generated image by ID
  */
-export async function getGeneratedImage(id: number): Promise<GeneratedImageRecord | null> {
+export async function getGeneratedImage(id: bigint): Promise<GeneratedImageRecord | null> {
   return await prisma.generatedImage.findUnique({
     where: { id },
   });
@@ -114,83 +118,89 @@ export async function getGeneratedImageCount(): Promise<number> {
 }
 
 /**
- * Get generated image metadata (without binary data)
+ * Get generated image metadata
  */
-export async function getGeneratedImageMetadata(id: number): Promise<{
-  id: number;
-  title: string;
-  description: string | null;
+export async function getGeneratedImageMetadata(id: bigint): Promise<{
+  id: bigint;
+  requestId: string | null;
+  userId: string;
+  username: string | null;
+  toolName: string;
   prompt: string;
-  revisedPrompt: string | null;
-  toolUsed: string;
-  modelUsed: string | null;
-  filename: string;
-  fileSize: number | null;
-  artifactPath: string | null;
-  publicUrl: string | null;
-  width: number | null;
-  height: number | null;
-  format: string | null;
+  model: string | null;
+  size: string | null;
+  quality: string | null;
+  style: string | null;
+  n: number | null;
+  storageUrl: string;
+  storageProvider: string | null;
+  mimeType: string | null;
+  bytes: number | null;
+  sha256: string | null;
+  tags: string[];
+  status: string;
+  error: string | null;
   metadata: Prisma.JsonValue | null;
-  createdBy: string | null;
-  createdByUsername: string | null;
-  discordMessageId: string | null;
-  githubIssueNumber: number | null;
+  messageId: string | null;
   createdAt: Date;
 } | null> {
   return await prisma.generatedImage.findUnique({
     where: { id },
     select: {
       id: true,
-      title: true,
-      description: true,
+      requestId: true,
+      userId: true,
+      username: true,
+      toolName: true,
       prompt: true,
-      revisedPrompt: true,
-      toolUsed: true,
-      modelUsed: true,
-      filename: true,
-      fileSize: true,
-      artifactPath: true,
-      publicUrl: true,
-      width: true,
-      height: true,
-      format: true,
+      model: true,
+      size: true,
+      quality: true,
+      style: true,
+      n: true,
+      storageUrl: true,
+      storageProvider: true,
+      mimeType: true,
+      bytes: true,
+      sha256: true,
+      tags: true,
+      status: true,
+      error: true,
       metadata: true,
-      createdBy: true,
-      createdByUsername: true,
-      discordMessageId: true,
-      githubIssueNumber: true,
+      messageId: true,
       createdAt: true,
     },
   });
 }
 
 /**
- * List generated images metadata (without binary data)
+ * List generated images metadata
  */
 export async function listGeneratedImagesMetadata(
   limit = 50,
   offset = 0
 ): Promise<Array<{
-  id: number;
-  title: string;
-  description: string | null;
+  id: bigint;
+  requestId: string | null;
+  userId: string;
+  username: string | null;
+  toolName: string;
   prompt: string;
-  revisedPrompt: string | null;
-  toolUsed: string;
-  modelUsed: string | null;
-  filename: string;
-  fileSize: number | null;
-  artifactPath: string | null;
-  publicUrl: string | null;
-  width: number | null;
-  height: number | null;
-  format: string | null;
+  model: string | null;
+  size: string | null;
+  quality: string | null;
+  style: string | null;
+  n: number | null;
+  storageUrl: string;
+  storageProvider: string | null;
+  mimeType: string | null;
+  bytes: number | null;
+  sha256: string | null;
+  tags: string[];
+  status: string;
+  error: string | null;
   metadata: Prisma.JsonValue | null;
-  createdBy: string | null;
-  createdByUsername: string | null;
-  discordMessageId: string | null;
-  githubIssueNumber: number | null;
+  messageId: string | null;
   createdAt: Date;
 }>> {
   return await prisma.generatedImage.findMany({
@@ -199,24 +209,26 @@ export async function listGeneratedImagesMetadata(
     skip: offset,
     select: {
       id: true,
-      title: true,
-      description: true,
+      requestId: true,
+      userId: true,
+      username: true,
+      toolName: true,
       prompt: true,
-      revisedPrompt: true,
-      toolUsed: true,
-      modelUsed: true,
-      filename: true,
-      fileSize: true,
-      artifactPath: true,
-      publicUrl: true,
-      width: true,
-      height: true,
-      format: true,
+      model: true,
+      size: true,
+      quality: true,
+      style: true,
+      n: true,
+      storageUrl: true,
+      storageProvider: true,
+      mimeType: true,
+      bytes: true,
+      sha256: true,
+      tags: true,
+      status: true,
+      error: true,
       metadata: true,
-      createdBy: true,
-      createdByUsername: true,
-      discordMessageId: true,
-      githubIssueNumber: true,
+      messageId: true,
       createdAt: true,
     },
   });
@@ -231,7 +243,7 @@ export async function listGeneratedImagesByUser(
   offset = 0
 ): Promise<GeneratedImageRecord[]> {
   return await prisma.generatedImage.findMany({
-    where: { createdBy: userId },
+    where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
@@ -242,12 +254,27 @@ export async function listGeneratedImagesByUser(
  * List generated images by tool
  */
 export async function listGeneratedImagesByTool(
-  toolUsed: string,
+  toolName: string,
   limit = 50,
   offset = 0
 ): Promise<GeneratedImageRecord[]> {
   return await prisma.generatedImage.findMany({
-    where: { toolUsed },
+    where: { toolName },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+  });
+}
+
+/**
+ * List failed image generations
+ */
+export async function listFailedGeneratedImages(
+  limit = 50,
+  offset = 0
+): Promise<GeneratedImageRecord[]> {
+  return await prisma.generatedImage.findMany({
+    where: { status: { not: 'success' } },
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: offset,
