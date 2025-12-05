@@ -1,0 +1,312 @@
+name: Database - Run Migrations
+
+on:
+  # Manual trigger with SQL input
+  workflow_dispatch:
+    inputs:
+      migration_sql:
+        description: 'SQL to execute (for simple migrations)'
+        required: false
+        type: string
+      migration_script:
+        description: 'Path to migration script in packages/database/scripts/ (e.g., create-new-table.sh)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run - validate SQL without executing'
+        required: false
+        type: boolean
+        default: false
+
+  # Trigger on issues labeled with 'database'
+  issues:
+    types: [labeled]
+
+  # Trigger on PR merge when database scripts are changed
+  push:
+    branches: [main]
+    paths:
+      - 'packages/database/scripts/**'
+      - 'packages/database/prisma/migrations/**'
+
+jobs:
+  # Job 1: Handle manual migrations
+  manual-migration:
+    name: Run Manual Migration
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Validate inputs
+        run: |
+          if [ -z "${{ inputs.migration_sql }}" ] && [ -z "${{ inputs.migration_script }}" ]; then
+            echo "::error::Either migration_sql or migration_script must be provided"
+            exit 1
+          fi
+
+      - name: Run migration script
+        if: inputs.migration_script != ''
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          SCRIPT_PATH="packages/database/scripts/${{ inputs.migration_script }}"
+
+          if [ ! -f "$SCRIPT_PATH" ]; then
+            echo "::error::Migration script not found: $SCRIPT_PATH"
+            exit 1
+          fi
+
+          echo "📋 Running migration script: $SCRIPT_PATH"
+
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "🔍 DRY RUN - Showing script contents:"
+            cat "$SCRIPT_PATH"
+          else
+            bash "$SCRIPT_PATH"
+            echo "✅ Migration script completed"
+          fi
+
+      - name: Run SQL migration
+        if: inputs.migration_sql != '' && inputs.migration_script == ''
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          echo "📋 Running SQL migration"
+
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "🔍 DRY RUN - SQL to execute:"
+            echo "${{ inputs.migration_sql }}"
+            echo ""
+            echo "Validating SQL syntax..."
+            echo "${{ inputs.migration_sql }}" | psql "$DATABASE_URL" -c "EXPLAIN ${{ inputs.migration_sql }}" 2>&1 || echo "Note: EXPLAIN may fail for DDL statements, this is expected"
+          else
+            psql "$DATABASE_URL" -c "${{ inputs.migration_sql }}"
+            echo "✅ SQL migration completed"
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🗄️ Database Migration Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.dry_run }}" == "true" ]; then
+            echo "**Mode:** Dry Run (no changes made)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode:** Live Execution" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -n "${{ inputs.migration_script }}" ]; then
+            echo "**Script:** \`${{ inputs.migration_script }}\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -n "${{ inputs.migration_sql }}" ]; then
+            echo "**SQL:** Custom SQL provided" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Job 2: Handle database-labeled issues
+  issue-database-label:
+    name: Database Issue Guidance
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.label.name == 'database'
+
+    permissions:
+      issues: write
+
+    steps:
+      - name: Add database guidance comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+
+            const comment = `## 🗄️ Database Migration Detected
+
+This issue has been labeled with \`database\`, indicating it requires PostgreSQL schema changes.
+
+### For Implementers (@claude or developers):
+
+**1. Design First**
+- Plan your table schema before writing code
+- Consider indexes for query performance
+- Use appropriate PostgreSQL types (SERIAL, TIMESTAMPTZ, JSONB, etc.)
+
+**2. Create Migration Script**
+\`\`\`bash
+# Create a new script in packages/database/scripts/
+# Example: packages/database/scripts/create-your-table.sh
+
+#!/bin/bash
+psql "$DATABASE_URL" << 'EOF'
+CREATE TABLE IF NOT EXISTS your_table (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL,
+  data JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_your_table_user_id ON your_table(user_id);
+EOF
+\`\`\`
+
+**3. Run Migration**
+\`\`\`bash
+# Via Railway CLI (recommended)
+railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && bash packages/database/scripts/your-script.sh'
+
+# Or use the GitHub Action (workflow_dispatch):
+# Go to Actions → "Database - Run Migrations" → Run workflow
+\`\`\`
+
+**4. Update Prisma Schema**
+\`\`\`bash
+cd packages/database
+pnpm prisma db pull    # Introspect production DB
+pnpm prisma generate   # Regenerate client
+\`\`\`
+
+### Resources
+- [CLAUDE.md Database Section](../blob/main/CLAUDE.md#database-configuration)
+- [Existing migration scripts](../tree/main/packages/database/scripts)
+- [Prisma documentation](https://www.prisma.io/docs)
+
+---
+*This comment was auto-generated because the \`database\` label was added.*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: comment
+            });
+
+            console.log(`Added database guidance to issue #${issueNumber}`);
+
+  # Job 3: Auto-run new migration scripts on merge to main
+  auto-migrate:
+    name: Auto-Run New Migrations
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to detect changes
+
+      - name: Detect new migration scripts
+        id: detect
+        run: |
+          # Get list of added/modified migration scripts
+          CHANGED_SCRIPTS=$(git diff --name-only --diff-filter=AM HEAD~1 HEAD -- 'packages/database/scripts/*.sh' 'packages/database/scripts/*.sql' | head -5)
+
+          if [ -z "$CHANGED_SCRIPTS" ]; then
+            echo "No new migration scripts detected"
+            echo "has_migrations=false" >> $GITHUB_OUTPUT
+          else
+            echo "New migration scripts detected:"
+            echo "$CHANGED_SCRIPTS"
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+            echo "scripts<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGED_SCRIPTS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install PostgreSQL client
+        if: steps.detect.outputs.has_migrations == 'true'
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run new migration scripts
+        if: steps.detect.outputs.has_migrations == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          echo "🗄️ Running new migration scripts..."
+
+          while IFS= read -r script; do
+            if [ -n "$script" ] && [ -f "$script" ]; then
+              echo ""
+              echo "📋 Running: $script"
+
+              if [[ "$script" == *.sh ]]; then
+                bash "$script"
+              elif [[ "$script" == *.sql ]]; then
+                psql "$DATABASE_URL" -f "$script"
+              fi
+
+              echo "✅ Completed: $script"
+            fi
+          done <<< "${{ steps.detect.outputs.scripts }}"
+
+          echo ""
+          echo "🎉 All migrations completed successfully"
+
+      - name: Summary
+        if: steps.detect.outputs.has_migrations == 'true'
+        run: |
+          echo "## 🗄️ Auto-Migration Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** Push to main with new migration scripts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Scripts executed:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.detect.outputs.scripts }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  # Job 4: Schema verification
+  verify-schema:
+    name: Verify Database Schema
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify Prisma schema is in sync
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          cd packages/database
+
+          echo "📊 Introspecting production database..."
+          pnpm prisma db pull --force
+
+          echo ""
+          echo "🔍 Checking for schema drift..."
+
+          # Check if there are any changes to the schema
+          if git diff --quiet prisma/schema.prisma; then
+            echo "✅ Prisma schema is in sync with production database"
+          else
+            echo "⚠️ Schema drift detected! Prisma schema differs from production:"
+            git diff prisma/schema.prisma
+            echo ""
+            echo "::warning::Prisma schema is out of sync with production database. Consider running 'pnpm prisma db pull' locally and committing the changes."
+          fi
+
+      - name: Generate Prisma client
+        run: |
+          cd packages/database
+          pnpm prisma generate
+          echo "✅ Prisma client regenerated"

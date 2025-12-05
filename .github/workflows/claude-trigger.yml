@@ -6,7 +6,7 @@ on:
   pull_request_review_comment:
     types: [created]
   issues:
-    types: [opened]
+    types: [opened, labeled]
   pull_request:
     types: [labeled]
 
@@ -15,11 +15,12 @@ jobs:
     name: Trigger Claude Code
     runs-on: ubuntu-latest
 
-    # Run if comment contains @claude OR issue body contains @claude OR label is claude-fix-needed
+    # Run if comment contains @claude OR issue body contains @claude OR label is claude-fix-needed OR database label added
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'database') ||
       (github.event_name == 'pull_request' && github.event.label.name == 'claude-fix-needed')
 
     permissions:
@@ -36,15 +37,22 @@ jobs:
         run: |
           echo "::group::Trigger Information"
           echo "📋 Event: ${{ github.event_name }}"
+          echo "📋 Action: ${{ github.event.action }}"
           if [ "${{ github.event_name }}" == "issue_comment" ]; then
             echo "📝 Comment on issue/PR #${{ github.event.issue.number }}"
             echo "👤 By: ${{ github.event.comment.user.login }}"
           elif [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
             echo "📝 Review comment on PR #${{ github.event.pull_request.number }}"
             echo "👤 By: ${{ github.event.comment.user.login }}"
-          elif [ "${{ github.event_name }}" == "issues" ]; then
+          elif [ "${{ github.event_name }}" == "issues" ] && [ "${{ github.event.action }}" == "opened" ]; then
             echo "🆕 New issue #${{ github.event.issue.number }}"
             echo "👤 By: ${{ github.event.issue.user.login }}"
+          elif [ "${{ github.event_name }}" == "issues" ] && [ "${{ github.event.action }}" == "labeled" ]; then
+            echo "🏷️ Label added to issue #${{ github.event.issue.number }}"
+            echo "🏷️ Label: ${{ github.event.label.name }}"
+            if [ "${{ github.event.label.name }}" == "database" ]; then
+              echo "🗄️ Database migration issue detected!"
+            fi
           elif [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "🏷️ Label added to PR #${{ github.event.pull_request.number }}"
             echo "🏷️ Label: ${{ github.event.label.name }}"
