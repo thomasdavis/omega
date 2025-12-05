@@ -22,6 +22,9 @@ export * from './services/geminiImageService.js';
 export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';
 
+// Status tracking
+export * from './lib/status/index.js';
+
 // Additional tools needed by bot services
 export { summarizeUserProfilesTool } from './tools/summarizeUserProfiles.js';
 export { tellSpanishJokeTool } from './tools/tellSpanishJoke.js';

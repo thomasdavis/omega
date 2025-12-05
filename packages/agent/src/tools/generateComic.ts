@@ -13,7 +13,7 @@ import {
 } from '../services/geminiImageService.js';
 import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
-import { getDatabase } from '@repo/database';
+import { getDatabase, saveGeneratedImage } from '@repo/database';
 
 /**
  * Look up user profiles by usernames
@@ -71,8 +71,20 @@ export const generateComicTool = tool({
       .describe(
         'Array of Discord user IDs to include as characters in the comic (legacy - prefer conversationParticipants)'
       ),
+    userId: z
+      .string()
+      .optional()
+      .describe('User ID of the person who created this comic'),
+    username: z
+      .string()
+      .optional()
+      .describe('Username of the person who created this comic'),
+    discordMessageId: z
+      .string()
+      .optional()
+      .describe('Discord message ID if this comic was posted to Discord'),
   }),
-  execute: async ({ issueNumber, customPrompt, conversationParticipants, includeUserIds }) => {
+  execute: async ({ issueNumber, customPrompt, conversationParticipants, includeUserIds, userId, username, discordMessageId: inputDiscordMessageId }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 
@@ -274,6 +286,37 @@ Make it entertaining!`;
         }
       } else {
         console.warn(`⚠️ [generateComic] No image buffer available, skipping Discord post`);
+      }
+
+      // Save image metadata to database
+      try {
+        const filename = issueNumber ? `comic-issue-${issueNumber}-${Date.now()}.png` : `comic-${Date.now()}.png`;
+        const description = customPrompt
+          ? customPrompt.substring(0, 500)
+          : issueTitle
+            ? `Comic based on issue #${issueNumber}: ${issueTitle}`
+            : 'Generated comic';
+
+        await saveGeneratedImage({
+          title: `Comic - ${new Date().toISOString()}`,
+          description,
+          prompt: customPrompt || `GitHub Issue #${issueNumber}: ${issueTitle}`,
+          revisedPrompt: customPrompt || `GitHub Issue #${issueNumber}: ${issueTitle}`,
+          toolUsed: 'generateComic',
+          modelUsed: 'gemini-3-pro-image-preview',
+          filename,
+          artifactPath: imageResult.imagePath,
+          publicUrl: undefined,
+          format: 'png',
+          imageData: imageResult.imageBuffer,
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId: discordMessageId || inputDiscordMessageId,
+          githubIssueNumber: issueNumber,
+        });
+        console.log(`💾 Image metadata saved to database`);
+      } catch (dbError) {
+        console.error(`⚠️ Failed to save image metadata to database:`, dbError);
       }
 
       const result = {

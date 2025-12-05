@@ -11,13 +11,17 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { saveGeneratedImage } from '@repo/database';
 
 /**
  * Generate an icon or emoji using OpenAI's DALL-E API
  */
 async function generateIconEmoji(
   prompt: string,
-  style: string = 'colorful'
+  style: string = 'colorful',
+  userId?: string,
+  username?: string,
+  discordMessageId?: string
 ): Promise<{
   imageUrl: string;
   revisedPrompt?: string;
@@ -72,10 +76,34 @@ Create a small, expressive graphical element that clearly represents the concept
       throw new Error('Invalid response from OpenAI API: missing image URL');
     }
 
-    return {
+    const result = {
       imageUrl: data.data[0].url,
       revisedPrompt: data.data[0].revised_prompt,
     };
+
+    // Save image metadata to database
+    try {
+      const filename = `icon-emoji-${Date.now()}.png`;
+      await saveGeneratedImage({
+        title: `Icon/Emoji - ${new Date().toISOString()}`,
+        description: prompt.substring(0, 500),
+        prompt,
+        revisedPrompt: result.revisedPrompt,
+        toolUsed: 'generateIconEmoji',
+        modelUsed: 'dall-e-3',
+        filename,
+        publicUrl: result.imageUrl,
+        format: 'png',
+        createdBy: userId,
+        createdByUsername: username,
+        discordMessageId,
+      });
+      console.log(`💾 Image metadata saved to database`);
+    } catch (dbError) {
+      console.error('⚠️ Failed to save image metadata to database:', dbError);
+    }
+
+    return result;
   } catch (error) {
     console.error('❌ Error generating icon/emoji:');
     console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
@@ -93,14 +121,17 @@ export const generateIconEmojiTool = tool({
   inputSchema: z.object({
     prompt: z.string().describe('The text description of the icon or emoji to generate. Be specific about what you want. Examples: "a happy robot face", "a coffee cup steaming", "a lightning bolt with sparkles", "a cute cat paw"'),
     style: z.enum(['flat', '3d', 'pixel-art', 'minimal', 'colorful', 'gradient', 'line-art', 'realistic']).optional().default('colorful').describe('Visual style for the icon/emoji. Options: "flat" (simple 2D), "3d" (dimensional), "pixel-art" (retro pixelated), "minimal" (clean and simple), "colorful" (vibrant, default), "gradient" (smooth color transitions), "line-art" (outlined style), "realistic" (photorealistic)'),
+    userId: z.string().optional().describe('Optional user ID for tracking who created the image'),
+    username: z.string().optional().describe('Optional username for tracking who created the image'),
+    discordMessageId: z.string().optional().describe('Optional Discord message ID to associate with this generated image'),
   }),
-  execute: async ({ prompt, style = 'colorful' }) => {
+  execute: async ({ prompt, style = 'colorful', userId, username, discordMessageId }) => {
     try {
       console.log('🎨 Generate Icon/Emoji: Processing icon/emoji generation...');
       console.log(`   📝 Prompt: ${prompt}`);
       console.log(`   🎭 Style: ${style}`);
 
-      const result = await generateIconEmoji(prompt, style);
+      const result = await generateIconEmoji(prompt, style, userId, username, discordMessageId);
 
       console.log(`   ✅ Icon/emoji generated successfully`);
       console.log(`   🔗 URL: ${result.imageUrl}`);

@@ -381,4 +381,189 @@ model Caricature {
   @@index([userId], map: "idx_caricatures_user_id")
   @@index([createdAt(sort: Desc)], map: "idx_caricatures_created_at")
   @@map("caricatures")
+model GeneratedImage {
+  id                Int      @id @default(autoincrement())
+  title             String
+  description       String?
+  imageData         Bytes?   @map("image_data")
+  prompt            String   @db.Text
+  revisedPrompt     String?  @map("revised_prompt") @db.Text
+  toolUsed          String   @map("tool_used")
+  modelUsed         String?  @map("model_used")
+  filename          String
+  fileSize          Int?     @map("file_size")
+  artifactPath      String?  @map("artifact_path")
+  publicUrl         String?  @map("public_url")
+  width             Int?
+  height            Int?
+  format            String?  @default("png")
+  metadata          Json?
+  createdBy         String?  @map("created_by")
+  createdByUsername String?  @map("created_by_username")
+  discordMessageId  String?  @map("discord_message_id")
+  githubIssueNumber Int?     @map("github_issue_number")
+  createdAt         DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_generated_images_created_at")
+  @@index([createdBy], map: "idx_generated_images_created_by")
+  @@index([toolUsed], map: "idx_generated_images_tool_used")
+  @@index([modelUsed], map: "idx_generated_images_model_used")
+  @@map("generated_images")
+}
+
+model UserAffinity {
+  id                         String  @id
+  userId1                    String  @map("user_id_1")
+  userId2                    String  @map("user_id_2")
+  username1                  String  @map("username_1")
+  username2                  String  @map("username_2")
+  affinityScore              Float   @map("affinity_score") @db.Real
+  personalityCompatibility   Float?  @map("personality_compatibility") @db.Real
+  interestAlignment          Float?  @map("interest_alignment") @db.Real
+  communicationCompatibility Float?  @map("communication_compatibility") @db.Real
+  compatibilityFactors       Json?   @map("compatibility_factors")
+  calculatedAt               BigInt  @map("calculated_at")
+  createdAt                  BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt                  BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@unique([userId1, userId2], map: "unique_user_pair")
+  @@index([userId1], map: "idx_user_affinities_user_1")
+  @@index([userId2], map: "idx_user_affinities_user_2")
+  @@index([affinityScore(sort: Desc)], map: "idx_user_affinities_score")
+  @@index([calculatedAt(sort: Desc)], map: "idx_user_affinities_calculated_at")
+  @@map("user_affinities")
+}
+
+model CollaborationHistory {
+  id                   String  @id
+  userId1              String  @map("user_id_1")
+  userId2              String  @map("user_id_2")
+  username1            String  @map("username_1")
+  username2            String  @map("username_2")
+  collaborationType    String  @map("collaboration_type")
+  projectName          String? @map("project_name")
+  projectDescription   String? @map("project_description")
+  startDate            BigInt  @map("start_date")
+  endDate              BigInt? @map("end_date")
+  successRating        Float?  @map("success_rating") @db.Real
+  user1Satisfaction    Int?    @map("user_1_satisfaction")
+  user2Satisfaction    Int?    @map("user_2_satisfaction")
+  collaborationNotes   String? @map("collaboration_notes")
+  metadata             Json?
+  createdAt            BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt            BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([userId1], map: "idx_collaboration_history_user_1")
+  @@index([userId2], map: "idx_collaboration_history_user_2")
+  @@index([collaborationType], map: "idx_collaboration_history_type")
+  @@index([startDate(sort: Desc)], map: "idx_collaboration_history_start_date")
+  @@index([successRating(sort: Desc)], map: "idx_collaboration_history_success_rating")
+  @@map("collaboration_history")
+}
+
+model CollaborationPrediction {
+  id                            String  @id
+  userId1                       String  @map("user_id_1")
+  userId2                       String  @map("user_id_2")
+  username1                     String  @map("username_1")
+  username2                     String  @map("username_2")
+  predictedSuccessScore         Float   @map("predicted_success_score") @db.Real
+  confidenceLevel               Float   @map("confidence_level") @db.Real
+  recommendedCollaborationTypes Json?   @map("recommended_collaboration_types")
+  potentialChallenges           Json?   @map("potential_challenges")
+  synergyFactors                Json?   @map("synergy_factors")
+  predictionReasoning           String? @map("prediction_reasoning")
+  predictionModelVersion        String? @map("prediction_model_version")
+  predictedAt                   BigInt  @map("predicted_at")
+  createdAt                     BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt                     BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@unique([userId1, userId2], map: "unique_prediction_pair")
+  @@index([userId1], map: "idx_collaboration_predictions_user_1")
+  @@index([userId2], map: "idx_collaboration_predictions_user_2")
+  @@index([predictedSuccessScore(sort: Desc)], map: "idx_collaboration_predictions_score")
+  @@index([predictedAt(sort: Desc)], map: "idx_collaboration_predictions_predicted_at")
+  @@map("collaboration_predictions")
+}
+
+model SchemaRegistry {
+  id              String   @id @default(uuid())
+  tableName       String   @unique @map("table_name")
+  owner           String?
+  schemaJson      Json     @map("schema_json")
+  status          String   @default("draft")
+  requestMetadata Json?    @map("request_metadata")
+  createdAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([status], map: "idx_schema_registry_status")
+  @@index([tableName], map: "idx_schema_registry_table_name")
+  @@index([createdAt(sort: Desc)], map: "idx_schema_registry_created_at")
+  @@map("schema_registry")
+}
+
+model SchemaAudit {
+  id              String  @id @default(uuid())
+  tableName       String  @map("table_name")
+  action          String
+  schemaJson      Json?   @map("schema_json")
+  sqlExecuted     String? @map("sql_executed") @db.Text
+  status          String  @default("pending")
+  errorMessage    String? @map("error_message") @db.Text
+  performedBy     String? @map("performed_by")
+  requestMetadata Json?   @map("request_metadata")
+  executedAt      BigInt  @map("executed_at")
+  createdAt       BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([tableName], map: "idx_schema_audit_table_name")
+  @@index([action], map: "idx_schema_audit_action")
+  @@index([status], map: "idx_schema_audit_status")
+  @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
+  @@map("schema_audit")
+}
+
+model SafetyPolicy {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()::text"))
+  policyName            String   @unique @map("policy_name")
+  description           String?
+  maxLinesOfCode        Int      @default(500) @map("max_lines_of_code")
+  maxFilesChanged       Int      @default(10) @map("max_files_changed")
+  maxDirectoriesChanged Int      @default(4) @map("max_directories_changed")
+  allowlistPatterns     Json     @default("[]") @map("allowlist_patterns")
+  blocklistPatterns     Json     @default("[]") @map("blocklist_patterns")
+  isActive              Boolean  @default(true) @map("is_active")
+  policyVersion         Int      @default(1) @map("policy_version")
+  createdBy             String?  @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive], map: "idx_safety_policy_active")
+  @@index([policyName], map: "idx_safety_policy_name")
+  @@index([createdAt(sort: Desc)], map: "idx_safety_policy_created_at")
+  @@map("safety_policy")
+}
+
+model SelfEvolutionRollback {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()::text"))
+  prNumber             Int?      @map("pr_number")
+  prTitle              String?   @map("pr_title")
+  prUrl                String?   @map("pr_url")
+  commitSha            String?   @map("commit_sha")
+  branchName           String?   @map("branch_name")
+  failureReason        String    @map("failure_reason")
+  failureType          String    @map("failure_type")
+  violationDetails     Json?     @map("violation_details")
+  rollbackStatus       String    @default("pending") @map("rollback_status")
+  rollbackCommitSha    String?   @map("rollback_commit_sha")
+  rollbackCompletedAt  DateTime? @map("rollback_completed_at") @db.Timestamptz(6)
+  createdBy            String    @default("system") @map("created_by")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([prNumber], map: "idx_self_evolution_rollbacks_pr")
+  @@index([rollbackStatus], map: "idx_self_evolution_rollbacks_status")
+  @@index([failureType], map: "idx_self_evolution_rollbacks_failure_type")
+  @@index([createdAt(sort: Desc)], map: "idx_self_evolution_rollbacks_created_at")
+  @@index([branchName], map: "idx_self_evolution_rollbacks_branch")
+  @@map("self_evolution_rollbacks")
 }

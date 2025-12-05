@@ -5,6 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { saveGeneratedImage } from '@repo/database';
 
 // QuickChart.io API endpoint
 const QUICKCHART_API = 'https://quickchart.io/chart';
@@ -169,9 +170,18 @@ export const renderChartTool = tool({
 
     backgroundColor: z.string().optional()
       .describe('Background color (default: "white")'),
+
+    userId: z.string().optional()
+      .describe('User ID for tracking who created the chart'),
+
+    username: z.string().optional()
+      .describe('Username for tracking who created the chart'),
+
+    discordMessageId: z.string().optional()
+      .describe('Discord message ID to associate with this chart'),
   }),
 
-  execute: async ({ type, labels, datasets, title, width, height, backgroundColor }) => {
+  execute: async ({ type, labels, datasets, title, width, height, backgroundColor, userId, username, discordMessageId }) => {
     try {
       // Validate that all datasets have the same length as labels
       const expectedLength = type === 'scatter' ? undefined : labels.length;
@@ -208,22 +218,73 @@ export const renderChartTool = tool({
 
       console.log(`✅ Chart generated successfully (${imageBuffer.length} bytes)`);
 
-      // Return the chart URL and metadata
-      // The Discord bot will need to download this URL and send it as an attachment
-      return {
-        success: true,
-        type,
-        chartUrl,
-        imageSize: imageBuffer.length,
-        imageSizeFormatted: `${(imageBuffer.length / 1024).toFixed(2)} KB`,
-        width: width || 800,
-        height: height || 600,
-        datasetCount: datasets.length,
-        dataPointsPerDataset: datasets[0]?.data.length || 0,
-        message: `Chart generated successfully! Download from: ${chartUrl}`,
-        // Note: The bot's message handler will need to download this URL and attach it to the Discord message
-        downloadUrl: chartUrl,
-      };
+      // Create a descriptive prompt from chart configuration
+      const datasetDescriptions = datasets
+        .map(ds => `${ds.label}: [${ds.data.join(', ')}]`)
+        .join('; ');
+      const chartPrompt = `Generate a ${type} chart titled "${title || 'Chart'}" with datasets: ${datasetDescriptions}`;
+
+      // Save chart metadata to database
+      try {
+        const dbResult = await saveGeneratedImage({
+          title: title || `${type.charAt(0).toUpperCase() + type.slice(1)} Chart`,
+          description: `${type.charAt(0).toUpperCase() + type.slice(1)} chart generated via QuickChart.io API`,
+          imageData: imageBuffer,
+          prompt: chartPrompt,
+          toolUsed: 'renderChart',
+          modelUsed: 'quickchart.io',
+          filename: `chart_${Date.now()}.png`,
+          width: width || 800,
+          height: height || 600,
+          format: 'png',
+          metadata: {
+            chartType: type,
+            labelsCount: labels.length,
+            datasetsCount: datasets.length,
+            dataPointsPerDataset: datasets[0]?.data.length || 0,
+          },
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId: discordMessageId,
+        });
+
+        console.log(`💾 Chart saved to database with ID: ${dbResult.id}`);
+
+        // Return the chart URL and metadata
+        return {
+          success: true,
+          type,
+          chartUrl,
+          imageSize: imageBuffer.length,
+          imageSizeFormatted: `${(imageBuffer.length / 1024).toFixed(2)} KB`,
+          width: width || 800,
+          height: height || 600,
+          datasetCount: datasets.length,
+          dataPointsPerDataset: datasets[0]?.data.length || 0,
+          message: `Chart generated successfully! Download from: ${chartUrl}`,
+          downloadUrl: chartUrl,
+          databaseId: dbResult.id,
+          savedToDatabase: true,
+        };
+      } catch (dbError) {
+        console.error('❌ Error saving chart to database:', dbError);
+        // Still return success for chart generation, but note the database error
+        return {
+          success: true,
+          type,
+          chartUrl,
+          imageSize: imageBuffer.length,
+          imageSizeFormatted: `${(imageBuffer.length / 1024).toFixed(2)} KB`,
+          width: width || 800,
+          height: height || 600,
+          datasetCount: datasets.length,
+          dataPointsPerDataset: datasets[0]?.data.length || 0,
+          message: `Chart generated successfully! Download from: ${chartUrl}`,
+          downloadUrl: chartUrl,
+          databaseSaveWarning: `Chart was generated but could not be saved to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+          savedToDatabase: false,
+        };
+      }
     } catch (error) {
       console.error('❌ Error generating chart:', error);
       return {

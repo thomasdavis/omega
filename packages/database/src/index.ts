@@ -27,6 +27,11 @@ export * as pgQueryService from './postgres/queryService.js';
 export * as pgDocumentService from './postgres/documentService.js';
 export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
+export * as pgImageService from './postgres/imageService.js';
+export * as newImageService from './postgres/newImageService.js';
+
+// Schema Registry
+export * from './postgres/schemaRegistry/index.js';
 
 // Export individual document service functions for backward compatibility
 export {
@@ -116,6 +121,24 @@ export type {
   Mp3FileRecord,
   CreateMp3FileInput,
 } from './postgres/musicService.js';
+
+// Export image service functions for backward compatibility
+export {
+  saveGeneratedImage,
+  getGeneratedImage,
+  listGeneratedImages,
+  getGeneratedImageCount,
+  getGeneratedImageMetadata,
+  listGeneratedImagesMetadata,
+  listGeneratedImagesByUser,
+  listGeneratedImagesByTool,
+} from './postgres/imageService.js';
+
+// Export image service types
+export type {
+  GeneratedImageRecord,
+  CreateGeneratedImageInput,
+} from './postgres/imageService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {

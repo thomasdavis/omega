@@ -14,16 +14,23 @@ import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
+import { saveGeneratedImage } from '@repo/database';
+import { getUploadsDir } from '@repo/shared';
 
 /**
  * Generate an image using Google's Gemini API
  * Uses the same model as GeminiComicService for consistency
  */
 async function generateImage(
-  prompt: string
+  prompt: string,
+  userId?: string,
+  username?: string,
+  discordMessageId?: string
 ): Promise<{
   imageUrl: string;
   revisedPrompt?: string;
+  imageData?: Buffer;
+  filename?: string;
 }> {
   try {
     // Validate API key
@@ -75,8 +82,8 @@ async function generateImage(
       throw new Error('No image data in Gemini response');
     }
 
-    // Save the image to file system
-    const outputDir = path.join(process.cwd(), 'apps/bot/public/user-images');
+    // Save the image to file system using centralized storage utility
+    const outputDir = getUploadsDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     const filename = `user-image-${Date.now()}.png`;
@@ -85,12 +92,38 @@ async function generateImage(
     await fs.writeFile(imagePath, imageData);
     console.log(`✅ Image saved to: ${imagePath}`);
 
-    // Return URL that can be served via the public endpoint
-    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
+    // Return URL that can be served via the /api/uploads endpoint
+    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/uploads/${filename}`;
+
+    // Save metadata to database
+    try {
+      await saveGeneratedImage({
+        title: `Generated Image - ${new Date().toISOString()}`,
+        description: prompt.substring(0, 500),
+        prompt,
+        revisedPrompt: prompt,
+        toolUsed: 'generateUserImage',
+        modelUsed: 'gemini-3-pro-image-preview',
+        filename,
+        artifactPath: imagePath,
+        publicUrl: imageUrl,
+        format: 'png',
+        imageData, // Store the actual image data in the database
+        createdBy: userId,
+        createdByUsername: username,
+        discordMessageId,
+      });
+      console.log(`💾 Image metadata saved to database`);
+    } catch (dbError) {
+      console.error('⚠️ Failed to save image metadata to database:', dbError);
+      // Don't fail the whole operation if DB save fails
+    }
 
     return {
       imageUrl,
       revisedPrompt: prompt, // Gemini doesn't provide a revised prompt like DALL-E
+      imageData,
+      filename,
     };
   } catch (error) {
     console.error('❌ Error generating image:');
@@ -108,14 +141,17 @@ export const generateUserImageTool = tool({
   description: 'Generate AI-powered images from text prompts using Google Gemini API. Creates high-quality, creative images based on user descriptions. Perfect for creating artwork, illustrations, visual concepts, and creative content. Uses the same model as GeminiComicService for consistency and improved safety. The generated images are automatically available as URLs that can be displayed in Discord.',
   inputSchema: z.object({
     prompt: z.string().describe('The text description of the image to generate. Be detailed and specific for best results. Example: "A serene mountain landscape at sunset with snow-capped peaks reflecting in a crystal-clear lake"'),
+    userId: z.string().optional().describe('User ID of the image creator. Use the current user\'s ID from context if available.'),
+    username: z.string().optional().describe('Username of the image creator. Use the current user\'s username from context if available.'),
+    discordMessageId: z.string().optional().describe('Discord message ID if this image was requested via Discord.'),
   }),
-  execute: async ({ prompt }) => {
+  execute: async ({ prompt, userId, username, discordMessageId }) => {
     try {
       console.log('🎨 Generate User Image: Processing image generation...');
       console.log(`   📝 Prompt: ${prompt}`);
       console.log(`   🤖 Model: gemini-3-pro-image-preview (same as GeminiComicService)`);
 
-      const result = await generateImage(prompt);
+      const result = await generateImage(prompt, userId, username, discordMessageId);
 
       console.log(`   ✅ Image generated successfully`);
       console.log(`   🔗 URL: ${result.imageUrl}`);
