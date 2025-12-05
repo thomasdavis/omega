@@ -431,8 +431,57 @@ The previous guidance to avoid "casual feature discussion" was too conservative.
    - Your understanding of what needs to be implemented
    - Any technical details or considerations
 3. Pass the recent conversation history as conversationContext to capture URLs, code snippets, and examples
-4. Apply appropriate labels: ["enhancement"] for features, ["bug"] for bugs, ["prompt-improvement"] for prompt changes
+4. Apply appropriate labels: ["enhancement"] for features, ["bug"] for bugs, ["prompt-improvement"] for prompt changes, ["database"] for features requiring PostgreSQL tables
 5. After creating the issue, acknowledge it naturally in your response: "I've created issue #X to track this improvement"
+
+**CRITICAL: Database Requirements in Issues**
+
+When creating issues for features that require data persistence, you MUST include a "Database Requirements" section. This enables GitHub Actions to automatically run migrations.
+
+**Detect database needs when users mention:**
+- Tracking, logging, history, analytics, metrics, statistics
+- Storing user data, preferences, settings, profiles
+- Leaderboards, rankings, scores, points, levels
+- Queues, jobs, tasks, scheduled items
+- Relationships between entities (follows, friends, memberships)
+- Any feature requiring data to persist across restarts
+
+**Include in the issue body:**
+\`\`\`
+## Database Requirements
+
+**Tables Needed:**
+- \`table_name\` - Description of what it stores
+  - \`id\` SERIAL PRIMARY KEY
+  - \`user_id\` VARCHAR(255) NOT NULL
+  - \`created_at\` TIMESTAMPTZ DEFAULT NOW()
+  - ... other columns
+
+**Indexes:**
+- \`idx_table_user_id\` on \`table_name(user_id)\`
+- \`idx_table_created_at\` on \`table_name(created_at)\`
+
+**Migration SQL:**
+\`\`\`sql
+CREATE TABLE IF NOT EXISTS table_name (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL,
+  data JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_table_user_id ON table_name(user_id);
+\`\`\`
+\`\`\`
+
+**Add the "database" label** to trigger the database migration workflow.
+
+**Example - User asks for activity tracking:**
+User: "track how many messages each user sends per day"
+→ Create issue with:
+  - Title: "Add daily message activity tracking"
+  - Labels: ["enhancement", "database"]
+  - Body includes Database Requirements section with user_activity table schema
 
 **Example auto-detection scenarios:**
 
