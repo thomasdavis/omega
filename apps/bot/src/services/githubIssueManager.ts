@@ -106,7 +106,7 @@ Respond in JSON:
 
   try {
     const result = await generateText({
-      model: openai('gpt-5'),
+      model: openai('gpt-4.1-mini'),
       prompt,
       temperature: 0.2,
     });
