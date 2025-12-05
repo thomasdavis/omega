@@ -366,3 +366,78 @@ model UserFeeling {
   @@index([userId, recordedAt(sort: Desc)], map: "idx_user_feelings_user_recorded")
   @@map("user_feelings")
 }
+
+model UserAffinity {
+  id                         String  @id
+  userId1                    String  @map("user_id_1")
+  userId2                    String  @map("user_id_2")
+  username1                  String  @map("username_1")
+  username2                  String  @map("username_2")
+  affinityScore              Float   @map("affinity_score") @db.Real
+  personalityCompatibility   Float?  @map("personality_compatibility") @db.Real
+  interestAlignment          Float?  @map("interest_alignment") @db.Real
+  communicationCompatibility Float?  @map("communication_compatibility") @db.Real
+  compatibilityFactors       Json?   @map("compatibility_factors")
+  calculatedAt               BigInt  @map("calculated_at")
+  createdAt                  BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt                  BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@unique([userId1, userId2], map: "unique_user_pair")
+  @@index([userId1], map: "idx_user_affinities_user_1")
+  @@index([userId2], map: "idx_user_affinities_user_2")
+  @@index([affinityScore(sort: Desc)], map: "idx_user_affinities_score")
+  @@index([calculatedAt(sort: Desc)], map: "idx_user_affinities_calculated_at")
+  @@map("user_affinities")
+}
+
+model CollaborationHistory {
+  id                   String  @id
+  userId1              String  @map("user_id_1")
+  userId2              String  @map("user_id_2")
+  username1            String  @map("username_1")
+  username2            String  @map("username_2")
+  collaborationType    String  @map("collaboration_type")
+  projectName          String? @map("project_name")
+  projectDescription   String? @map("project_description")
+  startDate            BigInt  @map("start_date")
+  endDate              BigInt? @map("end_date")
+  successRating        Float?  @map("success_rating") @db.Real
+  user1Satisfaction    Int?    @map("user_1_satisfaction")
+  user2Satisfaction    Int?    @map("user_2_satisfaction")
+  collaborationNotes   String? @map("collaboration_notes")
+  metadata             Json?
+  createdAt            BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt            BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([userId1], map: "idx_collaboration_history_user_1")
+  @@index([userId2], map: "idx_collaboration_history_user_2")
+  @@index([collaborationType], map: "idx_collaboration_history_type")
+  @@index([startDate(sort: Desc)], map: "idx_collaboration_history_start_date")
+  @@index([successRating(sort: Desc)], map: "idx_collaboration_history_success_rating")
+  @@map("collaboration_history")
+}
+
+model CollaborationPrediction {
+  id                            String  @id
+  userId1                       String  @map("user_id_1")
+  userId2                       String  @map("user_id_2")
+  username1                     String  @map("username_1")
+  username2                     String  @map("username_2")
+  predictedSuccessScore         Float   @map("predicted_success_score") @db.Real
+  confidenceLevel               Float   @map("confidence_level") @db.Real
+  recommendedCollaborationTypes Json?   @map("recommended_collaboration_types")
+  potentialChallenges           Json?   @map("potential_challenges")
+  synergyFactors                Json?   @map("synergy_factors")
+  predictionReasoning           String? @map("prediction_reasoning")
+  predictionModelVersion        String? @map("prediction_model_version")
+  predictedAt                   BigInt  @map("predicted_at")
+  createdAt                     BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt                     BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@unique([userId1, userId2], map: "unique_prediction_pair")
+  @@index([userId1], map: "idx_collaboration_predictions_user_1")
+  @@index([userId2], map: "idx_collaboration_predictions_user_2")
+  @@index([predictedSuccessScore(sort: Desc)], map: "idx_collaboration_predictions_score")
+  @@index([predictedAt(sort: Desc)], map: "idx_collaboration_predictions_predicted_at")
+  @@map("collaboration_predictions")
+}
