@@ -32,3 +32,24 @@ export function getComicsDir(localFallback?: string): string {
   }
   return fallback;
 }
+
+/**
+ * Get the user images directory path
+ * Returns persistent volume path in production, local path otherwise
+ */
+export function getUserImagesDir(localFallback?: string): string {
+  if (isProductionWithVolume()) {
+    const dir = '/data/user-images';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Default local fallback path
+  const fallback = localFallback || join(process.cwd(), 'apps/web/public/user-images');
+  if (!existsSync(fallback)) {
+    mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
+}

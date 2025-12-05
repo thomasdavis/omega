@@ -125,6 +125,27 @@ export function getComicsDir(localFallback?: string): string {
 }
 
 /**
+ * Get the user images directory path
+ * Uses /data/user-images in production with Railway volume, otherwise local path
+ */
+export function getUserImagesDir(localFallback?: string): string {
+  if (isProductionWithVolume()) {
+    const dir = '/data/user-images';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Default local fallback path
+  const fallback = localFallback || join(process.cwd(), 'apps/web/public/user-images');
+  if (!existsSync(fallback)) {
+    mkdirSync(fallback, { recursive: true });
+  }
+  return fallback;
+}
+
+/**
  * Get the public directory path (for static assets like TTS player)
  * This directory is part of the codebase, not persistent storage
  */
@@ -160,12 +181,14 @@ export function initializeStorage(): void {
   const blogDir = getBlogDir();
   const contentIndexDir = getContentIndexDir();
   const comicsDir = getComicsDir();
+  const userImagesDir = getUserImagesDir();
   const publicDir = getPublicDir();
 
   console.log(`   Uploads: ${uploadsDir}`);
   console.log(`   Blog: ${blogDir}`);
   console.log(`   Content Index: ${contentIndexDir}`);
   console.log(`   Comics: ${comicsDir}`);
+  console.log(`   User Images: ${userImagesDir}`);
   console.log(`   Public: ${publicDir}`);
 
   if (isProductionWithVolume()) {
