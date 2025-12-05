@@ -4,6 +4,9 @@
 
 FROM node:22-alpine AS base
 
+# Cache buster - change this value to force a clean rebuild
+ARG CACHE_BUST=2025-12-06
+
 # Install pnpm
 RUN npm install -g pnpm@9.0.0
 
