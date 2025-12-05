@@ -15,6 +15,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
 import { saveGeneratedImage } from '@repo/database';
+import { getUserImagesDir } from '../utils/storage.js';
 
 /**
  * Generate an image using Google's Gemini API
@@ -82,7 +83,7 @@ async function generateImage(
     }
 
     // Save the image to file system
-    const outputDir = path.join(process.cwd(), 'apps/bot/public/user-images');
+    const outputDir = getUserImagesDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     const filename = `user-image-${Date.now()}.png`;
