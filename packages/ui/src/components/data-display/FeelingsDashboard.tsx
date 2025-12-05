@@ -4,8 +4,8 @@
  */
 
 import React from 'react';
-import { FeelingsChart, FeelingEntry } from './FeelingsChart';
-import { FeelingsTimeline } from './FeelingsTimeline';
+import { FeelingsChart, FeelingEntry } from './FeelingsChart.js';
+import { FeelingsTimeline } from './FeelingsTimeline.js';
 
 export interface FeelingsAnalytics {
   totalEntries: number;

@@ -90,3 +90,38 @@ railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && psql "$DATABASE
 - `ALTER TABLE DROP COLUMN` - Remove columns
 - `SELECT ... FROM information_schema.columns` - Inspect schema
 - Always use `IF NOT EXISTS` / `IF EXISTS` for idempotent migrations
+
+### GitHub Actions for Database Migrations
+
+The repository has automated GitHub Actions for database operations:
+
+**1. Automatic Migration on Label (`database-migrate.yml`):**
+- When an issue is labeled with `database`, guidance is automatically added
+- New migration scripts in `packages/database/scripts/` auto-run on merge to main
+- Schema verification runs automatically to detect drift
+
+**2. Manual Migration Workflow:**
+```bash
+# Go to Actions → "Database - Run Migrations" → Run workflow
+# Options:
+#   - migration_sql: Raw SQL to execute
+#   - migration_script: Path to script in packages/database/scripts/
+#   - dry_run: Validate without executing
+```
+
+**3. Database Label Behavior:**
+When creating GitHub issues with the `database` label:
+- Auto-detected from keywords: track, store, analytics, leaderboard, history, etc.
+- Triggers Claude Code to implement with database-first approach
+- Adds migration guidance comments automatically
+- Requires database acceptance criteria in PRs
+
+**Creating Database-Aware Issues:**
+The `githubCreateIssue` tool auto-detects database requirements and:
+- Adds the `database` label automatically
+- Includes a Database Requirements section template
+- Provides migration SQL examples
+- Triggers the database workflow
+
+**Required GitHub Secrets for Database Actions:**
+- `DATABASE_PUBLIC_URL`: PostgreSQL connection string (external TCP proxy)
