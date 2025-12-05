@@ -507,3 +507,46 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model SafetyPolicy {
+  id                      String  @id
+  policyName              String  @unique @map("policy_name")
+  maxLoc                  Int     @default(500) @map("max_loc")
+  maxFiles                Int     @default(10) @map("max_files")
+  maxDirectories          Int     @default(4) @map("max_directories")
+  allowlistPaths          Json    @default("[]") @map("allowlist_paths")
+  blocklistPaths          Json    @default("[]") @map("blocklist_paths")
+  allowNewFilesOnlyPaths  Json    @default("[]") @map("allow_new_files_only_paths")
+  allowNewWorkflowsOnly   Boolean @default(true) @map("allow_new_workflows_only")
+  isActive                Boolean @default(true) @map("is_active")
+  createdAt               BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt               BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([isActive], map: "idx_safety_policy_is_active")
+  @@map("safety_policy")
+}
+
+model SelfEvolutionRun {
+  id                  String  @id
+  runDate             String  @unique @map("run_date")
+  branchName          String? @map("branch_name")
+  prNumber            Int?    @map("pr_number")
+  prUrl               String? @map("pr_url")
+  status              String  @default("pending")
+  reflectionData      Json?   @map("reflection_data")
+  changesSummary      String? @map("changes_summary")
+  filesChanged        Int?    @default(0) @map("files_changed")
+  locChanged          Int?    @default(0) @map("loc_changed")
+  directoriesChanged  Int?    @default(0) @map("directories_changed")
+  safetyPolicyId      String? @map("safety_policy_id")
+  errorMessage        String? @map("error_message")
+  startedAt           BigInt  @map("started_at")
+  completedAt         BigInt? @map("completed_at")
+  createdAt           BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt           BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([status], map: "idx_self_evolution_runs_status")
+  @@index([startedAt(sort: Desc)], map: "idx_self_evolution_runs_started_at")
+  @@index([prNumber], map: "idx_self_evolution_runs_pr_number")
+  @@map("self_evolution_runs")
+}
