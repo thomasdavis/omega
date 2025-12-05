@@ -15,6 +15,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
 import { saveGeneratedImage } from '@repo/database';
+import { getUploadsDir } from '@repo/shared';
 
 /**
  * Generate an image using Google's Gemini API
@@ -81,8 +82,8 @@ async function generateImage(
       throw new Error('No image data in Gemini response');
     }
 
-    // Save the image to file system
-    const outputDir = path.join(process.cwd(), 'apps/bot/public/user-images');
+    // Save the image to file system using centralized storage utility
+    const outputDir = getUploadsDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     const filename = `user-image-${Date.now()}.png`;
@@ -91,8 +92,8 @@ async function generateImage(
     await fs.writeFile(imagePath, imageData);
     console.log(`✅ Image saved to: ${imagePath}`);
 
-    // Return URL that can be served via the public endpoint
-    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
+    // Return URL that can be served via the /api/uploads endpoint
+    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/uploads/${filename}`;
 
     // Save metadata to database
     try {
