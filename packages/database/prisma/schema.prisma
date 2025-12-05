@@ -507,3 +507,37 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model TechTranslation {
+  id                Int                        @id @default(autoincrement())
+  userId            String                     @map("user_id")
+  username          String?
+  sourceText        String                     @map("source_text") @db.Text
+  outputMarkdown    String?                    @map("output_markdown") @db.Text
+  outputJson        Json?                      @map("output_json")
+  assumptions       Json?
+  risks             Json?
+  model             String?                    @db.VarChar(100)
+  promptVersion     String?                    @map("prompt_version") @db.VarChar(50)
+  helpfulnessScore  Int?                       @map("helpfulness_score") @db.SmallInt
+  tags              String[]
+  createdAt         DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
+  feedback          TechTranslationFeedback[]
+
+  @@index([userId], map: "idx_tech_translations_user_id")
+  @@index([createdAt(sort: Desc)], map: "idx_tech_translations_created_at")
+  @@map("tech_translations")
+}
+
+model TechTranslationFeedback {
+  id             Int             @id @default(autoincrement())
+  translationId  Int             @map("translation_id")
+  userId         String?         @map("user_id")
+  rating         Int             @db.SmallInt
+  comment        String?         @db.Text
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  translation    TechTranslation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+
+  @@index([translationId], map: "idx_tech_translation_feedback_translation_id")
+  @@map("tech_translation_feedback")
+}
