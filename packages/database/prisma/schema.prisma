@@ -507,3 +507,63 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model SelfEvolutionProposal {
+  id             String                   @id
+  category       String
+  proposalType   String                   @map("proposal_type")
+  title          String
+  description    String
+  rationale      String
+  proposedChange Json                     @map("proposed_change")
+  allowlistArea  String                   @map("allowlist_area")
+  riskLevel      String                   @default("low") @map("risk_level")
+  reversible     Boolean                  @default(true)
+  status         String                   @default("pending")
+  approvedBy     String?                  @map("approved_by")
+  approvedAt     DateTime?                @map("approved_at") @db.Timestamptz(6)
+  rejectedReason String?                  @map("rejected_reason")
+  proposedAt     DateTime                 @map("proposed_at") @db.Timestamptz(6)
+  executedAt     DateTime?                @map("executed_at") @db.Timestamptz(6)
+  metadata       Json?
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  actions        SelfEvolutionAction[]
+
+  @@index([category], map: "idx_proposals_category")
+  @@index([status], map: "idx_proposals_status")
+  @@index([proposedAt(sort: Desc)], map: "idx_proposals_proposed_at")
+  @@index([proposalType], map: "idx_proposals_proposal_type")
+  @@index([riskLevel], map: "idx_proposals_risk_level")
+  @@map("self_evolution_proposals")
+}
+
+model SelfEvolutionAction {
+  id                  String                  @id
+  proposalId          String?                 @map("proposal_id")
+  category            String
+  actionType          String                  @map("action_type")
+  title               String
+  description         String
+  executedChange      Json                    @map("executed_change")
+  rollbackInfo        Json?                   @map("rollback_info")
+  success             Boolean                 @default(false)
+  errorMessage        String?                 @map("error_message")
+  executionTimeMs     Int?                    @map("execution_time_ms")
+  userFeedbackScore   Int?                    @map("user_feedback_score")
+  userFeedbackText    String?                 @map("user_feedback_text")
+  rolloutPercentage   Int                     @default(0) @map("rollout_percentage")
+  executedAt          DateTime                @default(now()) @map("executed_at") @db.Timestamptz(6)
+  rolledBackAt        DateTime?               @map("rolled_back_at") @db.Timestamptz(6)
+  metadata            Json?
+  createdAt           DateTime                @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  proposal            SelfEvolutionProposal?  @relation(fields: [proposalId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([category], map: "idx_actions_category")
+  @@index([proposalId], map: "idx_actions_proposal_id")
+  @@index([executedAt(sort: Desc)], map: "idx_actions_executed_at")
+  @@index([success], map: "idx_actions_success")
+  @@index([rolloutPercentage], map: "idx_actions_rollout_percentage")
+  @@map("self_evolution_actions")
+}
