@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveGeneratedImage } from '@repo/database';
+import { saveGeneratedImage, newImageService } from '@repo/database';
 
 /**
  * Generate an image using Google's Gemini API
@@ -94,10 +94,39 @@ async function generateImage(
     // Return URL that can be served via the public endpoint
     const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
 
-    // Save metadata to database
-    let savedImage;
+    // Save metadata to database using new comprehensive schema
     try {
-      savedImage = await saveGeneratedImage({
+      // Save to new schema
+      await newImageService.completeImageGeneration(
+        {
+          user_id: userId || 'unknown',
+          username,
+          source: discordMessageId ? 'discord' : undefined,
+          tool_name: 'generateUserImage',
+          prompt,
+          model: 'gemini-3-pro-image-preview',
+          type_key: 'artwork',
+          n: 1,
+        },
+        {
+          storage_url: imageUrl,
+          storage_provider: 'omega',
+          width: undefined,
+          height: undefined,
+          mime_type: 'image/png',
+          bytes: imageData.length,
+          message_id: discordMessageId,
+          metadata: {
+            filename,
+            artifactPath: imagePath,
+            format: 'png',
+          },
+        }
+      );
+      console.log(`💾 Image metadata saved to new schema`);
+
+      // Also save to legacy table for backward compatibility
+      await saveGeneratedImage({
         title: `Generated Image - ${new Date().toISOString()}`,
         description: prompt.substring(0, 500),
         prompt,
@@ -108,37 +137,23 @@ async function generateImage(
         artifactPath: imagePath,
         publicUrl: imageUrl,
         format: 'png',
-        imageData, // Store the actual image data in the database
+        imageData,
         createdBy: userId,
         createdByUsername: username,
         discordMessageId,
       });
-      console.log(`💾 Image metadata saved to database with ID: ${savedImage.id}`);
-
-      // Use database-backed URL as primary, with filesystem URL as fallback
-      const baseUrl = process.env.OMEGA_API_URL || 'https://omegaai.dev';
-      const databaseUrl = `${baseUrl}/api/generated-images/${savedImage.id}`;
-
-      console.log(`✅ Image accessible at: ${databaseUrl}`);
-      console.log(`   Fallback URL: ${imageUrl}`);
-
-      return {
-        imageUrl: databaseUrl, // Use database-backed URL
-        revisedPrompt: prompt,
-        imageData,
-        filename,
-      };
+      console.log(`💾 Image metadata saved to legacy table`);
     } catch (dbError) {
       console.error('⚠️ Failed to save image metadata to database:', dbError);
-      // If DB save fails, fall back to file system URL
-      console.log(`⚠️  Using fallback filesystem URL: ${imageUrl}`);
-      return {
-        imageUrl,
-        revisedPrompt: prompt,
-        imageData,
-        filename,
-      };
+      // Don't fail the whole operation if DB save fails
     }
+
+    return {
+      imageUrl,
+      revisedPrompt: prompt, // Gemini doesn't provide a revised prompt like DALL-E
+      imageData,
+      filename,
+    };
   } catch (error) {
     console.error('❌ Error generating image:');
     console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
