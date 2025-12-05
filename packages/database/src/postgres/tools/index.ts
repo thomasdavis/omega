@@ -24,5 +24,5 @@ export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoT
 // Script Storage CRUD tools
 export { createScriptTool, listScriptsTool, getScriptTool, updateScriptTool, deleteScriptTool } from './scriptStorage/index.js';
 
-// User Feelings CRUD tools
-export { createFeelingTool, listFeelingsTool, getFeelingTool, updateFeelingTool, deleteFeelingTool, analyzeFeelingsTool } from './userFeelings/index.js';
+// User Feelings tools
+export { logFeelingTool, queryFeelingsTool, getFeelingSummaryTool } from './userFeelings/index.js';
