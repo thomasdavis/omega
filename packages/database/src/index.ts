@@ -29,6 +29,7 @@ export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
+export * as selfEvolutionService from './postgres/selfEvolutionService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -59,6 +60,11 @@ export type {
   DocumentCollaboratorRecord,
   UserProfileRecord,
   UserAnalysisHistoryRecord,
+  SelfEvolutionCycleRecord,
+  SelfEvolutionActionRecord,
+  SelfEvolutionSanityCheckRecord,
+  SelfEvolutionMetricRecord,
+  SelfEvolutionBranchRecord,
 } from './postgres/schema.js';
 
 // Export user profile service functions for backward compatibility

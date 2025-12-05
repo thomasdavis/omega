@@ -204,3 +204,58 @@ export type UserAnalysisHistoryRecord = {
   changes_summary: string | null;
   created_at: number | null;
 };
+
+export type SelfEvolutionCycleRecord = {
+  id: number;
+  cycle_date: string;
+  started_at: Date;
+  ended_at: Date | null;
+  summary: string | null;
+  wildcard_title: string | null;
+  status: 'planned' | 'running' | 'completed' | 'failed' | 'reverted';
+};
+
+export type SelfEvolutionActionRecord = {
+  id: number;
+  cycle_id: number;
+  type: 'capability' | 'future' | 'wildcard' | 'prompt' | 'persona';
+  title: string;
+  description: string | null;
+  issue_number: number | null;
+  pr_number: number | null;
+  branch_name: string | null;
+  status: 'planned' | 'in_progress' | 'done' | 'skipped' | 'reverted' | 'failed';
+  notes: string | null;
+  created_at: Date;
+};
+
+export type SelfEvolutionSanityCheckRecord = {
+  id: number;
+  cycle_id: number;
+  check_name: string;
+  passed: boolean;
+  result: 'pass' | 'warn' | 'fail';
+  details: any;
+  created_at: Date;
+};
+
+export type SelfEvolutionMetricRecord = {
+  id: number;
+  cycle_id: number;
+  metric_name: string;
+  metric_value: number | null;
+  unit: string | null;
+  details: any;
+  created_at: Date;
+};
+
+export type SelfEvolutionBranchRecord = {
+  id: number;
+  cycle_id: number;
+  branch_name: string;
+  base_branch: string;
+  pr_number: number | null;
+  merged: boolean;
+  closed: boolean;
+  created_at: Date;
+};
