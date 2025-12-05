@@ -1,0 +1,33 @@
+# CODEOWNERS - Define code ownership and review requirements
+#
+# Each line is a file pattern followed by one or more owners.
+# Owners will be requested for review when someone opens a PR that modifies files matching the pattern.
+#
+# More details: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Self-Evolution Critical Paths
+# These paths require human review for any changes, especially those made by self-evolution PRs
+
+# Prompts directory - requires review for any AI persona or behavior changes
+prompts/ @thomasdavis
+
+# Tools directory - requires review for capability additions or modifications
+tools/ @thomasdavis
+packages/agent/src/tools/ @thomasdavis
+packages/database/src/mongodb/tools/ @thomasdavis
+packages/database/src/postgres/tools/ @thomasdavis
+
+# Workflows directory - requires review for automation logic changes
+workflows/ @thomasdavis
+.github/workflows/ @thomasdavis
+
+# GitHub Actions and CI/CD configurations
+.github/actions/ @thomasdavis
+
+# Database migrations and schema changes
+packages/database/scripts/ @thomasdavis
+packages/database/prisma/ @thomasdavis
+
+# Core bot configuration
+apps/bot/CLAUDE.md @thomasdavis
+CLAUDE.md @thomasdavis
