@@ -172,6 +172,11 @@ export async function GET() {
         status: 'error',
         timestamp: new Date().toISOString(),
         uptime: Date.now() - startTime,
+        version: {
+          commit: process.env.RAILWAY_GIT_COMMIT_SHA?.substring(0, 7),
+          pr: process.env.RAILWAY_GIT_COMMIT_MESSAGE?.match(/\(#(\d+)\)/)?.[1],
+          environment: process.env.NODE_ENV || 'development',
+        },
         services: {
           database: { status: 'error', message: 'Status check failed' },
           web: { status: 'error', message: error instanceof Error ? error.message : 'Unknown error' },
