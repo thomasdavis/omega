@@ -46,6 +46,22 @@ export {
 } from './components/data-display/card/index.js';
 export type { CardProps } from './components/data-display/card/index.js';
 
+// Feelings Tracking Components
+export { FeelingsChart } from './components/data-display/FeelingsChart.js';
+export { FeelingsTimeline } from './components/data-display/FeelingsTimeline.js';
+export { FeelingsDashboard } from './components/data-display/FeelingsDashboard.js';
+export type {
+  FeelingEntry,
+  FeelingsChartProps,
+} from './components/data-display/FeelingsChart.js';
+export type {
+  FeelingsTimelineProps,
+} from './components/data-display/FeelingsTimeline.js';
+export type {
+  FeelingsAnalytics,
+  FeelingsDashboardProps,
+} from './components/data-display/FeelingsDashboard.js';
+
 // Page Components
 export { PageHeader } from './components/page/page-header/index.js';
 export { StatCard } from './components/page/stat-card/index.js';
