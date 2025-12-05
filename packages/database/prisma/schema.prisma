@@ -206,6 +206,7 @@ model UserProfile {
   approachabilityScore         Int?                  @map("approachability_score")
   perceivedConfidenceLevel     String?               @map("perceived_confidence_level")
   aestheticArchetype           String?               @map("aesthetic_archetype")
+  notifyOnFeatureComplete      Boolean?              @default(true) @map("notify_on_feature_complete")
   firstSeenAt                  BigInt                @map("first_seen_at")
   lastInteractionAt            BigInt                @map("last_interaction_at")
   lastAnalyzedAt               BigInt?               @map("last_analyzed_at")
@@ -395,4 +396,48 @@ model GeneratedImage {
   @@index([toolUsed], map: "idx_generated_images_tool_used")
   @@index([modelUsed], map: "idx_generated_images_model_used")
   @@map("generated_images")
+}
+
+model FeatureRequest {
+  id                  String  @id @default(uuid())
+  githubIssueNumber   Int     @map("github_issue_number")
+  githubPrNumber      Int?    @map("github_pr_number")
+  requesterUserId     String  @map("requester_user_id")
+  requesterUsername   String? @map("requester_username")
+  title               String
+  description         String?
+  status              String  @default("open")
+  requestedAt         BigInt  @map("requested_at")
+  completedAt         BigInt? @map("completed_at")
+  mergedPrUrl         String? @map("merged_pr_url")
+  mergedCommitSha     String? @map("merged_commit_sha")
+  metadata            Json?
+  createdAt           BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt           BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([githubIssueNumber], map: "idx_feature_requests_issue_number")
+  @@index([githubPrNumber], map: "idx_feature_requests_pr_number")
+  @@index([requesterUserId], map: "idx_feature_requests_requester")
+  @@index([status], map: "idx_feature_requests_status")
+  @@index([requestedAt(sort: Desc)], map: "idx_feature_requests_requested_at")
+  @@map("feature_requests")
+}
+
+model Notification {
+  id               String  @id @default(uuid())
+  userId           String  @map("user_id")
+  username         String?
+  eventType        String  @map("event_type")
+  payload          Json
+  sentAt           BigInt  @map("sent_at")
+  status           String
+  errorMessage     String? @map("error_message")
+  discordMessageId String? @map("discord_message_id")
+  createdAt        BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([eventType], map: "idx_notifications_event_type")
+  @@index([status], map: "idx_notifications_status")
+  @@index([sentAt(sort: Desc)], map: "idx_notifications_sent_at")
+  @@map("notifications")
 }

@@ -2313,6 +2313,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'admin'
   },
 
+  {
+    id: 'toggleFeatureNotifications',
+    name: 'Toggle Feature Notifications',
+    description: 'Enable or disable Discord notifications when requested features are completed and merged. Users can control whether they receive updates about their feature requests.',
+    keywords: ['notification', 'toggle', 'feature', 'enable', 'disable', 'notify', 'preference', 'settings', 'alert'],
+    tags: ['settings', 'notification', 'preferences', 'user'],
+    examples: [
+      'turn off feature notifications',
+      'enable notifications for completed features',
+      'disable feature completion alerts',
+      'stop notifying me about features',
+      'notify me when features are done'
+    ],
+    category: 'admin'
+  },
+
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
 ];

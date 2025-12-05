@@ -4,6 +4,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { prisma } from '@repo/database';
 
 export const githubCreateIssueTool = tool({
   description: 'Create a new issue in the GitHub repository for feature requests, bugs, or improvements. IMPORTANT: When creating issues about API integrations or external services, include any relevant URLs, documentation links, API references, curl commands, or code examples from the conversation context to provide complete information for developers.',
@@ -12,8 +13,10 @@ export const githubCreateIssueTool = tool({
     body: z.string().describe('The detailed description of the issue, with context and requirements'),
     labels: z.array(z.string()).optional().describe('Labels to apply (e.g., ["enhancement", "bug", "documentation"])'),
     conversationContext: z.string().optional().describe('Optional: The past 20 Discord messages (unfiltered) to provide full conversation context for the issue'),
+    requesterUserId: z.string().optional().describe('Discord user ID of the person requesting the feature (for notification purposes)'),
+    requesterUsername: z.string().optional().describe('Discord username of the person requesting the feature'),
   }),
-  execute: async ({ title, body, labels, conversationContext }) => {
+  execute: async ({ title, body, labels, conversationContext, requesterUserId, requesterUsername }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega'; // owner/repo format
 
@@ -136,6 +139,31 @@ _Unfiltered conversation history for full context._`;
       }
 
       const issue: any = await response.json();
+
+      // Track feature request in database if requester info is provided
+      if (requesterUserId && requesterUsername) {
+        try {
+          await prisma.featureRequest.create({
+            data: {
+              githubIssueNumber: issue.number,
+              requesterUserId,
+              requesterUsername,
+              title,
+              description: body,
+              status: 'open',
+              requestedAt: BigInt(Math.floor(Date.now() / 1000)),
+              metadata: {
+                labels: labels || [],
+                issueUrl: issue.html_url,
+              },
+            },
+          });
+          console.log(`✅ Tracked feature request for issue #${issue.number} by ${requesterUsername}`);
+        } catch (dbError) {
+          console.warn(`Failed to track feature request in database:`, dbError);
+          // Don't fail the whole operation if DB tracking fails
+        }
+      }
 
       // Add a comment to tag @claude to start work
       try {
