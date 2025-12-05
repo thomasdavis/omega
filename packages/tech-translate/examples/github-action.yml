@@ -1,0 +1,52 @@
+# Example GitHub Action workflow using tech-translate CLI
+# Place in .github/workflows/spec-generation.yml
+
+name: Generate Technical Specification
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  generate-spec:
+    # Only run when 'generate-spec' label is added
+    if: github.event.label.name == 'generate-spec'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install tech-translate
+        run: npm install -g @omega/tech-translate
+
+      - name: Generate specification
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          # Extract issue body and generate spec
+          ISSUE_BODY="${{ github.event.issue.body }}"
+
+          echo "$ISSUE_BODY" | tech-translate \
+            --format both \
+            --depth standard \
+            --style enterprise \
+            --domain web \
+            --out ./specs
+
+      - name: Create PR with specification
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: 'docs: add technical specification for issue #${{ github.event.issue.number }}'
+          title: 'Technical Spec: ${{ github.event.issue.title }}'
+          body: |
+            Auto-generated technical specification from issue #${{ github.event.issue.number }}
+
+            See `specs/spec.md` for the full specification.
+          branch: spec-issue-${{ github.event.issue.number }}
+          delete-branch: true
