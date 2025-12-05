@@ -85,18 +85,22 @@ Create a small, expressive graphical element that clearly represents the concept
     try {
       const filename = `icon-emoji-${Date.now()}.png`;
       await saveGeneratedImage({
-        title: `Icon/Emoji - ${new Date().toISOString()}`,
-        description: prompt.substring(0, 500),
+        userId: userId || 'unknown',
+        username,
+        toolName: 'generateIconEmoji',
         prompt,
-        revisedPrompt: result.revisedPrompt,
-        toolUsed: 'generateIconEmoji',
-        modelUsed: 'dall-e-3',
-        filename,
-        publicUrl: result.imageUrl,
-        format: 'png',
-        createdBy: userId,
-        createdByUsername: username,
-        discordMessageId,
+        model: 'dall-e-3',
+        storageUrl: result.imageUrl,
+        storageProvider: 'openai',
+        mimeType: 'image/png',
+        status: 'success',
+        metadata: {
+          filename,
+          description: prompt.substring(0, 500),
+          revisedPrompt: result.revisedPrompt,
+          timestamp: new Date().toISOString(),
+        },
+        messageId: discordMessageId,
       });
       console.log(`💾 Image metadata saved to database`);
     } catch (dbError) {
