@@ -213,6 +213,7 @@ model UserProfile {
   messageCount                 Int?                  @default(0) @map("message_count")
   createdAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
   updatedAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+  notifyOnFeatureComplete      Boolean               @default(true) @map("notify_on_feature_complete")
   analysisHistory              UserAnalysisHistory[]
 
   @@index([lastAnalyzedAt], map: "idx_user_profiles_last_analyzed")
@@ -395,4 +396,24 @@ model GeneratedImage {
   @@index([toolUsed], map: "idx_generated_images_tool_used")
   @@index([modelUsed], map: "idx_generated_images_model_used")
   @@map("generated_images")
+}
+
+model Notification {
+  id         String    @id
+  userId     String    @map("user_id")
+  eventType  String    @map("event_type")
+  sourceType String    @map("source_type")
+  sourceId   Int?      @map("source_id")
+  sourceUrl  String?   @map("source_url")
+  payload    Json?
+  status     String    @default("pending")
+  error      String?
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  sentAt     DateTime? @map("sent_at") @db.Timestamptz(6)
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([status], map: "idx_notifications_status")
+  @@index([createdAt(sort: Desc)], map: "idx_notifications_created_at")
+  @@index([userId, status], map: "idx_notifications_user_status")
+  @@map("notifications")
 }

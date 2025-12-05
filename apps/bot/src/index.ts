@@ -12,6 +12,7 @@ import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
 import { preloadCoreTools } from '@repo/agent';
+import { startNotificationWorker } from './services/featureNotificationService.js';
 
 dotenv.config();
 
@@ -78,6 +79,9 @@ client.once(Events.ClientReady, (readyClient) => {
 
   // Initialize scheduled tasks (daily blog generation, etc.)
   initializeScheduler();
+
+  // Start notification worker for feature completion notifications
+  startNotificationWorker(readyClient);
 });
 
 // Message create event - handle all messages
