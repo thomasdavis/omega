@@ -507,3 +507,82 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model SelfEvolutionCycle {
+  id            Int                        @id @default(autoincrement())
+  cycleDate     DateTime                   @unique @map("cycle_date") @db.Date
+  startedAt     DateTime?                  @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt       DateTime?                  @map("ended_at") @db.Timestamptz(6)
+  summary       String?                    @db.Text
+  wildcardTitle String?                    @map("wildcard_title")
+  status        String                     @default("planned")
+  actions       SelfEvolutionAction[]
+  sanityChecks  SelfEvolutionSanityCheck[]
+  metrics       SelfEvolutionMetric[]
+  branches      SelfEvolutionBranch[]
+
+  @@index([cycleDate], map: "idx_cycles_date")
+  @@map("self_evolution_cycles")
+}
+
+model SelfEvolutionAction {
+  id          Int                 @id @default(autoincrement())
+  cycleId     Int                 @map("cycle_id")
+  type        String
+  title       String              @db.Text
+  description String?             @db.Text
+  issueNumber Int?                @map("issue_number")
+  prNumber    Int?                @map("pr_number")
+  branchName  String?             @map("branch_name")
+  status      String              @default("planned")
+  notes       String?             @db.Text
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  cycle       SelfEvolutionCycle  @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([cycleId], map: "idx_actions_cycle")
+  @@index([status], map: "idx_actions_status")
+  @@map("self_evolution_actions")
+}
+
+model SelfEvolutionSanityCheck {
+  id        Int                @id @default(autoincrement())
+  cycleId   Int                @map("cycle_id")
+  checkName String             @map("check_name")
+  passed    Boolean
+  result    String?
+  details   Json?
+  createdAt DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  cycle     SelfEvolutionCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([cycleId], map: "idx_checks_cycle")
+  @@map("self_evolution_sanity_checks")
+}
+
+model SelfEvolutionMetric {
+  id          Int                @id @default(autoincrement())
+  cycleId     Int                @map("cycle_id")
+  metricName  String             @map("metric_name")
+  metricValue Float?             @map("metric_value") @db.Real
+  unit        String?
+  details     Json?
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  cycle       SelfEvolutionCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([cycleId], map: "idx_metrics_cycle")
+  @@map("self_evolution_metrics")
+}
+
+model SelfEvolutionBranch {
+  id         Int                @id @default(autoincrement())
+  cycleId    Int                @map("cycle_id")
+  branchName String             @unique @map("branch_name")
+  baseBranch String             @default("main") @map("base_branch")
+  prNumber   Int?               @map("pr_number")
+  merged     Boolean            @default(false)
+  closed     Boolean            @default(false)
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  cycle      SelfEvolutionCycle @relation(fields: [cycleId], references: [id], onDelete: Cascade)
+
+  @@index([cycleId], map: "idx_branches_cycle")
+  @@map("self_evolution_branches")
+}

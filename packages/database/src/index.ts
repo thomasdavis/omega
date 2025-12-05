@@ -29,6 +29,7 @@ export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
+export * as pgSelfEvolutionService from './postgres/selfEvolutionService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -139,6 +140,28 @@ export type {
   GeneratedImageRecord,
   CreateGeneratedImageInput,
 } from './postgres/imageService.js';
+
+// Export self-evolution service functions for backward compatibility
+export {
+  createCycle,
+  getCycleByDate,
+  getCycleById,
+  updateCycleStatus,
+  updateCycleSummary,
+  createAction,
+  updateActionStatus,
+  createSanityCheck,
+  createMetric,
+  createBranch,
+  updateBranchPR,
+  markBranchMerged,
+  markBranchClosed,
+  getRecentCycles,
+  getMetricsForDateRange,
+  getActionsByStatus,
+  getFailedSanityChecks,
+  deleteOldCycles,
+} from './postgres/selfEvolutionService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
