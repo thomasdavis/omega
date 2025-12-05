@@ -25,6 +25,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   generateHtmlPage: { path: './tools/generateHtmlPage.js', exportName: 'generateHtmlPageTool' },
   whoami: { path: './tools/whoami.js', exportName: 'whoamiTool' },
   listTools: { path: './tools/listTools.js', exportName: 'listToolsTool' },
+  techTranslate: { path: './tools/techTranslate.js', exportName: 'techTranslateTool' },
 
   // MongoDB tools (14) - imported from @repo/database
   mongoInsert: { path: '@repo/database', exportName: 'mongoInsertTool' },
