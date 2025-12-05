@@ -97,6 +97,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   commitFile: { path: './tools/commitFile.js', exportName: 'commitFileTool' },
   listRepositoryFiles: { path: './tools/listRepositoryFiles.js', exportName: 'listRepositoryFilesTool' },
   uploadMyPhoto: { path: './tools/uploadMyPhoto.js', exportName: 'uploadMyPhotoTool' },
+  thisIsHowILook: { path: './tools/thisIsHowILook.js', exportName: 'thisIsHowILookTool' },
 
   // Content creation tools
   researchEssay: { path: './tools/researchEssay.js', exportName: 'researchEssayTool' },

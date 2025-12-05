@@ -1421,6 +1421,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'thisIsHowILook',
+    name: 'This Is How I Look',
+    description: 'Describe your avatar appearance through words as an alternative to photo uploads',
+    keywords: ['describe', 'appearance', 'look', 'avatar', 'text', 'description', 'how i look', 'this is how'],
+    tags: ['avatar', 'appearance', 'description', 'profile'],
+    examples: [
+      'this is how i look',
+      'describe my appearance',
+      'I look like a tall person with brown hair',
+      'let me describe how I look',
+      'my appearance is'
+    ],
+    category: 'file'
+  },
+
+  {
     id: 'generateMyPortrait',
     name: 'Generate My Portrait',
     description: 'Generate personalized portraits',
