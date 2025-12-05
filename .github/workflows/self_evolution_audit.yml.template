@@ -1,0 +1,74 @@
+name: Self-Evolution - Audit & Metrics
+
+on:
+  # Nightly audit at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Post-merge to main
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/self_evolution/**'
+      - '.github/workflows/self_evolution_audit.yml'
+
+  # Manual trigger
+  workflow_dispatch:
+
+jobs:
+  audit:
+    name: Run Self-Evolution Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Create data directory
+        run: mkdir -p apps/bot/public/data
+
+      - name: Run audit script
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          echo "🔍 Running self-evolution audit..."
+          tsx scripts/self_evolution/audit.ts
+
+      - name: Commit and push metrics
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add apps/bot/public/data/self-evolution-metrics.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update self-evolution metrics [skip ci]"
+            git push
+          fi
+
+      - name: Summary
+        run: |
+          echo "## 🔬 Self-Evolution Audit Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** Completed" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp:** $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View the dashboard: [Self-Evolution Observatory](https://omega.thomasdavis.io/self-evolution.html)" >> $GITHUB_STEP_SUMMARY

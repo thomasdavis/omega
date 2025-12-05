@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Self-Evolution Observatory — Ω Omega</title>
+  <meta name="description" content="Monitor self-evolution runs, guardrails, and metrics">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200;400;600;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #8B5CF6;
+      --primary-dark: #6D28D9;
+      --secondary: #EC4899;
+      --secondary-dark: #DB2777;
+      --accent: #10B981;
+      --accent-dark: #059669;
+      --dark: #0F172A;
+      --dark-lighter: #1E293B;
+      --light: #F8FAFC;
+      --sidebar-width: 240px;
+    }
+
+    #dither-filter {
+      position: absolute;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--dark);
+      background: var(--light);
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 {
+      font-family: 'Crimson Pro', serif;
+      font-weight: 900;
+    }
+
+    code, .mono {
+      font-family: 'Space Mono', monospace;
+    }
+
+    .container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 2rem 0;
+      z-index: 1000;
+      overflow-y: auto;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      filter: url(#dither);
+      opacity: 0.4;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .sidebar-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      padding: 0 1.5rem 2rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      margin-bottom: 2rem;
+    }
+
+    .logo h1 {
+      font-size: 3rem;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo p {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-weight: 600;
+    }
+
+    .nav {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: 0.25rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      color: white;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      position: relative;
+      font-size: 0.95rem;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateX(4px);
+    }
+
+    .nav-link.active {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .nav-link:hover::before,
+    .nav-link.active::before {
+      opacity: 1;
+    }
+
+    .nav-icon {
+      margin-right: 0.75rem;
+      font-size: 1.25rem;
+    }
+
+    .main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 4rem 3rem;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      text-align: center;
+      padding: 3rem 0 4rem;
+      position: relative;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--dark-lighter) 100%);
+      border-radius: 16px;
+      margin-bottom: 4rem;
+      overflow: hidden;
+    }
+
+    .page-header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      filter: url(#dither);
+      opacity: 0.3;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .page-header-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-icon {
+      font-size: 5rem;
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .page-header h1 {
+      font-size: 2.5rem;
+      color: white;
+      margin-bottom: 0.5rem;
+      font-weight: 200;
+      letter-spacing: -0.02em;
+    }
+
+    .page-header p {
+      font-size: 1.125rem;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .metric-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .metric-label {
+      font-size: 0.875rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--dark);
+      font-family: 'Space Mono', monospace;
+    }
+
+    .metric-suffix {
+      font-size: 1.25rem;
+      color: #64748b;
+      margin-left: 0.25rem;
+    }
+
+    .chart-container {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .chart-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--dark);
+    }
+
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 400px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 4rem 0;
+      color: #64748b;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(139, 92, 246, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 0;
+      color: #64748b;
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 3rem 0;
+      border-top: 1px solid #e2e8f0;
+      color: #64748b;
+    }
+
+    .footer p {
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 2000;
+      background: var(--primary);
+      color: white;
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay.active {
+      opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .overlay {
+        display: block;
+      }
+
+      .sidebar {
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main {
+        margin-left: 0;
+        padding: 6rem 1.5rem 2rem;
+      }
+
+      .page-header {
+        padding: 2rem 1rem 3rem;
+      }
+
+      .page-icon {
+        font-size: 3.5rem;
+      }
+
+      .page-header h1 {
+        font-size: 1.75rem;
+      }
+
+      .metrics-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-wrapper {
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg id="dither-filter" aria-hidden="true">
+    <defs>
+      <filter id="dither">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer>
+          <feFuncA type="discrete" tableValues="0 0.5 1" />
+        </feComponentTransfer>
+      </filter>
+    </defs>
+  </svg>
+
+  <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">☰</button>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="container">
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-content">
+        <div class="logo">
+          <h1>Ω</h1>
+          <p>Self-Coding AI</p>
+        </div>
+
+        <ul class="nav">
+          <li class="nav-item">
+            <a href="/" class="nav-link">
+              <span class="nav-icon">🏠</span>
+              <span>Home</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/self-evolution.html" class="nav-link active">
+              <span class="nav-icon">🔬</span>
+              <span>Observatory</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/comics" class="nav-link">
+              <span class="nav-icon">🎨</span>
+              <span>Comics</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/documents.html" class="nav-link">
+              <span class="nav-icon">📄</span>
+              <span>Documents</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener" class="nav-link">
+              <span class="nav-icon">🔗</span>
+              <span>GitHub</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="main">
+      <section class="page-header">
+        <div class="page-header-content">
+          <div class="page-icon">🔬</div>
+          <h1>Self-Evolution Observatory</h1>
+          <p>Monitor autonomous evolution metrics and performance</p>
+        </div>
+      </section>
+
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <p>Loading metrics...</p>
+      </div>
+
+      <div id="dashboard" style="display: none;">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label">Total Runs</div>
+            <div class="metric-value" id="metric-total-runs">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Avg Guardrail Pass Rate</div>
+            <div class="metric-value" id="metric-guardrail-pass">0<span class="metric-suffix">%</span></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Avg PR Cycle Time</div>
+            <div class="metric-value" id="metric-pr-cycle">0<span class="metric-suffix">ms</span></div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Total Rollbacks</div>
+            <div class="metric-value" id="metric-rollbacks">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Wildcard Adoption</div>
+            <div class="metric-value" id="metric-wildcard">0<span class="metric-suffix">%</span></div>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">Guardrail Pass Rate Over Time</h2>
+          <div class="chart-wrapper">
+            <canvas id="chart-guardrails"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">Categories Chosen vs Rejected</h2>
+          <div class="chart-wrapper">
+            <canvas id="chart-categories"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-container">
+          <h2 class="chart-title">Rollback Trend</h2>
+          <div class="chart-wrapper">
+            <canvas id="chart-rollbacks"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <div class="empty-state-icon">🔬</div>
+        <h2>No Data Available</h2>
+        <p>Self-evolution metrics will appear here once audit runs are executed</p>
+      </div>
+
+      <footer class="footer">
+        <p id="last-updated">Last updated: Never</p>
+        <p>
+          <a href="https://github.com/thomasdavis/omega" target="_blank" rel="noopener">View on GitHub</a>
+          ·
+          <a href="/">Back to Home</a>
+        </p>
+      </footer>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const menuBtn = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('active');
+    });
+
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+    });
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    async function loadMetrics() {
+      const loading = document.getElementById('loading');
+      const dashboard = document.getElementById('dashboard');
+      const emptyState = document.getElementById('empty-state');
+
+      try {
+        const response = await fetch('/data/self-evolution-metrics.json');
+
+        if (!response.ok) {
+          throw new Error('Failed to load metrics');
+        }
+
+        const data = await response.json();
+
+        loading.style.display = 'none';
+
+        if (data.totalRuns === 0 || !data.runs || data.runs.length === 0) {
+          emptyState.style.display = 'block';
+          return;
+        }
+
+        dashboard.style.display = 'block';
+
+        document.getElementById('last-updated').textContent =
+          `Last updated: ${new Date(data.generatedAt).toLocaleString()}`;
+
+        const runs = data.runs.reverse();
+
+        const avgGuardrailPass = runs.reduce((sum, r) => sum + r.guardrailPassRate, 0) / runs.length;
+        const avgPrCycle = runs.reduce((sum, r) => sum + (r.avgPrCycleTimeMs || 0), 0) / runs.length;
+        const totalRollbacks = runs.reduce((sum, r) => sum + r.rollbackCount, 0);
+        const avgWildcard = runs.reduce((sum, r) => sum + r.wildcardAdoptionRate, 0) / runs.length;
+
+        document.getElementById('metric-total-runs').textContent = data.totalRuns;
+        document.getElementById('metric-guardrail-pass').innerHTML =
+          `${avgGuardrailPass.toFixed(1)}<span class="metric-suffix">%</span>`;
+        document.getElementById('metric-pr-cycle').innerHTML =
+          `${Math.round(avgPrCycle)}<span class="metric-suffix">ms</span>`;
+        document.getElementById('metric-rollbacks').textContent = totalRollbacks;
+        document.getElementById('metric-wildcard').innerHTML =
+          `${avgWildcard.toFixed(1)}<span class="metric-suffix">%</span>`;
+
+        const labels = runs.map((r, i) => `Run ${i + 1}`);
+
+        new Chart(document.getElementById('chart-guardrails'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Pass Rate (%)',
+              data: runs.map(r => r.guardrailPassRate),
+              borderColor: '#10B981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            }
+          }
+        });
+
+        new Chart(document.getElementById('chart-categories'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Chosen',
+              data: runs.map(r => r.categoriesChosenCount),
+              backgroundColor: '#8B5CF6'
+            }, {
+              label: 'Rejected',
+              data: runs.map(r => r.categoriesRejectedCount),
+              backgroundColor: '#EC4899'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+        new Chart(document.getElementById('chart-rollbacks'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Rollback Count',
+              data: runs.map(r => r.rollbackCount),
+              borderColor: '#EF4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+
+      } catch (error) {
+        console.error('Error loading metrics:', error);
+        loading.innerHTML = '<p>Error loading metrics. Please try again later.</p>';
+      }
+    }
+
+    loadMetrics();
+  </script>
+</body>
+</html>
