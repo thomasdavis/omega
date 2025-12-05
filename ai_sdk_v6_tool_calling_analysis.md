@@ -61,7 +61,7 @@ The model is stopping after tool calls with `finishReason: "tool-calls"` instead
 ### Model Configuration (agent.ts:52)
 
 ```typescript
-const model = openai.chat('gpt-5-mini');
+const model = openai.chat('gpt-5');
 ```
 
 ### Agent Call (agent.ts)
@@ -113,7 +113,7 @@ From AI SDK v6 documentation:
 
 4. **Should we:**
    - Strengthen the system prompt language?
-   - Use a different model (gpt-5-mini vs gpt-4o)?
+   - Use a different model (gpt-5 vs gpt-4o)?
    - Configure agent protocol differently?
    - Add explicit instruction to always return text after tools?
 
