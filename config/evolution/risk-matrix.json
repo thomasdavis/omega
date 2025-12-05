@@ -1,0 +1,111 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evolution Risk Matrix",
+  "description": "Risk assessment criteria for evolution proposals",
+  "riskLevels": {
+    "low": {
+      "maxFiles": 5,
+      "maxLines": 200,
+      "requiresTests": false,
+      "requiresReview": true,
+      "autoMergeAllowed": false,
+      "allowedTypes": ["wildcard", "capability", "anticipatory"],
+      "restrictions": [
+        "No database schema changes",
+        "No external API changes",
+        "No core prompt modifications"
+      ]
+    },
+    "medium": {
+      "maxFiles": 15,
+      "maxLines": 400,
+      "requiresTests": true,
+      "requiresReview": true,
+      "autoMergeAllowed": false,
+      "allowedTypes": ["capability", "anticipatory"],
+      "restrictions": [
+        "Database changes require migration scripts",
+        "API changes must be backward compatible",
+        "Feature flags required"
+      ]
+    },
+    "high": {
+      "maxFiles": 20,
+      "maxLines": 500,
+      "requiresTests": true,
+      "requiresReview": true,
+      "autoMergeAllowed": false,
+      "allowedTypes": ["capability"],
+      "restrictions": [
+        "Requires explicit human approval",
+        "Mandatory rollback plan",
+        "Gradual rollout required",
+        "24h monitoring period"
+      ]
+    }
+  },
+  "scoringCriteria": {
+    "impact": {
+      "weight": 0.35,
+      "factors": [
+        "Number of users affected",
+        "Frequency of use",
+        "Performance improvement",
+        "Feature completeness"
+      ]
+    },
+    "effort": {
+      "weight": 0.20,
+      "factors": [
+        "Lines of code",
+        "Number of files",
+        "Complexity",
+        "Dependencies"
+      ]
+    },
+    "risk": {
+      "weight": 0.25,
+      "factors": [
+        "Potential for breaking changes",
+        "Security implications",
+        "Data integrity impact",
+        "Reversibility"
+      ]
+    },
+    "novelty": {
+      "weight": 0.20,
+      "factors": [
+        "Innovation level",
+        "User delight potential",
+        "Competitive advantage",
+        "Learning value"
+      ]
+    }
+  },
+  "personaGuardrails": {
+    "coreIdentity": [
+      "battle-scarred obsidian plates",
+      "crimson energy veins",
+      "stoic, utilitarian presence",
+      "grounded, reluctant hero archetype"
+    ],
+    "allowedMicroVariations": [
+      "comedic-mouth toggle frequency (parameter only)",
+      "micro-animation timing (cosmetic)",
+      "documentation phrasing",
+      "response variety within character"
+    ],
+    "requiresApproval": [
+      "visual appearance changes (beyond micro-variations)",
+      "personality voice shifts",
+      "core prompt modifications",
+      "identity characteristic changes"
+    ],
+    "strictlyForbidden": [
+      "removing stoic demeanor",
+      "changing visual aesthetic fundamentally",
+      "altering established backstory",
+      "personality inconsistency"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evolution Allowlist",
+  "description": "Paths that the evolution engine is allowed to modify",
+  "allowedPaths": [
+    "apps/bot/src/tools/**/*.ts",
+    "apps/bot/src/lib/prompts/partials/**/*.ts",
+    "apps/bot/src/config/**/*.ts",
+    "apps/bot/src/config/**/*.json",
+    "apps/bot/src/utils/**/*.ts",
+    "apps/bot/src/services/**/*.ts",
+    "apps/bot/src/evolution/**/*.ts",
+    "docs/**/*.md",
+    "apps/bot/src/__tests__/**/*.ts",
+    "apps/bot/src/**/*.test.ts"
+  ],
+  "allowedOperations": [
+    "create_file",
+    "modify_file",
+    "add_function",
+    "modify_function",
+    "add_test",
+    "update_documentation"
+  ],
+  "notes": [
+    "All paths are relative to repository root",
+    "Glob patterns supported: * (single segment), ** (multiple segments)",
+    "New tools must be added to apps/bot/src/tools/",
+    "Prompt partials must include guard clauses",
+    "All behavior changes must be behind feature flags"
+  ]
+}

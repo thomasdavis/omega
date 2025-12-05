@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Evolution Blocklist",
+  "description": "Paths and operations that the evolution engine must never modify",
+  "blockedPaths": [
+    ".env",
+    ".env.*",
+    "**/*.env",
+    "**/credentials.json",
+    "**/secrets/**",
+    ".github/workflows/**/*.yml",
+    "packages/database/prisma/schema.prisma",
+    "railway.json",
+    "railway.toml",
+    "apps/bot/src/lib/systemPrompt.ts",
+    "package.json",
+    "pnpm-lock.yaml",
+    ".gitignore",
+    "tsconfig.json"
+  ],
+  "blockedOperations": [
+    "delete_database",
+    "drop_table",
+    "modify_secrets",
+    "change_deployment_config",
+    "disable_safety_checks",
+    "bypass_feature_flags",
+    "auto_merge_pr",
+    "modify_core_identity"
+  ],
+  "criticalFiles": [
+    "apps/bot/src/lib/systemPrompt.ts"
+  ],
+  "criticalFilesRequire": [
+    "explicit_human_approval",
+    "guard_clauses",
+    "rollback_mechanism"
+  ],
+  "notes": [
+    "Blocked paths are NEVER modifiable without manual intervention",
+    "Critical files require special approval even with guard clauses",
+    "Workflow files cannot be modified to prevent security bypass",
+    "Schema modifications must go through Prisma migration process"
+  ]
+}
