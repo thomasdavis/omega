@@ -507,3 +507,97 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model SelfEvolutionRun {
+  id         Int                       @id @default(autoincrement())
+  runDate    DateTime                  @map("run_date") @db.Date
+  startedAt  DateTime?                 @default(now()) @map("started_at") @db.Timestamptz(6)
+  finishedAt DateTime?                 @map("finished_at") @db.Timestamptz(6)
+  status     String
+  summary    String?                   @db.Text
+  candidates SelfEvolutionCandidate[]
+  actions    SelfEvolutionAction[]
+  metrics    SelfEvolutionMetric[]
+  sanity     SelfEvolutionSanity[]
+  approvals  SelfEvolutionApproval[]
+
+  @@index([runDate], map: "idx_runs_date")
+  @@index([status], map: "idx_runs_status")
+  @@map("self_evolution_runs")
+}
+
+model SelfEvolutionCandidate {
+  id              Int                   @id @default(autoincrement())
+  runId           Int                   @map("run_id")
+  category        String
+  title           String                @db.VarChar(255)
+  description     String?               @db.Text
+  riskScore       Int?                  @map("risk_score")
+  impactScore     Int?                  @map("impact_score")
+  effortScore     Int?                  @map("effort_score")
+  noveltyScore    Int?                  @map("novelty_score")
+  priority        Decimal?              @db.Decimal(4, 2)
+  selected        Boolean?              @default(false)
+  rejectionReason String?               @map("rejection_reason") @db.Text
+  run             SelfEvolutionRun      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  actions         SelfEvolutionAction[]
+
+  @@index([runId], map: "idx_candidates_run")
+  @@index([selected], map: "idx_candidates_selected")
+  @@map("self_evolution_candidates")
+}
+
+model SelfEvolutionAction {
+  id               Int                     @id @default(autoincrement())
+  runId            Int                     @map("run_id")
+  candidateId      Int?                    @map("candidate_id")
+  branchName       String?                 @db.VarChar(255)
+  prNumber         Int?                    @map("pr_number")
+  issueNumber      Int?                    @map("issue_number")
+  commitSha        String?                 @map("commit_sha") @db.VarChar(128)
+  featureFlagKey   String?                 @map("feature_flag_key") @db.VarChar(128)
+  canaryPercentage Int?                    @map("canary_percentage")
+  testsPassed      Boolean?                @map("tests_passed")
+  checks           Json?
+  run              SelfEvolutionRun        @relation(fields: [runId], references: [id], onDelete: Cascade)
+  candidate        SelfEvolutionCandidate? @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+
+  @@index([prNumber], map: "idx_actions_pr")
+  @@index([runId], map: "idx_actions_run")
+  @@map("self_evolution_actions")
+}
+
+model SelfEvolutionMetric {
+  id          Int              @id @default(autoincrement())
+  runId       Int              @map("run_id")
+  metricKey   String           @map("metric_key") @db.VarChar(64)
+  metricValue Decimal?         @map("metric_value")
+  details     Json?
+  run         SelfEvolutionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("self_evolution_metrics")
+}
+
+model SelfEvolutionSanity {
+  id      Int              @id @default(autoincrement())
+  runId   Int              @map("run_id")
+  rules   Json?
+  passed  Boolean?         @default(false)
+  details String?          @db.Text
+  run     SelfEvolutionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("self_evolution_sanity")
+}
+
+model SelfEvolutionApproval {
+  id         Int              @id @default(autoincrement())
+  runId      Int              @map("run_id")
+  required   Boolean?         @default(false)
+  approver   String?          @db.VarChar(128)
+  decision   String?
+  approvedAt DateTime?        @map("approved_at") @db.Timestamptz(6)
+  notes      String?          @db.Text
+  run        SelfEvolutionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@map("self_evolution_approvals")
+}

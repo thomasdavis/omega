@@ -140,6 +140,9 @@ export type {
   CreateGeneratedImageInput,
 } from './postgres/imageService.js';
 
+// Self-Evolution Service
+export * from './postgres/selfEvolutionService.js';
+
 // Database Adapter (PostgreSQL-only after migration)
 export {
   messageService,
