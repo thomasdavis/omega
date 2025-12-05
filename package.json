@@ -10,12 +10,17 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint:fix",
     "type-check": "turbo run type-check",
+    "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules",
     "verify-transfers": "tsx scripts/verify-file-transfer.ts",
     "generate-diagram": "d2 architecture.d2 architecture.svg && d2 architecture.d2 architecture.png",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo run build && changeset publish",
     "prepare": "husky || true"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.27.1",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
