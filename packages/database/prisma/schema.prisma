@@ -348,3 +348,26 @@ model ScriptStorage {
   @@index([scriptName], map: "idx_script_storage_script_name")
   @@map("script_storage")
 }
+
+model UserFeeling {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  username        String?
+  feelingType     String   @map("feeling_type")
+  intensity       Int?
+  valence         String?
+  notes           String?  @db.Text
+  context         Json?
+  triggers        Json?
+  physicalState   String?  @map("physical_state")
+  mentalState     String?  @map("mental_state")
+  metadata        Json?
+  timestamp       BigInt
+  createdAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([userId], map: "idx_user_feelings_user_id")
+  @@index([timestamp(sort: Desc)], map: "idx_user_feelings_timestamp")
+  @@index([feelingType], map: "idx_user_feelings_feeling_type")
+  @@index([userId, timestamp(sort: Desc)], map: "idx_user_feelings_user_timestamp")
+  @@map("user_feelings")
+}
