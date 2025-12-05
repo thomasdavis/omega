@@ -1,0 +1,68 @@
+{
+  "version": "1.0.0",
+  "enabled": false,
+  "dryRunMode": true,
+  "scheduleConfig": {
+    "cronSchedule": "0 2 * * *",
+    "jitterMinutes": 20,
+    "skipDuringDeployments": true
+  },
+  "safetyRails": {
+    "diffCaps": {
+      "maxLinesOfCode": 500,
+      "maxFilesChanged": 10,
+      "requireGreenCI": true
+    },
+    "allowedPaths": [
+      "packages/agent/src/tools/**",
+      "packages/agent/src/prompts/**",
+      "apps/bot/src/persona/**",
+      "docs/**/*.md",
+      ".github/self-evolution-config.json"
+    ],
+    "blockedPaths": [
+      ".github/workflows/**",
+      "packages/database/scripts/**",
+      "packages/database/prisma/**",
+      ".env*",
+      "**/*.key",
+      "**/*.pem",
+      "**/secrets/**",
+      "railway.json",
+      "pnpm-lock.yaml"
+    ],
+    "allowedChangeTypes": [
+      "capability",
+      "prompt",
+      "persona",
+      "cleanup",
+      "wildcard"
+    ],
+    "maxRiskLevel": 2,
+    "requireReviewers": true
+  },
+  "wildcardFeature": {
+    "enabled": true,
+    "maxRiskLevel": 1,
+    "allowedTypes": ["persona", "prompt"],
+    "description": "One small reversible change per day (low risk only)"
+  },
+  "telemetry": {
+    "logRetentionDays": 90,
+    "storeReflections": true,
+    "storeProposals": true,
+    "storeActions": true,
+    "attachArtifacts": true
+  },
+  "prTemplateConfig": {
+    "autoLabels": ["ai-ops", "self-evolution", "safety"],
+    "autoRequestReviewers": ["thomasdavis"],
+    "branchPrefix": "self-evolution/",
+    "requireChecklist": true
+  },
+  "rollbackConfig": {
+    "autoRevertOnFailure": true,
+    "maxFailuresBeforeDisable": 3,
+    "cooldownHours": 24
+  }
+}

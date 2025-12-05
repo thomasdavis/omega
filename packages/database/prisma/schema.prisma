@@ -508,138 +508,48 @@ model SchemaAudit {
   @@map("schema_audit")
 }
 
-model ImageJob {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String    @map("user_id") @db.VarChar(255)
-  username     String?   @db.VarChar(255)
-  prompt       String    @db.Text
-  params       Json?
-  model        String    @db.VarChar(64)
-  status       String
-  requestedAt  DateTime  @default(now()) @map("requested_at") @db.Timestamptz(6)
-  startedAt    DateTime? @map("started_at") @db.Timestamptz(6)
-  completedAt  DateTime? @map("completed_at") @db.Timestamptz(6)
-  errorMessage String?   @map("error_message") @db.Text
-  retries      Int       @default(0)
-  images       Image[]
+model SafetyPolicy {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()::text"))
+  policyName            String   @unique @map("policy_name")
+  description           String?
+  maxLinesOfCode        Int      @default(500) @map("max_lines_of_code")
+  maxFilesChanged       Int      @default(10) @map("max_files_changed")
+  maxDirectoriesChanged Int      @default(4) @map("max_directories_changed")
+  allowlistPatterns     Json     @default("[]") @map("allowlist_patterns")
+  blocklistPatterns     Json     @default("[]") @map("blocklist_patterns")
+  isActive              Boolean  @default(true) @map("is_active")
+  policyVersion         Int      @default(1) @map("policy_version")
+  createdBy             String?  @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@index([userId], map: "idx_image_jobs_user_id")
-  @@index([status], map: "idx_image_jobs_status")
-  @@index([requestedAt(sort: Desc)], map: "idx_image_jobs_requested_at")
-  @@map("image_jobs")
+  @@index([isActive], map: "idx_safety_policy_active")
+  @@index([policyName], map: "idx_safety_policy_name")
+  @@index([createdAt(sort: Desc)], map: "idx_safety_policy_created_at")
+  @@map("safety_policy")
 }
 
-model Image {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  jobId          String         @map("job_id") @db.Uuid
-  url            String         @db.Text
-  storageKey     String?        @map("storage_key") @db.Text
-  width          Int?
-  height         Int?
-  format         String?        @db.VarChar(16)
-  bytes          Int?
-  checksumSha256 String?        @map("checksum_sha256") @db.Text
-  variant        String         @default("original") @db.VarChar(32)
-  metadata       Json?
-  typeName       String?        @map("type_name") @db.Text
-  styleNames     String[]       @map("style_names")
-  categoryNames  String[]       @map("category_names")
-  subjectNames   String[]       @map("subject_names")
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  job            ImageJob       @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  types          ImageToType[]
-  categories     ImageToCategory[]
-  styles         ImageToStyle[]
-  subjects       ImageToSubject[]
-  tags           ImageTag[]
+model SelfEvolutionRollback {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()::text"))
+  prNumber             Int?      @map("pr_number")
+  prTitle              String?   @map("pr_title")
+  prUrl                String?   @map("pr_url")
+  commitSha            String?   @map("commit_sha")
+  branchName           String?   @map("branch_name")
+  failureReason        String    @map("failure_reason")
+  failureType          String    @map("failure_type")
+  violationDetails     Json?     @map("violation_details")
+  rollbackStatus       String    @default("pending") @map("rollback_status")
+  rollbackCommitSha    String?   @map("rollback_commit_sha")
+  rollbackCompletedAt  DateTime? @map("rollback_completed_at") @db.Timestamptz(6)
+  createdBy            String    @default("system") @map("created_by")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  @@index([jobId], map: "idx_images_job_id")
-  @@index([createdAt], map: "idx_images_created_at")
-  @@index([variant], map: "idx_images_variant")
-  @@map("images")
-}
-
-model ImageType {
-  id          Int           @id @default(autoincrement())
-  name        String        @unique @db.Text
-  description String?       @db.Text
-  images      ImageToType[]
-
-  @@map("image_types")
-}
-
-model ImageCategory {
-  id          Int               @id @default(autoincrement())
-  name        String            @unique @db.Text
-  description String?           @db.Text
-  images      ImageToCategory[]
-
-  @@map("image_categories")
-}
-
-model ImageStyle {
-  id          Int            @id @default(autoincrement())
-  name        String         @unique @db.Text
-  description String?        @db.Text
-  images      ImageToStyle[]
-
-  @@map("image_styles")
-}
-
-model ImageSubject {
-  id          Int              @id @default(autoincrement())
-  name        String           @unique @db.Text
-  description String?          @db.Text
-  images      ImageToSubject[]
-
-  @@map("image_subjects")
-}
-
-model ImageToType {
-  imageId String    @map("image_id") @db.Uuid
-  typeId  Int       @map("type_id")
-  image   Image     @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  type    ImageType @relation(fields: [typeId], references: [id], onDelete: Restrict)
-
-  @@id([imageId, typeId])
-  @@map("image_to_type")
-}
-
-model ImageToCategory {
-  imageId    String        @map("image_id") @db.Uuid
-  categoryId Int           @map("category_id")
-  image      Image         @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  category   ImageCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-
-  @@id([imageId, categoryId])
-  @@map("image_to_category")
-}
-
-model ImageToStyle {
-  imageId String     @map("image_id") @db.Uuid
-  styleId Int        @map("style_id")
-  image   Image      @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  style   ImageStyle @relation(fields: [styleId], references: [id], onDelete: Restrict)
-
-  @@id([imageId, styleId])
-  @@map("image_to_style")
-}
-
-model ImageToSubject {
-  imageId   String       @map("image_id") @db.Uuid
-  subjectId Int          @map("subject_id")
-  image     Image        @relation(fields: [imageId], references: [id], onDelete: Cascade)
-  subject   ImageSubject @relation(fields: [subjectId], references: [id], onDelete: Restrict)
-
-  @@id([imageId, subjectId])
-  @@map("image_to_subject")
-}
-
-model ImageTag {
-  imageId String @map("image_id") @db.Uuid
-  tag     String @db.Text
-  image   Image  @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
-  @@id([imageId, tag])
-  @@map("image_tags")
+  @@index([prNumber], map: "idx_self_evolution_rollbacks_pr")
+  @@index([rollbackStatus], map: "idx_self_evolution_rollbacks_status")
+  @@index([failureType], map: "idx_self_evolution_rollbacks_failure_type")
+  @@index([createdAt(sort: Desc)], map: "idx_self_evolution_rollbacks_created_at")
+  @@index([branchName], map: "idx_self_evolution_rollbacks_branch")
+  @@map("self_evolution_rollbacks")
 }
