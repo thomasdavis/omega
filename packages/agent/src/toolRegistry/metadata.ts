@@ -741,6 +741,58 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
+  // ===== USER FEELINGS TOOLS (3) =====
+  {
+    id: 'logFeeling',
+    name: 'Log Feeling',
+    description: 'Log a user\'s feeling or mood entry to track emotional states over time',
+    keywords: ['feeling', 'mood', 'emotion', 'log', 'track', 'mental health', 'wellness', 'sentiment', 'happy', 'sad', 'anxious', 'record'],
+    tags: ['database', 'feelings', 'mood', 'tracking', 'mental-health'],
+    examples: [
+      'log my feeling for today',
+      'I\'m feeling happy',
+      'record that I\'m anxious',
+      'track my mood',
+      'log feeling',
+      'I feel stressed'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'queryFeelings',
+    name: 'Query Feelings',
+    description: 'Query and retrieve user feelings history with flexible filtering by date, type, and intensity',
+    keywords: ['feeling', 'mood', 'emotion', 'query', 'history', 'track', 'show', 'list', 'view', 'filter', 'search', 'mental health'],
+    tags: ['database', 'feelings', 'mood', 'tracking', 'query'],
+    examples: [
+      'show me my mood history',
+      'what were my feelings last week',
+      'show all times I felt anxious',
+      'list my feelings from the past month',
+      'query my feelings',
+      'show high intensity feelings'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'getFeelingSummary',
+    name: 'Get Feeling Summary',
+    description: 'Get aggregated mood statistics and insights including most common feelings, average intensity, trends, and emotional patterns',
+    keywords: ['feeling', 'mood', 'emotion', 'summary', 'statistics', 'analysis', 'trends', 'patterns', 'insights', 'mental health', 'wellness'],
+    tags: ['database', 'feelings', 'mood', 'analytics', 'summary'],
+    examples: [
+      'show me my mood summary',
+      'what are my most common feelings',
+      'analyze my emotional patterns',
+      'give me mood statistics',
+      'how have I been feeling overall',
+      'feeling trends'
+    ],
+    category: 'database'
+  },
+
   // ===== GITHUB TOOLS (10) =====
   {
     id: 'githubCreateIssue',
