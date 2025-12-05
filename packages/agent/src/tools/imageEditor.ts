@@ -17,6 +17,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '@repo/shared';
+import { saveGeneratedImage } from '@repo/database';
 
 /**
  * Download image from URL
@@ -50,8 +51,11 @@ Model: gpt-image-1 (latest OpenAI image editing model)`,
     imageUrl: z.string().describe('URL of the image to edit. Can be a Discord attachment URL (https://cdn.discordapp.com/...) or any web URL'),
     editPrompt: z.string().describe('Detailed description of what you want to add or change in the image. Be specific and descriptive. Examples: "add a rainbow in the sky", "add a group of elegant people in the background", "change the background to a starry night"'),
     size: z.enum(['256x256', '512x512', '1024x1024']).optional().describe('Output dimensions. Default: "1024x1024". Options: "256x256", "512x512", "1024x1024"'),
+    userId: z.string().optional().describe('User ID of the image editor. Use the current user\'s ID from context if available.'),
+    username: z.string().optional().describe('Username of the image editor. Use the current user\'s username from context if available.'),
+    discordMessageId: z.string().optional().describe('Discord message ID if this edit was requested via Discord.'),
   }),
-  execute: async ({ imageUrl, editPrompt, size = '1024x1024' }) => {
+  execute: async ({ imageUrl, editPrompt, size = '1024x1024', userId, username, discordMessageId }) => {
     try {
       const client = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY!,
@@ -98,6 +102,10 @@ Model: gpt-image-1 (latest OpenAI image editing model)`,
       const firstResult = result.data?.[0];
       let editedImageUrl: string;
 
+      let editedImageBuffer: Buffer | undefined;
+      let filename: string | undefined;
+      let filepath: string | undefined;
+
       if (firstResult?.url) {
         // URL returned directly from API
         editedImageUrl = firstResult.url;
@@ -108,12 +116,12 @@ Model: gpt-image-1 (latest OpenAI image editing model)`,
         console.log(`   💾 Saving base64 image to uploads directory...`);
 
         const uploadsDir = getUploadsDir();
-        const filename = `edited-${randomUUID()}.png`;
-        const filepath = join(uploadsDir, filename);
+        filename = `edited-${randomUUID()}.png`;
+        filepath = join(uploadsDir, filename);
 
         // Convert base64 to buffer and save
-        const editedBuffer = Buffer.from(firstResult.b64_json, 'base64');
-        writeFileSync(filepath, editedBuffer);
+        editedImageBuffer = Buffer.from(firstResult.b64_json, 'base64');
+        writeFileSync(filepath, editedImageBuffer);
 
         // Generate public URL
         const serverUrl = process.env.ARTIFACT_SERVER_URL
@@ -127,6 +135,32 @@ Model: gpt-image-1 (latest OpenAI image editing model)`,
         console.error('❌ No edited image returned from OpenAI API');
         console.error(`   Full API Response:`, JSON.stringify(result, null, 2));
         throw new Error('No edited image returned from API');
+      }
+
+      // Save metadata to database
+      if (filename) {
+        try {
+          await saveGeneratedImage({
+            title: `Edited Image - ${new Date().toISOString()}`,
+            description: editPrompt.substring(0, 500),
+            prompt: editPrompt,
+            revisedPrompt: editPrompt,
+            toolUsed: 'imageEditor',
+            modelUsed: 'gpt-image-1',
+            filename,
+            artifactPath: filepath,
+            publicUrl: editedImageUrl,
+            format: 'png',
+            imageData: editedImageBuffer,
+            createdBy: userId,
+            createdByUsername: username,
+            discordMessageId,
+          });
+          console.log(`   💾 Image metadata saved to database`);
+        } catch (dbError) {
+          console.error('⚠️ Failed to save image metadata to database:', dbError);
+          // Don't fail the whole operation if DB save fails
+        }
       }
 
       return {

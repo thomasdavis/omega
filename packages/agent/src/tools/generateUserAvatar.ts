@@ -9,7 +9,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
-import { getDatabase } from '@repo/database';// OLD:client.js';
+import { getDatabase, saveGeneratedImage } from '@repo/database';// OLD:client.js';
 import { generateImageWithGemini } from '../services/geminiImageService.js';
 import { OMEGA_MODEL } from '@repo/shared';
 
@@ -28,9 +28,10 @@ export const generateUserAvatarTool = tool({
     userId: z.string().describe('Discord user ID to generate avatar for'),
     username: z.string().describe('Discord username (for display purposes)'),
     messageLimit: z.number().optional().default(100).describe('Number of recent messages to analyze (default: 100, max: 500)'),
+    discordMessageId: z.string().optional().describe('Discord message ID that triggered this tool'),
   }),
 
-  execute: async ({ userId, username, messageLimit = 100 }) => {
+  execute: async ({ userId, username, messageLimit = 100, discordMessageId }) => {
     const startTime = Date.now();
 
     try {
@@ -139,6 +140,35 @@ Create a beautiful, high-quality portrait that captures this person's essence.`;
 
       // Convert buffer to base64 for Discord display
       const base64Image = imageResult.imageBuffer?.toString('base64');
+
+      // Save image metadata to database
+      try {
+        console.log(`   💾 Saving avatar metadata to database...`);
+        await saveGeneratedImage({
+          title: `Avatar for ${username}`,
+          description: `Personalized avatar generated based on ${messages.length} Discord messages`,
+          imageData: imageResult.imageBuffer,
+          prompt: avatarPrompt,
+          revisedPrompt: characterDescription,
+          toolUsed: 'generateUserAvatar',
+          modelUsed: 'Gemini',
+          filename: `avatar-${userId}-${Date.now()}.png`,
+          artifactPath: imageResult.imagePath,
+          format: 'png',
+          metadata: {
+            messagesAnalyzed: messages.length,
+            messageLimit,
+            characterDescription,
+          },
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId: discordMessageId,
+        });
+        console.log(`   ✅ Avatar metadata saved to database`);
+      } catch (dbError) {
+        console.error(`   ⚠️ Failed to save avatar metadata to database:`, dbError);
+        // Don't fail the tool if database save fails, just log warning
+      }
 
       return {
         success: true,

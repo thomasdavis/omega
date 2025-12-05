@@ -6,7 +6,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getUserProfile, getOrCreateUserProfile } from '@repo/database';// OLD:userProfileService.js';
+import { getUserProfile, getOrCreateUserProfile, saveGeneratedImage } from '@repo/database';// OLD:userProfileService.js';
 import { analyzeUser } from '../services/userProfileAnalysis.js';
 import { generateImageWithGemini } from '../services/geminiImageService.js';
 import { buildPortraitPrompt, buildGenericPortraitPrompt } from '../lib/portraitPrompts.js';
@@ -129,9 +129,10 @@ export const generateMyPortraitTool = tool({
       .enum(['realistic', 'comic', 'artistic', 'abstract'])
       .default('artistic')
       .describe('Portrait style'),
+    discordMessageId: z.string().optional().describe('Discord message ID if this portrait was requested via Discord'),
   }),
 
-  execute: async ({ userId, username, style }) => {
+  execute: async ({ userId, username, style, discordMessageId }) => {
     console.log(`🎨 Generating portrait for ${username} in ${style} style...`);
 
     try {
@@ -193,6 +194,30 @@ export const generateMyPortraitTool = tool({
       const fs = await import('fs');
       fs.writeFileSync(localPath, imageResult.imageBuffer);
       console.log(`   💾 Backup saved locally: ${localPath}`);
+
+      // 8. Save metadata to database
+      try {
+        await saveGeneratedImage({
+          title: `Portrait - ${username}`,
+          description: `AI-generated portrait in ${style} style based on user profile and Omega's perception`,
+          prompt: prompt,
+          revisedPrompt: prompt,
+          toolUsed: 'generateMyPortrait',
+          modelUsed: 'gemini-3-pro-image-preview',
+          filename: localFilename,
+          artifactPath: localPath,
+          publicUrl: rawUrl,
+          format: 'png',
+          imageData: imageResult.imageBuffer,
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId,
+        });
+        console.log(`   💾 Portrait metadata saved to database`);
+      } catch (dbError) {
+        console.error('   ⚠️ Failed to save portrait metadata to database:', dbError);
+        // Don't fail the whole operation if DB save fails
+      }
 
       console.log(`   ✅ Portrait generated successfully!`);
 

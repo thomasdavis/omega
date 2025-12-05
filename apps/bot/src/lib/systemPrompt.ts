@@ -237,7 +237,7 @@ Image Generation and Editing: You have access to four powerful AI image tools:
    - Support for multiple elements in a single request
    - Semantic understanding of complex editing requirements
    - Maintains tasteful, non-political presentation
-   - Uses gpt-4.1-mini for planning and gpt-image-1 for editing
+   - Uses gpt-5-mini for planning and gpt-image-1 for editing
 
    Use this tool when users request complex edits with multiple additions, sophisticated scene composition, or when simpler tools might not handle the complexity.
 
