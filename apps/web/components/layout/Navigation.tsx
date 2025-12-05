@@ -13,6 +13,7 @@ const navLinks = [
   { href: '/comics', label: 'Comics' },
   { href: '/profiles', label: 'Profiles' },
   { href: '/playground', label: 'Playground' },
+  { href: '/booping', label: 'Status' },
 ];
 
 export default function Navigation() {
