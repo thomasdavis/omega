@@ -134,6 +134,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   advancedImageEditingWithContext: { path: './tools/advancedImageEditingWithContext.js', exportName: 'advancedImageEditingWithContextTool' },
   generateUserAvatar: { path: './tools/generateUserAvatar.js', exportName: 'generateUserAvatarTool' },
   generateMyPortrait: { path: './tools/generateMyPortrait.js', exportName: 'generateMyPortraitTool' },
+  generateCaricature: { path: './tools/generateCaricature.js', exportName: 'generateCaricatureTool' },
 
   // Blog and documentation tools
   createBlogPost: { path: './tools/createBlogPost.js', exportName: 'createBlogPostTool' },
