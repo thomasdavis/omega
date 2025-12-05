@@ -1451,6 +1451,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
+  {
+    id: 'generateCaricature',
+    name: 'Generate Caricature',
+    description: 'Generate caricatures that cartoonishly exaggerate user features based on photo and personality',
+    keywords: ['caricature', 'cartoon', 'exaggerate', 'funny', 'drawing', 'comic', 'humorous', 'personalized', 'generate'],
+    tags: ['image', 'caricature', 'generation', 'fun'],
+    examples: [
+      'generate my caricature',
+      'make a caricature of me',
+      'draw a cartoon version of me',
+      'create an exaggerated drawing',
+      'caricature me'
+    ],
+    category: 'content'
+  },
+
   // ===== FILE MANAGEMENT TOOLS =====
   {
     id: 'listUploadedFiles',
