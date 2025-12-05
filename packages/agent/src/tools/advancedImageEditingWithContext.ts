@@ -23,6 +23,7 @@ import { randomUUID } from 'crypto';
 import { getUploadsDir } from '@repo/shared';
 import { generateText } from 'ai';
 import { openai as aiSdkOpenai } from '@ai-sdk/openai';
+import { saveGeneratedImage } from '@repo/database';
 
 /**
  * Download image from URL
@@ -91,7 +92,10 @@ async function performEdit(
   client: OpenAI,
   imageBuffer: Buffer,
   prompt: string,
-  size: '256x256' | '512x512' | '1024x1024'
+  size: '256x256' | '512x512' | '1024x1024',
+  userId?: string,
+  username?: string,
+  discordMessageId?: string
 ): Promise<Buffer> {
   console.log(`   🎨 Applying edit: "${prompt}"`);
 
@@ -149,8 +153,11 @@ Model: gpt-image-1 with gpt-4.1-mini for planning`,
     editRequest: z.string().describe('Complex editing request describing all desired changes. Can include multiple elements. Examples: "add a harem and the Spice Girls hanging out in a non-political way", "add a rainbow and a unicorn in a magical forest setting"'),
     size: z.enum(['256x256', '512x512', '1024x1024']).optional().describe('Output dimensions. Default: "1024x1024"'),
     maxSteps: z.number().min(1).max(5).optional().describe('Maximum number of sequential editing steps to perform. Default: 4'),
+    userId: z.string().optional().describe('Optional user ID for tracking who created the image'),
+    username: z.string().optional().describe('Optional username for tracking who created the image'),
+    discordMessageId: z.string().optional().describe('Optional Discord message ID for linking the image to a specific message'),
   }),
-  execute: async ({ imageUrl, editRequest, size = '1024x1024', maxSteps = 4 }) => {
+  execute: async ({ imageUrl, editRequest, size = '1024x1024', maxSteps = 4, userId, username, discordMessageId }) => {
     try {
       const client = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY!,
@@ -195,7 +202,10 @@ Model: gpt-image-1 with gpt-4.1-mini for planning`,
             client,
             currentImageBuffer,
             step,
-            size as '256x256' | '512x512' | '1024x1024'
+            size as '256x256' | '512x512' | '1024x1024',
+            userId,
+            username,
+            discordMessageId
           );
           appliedSteps.push(step);
           console.log(`   ✅ Step ${i + 1} completed`);
@@ -225,6 +235,30 @@ Model: gpt-image-1 with gpt-4.1-mini for planning`,
       console.log(`   ✅ Advanced editing completed successfully`);
       console.log(`   📁 Saved to: ${filepath}`);
       console.log(`   🔗 Public URL: ${editedImageUrl}`);
+
+      // Save image metadata to database
+      try {
+        await saveGeneratedImage({
+          title: `Advanced Edited Image - ${new Date().toISOString()}`,
+          description: editRequest.substring(0, 500),
+          prompt: editRequest,
+          revisedPrompt: undefined,
+          toolUsed: 'advancedImageEditingWithContext',
+          modelUsed: 'gpt-image-1',
+          filename,
+          artifactPath: filepath,
+          publicUrl: editedImageUrl,
+          format: 'png',
+          imageData: currentImageBuffer,
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId,
+        });
+        console.log('💾 Image metadata saved to database');
+      } catch (dbError) {
+        console.error('⚠️ Failed to save image metadata to database:', dbError);
+        // Don't fail the whole operation if DB save fails
+      }
 
       return {
         success: true,
