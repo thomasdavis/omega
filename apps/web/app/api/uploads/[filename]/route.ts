@@ -15,6 +15,7 @@ export async function GET(
 
     // Security check: prevent directory traversal
     if (!filePath.startsWith(uploadsDir)) {
+      console.warn(`⚠️  Directory traversal attempt blocked: ${filename}`);
       return NextResponse.json(
         { success: false, error: 'Invalid filename' },
         { status: 400 }
@@ -22,6 +23,9 @@ export async function GET(
     }
 
     if (!existsSync(filePath)) {
+      console.warn(`⚠️  File not found: ${filename}`);
+      console.warn(`   Requested path: ${filePath}`);
+      console.warn(`   Uploads directory: ${uploadsDir}`);
       return NextResponse.json(
         { success: false, error: 'File not found' },
         { status: 404 }

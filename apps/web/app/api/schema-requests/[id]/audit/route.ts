@@ -9,10 +9,10 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // First get the schema request to find the table name
     const schemaRequest = await SchemaRegistryService.getSchemaRequest(id);
