@@ -1,4 +1,6 @@
 #!/bin/bash
+# Create self_evolution_v0 tables for AI self-improvement scaffolding
+# Part of Self-Evolution v0 (scheduler + DB + safety rails)
 # Create self-evolution engine tables for tracking daily runs, reflections, proposals, actions, guardrails, rollbacks, feature flags, and safety policy
 # Usage: railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && bash packages/database/scripts/create-self-evolution-tables.sh'
 
