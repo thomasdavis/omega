@@ -1,0 +1,72 @@
+{
+  "summary": "Example of expected JSON output structure",
+  "assumptions": [
+    "User has access to required development environment"
+  ],
+  "risks": [
+    "Scope creep if requirements are not clearly defined"
+  ],
+  "non_goals": [
+    "Backwards compatibility with legacy systems"
+  ],
+  "api_design": {
+    "endpoints": [
+      {
+        "method": "GET",
+        "path": "/api/resource",
+        "description": "Retrieve resource data"
+      }
+    ],
+    "models": [
+      {
+        "name": "Resource",
+        "fields": [
+          {
+            "name": "id",
+            "type": "string",
+            "required": true
+          }
+        ]
+      }
+    ]
+  },
+  "data_model": {
+    "tables": [
+      {
+        "name": "resources",
+        "columns": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "nullable": false
+          }
+        ]
+      }
+    ]
+  },
+  "infra": {
+    "services": ["API Server"],
+    "dependencies": ["PostgreSQL"],
+    "deployment": "Railway"
+  },
+  "security": {
+    "authentication": "JWT",
+    "authorization": "RBAC",
+    "data_protection": ["Encrypt data"]
+  },
+  "testing": {
+    "unit_tests": ["Test 1"],
+    "integration_tests": ["Test 2"],
+    "e2e_tests": ["Test 3"]
+  },
+  "acceptance_criteria": [
+    "API endpoints respond correctly"
+  ],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Set up project",
+      "description": "Initialize project structure"
+    }
+  ]
+}
