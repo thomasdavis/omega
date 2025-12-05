@@ -69,7 +69,17 @@ tsx scripts/self_evolution/guardrails.ts --export-policy
 
 ### 3. GitHub Workflow
 
-**File**: `.github/workflows/self_evolution_checks.yml`
+**Template File**: `scripts/self_evolution/self_evolution_checks.yml.template`
+
+**Installation**: Copy the template to `.github/workflows/`:
+```bash
+cp scripts/self_evolution/self_evolution_checks.yml.template .github/workflows/self_evolution_checks.yml
+git add .github/workflows/self_evolution_checks.yml
+git commit -m "chore: add self-evolution checks workflow"
+git push
+```
+
+**Note**: GitHub App permissions prevent automated workflow creation. The workflow must be added manually by a user with repository write access.
 
 **Triggers**:
 - Pull request to main branch
