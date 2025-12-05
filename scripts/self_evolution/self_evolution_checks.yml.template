@@ -1,0 +1,215 @@
+name: Self-Evolution Safety Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to check'
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # ============================================================================
+  # Guardrails Check - Validate diff caps and patterns
+  # ============================================================================
+  guardrails:
+    name: Guardrails Validation
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.guardrails.outputs.passed }}
+      violations: ${{ steps.guardrails.outputs.violations }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for diff analysis
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run guardrails check
+        id: guardrails
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tsx scripts/self_evolution/guardrails.ts --pr ${{ inputs.pr_number }}
+          else
+            tsx scripts/self_evolution/guardrails.ts --pr ${{ github.event.pull_request.number }}
+          fi
+
+      - name: Comment on PR with violations
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request?.number || ${{ inputs.pr_number || 0 }};
+
+            if (!prNumber) {
+              console.log('No PR number available, skipping comment');
+              return;
+            }
+
+            const comment = `## 🚨 Self-Evolution Guardrails Failed
+
+            The changes in this PR exceed the safety limits for self-evolution.
+
+            **Common Violations:**
+            - Lines of code changed exceeds limit (≤500 LOC)
+            - Too many files changed (≤10 files)
+            - Too many directories affected (≤4 directories)
+            - Modified blocked files (core runtime, migrations, secrets)
+
+            **Resolution:**
+            1. Review the guardrails output in the workflow logs
+            2. Split the PR into smaller, focused changes
+            3. If modifying blocked files is necessary, add the \`allow-migrations\` label for human review
+            4. Consider if changes belong in the allowlist (prompts/, docs/, tools/, workflows/)
+
+            **View Details:** [See workflow run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            ---
+            *Automated safety check for self-evolution loop*`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: comment
+            });
+
+  # ============================================================================
+  # Canary Tests - Minimal smoke tests
+  # ============================================================================
+  canary-tests:
+    name: Canary Tests
+    runs-on: ubuntu-latest
+    needs: guardrails
+    if: always()  # Run even if guardrails fail
+
+    strategy:
+      fail-fast: false
+      matrix:
+        check:
+          - name: Lint
+            command: pnpm run lint
+            directory: apps/bot
+          - name: Type Check
+            command: pnpm run type-check
+            directory: apps/bot
+          - name: Build
+            command: pnpm run build
+            directory: apps/bot
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ${{ matrix.check.name }}
+        working-directory: ${{ matrix.check.directory }}
+        run: ${{ matrix.check.command }}
+
+  # ============================================================================
+  # Export Policy - Cache policy to JSON for visibility
+  # ============================================================================
+  export-policy:
+    name: Export Safety Policy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create config directory
+        run: mkdir -p config
+
+      - name: Export policy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: tsx scripts/self_evolution/guardrails.ts --export-policy
+
+      - name: Upload policy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-evolution-policy
+          path: config/self-evolution-policy.json
+          retention-days: 30
+
+  # ============================================================================
+  # Final Status Check
+  # ============================================================================
+  self-evolution-status:
+    name: Self-Evolution Status
+    runs-on: ubuntu-latest
+    needs: [guardrails, canary-tests]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          echo "Guardrails: ${{ needs.guardrails.result }}"
+          echo "Canary Tests: ${{ needs.canary-tests.result }}"
+
+          if [ "${{ needs.guardrails.result }}" != "success" ]; then
+            echo "❌ Guardrails failed"
+            exit 1
+          fi
+
+          if [ "${{ needs.canary-tests.result }}" != "success" ]; then
+            echo "❌ Canary tests failed"
+            exit 1
+          fi
+
+          echo "✅ All self-evolution checks passed"

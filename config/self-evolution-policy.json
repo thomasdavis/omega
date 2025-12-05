@@ -1,0 +1,38 @@
+{
+  "policy_name": "default",
+  "limits": {
+    "max_lines_of_code": 500,
+    "max_files_changed": 10,
+    "max_directories_affected": 4
+  },
+  "patterns": {
+    "allow": [
+      "prompts/**/*",
+      "docs/**/*",
+      "apps/bot/src/agent/tools/**/*.ts",
+      ".github/workflows/*.yml",
+      "config/feature-flags.*"
+    ],
+    "block": [
+      "apps/bot/src/index.ts",
+      "packages/database/prisma/schema.prisma",
+      "packages/database/scripts/**/*",
+      ".env*",
+      "*.secret*",
+      "credentials.*",
+      "railway.json",
+      "scripts/deploy-*"
+    ]
+  },
+  "settings": {
+    "require_canary_tests": true,
+    "auto_rollback_enabled": true
+  },
+  "metadata": {
+    "description": "Default safety policy for self-evolution loop",
+    "version": "1.0",
+    "created_by": "claude"
+  },
+  "last_updated": "2025-12-05T21:48:00.000Z",
+  "note": "This file is a cache of the database policy for visibility. The source of truth is the safety_policy table in the database."
+}
