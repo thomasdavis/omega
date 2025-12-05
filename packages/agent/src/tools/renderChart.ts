@@ -227,25 +227,28 @@ export const renderChartTool = tool({
       // Save chart metadata to database
       try {
         const dbResult = await saveGeneratedImage({
-          title: title || `${type.charAt(0).toUpperCase() + type.slice(1)} Chart`,
-          description: `${type.charAt(0).toUpperCase() + type.slice(1)} chart generated via QuickChart.io API`,
-          imageData: imageBuffer,
+          userId: userId || 'unknown',
+          username,
+          toolName: 'renderChart',
           prompt: chartPrompt,
-          toolUsed: 'renderChart',
-          modelUsed: 'quickchart.io',
-          filename: `chart_${Date.now()}.png`,
-          width: width || 800,
-          height: height || 600,
-          format: 'png',
+          model: 'quickchart.io',
+          storageUrl: imageUrl,
+          storageProvider: 'quickchart',
+          mimeType: 'image/png',
+          bytes: imageBuffer?.length,
+          status: 'success',
           metadata: {
+            filename: `chart_${Date.now()}.png`,
+            description: `${type.charAt(0).toUpperCase() + type.slice(1)} chart generated via QuickChart.io API`,
             chartType: type,
+            width: width || 800,
+            height: height || 600,
             labelsCount: labels.length,
             datasetsCount: datasets.length,
             dataPointsPerDataset: datasets[0]?.data.length || 0,
+            timestamp: new Date().toISOString(),
           },
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId: discordMessageId,
+          messageId: discordMessageId,
         });
 
         console.log(`💾 Chart saved to database with ID: ${dbResult.id}`);
