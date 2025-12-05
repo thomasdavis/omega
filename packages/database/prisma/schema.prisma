@@ -382,32 +382,35 @@ model Caricature {
   @@index([createdAt(sort: Desc)], map: "idx_caricatures_created_at")
   @@map("caricatures")
 model GeneratedImage {
-  id                Int      @id @default(autoincrement())
-  title             String
-  description       String?
-  imageData         Bytes?   @map("image_data")
-  prompt            String   @db.Text
-  revisedPrompt     String?  @map("revised_prompt") @db.Text
-  toolUsed          String   @map("tool_used")
-  modelUsed         String?  @map("model_used")
-  filename          String
-  fileSize          Int?     @map("file_size")
-  artifactPath      String?  @map("artifact_path")
-  publicUrl         String?  @map("public_url")
-  width             Int?
-  height            Int?
-  format            String?  @default("png")
-  metadata          Json?
-  createdBy         String?  @map("created_by")
-  createdByUsername String?  @map("created_by_username")
-  discordMessageId  String?  @map("discord_message_id")
-  githubIssueNumber Int?     @map("github_issue_number")
-  createdAt         DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at") @db.Timestamptz(6)
+  id              BigInt   @id @default(autoincrement())
+  requestId       String?  @map("request_id")
+  userId          String   @map("user_id") @db.VarChar(32)
+  username        String?
+  toolName        String   @default("generateUserImage") @map("tool_name")
+  prompt          String   @db.Text
+  model           String?
+  size            String?  @db.VarChar(20)
+  quality         String?  @db.VarChar(20)
+  style           String?  @db.VarChar(20)
+  n               Int?     @default(1)
+  storageUrl      String   @map("storage_url") @db.Text
+  storageProvider String?  @default("omega") @map("storage_provider") @db.VarChar(50)
+  mimeType        String?  @map("mime_type") @db.VarChar(50)
+  bytes           Int?
+  sha256          String?  @db.Char(64)
+  tags            String[]
+  status          String   @default("success") @db.VarChar(20)
+  error           String?  @db.Text
+  metadata        Json?
+  messageId       String?  @map("message_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  @@index([createdAt(sort: Desc)], map: "idx_generated_images_created_at")
-  @@index([createdBy], map: "idx_generated_images_created_by")
-  @@index([toolUsed], map: "idx_generated_images_tool_used")
-  @@index([modelUsed], map: "idx_generated_images_model_used")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_generated_images_user_id_created_at")
+  @@index([requestId], map: "idx_generated_images_request_id")
+  @@index([status], map: "idx_generated_images_status")
+  @@index([storageUrl], map: "idx_generated_images_storage_url")
+  @@index([metadata], type: Gin, map: "idx_generated_images_metadata_gin")
+  @@index([tags], type: Gin, map: "idx_generated_images_tags_gin")
   @@map("generated_images")
 }
 

@@ -145,24 +145,26 @@ Create a beautiful, high-quality portrait that captures this person's essence.`;
       try {
         console.log(`   💾 Saving avatar metadata to database...`);
         await saveGeneratedImage({
-          title: `Avatar for ${username}`,
-          description: `Personalized avatar generated based on ${messages.length} Discord messages`,
-          imageData: imageResult.imageBuffer,
+          userId: userId || 'unknown',
+          username,
+          toolName: 'generateUserAvatar',
           prompt: avatarPrompt,
-          revisedPrompt: characterDescription,
-          toolUsed: 'generateUserAvatar',
-          modelUsed: 'Gemini',
-          filename: `avatar-${userId}-${Date.now()}.png`,
-          artifactPath: imageResult.imagePath,
-          format: 'png',
+          model: 'Gemini',
+          storageUrl: imageResult.imagePath,
+          storageProvider: 'omega',
+          mimeType: 'image/png',
+          bytes: imageResult.imageBuffer?.length,
+          status: 'success',
           metadata: {
+            filename: `avatar-${userId}-${Date.now()}.png`,
+            artifactPath: imageResult.imagePath,
+            description: `Personalized avatar generated based on ${messages.length} Discord messages`,
             messagesAnalyzed: messages.length,
             messageLimit,
             characterDescription,
+            timestamp: new Date().toISOString(),
           },
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId: discordMessageId,
+          messageId: discordMessageId,
         });
         console.log(`   ✅ Avatar metadata saved to database`);
       } catch (dbError) {

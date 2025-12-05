@@ -132,6 +132,7 @@ export {
   listGeneratedImagesMetadata,
   listGeneratedImagesByUser,
   listGeneratedImagesByTool,
+  listFailedGeneratedImages,
 } from './postgres/imageService.js';
 
 // Export image service types
