@@ -61,6 +61,35 @@ export type {
   UserAnalysisHistoryRecord,
 } from './postgres/schema.js';
 
+// Evolution Service
+export * as pgEvolutionService from './postgres/evolutionService.js';
+export type {
+  SelfReflection,
+  EvolutionProposal,
+  SanityCheck,
+  Experiment,
+  FeatureFlag,
+  EvolutionAuditLog,
+} from './postgres/evolutionService.js';
+export {
+  saveSelfReflection,
+  getSelfReflection,
+  getRecentReflections,
+  createProposal,
+  updateProposalStatus,
+  getProposalsByDate,
+  getProposalsByStatus,
+  saveSanityCheck,
+  getSanityChecksByProposal,
+  createFeatureFlag,
+  getFeatureFlag,
+  updateFeatureFlag,
+  createExperiment,
+  updateExperiment,
+  logEvolutionAction,
+  getAuditLog,
+} from './postgres/evolutionService.js';
+
 // Export user profile service functions for backward compatibility
 export {
   getUserProfile,

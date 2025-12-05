@@ -1,0 +1,165 @@
+{
+  "$schema": "./risk-matrix-schema.json",
+  "description": "Risk assessment matrix for evolution proposals",
+  "version": "1.0.0",
+  "riskFactors": [
+    {
+      "name": "scope",
+      "weight": 0.3,
+      "levels": {
+        "low": {
+          "score": 1,
+          "description": "Single file, < 50 lines",
+          "criteria": ["linesChanged < 50", "filesChanged <= 1"]
+        },
+        "medium": {
+          "score": 5,
+          "description": "Multiple files, < 200 lines",
+          "criteria": ["linesChanged < 200", "filesChanged <= 5"]
+        },
+        "high": {
+          "score": 10,
+          "description": "> 200 lines or > 5 files",
+          "criteria": ["linesChanged >= 200", "filesChanged > 5"]
+        }
+      }
+    },
+    {
+      "name": "complexity",
+      "weight": 0.25,
+      "levels": {
+        "low": {
+          "score": 1,
+          "description": "Simple utility or config change",
+          "indicators": ["configOnly", "utilityFunction", "documentation"]
+        },
+        "medium": {
+          "score": 5,
+          "description": "New feature or tool",
+          "indicators": ["newTool", "promptChange", "apiIntegration"]
+        },
+        "high": {
+          "score": 10,
+          "description": "Core system modification",
+          "indicators": ["systemPrompt", "authentication", "databaseSchema"]
+        }
+      }
+    },
+    {
+      "name": "dependencies",
+      "weight": 0.2,
+      "levels": {
+        "low": {
+          "score": 1,
+          "description": "No new dependencies",
+          "criteria": ["newDependencies === 0"]
+        },
+        "medium": {
+          "score": 5,
+          "description": "Well-known dependencies",
+          "criteria": ["newDependencies <= 2", "allFromNpmTop1000"]
+        },
+        "high": {
+          "score": 10,
+          "description": "Unknown or many dependencies",
+          "criteria": ["newDependencies > 2", "unknownDependencies"]
+        }
+      }
+    },
+    {
+      "name": "reversibility",
+      "weight": 0.15,
+      "levels": {
+        "low": {
+          "score": 1,
+          "description": "Easily reversible via revert",
+          "criteria": ["noMigrations", "noExternalState", "featureFlag"]
+        },
+        "medium": {
+          "score": 5,
+          "description": "Requires manual cleanup",
+          "criteria": ["hasConfiguration", "hasCache"]
+        },
+        "high": {
+          "score": 10,
+          "description": "Database or permanent changes",
+          "criteria": ["hasMigrations", "externalAPI", "stateful"]
+        }
+      }
+    },
+    {
+      "name": "testCoverage",
+      "weight": 0.1,
+      "levels": {
+        "low": {
+          "score": 10,
+          "description": "No tests",
+          "criteria": ["testCoverage === 0"]
+        },
+        "medium": {
+          "score": 5,
+          "description": "Basic tests",
+          "criteria": ["testCoverage < 80"]
+        },
+        "high": {
+          "score": 1,
+          "description": "Comprehensive tests",
+          "criteria": ["testCoverage >= 80"]
+        }
+      }
+    }
+  ],
+  "thresholds": {
+    "autoApprove": 15,
+    "requireReview": 40,
+    "requireMultipleReviews": 70,
+    "blocked": 85
+  },
+  "personaGuardrails": {
+    "description": "Constraints for persona/appearance modifications",
+    "coreIdentity": {
+      "visualElements": [
+        "Battle-scarred obsidian plates",
+        "Crimson energy veins",
+        "Stoic, weathered presence"
+      ],
+      "toneAttributes": [
+        "Direct and technical",
+        "Minimal superlatives",
+        "Professional objectivity"
+      ]
+    },
+    "allowedWildcardChanges": {
+      "cosmetic": {
+        "examples": [
+          "Comedic mouth toggle frequency adjustment",
+          "Micro-variation in visual descriptions",
+          "Harmless text effect toggles"
+        ],
+        "requirements": [
+          "Must be reversible",
+          "Must be documented",
+          "Must not alter core identity",
+          "Implementation requires explicit approval"
+        ]
+      },
+      "behavioral": {
+        "examples": [
+          "Response quip library additions",
+          "Utility alias creation",
+          "Minor formatting preferences"
+        ],
+        "requirements": [
+          "Must be behind feature flag",
+          "Must be low-impact",
+          "Must align with existing tone"
+        ]
+      }
+    },
+    "prohibited": [
+      "Major personality shifts",
+      "Voice/tone fundamental changes",
+      "Core visual identity alterations without approval"
+    ]
+  }
+}

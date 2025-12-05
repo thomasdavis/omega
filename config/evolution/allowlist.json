@@ -1,0 +1,97 @@
+{
+  "$schema": "./allowlist-schema.json",
+  "description": "Paths where the evolution engine is permitted to make changes",
+  "version": "1.0.0",
+  "allowedPaths": [
+    {
+      "pattern": "packages/bot/src/tools/**/*.ts",
+      "description": "Bot tool implementations",
+      "maxFilesPerChange": 5,
+      "requiresGuards": true
+    },
+    {
+      "pattern": "packages/bot/src/prompts/partials/**/*.ts",
+      "description": "Prompt partials with guard clauses",
+      "maxFilesPerChange": 3,
+      "requiresGuards": true
+    },
+    {
+      "pattern": "packages/bot/src/utils/**/*.ts",
+      "description": "Utility functions",
+      "maxFilesPerChange": 3,
+      "requiresGuards": false
+    },
+    {
+      "pattern": "packages/bot/src/config/**/*.ts",
+      "description": "Configuration files",
+      "maxFilesPerChange": 2,
+      "requiresGuards": false
+    },
+    {
+      "pattern": "packages/*/test/**/*.ts",
+      "description": "Test files",
+      "maxFilesPerChange": 10,
+      "requiresGuards": false
+    },
+    {
+      "pattern": "docs/**/*.md",
+      "description": "Documentation files",
+      "maxFilesPerChange": 5,
+      "requiresGuards": false
+    },
+    {
+      "pattern": "config/evolution/**/*",
+      "description": "Evolution engine configuration",
+      "maxFilesPerChange": 2,
+      "requiresGuards": false
+    },
+    {
+      "pattern": "packages/bot/src/evolution/**/*.ts",
+      "description": "Evolution engine implementation",
+      "maxFilesPerChange": 5,
+      "requiresGuards": true
+    }
+  ],
+  "blockedPaths": [
+    {
+      "pattern": "**/.env*",
+      "reason": "Environment variables and secrets"
+    },
+    {
+      "pattern": "**/secrets/**",
+      "reason": "Secret management"
+    },
+    {
+      "pattern": "**/credentials/**",
+      "reason": "Credentials storage"
+    },
+    {
+      "pattern": ".github/workflows/**",
+      "reason": "CI/CD workflows (except evolution.yml with approval)",
+      "exceptions": [".github/workflows/evolution.yml"]
+    },
+    {
+      "pattern": "packages/database/prisma/schema.prisma",
+      "reason": "Database schema (requires human review)"
+    },
+    {
+      "pattern": "railway.json",
+      "reason": "Deployment configuration"
+    },
+    {
+      "pattern": "Dockerfile*",
+      "reason": "Container configuration"
+    },
+    {
+      "pattern": "packages/bot/src/prompts/system.ts",
+      "reason": "Core system prompt (requires human review)"
+    }
+  ],
+  "constraints": {
+    "maxLinesPerFile": 200,
+    "maxFilesPerPR": 10,
+    "maxTotalLines": 500,
+    "requireTests": false,
+    "requireDocs": false
+  }
+}

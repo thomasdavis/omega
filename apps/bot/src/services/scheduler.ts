@@ -8,6 +8,7 @@ import { generateDailyBlog } from './dailyBlogService.js';
 import { batchUpdatePredictions } from './behavioralPredictionService.js';
 import { getAllUserProfiles } from '@repo/database';
 import { analyzeUser } from './userProfileAnalysis.js';
+import { runEvolutionEngine } from './evolution/index.js';
 
 /**
  * Initialize scheduled tasks
@@ -70,6 +71,24 @@ export function initializeScheduler(): void {
   });
 
   console.log('✅ Daily user analysis scheduled at 00:00 UTC');
+
+  // Schedule self-evolution engine at 02:00 UTC daily
+  const evolutionSchedule = '0 2 * * *'; // 2:00 AM UTC daily
+
+  cron.schedule(evolutionSchedule, async () => {
+    console.log('⏰ Cron job triggered: Self-evolution engine');
+
+    try {
+      // First 48h runs in dry-run mode as per spec
+      const dryRun = false; // Set to true for testing, managed by feature flag in production
+      await runEvolutionEngine(dryRun);
+      console.log('✅ Self-evolution engine completed');
+    } catch (error) {
+      console.error('❌ Error in self-evolution cron job:', error);
+    }
+  });
+
+  console.log('✅ Self-evolution engine scheduled at 02:00 UTC');
 }
 
 /**
@@ -177,4 +196,12 @@ export async function triggerPredictionUpdateNow(): Promise<void> {
 export async function triggerUserAnalysisNow(): Promise<void> {
   console.log('🔨 Manual trigger: Running user analysis now...');
   await runUserAnalysis();
+}
+
+/**
+ * Manual trigger for self-evolution engine (can be called via Discord command or API)
+ */
+export async function triggerEvolutionEngineNow(dryRun: boolean = true): Promise<void> {
+  console.log('🔨 Manual trigger: Running self-evolution engine now...');
+  await runEvolutionEngine(dryRun);
 }
