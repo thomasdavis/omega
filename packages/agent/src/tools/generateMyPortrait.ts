@@ -198,20 +198,24 @@ export const generateMyPortraitTool = tool({
       // 8. Save metadata to database
       try {
         await saveGeneratedImage({
-          title: `Portrait - ${username}`,
-          description: `AI-generated portrait in ${style} style based on user profile and Omega's perception`,
+          userId: userId || 'unknown',
+          username,
+          toolName: 'generateMyPortrait',
           prompt: prompt,
-          revisedPrompt: prompt,
-          toolUsed: 'generateMyPortrait',
-          modelUsed: 'gemini-3-pro-image-preview',
-          filename: localFilename,
-          artifactPath: localPath,
-          publicUrl: rawUrl,
-          format: 'png',
-          imageData: imageResult.imageBuffer,
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId,
+          model: 'gemini-3-pro-image-preview',
+          storageUrl: rawUrl,
+          storageProvider: 'omega',
+          mimeType: 'image/png',
+          bytes: imageResult.imageBuffer?.length,
+          status: 'success',
+          metadata: {
+            filename: localFilename,
+            artifactPath: localPath,
+            description: `AI-generated portrait in ${style} style based on user profile and Omega's perception`,
+            style,
+            timestamp: new Date().toISOString(),
+          },
+          messageId: discordMessageId,
         });
         console.log(`   💾 Portrait metadata saved to database`);
       } catch (dbError) {
