@@ -298,21 +298,24 @@ Make it entertaining!`;
             : 'Generated comic';
 
         await saveGeneratedImage({
-          title: `Comic - ${new Date().toISOString()}`,
-          description,
+          userId: userId || 'unknown',
+          username,
+          toolName: 'generateComic',
           prompt: customPrompt || `GitHub Issue #${issueNumber}: ${issueTitle}`,
-          revisedPrompt: customPrompt || `GitHub Issue #${issueNumber}: ${issueTitle}`,
-          toolUsed: 'generateComic',
-          modelUsed: 'gemini-3-pro-image-preview',
-          filename,
-          artifactPath: imageResult.imagePath,
-          publicUrl: undefined,
-          format: 'png',
-          imageData: imageResult.imageBuffer,
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId: discordMessageId || inputDiscordMessageId,
-          githubIssueNumber: issueNumber,
+          model: 'gemini-3-pro-image-preview',
+          storageUrl: imageResult.imagePath,
+          storageProvider: 'omega',
+          mimeType: 'image/png',
+          bytes: imageResult.imageBuffer?.length,
+          status: 'success',
+          metadata: {
+            filename,
+            artifactPath: imageResult.imagePath,
+            description,
+            githubIssueNumber: issueNumber,
+            timestamp: new Date().toISOString(),
+          },
+          messageId: discordMessageId || inputDiscordMessageId,
         });
         console.log(`💾 Image metadata saved to database`);
       } catch (dbError) {

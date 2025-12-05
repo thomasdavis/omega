@@ -569,21 +569,26 @@ Generate a professional, authentic vertical manga page that captures the essence
         const description = `Manga page - ${style} style with ${panelCount} panels${issueNumber ? ` (Issue #${issueNumber})` : ''}`;
 
         await saveGeneratedImage({
-          title: `Manga - ${style} - ${new Date().toISOString()}`,
-          description,
+          userId: userId || 'unknown',
+          username,
+          toolName: 'generateAnimeManga',
           prompt: scenario,
-          revisedPrompt: scenario,
-          toolUsed: 'generateAnimeManga',
-          modelUsed: 'gemini-3-pro-image-preview',
-          filename,
-          artifactPath: imageResult.imagePath,
-          publicUrl: undefined,
-          format: 'png',
-          imageData: imageResult.imageBuffer,
-          createdBy: userId,
-          createdByUsername: username,
-          discordMessageId: discordMessageId || inputDiscordMessageId,
-          githubIssueNumber: issueNumber,
+          model: 'gemini-3-pro-image-preview',
+          storageUrl: imageResult.imagePath,
+          storageProvider: 'omega',
+          mimeType: 'image/png',
+          bytes: imageResult.imageBuffer?.length,
+          status: 'success',
+          metadata: {
+            filename,
+            artifactPath: imageResult.imagePath,
+            description,
+            style,
+            panelCount,
+            githubIssueNumber: issueNumber,
+            timestamp: new Date().toISOString(),
+          },
+          messageId: discordMessageId || inputDiscordMessageId,
         });
         console.log(`💾 Image metadata saved to database`);
       } catch (dbError) {
