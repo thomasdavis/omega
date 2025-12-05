@@ -38,6 +38,136 @@ Five tables track self-evolution cycles:
 - **Dry Run Mode** - Analyze without making changes
 - **Failure Notifications** - Auto-creates GitHub issue on failure
 
+## GitHub Actions Workflow
+
+**Note:** The workflow file must be manually created by a user with workflow permissions.
+
+Create `.github/workflows/self-evolution.yml` with the following content:
+
+```yaml
+name: Self-Evolution - Daily Cycle
+
+on:
+  # Daily at 02:00 UTC with jitter
+  schedule:
+    - cron: '0 2 * * *'
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run - analyze without making changes'
+        required: false
+        type: boolean
+        default: false
+      force_run:
+        description: 'Force run even if already ran today'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  KILL_SWITCH: ${{ secrets.SELF_EVOLUTION_KILL_SWITCH || 'false' }}
+
+jobs:
+  self-evolution-cycle:
+    name: Run Self-Evolution Cycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Check kill switch
+        run: |
+          if [ "${{ env.KILL_SWITCH }}" == "true" ]; then
+            echo "❌ Self-evolution kill switch is enabled. Skipping cycle."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check for active deployment
+        id: check-deployment
+        run: |
+          LAST_COMMIT_TIME=$(git log -1 --format=%ct)
+          CURRENT_TIME=$(date +%s)
+          TIME_DIFF=$((CURRENT_TIME - LAST_COMMIT_TIME))
+
+          if [ $TIME_DIFF -lt 1800 ]; then
+            echo "Recent commit detected. Skipping to avoid conflicts."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "No recent activity. Safe to proceed."
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate cycle date with jitter
+        id: cycle-date
+        run: |
+          JITTER=$((RANDOM % 1200))
+          sleep $JITTER
+          CYCLE_DATE=$(date -u +%Y-%m-%d)
+          echo "cycle_date=$CYCLE_DATE" >> $GITHUB_OUTPUT
+
+      - name: Check if cycle already ran today
+        id: check-cycle
+        if: steps.check-deployment.outputs.skip != 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          CYCLE_DATE="${{ steps.cycle-date.outputs.cycle_date }}"
+          EXISTING_CYCLE=$(psql "$DATABASE_URL" -t -c "SELECT id FROM self_evolution_cycles WHERE cycle_date = '$CYCLE_DATE' AND status IN ('running', 'completed')")
+
+          if [ -n "$EXISTING_CYCLE" ] && [ "${{ inputs.force_run }}" != "true" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run self-evolution orchestrator
+        if: steps.check-deployment.outputs.skip != 'true' && steps.check-cycle.outputs.skip != 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          cd apps/bot
+          pnpm tsx src/scripts/self-evolution-cycle.ts
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Self-Evolution Cycle Failed - ${new Date().toISOString().split('T')[0]}`,
+              body: `## ⚠️ Self-Evolution Cycle Failed\n\n**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\nPlease review the logs and address any issues.`,
+              labels: ['self-evolution', 'automation', 'bug']
+            });
+```
+
 ## Configuration
 
 ### Environment Variables
