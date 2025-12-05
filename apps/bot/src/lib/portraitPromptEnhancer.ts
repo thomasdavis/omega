@@ -78,7 +78,7 @@ Respond in JSON format:
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-5-mini'),
+      model: openai('gpt-5'),
       prompt: analysisPrompt,
       temperature: 0.3, // Lower temperature for more consistent analysis
     });

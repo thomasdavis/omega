@@ -291,7 +291,7 @@ The tool accepts optional `context` parameter to provide deeper, more relevant a
 
 ### AI Model
 
-**Model**: `gpt-5-mini` (configured via `OMEGA_MODEL` constant)
+**Model**: `gpt-5` (configured via `OMEGA_MODEL` constant)
 
 The tool uses OpenAI's GPT-4.1-mini model via the Vercel AI SDK's `generateText()` function. This model provides:
 - Fast response times (important for Discord interactions)
