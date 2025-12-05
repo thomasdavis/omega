@@ -1,11 +1,12 @@
 /**
  * Task Scheduler
- * Schedules daily blog generation and behavioral prediction updates using node-cron
+ * Schedules daily blog generation, behavioral prediction updates, and self-evolution using node-cron
  */
 
 import cron from 'node-cron';
 import { generateDailyBlog } from './dailyBlogService.js';
 import { batchUpdatePredictions } from './behavioralPredictionService.js';
+import { runDailyEvolution } from './selfEvolutionService.js';
 
 /**
  * Initialize scheduled tasks
@@ -52,6 +53,33 @@ export function initializeScheduler(): void {
   });
 
   console.log('✅ Behavioral prediction updates scheduled every 6 hours');
+
+  // Schedule self-evolution cycle daily at 2:00 AM UTC (configurable via env)
+  // Default: SELF_EVOLVE_CRON="0 2 * * *", SELF_EVOLVE_ENABLED=false
+  const selfEvolveEnabled = process.env.SELF_EVOLVE_ENABLED === 'true';
+  const selfEvolveCron = process.env.SELF_EVOLVE_CRON || '0 2 * * *';
+
+  if (selfEvolveEnabled) {
+    cron.schedule(selfEvolveCron, async () => {
+      console.log('🧠 Cron job triggered: Self-evolution cycle');
+
+      try {
+        const result = await runDailyEvolution();
+
+        if (result.success) {
+          console.log(`✅ Self-evolution completed: ${result.summary}`);
+        } else {
+          console.error(`❌ Self-evolution failed: ${result.error}`);
+        }
+      } catch (error) {
+        console.error('❌ Error in self-evolution cron job:', error);
+      }
+    });
+
+    console.log(`✅ Self-evolution scheduled with cron: ${selfEvolveCron}`);
+  } else {
+    console.log('ℹ️  Self-evolution disabled (set SELF_EVOLVE_ENABLED=true to enable)');
+  }
 }
 
 /**
@@ -85,4 +113,17 @@ export async function triggerDailyBlogNow(): Promise<{ success: boolean; filenam
 export async function triggerPredictionUpdateNow(): Promise<void> {
   console.log('🔨 Manual trigger: Updating behavioral predictions now...');
   await batchUpdatePredictions(100);
+}
+
+/**
+ * Manual trigger for self-evolution (can be called via Discord command or API)
+ */
+export async function triggerSelfEvolutionNow(): Promise<{
+  success: boolean;
+  runId?: number;
+  summary?: string;
+  error?: string;
+}> {
+  console.log('🔨 Manual trigger: Running self-evolution now...');
+  return await runDailyEvolution();
 }
