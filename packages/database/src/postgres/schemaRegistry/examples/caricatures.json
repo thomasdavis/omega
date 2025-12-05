@@ -1,0 +1,100 @@
+{
+  "tableName": "caricatures",
+  "owner": "omega-bot",
+  "schemaJson": {
+    "tableName": "caricatures",
+    "comment": "Stores AI-generated caricature images for users",
+    "columns": [
+      {
+        "name": "id",
+        "type": "UUID",
+        "primaryKey": true,
+        "nullable": false,
+        "defaultValue": "gen_random_uuid()",
+        "comment": "Unique identifier for the caricature"
+      },
+      {
+        "name": "user_id",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "Discord user ID"
+      },
+      {
+        "name": "username",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "Discord username at time of creation"
+      },
+      {
+        "name": "image_url",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "URL to the stored caricature image"
+      },
+      {
+        "name": "description",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "AI-generated description of the caricature style"
+      },
+      {
+        "name": "style",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "Artistic style used for the caricature"
+      },
+      {
+        "name": "source_photo_url",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "URL to the original source photo"
+      },
+      {
+        "name": "metadata",
+        "type": "JSONB",
+        "nullable": true,
+        "comment": "Additional metadata (model version, parameters, etc.)"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": false,
+        "defaultValue": "CURRENT_TIMESTAMP",
+        "comment": "When the caricature was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": false,
+        "defaultValue": "CURRENT_TIMESTAMP",
+        "comment": "When the record was last updated"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_caricatures_user_id",
+        "columns": ["user_id"],
+        "unique": false
+      },
+      {
+        "name": "idx_caricatures_created_at",
+        "columns": ["created_at"],
+        "unique": false
+      },
+      {
+        "name": "idx_caricatures_metadata",
+        "columns": ["metadata"],
+        "type": "GIN",
+        "unique": false
+      }
+    ]
+  },
+  "requestMetadata": {
+    "requestedBy": "omega",
+    "requestedByUsername": "omega-bot",
+    "justification": "Store AI-generated caricature images for users with metadata",
+    "relatedIssue": "676",
+    "featureId": "caricature-generation",
+    "requestedAt": 1701792000
+  }
+}

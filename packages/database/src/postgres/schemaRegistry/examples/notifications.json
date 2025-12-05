@@ -1,0 +1,129 @@
+{
+  "tableName": "user_notifications",
+  "owner": "omega-bot",
+  "schemaJson": {
+    "tableName": "user_notifications",
+    "comment": "User notification preferences and notification history",
+    "columns": [
+      {
+        "name": "id",
+        "type": "UUID",
+        "primaryKey": true,
+        "nullable": false,
+        "defaultValue": "gen_random_uuid()",
+        "comment": "Unique identifier for the notification"
+      },
+      {
+        "name": "user_id",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "Discord user ID"
+      },
+      {
+        "name": "username",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "Discord username"
+      },
+      {
+        "name": "notification_type",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "Type of notification (feature_complete, mention, etc.)"
+      },
+      {
+        "name": "title",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "Notification title"
+      },
+      {
+        "name": "message",
+        "type": "TEXT",
+        "nullable": false,
+        "comment": "Notification message content"
+      },
+      {
+        "name": "related_issue",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "Related GitHub issue number"
+      },
+      {
+        "name": "related_pr",
+        "type": "TEXT",
+        "nullable": true,
+        "comment": "Related GitHub PR number"
+      },
+      {
+        "name": "is_read",
+        "type": "BOOLEAN",
+        "nullable": false,
+        "defaultValue": "false",
+        "comment": "Whether the notification has been read"
+      },
+      {
+        "name": "sent_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": true,
+        "comment": "When the notification was sent"
+      },
+      {
+        "name": "read_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": true,
+        "comment": "When the notification was read"
+      },
+      {
+        "name": "metadata",
+        "type": "JSONB",
+        "nullable": true,
+        "comment": "Additional notification data"
+      },
+      {
+        "name": "created_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": false,
+        "defaultValue": "CURRENT_TIMESTAMP",
+        "comment": "When the notification was created"
+      },
+      {
+        "name": "updated_at",
+        "type": "TIMESTAMPTZ",
+        "nullable": false,
+        "defaultValue": "CURRENT_TIMESTAMP",
+        "comment": "When the record was last updated"
+      }
+    ],
+    "indexes": [
+      {
+        "name": "idx_notifications_user_id",
+        "columns": ["user_id"],
+        "unique": false
+      },
+      {
+        "name": "idx_notifications_user_unread",
+        "columns": ["user_id", "is_read"],
+        "unique": false
+      },
+      {
+        "name": "idx_notifications_created_at",
+        "columns": ["created_at"],
+        "unique": false
+      },
+      {
+        "name": "idx_notifications_type",
+        "columns": ["notification_type"],
+        "unique": false
+      }
+    ]
+  },
+  "requestMetadata": {
+    "requestedBy": "omega",
+    "requestedByUsername": "omega-bot",
+    "justification": "Store user notifications for feature completion and other events",
+    "relatedIssue": "681",
+    "featureId": "user-notifications",
+    "requestedAt": 1701792000
+  }
+}

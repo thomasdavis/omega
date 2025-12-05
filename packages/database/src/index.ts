@@ -29,6 +29,9 @@ export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
 
+// Schema Registry
+export * from './postgres/schemaRegistry/index.js';
+
 // Export individual document service functions for backward compatibility
 export {
   createDocument,
