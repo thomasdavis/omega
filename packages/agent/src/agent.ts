@@ -233,7 +233,8 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
       tools, // ← Dynamic tools loaded via BM25 search
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
       // This allows the agent to continue after tool calls to generate text commentary
-      stopWhen: stepCountIs(10),
+      // Increased to 30 to allow thorough setup for complex data storage requests
+      stopWhen: stepCountIs(30),
       onStepFinish: (step) => {
         // Track tool calls - step.content contains an array of tool-call and tool-result objects
         if (step.content && Array.isArray(step.content)) {
