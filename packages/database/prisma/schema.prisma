@@ -507,3 +507,49 @@ model SchemaAudit {
   @@index([executedAt(sort: Desc)], map: "idx_schema_audit_executed_at")
   @@map("schema_audit")
 }
+
+model SafetyPolicy {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()::text"))
+  policyName            String   @unique @map("policy_name")
+  description           String?
+  maxLinesOfCode        Int      @default(500) @map("max_lines_of_code")
+  maxFilesChanged       Int      @default(10) @map("max_files_changed")
+  maxDirectoriesChanged Int      @default(4) @map("max_directories_changed")
+  allowlistPatterns     Json     @default("[]") @map("allowlist_patterns")
+  blocklistPatterns     Json     @default("[]") @map("blocklist_patterns")
+  isActive              Boolean  @default(true) @map("is_active")
+  policyVersion         Int      @default(1) @map("policy_version")
+  createdBy             String?  @map("created_by")
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([isActive], map: "idx_safety_policy_active")
+  @@index([policyName], map: "idx_safety_policy_name")
+  @@index([createdAt(sort: Desc)], map: "idx_safety_policy_created_at")
+  @@map("safety_policy")
+}
+
+model SelfEvolutionRollback {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()::text"))
+  prNumber             Int?      @map("pr_number")
+  prTitle              String?   @map("pr_title")
+  prUrl                String?   @map("pr_url")
+  commitSha            String?   @map("commit_sha")
+  branchName           String?   @map("branch_name")
+  failureReason        String    @map("failure_reason")
+  failureType          String    @map("failure_type")
+  violationDetails     Json?     @map("violation_details")
+  rollbackStatus       String    @default("pending") @map("rollback_status")
+  rollbackCommitSha    String?   @map("rollback_commit_sha")
+  rollbackCompletedAt  DateTime? @map("rollback_completed_at") @db.Timestamptz(6)
+  createdBy            String    @default("system") @map("created_by")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([prNumber], map: "idx_self_evolution_rollbacks_pr")
+  @@index([rollbackStatus], map: "idx_self_evolution_rollbacks_status")
+  @@index([failureType], map: "idx_self_evolution_rollbacks_failure_type")
+  @@index([createdAt(sort: Desc)], map: "idx_self_evolution_rollbacks_created_at")
+  @@index([branchName], map: "idx_self_evolution_rollbacks_branch")
+  @@map("self_evolution_rollbacks")
+}
