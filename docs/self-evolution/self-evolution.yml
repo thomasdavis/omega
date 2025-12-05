@@ -1,0 +1,228 @@
+name: Self-Evolution - Daily Capability Development
+
+on:
+  # Daily at 02:00 UTC with workflow_dispatch for testing
+  schedule:
+    - cron: '0 2 * * *'  # 02:00 UTC daily
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (no actual changes)'
+        required: false
+        type: boolean
+        default: true
+      force_run:
+        description: 'Force run even if already ran today'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  self-evolution:
+    name: Self-Evolution Cycle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install dependencies
+        run: |
+          echo "::group::Installing dependencies"
+          pnpm install --frozen-lockfile
+          echo "::endgroup::"
+
+      - name: Check feature flag
+        id: feature_flag
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          echo "::group::Checking self-evolution feature flag"
+
+          # Query feature flag from database
+          FLAG_VALUE=$(psql "$DATABASE_URL" -t -c "SELECT value FROM feature_flags WHERE key = 'self_evolution_enabled' LIMIT 1;" 2>/dev/null | xargs || echo "false")
+
+          echo "Feature flag value: $FLAG_VALUE"
+          echo "enabled=$FLAG_VALUE" >> $GITHUB_OUTPUT
+
+          if [ "$FLAG_VALUE" != "true" ]; then
+            echo "⚠️ Self-evolution feature is disabled"
+            echo "::notice::Self-evolution is disabled. Enable via feature_flags table."
+          else
+            echo "✅ Self-evolution feature is enabled"
+          fi
+          echo "::endgroup::"
+
+      - name: Check for active deployments
+        id: deployment_check
+        if: steps.feature_flag.outputs.enabled == 'true' || github.event.inputs.force_run == 'true'
+        run: |
+          echo "::group::Checking for active deployments"
+
+          # Check Railway deployment status via GitHub API
+          # Look for recent workflow runs in the last 10 minutes
+          ACTIVE_DEPLOYS=$(gh run list --workflow=ci-main.yml --status=in_progress --limit=5 --json status,createdAt | jq 'length')
+
+          echo "Active deployments: $ACTIVE_DEPLOYS"
+          echo "active=$ACTIVE_DEPLOYS" >> $GITHUB_OUTPUT
+
+          if [ "$ACTIVE_DEPLOYS" -gt 0 ]; then
+            echo "⚠️ Active deployment detected, skipping self-evolution run"
+            echo "::warning::Skipping self-evolution due to active deployment"
+          else
+            echo "✅ No active deployments"
+          fi
+          echo "::endgroup::"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Acquire exclusive run lock
+        id: acquire_lock
+        if: steps.feature_flag.outputs.enabled == 'true' && steps.deployment_check.outputs.active == '0'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+        run: |
+          echo "::group::Acquiring exclusive run lock"
+
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Check if already ran today (unless force_run is true)
+          if [ "${{ github.event.inputs.force_run }}" != "true" ]; then
+            EXISTING_RUN=$(psql "$DATABASE_URL" -t -c "SELECT id FROM self_evolution_runs WHERE run_date = '$TODAY' LIMIT 1;" 2>/dev/null | xargs || echo "")
+
+            if [ -n "$EXISTING_RUN" ]; then
+              echo "⚠️ Already ran today (run_date: $TODAY)"
+              echo "has_lock=false" >> $GITHUB_OUTPUT
+              echo "::warning::Self-evolution already ran today"
+              exit 0
+            fi
+          fi
+
+          # Add random jitter (0-20 minutes)
+          JITTER=$((RANDOM % 1200))
+          echo "Applying jitter: ${JITTER}s ($(($JITTER / 60))m $(($JITTER % 60))s)"
+          sleep $JITTER
+
+          # Create run record
+          psql "$DATABASE_URL" -c "
+            INSERT INTO self_evolution_runs (run_date, status, started_at)
+            VALUES ('$TODAY', 'running', NOW())
+            ON CONFLICT (run_date) DO NOTHING;
+          " > /dev/null
+
+          # Verify we got the lock
+          RUN_ID=$(psql "$DATABASE_URL" -t -c "SELECT id FROM self_evolution_runs WHERE run_date = '$TODAY' AND status = 'running' LIMIT 1;" | xargs)
+
+          if [ -n "$RUN_ID" ]; then
+            echo "✅ Acquired lock for run ID: $RUN_ID"
+            echo "has_lock=true" >> $GITHUB_OUTPUT
+            echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+            echo "run_date=$TODAY" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Failed to acquire lock"
+            echo "has_lock=false" >> $GITHUB_OUTPUT
+          fi
+          echo "::endgroup::"
+
+      - name: Run self-evolution cycle
+        id: evolution
+        if: steps.acquire_lock.outputs.has_lock == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          RUN_ID: ${{ steps.acquire_lock.outputs.run_id }}
+          RUN_DATE: ${{ steps.acquire_lock.outputs.run_date }}
+        run: |
+          echo "::group::Self-Evolution Cycle"
+          echo "ℹ️ Run ID: $RUN_ID"
+          echo "ℹ️ Run Date: $RUN_DATE"
+          echo "ℹ️ Dry Run: $DRY_RUN"
+
+          # TODO: Implement self-evolution logic
+          # This will be implemented in a future iteration
+          # For v0, we're setting up the infrastructure
+
+          echo "⚠️ Self-evolution logic not yet implemented"
+          echo "📋 This is v0 - infrastructure only"
+
+          # Update run status
+          psql "$DATABASE_URL" -c "
+            UPDATE self_evolution_runs
+            SET status = 'success',
+                finished_at = NOW(),
+                summary = 'v0 infrastructure test - no actions taken'
+            WHERE id = $RUN_ID;
+          " > /dev/null
+
+          echo "✅ Cycle completed"
+          echo "::endgroup::"
+
+      - name: Upload artifacts
+        if: always() && steps.acquire_lock.outputs.has_lock == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: self-evolution-${{ steps.acquire_lock.outputs.run_date }}
+          path: |
+            *.log
+            *.json
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Handle failure
+        if: failure() && steps.acquire_lock.outputs.has_lock == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          RUN_ID: ${{ steps.acquire_lock.outputs.run_id }}
+        run: |
+          echo "::group::Marking run as failed"
+          psql "$DATABASE_URL" -c "
+            UPDATE self_evolution_runs
+            SET status = 'failed',
+                finished_at = NOW(),
+                summary = 'Workflow failed - check logs at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            WHERE id = $RUN_ID;
+          " > /dev/null || true
+          echo "::endgroup::"
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "::group::Self-Evolution Summary"
+          echo "## 🧠 Self-Evolution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date -u +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.feature_flag.outputs.enabled }}" != "true" ]; then
+            echo "**Status:** ⚠️ Feature disabled" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.deployment_check.outputs.active }}" != "0" ]; then
+            echo "**Status:** ⚠️ Skipped (active deployment)" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.acquire_lock.outputs.has_lock }}" != "true" ]; then
+            echo "**Status:** ⚠️ Could not acquire lock" >> $GITHUB_STEP_SUMMARY
+          elif [ "${{ steps.evolution.outcome }}" == "success" ]; then
+            echo "**Status:** ✅ Completed" >> $GITHUB_STEP_SUMMARY
+            echo "**Run ID:** ${{ steps.acquire_lock.outputs.run_id }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Dry Run:** ${{ github.event.inputs.dry_run || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Feature flag: ${{ steps.feature_flag.outputs.enabled }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Active deployments: ${{ steps.deployment_check.outputs.active }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Has lock: ${{ steps.acquire_lock.outputs.has_lock }}" >> $GITHUB_STEP_SUMMARY
+          echo "::endgroup::"
