@@ -191,6 +191,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   createToolAutonomously: { path: './tools/createToolAutonomously.js', exportName: 'createToolAutonomouslyTool' },
   listAutonomousTools: { path: './tools/listAutonomousTools.js', exportName: 'listAutonomousToolsTool' },
   manageAutonomousTool: { path: './tools/manageAutonomousTool.js', exportName: 'manageAutonomousToolTool' },
+
+  // Tech Translation
+  techTranslate: { path: './tools/techTranslate.js', exportName: 'techTranslateTool' },
 };
 
 /**
