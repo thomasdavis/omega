@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveGeneratedImage } from '@repo/database';
+import { saveGeneratedImage, newImageService } from '@repo/database';
 
 /**
  * Generate an image using Google's Gemini API
@@ -94,8 +94,38 @@ async function generateImage(
     // Return URL that can be served via the public endpoint
     const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
 
-    // Save metadata to database
+    // Save metadata to database using new comprehensive schema
     try {
+      // Save to new schema
+      await newImageService.completeImageGeneration(
+        {
+          user_id: userId || 'unknown',
+          username,
+          source: discordMessageId ? 'discord' : undefined,
+          tool_name: 'generateUserImage',
+          prompt,
+          model: 'gemini-3-pro-image-preview',
+          type_key: 'artwork',
+          n: 1,
+        },
+        {
+          storage_url: imageUrl,
+          storage_provider: 'omega',
+          width: undefined,
+          height: undefined,
+          mime_type: 'image/png',
+          bytes: imageData.length,
+          message_id: discordMessageId,
+          metadata: {
+            filename,
+            artifactPath: imagePath,
+            format: 'png',
+          },
+        }
+      );
+      console.log(`💾 Image metadata saved to new schema`);
+
+      // Also save to legacy table for backward compatibility
       await saveGeneratedImage({
         title: `Generated Image - ${new Date().toISOString()}`,
         description: prompt.substring(0, 500),
@@ -107,12 +137,12 @@ async function generateImage(
         artifactPath: imagePath,
         publicUrl: imageUrl,
         format: 'png',
-        imageData, // Store the actual image data in the database
+        imageData,
         createdBy: userId,
         createdByUsername: username,
         discordMessageId,
       });
-      console.log(`💾 Image metadata saved to database`);
+      console.log(`💾 Image metadata saved to legacy table`);
     } catch (dbError) {
       console.error('⚠️ Failed to save image metadata to database:', dbError);
       // Don't fail the whole operation if DB save fails
