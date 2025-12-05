@@ -6,6 +6,7 @@
 import cron from 'node-cron';
 import { generateDailyBlog } from './dailyBlogService.js';
 import { batchUpdatePredictions } from './behavioralPredictionService.js';
+import { runDailyWildcard } from '../../../../scripts/self_evolution/wildcard.js';
 
 /**
  * Initialize scheduled tasks
@@ -52,6 +53,28 @@ export function initializeScheduler(): void {
   });
 
   console.log('✅ Behavioral prediction updates scheduled every 6 hours');
+
+  // Schedule daily wildcard feature hook at 3:00 AM UTC
+  // This runs after blog generation to avoid conflicts
+  const wildcardSchedule = '0 3 * * *'; // 3:00 AM UTC daily
+
+  cron.schedule(wildcardSchedule, async () => {
+    console.log('⏰ Cron job triggered: Daily wildcard feature hook');
+
+    try {
+      const result = await runDailyWildcard();
+
+      if (result.success) {
+        console.log(`✅ Daily wildcard completed: ${result.message}`);
+      } else {
+        console.error(`❌ Daily wildcard failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error in daily wildcard cron job:', error);
+    }
+  });
+
+  console.log('✅ Daily wildcard feature hook scheduled at 3:00 AM UTC');
 }
 
 /**
@@ -85,4 +108,12 @@ export async function triggerDailyBlogNow(): Promise<{ success: boolean; filenam
 export async function triggerPredictionUpdateNow(): Promise<void> {
   console.log('🔨 Manual trigger: Updating behavioral predictions now...');
   await batchUpdatePredictions(100);
+}
+
+/**
+ * Manual trigger for wildcard feature hook (can be called via Discord command or API)
+ */
+export async function triggerWildcardNow(): Promise<{ success: boolean; proposalId?: string; message: string }> {
+  console.log('🔨 Manual trigger: Running wildcard feature hook now...');
+  return await runDailyWildcard();
 }
