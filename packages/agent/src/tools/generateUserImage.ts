@@ -14,7 +14,8 @@ import { z } from 'zod';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import fs from 'fs/promises';
 import path from 'path';
-import { saveGeneratedImage, newImageService } from '@repo/database';
+import { saveGeneratedImage } from '@repo/database';
+import { getUploadsDir } from '@repo/shared';
 
 /**
  * Generate an image using Google's Gemini API
@@ -81,8 +82,8 @@ async function generateImage(
       throw new Error('No image data in Gemini response');
     }
 
-    // Save the image to file system
-    const outputDir = path.join(process.cwd(), 'apps/bot/public/user-images');
+    // Save the image to file system using centralized storage utility
+    const outputDir = getUploadsDir();
     await fs.mkdir(outputDir, { recursive: true });
 
     const filename = `user-image-${Date.now()}.png`;
@@ -91,41 +92,11 @@ async function generateImage(
     await fs.writeFile(imagePath, imageData);
     console.log(`✅ Image saved to: ${imagePath}`);
 
-    // Return URL that can be served via the public endpoint
-    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
+    // Return URL that can be served via the /api/uploads endpoint
+    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/uploads/${filename}`;
 
-    // Save metadata to database using new comprehensive schema
+    // Save metadata to database
     try {
-      // Save to new schema
-      await newImageService.completeImageGeneration(
-        {
-          user_id: userId || 'unknown',
-          username,
-          source: discordMessageId ? 'discord' : undefined,
-          tool_name: 'generateUserImage',
-          prompt,
-          model: 'gemini-3-pro-image-preview',
-          type_key: 'artwork',
-          n: 1,
-        },
-        {
-          storage_url: imageUrl,
-          storage_provider: 'omega',
-          width: undefined,
-          height: undefined,
-          mime_type: 'image/png',
-          bytes: imageData.length,
-          message_id: discordMessageId,
-          metadata: {
-            filename,
-            artifactPath: imagePath,
-            format: 'png',
-          },
-        }
-      );
-      console.log(`💾 Image metadata saved to new schema`);
-
-      // Also save to legacy table for backward compatibility
       await saveGeneratedImage({
         title: `Generated Image - ${new Date().toISOString()}`,
         description: prompt.substring(0, 500),
@@ -137,12 +108,12 @@ async function generateImage(
         artifactPath: imagePath,
         publicUrl: imageUrl,
         format: 'png',
-        imageData,
+        imageData, // Store the actual image data in the database
         createdBy: userId,
         createdByUsername: username,
         discordMessageId,
       });
-      console.log(`💾 Image metadata saved to legacy table`);
+      console.log(`💾 Image metadata saved to database`);
     } catch (dbError) {
       console.error('⚠️ Failed to save image metadata to database:', dbError);
       // Don't fail the whole operation if DB save fails
