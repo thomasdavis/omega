@@ -95,8 +95,9 @@ async function generateImage(
     const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/user-images/${filename}`;
 
     // Save metadata to database
+    let savedImage;
     try {
-      await saveGeneratedImage({
+      savedImage = await saveGeneratedImage({
         title: `Generated Image - ${new Date().toISOString()}`,
         description: prompt.substring(0, 500),
         prompt,
@@ -112,18 +113,32 @@ async function generateImage(
         createdByUsername: username,
         discordMessageId,
       });
-      console.log(`💾 Image metadata saved to database`);
+      console.log(`💾 Image metadata saved to database with ID: ${savedImage.id}`);
+
+      // Use database-backed URL as primary, with filesystem URL as fallback
+      const baseUrl = process.env.OMEGA_API_URL || 'https://omegaai.dev';
+      const databaseUrl = `${baseUrl}/api/generated-images/${savedImage.id}`;
+
+      console.log(`✅ Image accessible at: ${databaseUrl}`);
+      console.log(`   Fallback URL: ${imageUrl}`);
+
+      return {
+        imageUrl: databaseUrl, // Use database-backed URL
+        revisedPrompt: prompt,
+        imageData,
+        filename,
+      };
     } catch (dbError) {
       console.error('⚠️ Failed to save image metadata to database:', dbError);
-      // Don't fail the whole operation if DB save fails
+      // If DB save fails, fall back to file system URL
+      console.log(`⚠️  Using fallback filesystem URL: ${imageUrl}`);
+      return {
+        imageUrl,
+        revisedPrompt: prompt,
+        imageData,
+        filename,
+      };
     }
-
-    return {
-      imageUrl,
-      revisedPrompt: prompt, // Gemini doesn't provide a revised prompt like DALL-E
-      imageData,
-      filename,
-    };
   } catch (error) {
     console.error('❌ Error generating image:');
     console.error(`   Error Type: ${error instanceof Error ? error.constructor.name : typeof error}`);
