@@ -350,24 +350,19 @@ model ScriptStorage {
 }
 
 model UserFeeling {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  username        String?
-  feelingType     String   @map("feeling_type")
-  intensity       Int?
-  valence         String?
-  notes           String?  @db.Text
-  context         Json?
-  triggers        Json?
-  physicalState   String?  @map("physical_state")
-  mentalState     String?  @map("mental_state")
-  metadata        Json?
-  timestamp       BigInt
-  createdAt       BigInt   @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  id           String  @id
+  userId       String  @map("user_id")
+  username     String
+  feelingType  String  @map("feeling_type")
+  intensity    Int
+  notes        String?
+  context      Json?
+  recordedAt   BigInt  @map("recorded_at")
+  createdAt    BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
 
   @@index([userId], map: "idx_user_feelings_user_id")
-  @@index([timestamp(sort: Desc)], map: "idx_user_feelings_timestamp")
+  @@index([recordedAt(sort: Desc)], map: "idx_user_feelings_recorded_at")
   @@index([feelingType], map: "idx_user_feelings_feeling_type")
-  @@index([userId, timestamp(sort: Desc)], map: "idx_user_feelings_user_timestamp")
+  @@index([userId, recordedAt(sort: Desc)], map: "idx_user_feelings_user_recorded")
   @@map("user_feelings")
 }

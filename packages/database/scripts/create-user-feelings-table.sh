@@ -1,47 +1,37 @@
 #!/bin/bash
-# Create user_feelings table directly in PostgreSQL
-# Usage: ./create-user-feelings-table.sh
+# Create user_feelings table migration script
+# Run with: railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && bash packages/database/scripts/create-user-feelings-table.sh'
 
 set -e
 
-if [ -z "$DATABASE_URL" ] && [ -z "$POSTGRES_URL" ]; then
-  echo "❌ Error: DATABASE_URL or POSTGRES_URL environment variable not set"
-  exit 1
-fi
+echo "🔧 Creating user_feelings table..."
 
-DB_URL="${DATABASE_URL:-$POSTGRES_URL}"
-
-echo "🚀 Creating user_feelings table..."
-
-psql "$DB_URL" << 'EOF'
--- CreateTable
-CREATE TABLE IF NOT EXISTS "user_feelings" (
-    "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
-    "username" TEXT,
-    "feeling_type" TEXT NOT NULL,
-    "intensity" INTEGER,
-    "valence" TEXT,
-    "notes" TEXT,
-    "context" JSONB,
-    "triggers" JSONB,
-    "physical_state" TEXT,
-    "mental_state" TEXT,
-    "metadata" JSONB,
-    "timestamp" BIGINT NOT NULL,
-    "created_at" BIGINT NOT NULL DEFAULT (EXTRACT(epoch FROM now()))::bigint,
-
-    CONSTRAINT "user_feelings_pkey" PRIMARY KEY ("id")
+psql "$DATABASE_URL" << 'EOF'
+-- Create user_feelings table
+CREATE TABLE IF NOT EXISTS user_feelings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  feeling_type TEXT NOT NULL,
+  intensity INTEGER NOT NULL CHECK (intensity >= 1 AND intensity <= 10),
+  notes TEXT,
+  context JSONB,
+  recorded_at BIGINT NOT NULL,
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(epoch FROM now()))::bigint
 );
 
--- CreateIndex
-CREATE INDEX IF NOT EXISTS "idx_user_feelings_user_id" ON "user_feelings"("user_id");
-CREATE INDEX IF NOT EXISTS "idx_user_feelings_timestamp" ON "user_feelings"("timestamp" DESC);
-CREATE INDEX IF NOT EXISTS "idx_user_feelings_feeling_type" ON "user_feelings"("feeling_type");
-CREATE INDEX IF NOT EXISTS "idx_user_feelings_user_timestamp" ON "user_feelings"("user_id", "timestamp" DESC);
+-- Create indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_user_feelings_user_id ON user_feelings(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_feelings_recorded_at ON user_feelings(recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_feelings_feeling_type ON user_feelings(feeling_type);
+CREATE INDEX IF NOT EXISTS idx_user_feelings_user_recorded ON user_feelings(user_id, recorded_at DESC);
 
--- Verify
-SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_feelings';
+-- Verify table creation
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'user_feelings'
+ORDER BY ordinal_position;
+
 EOF
 
-echo "✅ Migration completed successfully!"
+echo "✅ user_feelings table created successfully!"

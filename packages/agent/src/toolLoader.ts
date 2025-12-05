@@ -73,6 +73,11 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   updateScript: { path: '@repo/database', exportName: 'updateScriptTool' },
   deleteScript: { path: '@repo/database', exportName: 'deleteScriptTool' },
 
+  // User Feelings tools (3) - imported from @repo/database
+  logFeeling: { path: '@repo/database', exportName: 'logFeelingTool' },
+  queryFeelings: { path: '@repo/database', exportName: 'queryFeelingsTool' },
+  getFeelingSummary: { path: '@repo/database', exportName: 'getFeelingSummaryTool' },
+
   // GitHub tools (10)
   githubCreateIssue: { path: './tools/github/createIssue.js', exportName: 'githubCreateIssueTool' },
   githubUpdateIssue: { path: './tools/github/updateIssue.js', exportName: 'githubUpdateIssueTool' },

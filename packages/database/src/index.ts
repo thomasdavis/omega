@@ -15,6 +15,9 @@ export * from './postgres/tools/index.js';
 // Todo List CRUD tools
 export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoTool } from './postgres/tools/todoList/index.js';
 
+// User Feelings tools
+export { logFeelingTool, queryFeelingsTool, getFeelingSummaryTool } from './postgres/tools/userFeelings/index.js';
+
 // Backward compatibility: getDatabase now returns PostgreSQL pool
 export { getPostgresPool as getDatabase } from './postgres/client.js';
 

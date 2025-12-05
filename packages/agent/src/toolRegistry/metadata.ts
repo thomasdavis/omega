@@ -741,6 +741,58 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'database'
   },
 
+  // ===== USER FEELINGS TOOLS (3) =====
+  {
+    id: 'logFeeling',
+    name: 'Log Feeling',
+    description: 'Log a user\'s feeling or mood entry to track emotional states over time',
+    keywords: ['feeling', 'mood', 'emotion', 'log', 'track', 'mental health', 'wellness', 'sentiment', 'happy', 'sad', 'anxious', 'record'],
+    tags: ['database', 'feelings', 'mood', 'tracking', 'mental-health'],
+    examples: [
+      'log my feeling for today',
+      'I\'m feeling happy',
+      'record that I\'m anxious',
+      'track my mood',
+      'log feeling',
+      'I feel stressed'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'queryFeelings',
+    name: 'Query Feelings',
+    description: 'Query and retrieve user feelings history with flexible filtering by date, type, and intensity',
+    keywords: ['feeling', 'mood', 'emotion', 'query', 'history', 'track', 'show', 'list', 'view', 'filter', 'search', 'mental health'],
+    tags: ['database', 'feelings', 'mood', 'tracking', 'query'],
+    examples: [
+      'show me my mood history',
+      'what were my feelings last week',
+      'show all times I felt anxious',
+      'list my feelings from the past month',
+      'query my feelings',
+      'show high intensity feelings'
+    ],
+    category: 'database'
+  },
+
+  {
+    id: 'getFeelingSummary',
+    name: 'Get Feeling Summary',
+    description: 'Get aggregated mood statistics and insights including most common feelings, average intensity, trends, and emotional patterns',
+    keywords: ['feeling', 'mood', 'emotion', 'summary', 'statistics', 'analysis', 'trends', 'patterns', 'insights', 'mental health', 'wellness'],
+    tags: ['database', 'feelings', 'mood', 'analytics', 'summary'],
+    examples: [
+      'show me my mood summary',
+      'what are my most common feelings',
+      'analyze my emotional patterns',
+      'give me mood statistics',
+      'how have I been feeling overall',
+      'feeling trends'
+    ],
+    category: 'database'
+  },
+
   // ===== GITHUB TOOLS (10) =====
   {
     id: 'githubCreateIssue',
@@ -2229,97 +2281,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'admin'
   },
 
-  // ===== USER FEELINGS TRACKING TOOLS =====
-  {
-    id: 'createFeeling',
-    name: 'Track User Feeling',
-    description: 'Track and log a user\'s feelings, mood, or emotional state at a specific moment with detailed context',
-    keywords: ['feeling', 'mood', 'emotion', 'track', 'log', 'mental', 'state', 'emotional', 'anxiety', 'happy', 'sad', 'stressed'],
-    tags: ['database', 'feelings', 'mood', 'emotional', 'tracking'],
-    examples: [
-      'I\'m feeling anxious',
-      'track my mood',
-      'log that I\'m happy',
-      'I feel stressed intensity 8',
-      'feeling excited today'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'listFeelings',
-    name: 'List User Feelings',
-    description: 'View a user\'s feeling history with filtering by type, time range, intensity, and emotional valence',
-    keywords: ['list', 'feelings', 'mood', 'history', 'show', 'view', 'emotional', 'log', 'entries'],
-    tags: ['database', 'feelings', 'mood', 'history', 'query'],
-    examples: [
-      'show my feelings',
-      'list my moods',
-      'show anxiety entries',
-      'feelings from last week',
-      'view mood history'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'getFeeling',
-    name: 'Get Feeling Entry',
-    description: 'Retrieve a specific feeling entry by ID with full details',
-    keywords: ['get', 'feeling', 'mood', 'entry', 'details', 'retrieve', 'show'],
-    tags: ['database', 'feelings', 'mood', 'read'],
-    examples: [
-      'get feeling entry',
-      'show feeling details',
-      'retrieve mood log'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'updateFeeling',
-    name: 'Update Feeling Entry',
-    description: 'Update an existing feeling entry with new notes, intensity, or details',
-    keywords: ['update', 'feeling', 'mood', 'modify', 'edit', 'change', 'notes'],
-    tags: ['database', 'feelings', 'mood', 'update'],
-    examples: [
-      'update feeling entry',
-      'modify mood log',
-      'change intensity to 7',
-      'add notes to feeling'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'deleteFeeling',
-    name: 'Delete Feeling Entry',
-    description: 'Delete a feeling entry from the database',
-    keywords: ['delete', 'feeling', 'mood', 'remove', 'entry'],
-    tags: ['database', 'feelings', 'mood', 'delete'],
-    examples: [
-      'delete feeling entry',
-      'remove mood log',
-      'delete that feeling'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'analyzeFeelings',
-    name: 'Analyze User Feelings',
-    description: 'Generate analytics and insights from user feelings data: trends, patterns, most common emotions, average intensity, and emotional valence distribution',
-    keywords: ['analyze', 'feelings', 'mood', 'trends', 'patterns', 'insights', 'analytics', 'emotional', 'report', 'summary'],
-    tags: ['database', 'feelings', 'mood', 'analytics', 'insights'],
-    examples: [
-      'analyze my feelings',
-      'show mood trends',
-      'emotional patterns',
-      'feelings report',
-      'mood analytics'
-    ],
-    category: 'database'
-  }
+  // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
+  // are already defined above (lines 745-794)
 ];
 
 /**
