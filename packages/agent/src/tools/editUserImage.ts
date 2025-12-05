@@ -144,20 +144,23 @@ Uses model: gpt-image-1 (or any newer model)`,
 
         try {
           await saveGeneratedImage({
-            title: `Edited Image - ${new Date().toISOString()}`,
-            description: prompt.substring(0, 500),
+            userId: userId || 'unknown',
+            username,
+            toolName: 'editUserImage',
             prompt,
-            revisedPrompt: undefined,
-            toolUsed: 'editUserImage',
-            modelUsed: 'gpt-image-1',
-            filename,
-            artifactPath: filepath,
-            publicUrl: edited,
-            format: 'png',
-            imageData: imageBuffer,
-            createdBy: userId,
-            createdByUsername: username,
-            discordMessageId,
+            model: 'gpt-image-1',
+            storageUrl: edited,
+            storageProvider: 'omega',
+            mimeType: 'image/png',
+            bytes: imageBuffer.length,
+            status: 'success',
+            metadata: {
+              filename,
+              artifactPath: filepath,
+              description: prompt.substring(0, 500),
+              timestamp: new Date().toISOString(),
+            },
+            messageId: discordMessageId,
           });
           console.log('Saved image metadata to database');
         } catch (dbError) {
