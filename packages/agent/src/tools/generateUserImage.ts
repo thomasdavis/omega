@@ -98,20 +98,23 @@ async function generateImage(
     // Save metadata to database
     try {
       await saveGeneratedImage({
-        title: `Generated Image - ${new Date().toISOString()}`,
-        description: prompt.substring(0, 500),
+        userId: userId || 'unknown',
+        username,
+        toolName: 'generateUserImage',
         prompt,
-        revisedPrompt: prompt,
-        toolUsed: 'generateUserImage',
-        modelUsed: 'gemini-3-pro-image-preview',
-        filename,
-        artifactPath: imagePath,
-        publicUrl: imageUrl,
-        format: 'png',
-        imageData, // Store the actual image data in the database
-        createdBy: userId,
-        createdByUsername: username,
-        discordMessageId,
+        model: 'gemini-3-pro-image-preview',
+        size: '1024x1024', // Default size for Gemini
+        storageUrl: imageUrl,
+        storageProvider: 'omega',
+        mimeType: 'image/png',
+        bytes: imageData.length,
+        status: 'success',
+        metadata: {
+          filename,
+          artifactPath: imagePath,
+          timestamp: new Date().toISOString(),
+        },
+        messageId: discordMessageId,
       });
       console.log(`💾 Image metadata saved to database`);
     } catch (dbError) {
@@ -170,6 +173,29 @@ export const generateUserImageTool = tool({
       if (error instanceof Error && error.stack) {
         console.error(`   Stack Trace:`, error.stack);
       }
+
+      // Save failed attempt to database
+      try {
+        await saveGeneratedImage({
+          userId: userId || 'unknown',
+          username,
+          toolName: 'generateUserImage',
+          prompt,
+          model: 'gemini-3-pro-image-preview',
+          storageUrl: '', // No URL on failure
+          status: 'failed',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          metadata: {
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+            timestamp: new Date().toISOString(),
+          },
+          messageId: discordMessageId,
+        });
+        console.log(`💾 Failed image generation logged to database`);
+      } catch (dbError) {
+        console.error('⚠️ Failed to log error to database:', dbError);
+      }
+
       return {
         error: error instanceof Error ? error.message : 'Failed to generate image',
         success: false,
