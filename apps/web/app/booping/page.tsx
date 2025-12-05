@@ -1,267 +1,285 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { StatusSnapshot } from '@repo/agent/lib/status';
+import { useEffect, useState } from 'react';
 
-type SpinnerType = 'dots' | 'orbit' | 'pulse' | 'success' | 'error' | 'idle';
-
-const ERROR_COMICS = [
-  {
-    title: 'Connection Timeout',
-    panels: [
-      { text: 'Omega: "Connecting to the void..."', emoji: '🔌' },
-      { text: 'Void: "..."', emoji: '🕳️' },
-    ],
-  },
-  {
-    title: 'Tool Malfunction',
-    panels: [
-      { text: 'Omega: "Let me use this tool..."', emoji: '🔧' },
-      { text: 'Tool: "I quit."', emoji: '💥' },
-    ],
-  },
-  {
-    title: 'Network Error',
-    panels: [
-      { text: 'Omega: "Fetching data..."', emoji: '📡' },
-      { text: 'Internet: "No."', emoji: '🚫' },
-    ],
-  },
-  {
-    title: 'Unexpected Response',
-    panels: [
-      { text: 'Omega: "Generate a haiku..."', emoji: '✍️' },
-      { text: 'AI: "Error 418: I\'m a teapot"', emoji: '🫖' },
-    ],
-  },
-];
-
-function getSpinnerType(state: string): SpinnerType {
-  switch (state) {
-    case 'thinking':
-      return 'dots';
-    case 'running-tool':
-      return 'orbit';
-    case 'waiting-network':
-    case 'generating-image':
-      return 'pulse';
-    case 'success':
-      return 'success';
-    case 'error':
-      return 'error';
-    default:
-      return 'idle';
-  }
+interface ServiceStatus {
+  status: 'ok' | 'degraded' | 'error';
+  message?: string;
+  latency?: number;
+  details?: Record<string, unknown>;
 }
 
-function Spinner({ type }: { type: SpinnerType }) {
-  if (type === 'idle') {
-    return <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center text-2xl">💤</div>;
-  }
-
-  if (type === 'success') {
-    return <div className="w-16 h-16 rounded-full bg-green-900/50 flex items-center justify-center text-2xl animate-pulse">✓</div>;
-  }
-
-  if (type === 'error') {
-    return <div className="w-16 h-16 rounded-full bg-red-900/50 flex items-center justify-center text-2xl animate-pulse">✗</div>;
-  }
-
-  if (type === 'dots') {
-    return (
-      <div className="flex gap-2">
-        <div className="w-4 h-4 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-        <div className="w-4 h-4 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-        <div className="w-4 h-4 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '300ms' }} />
-      </div>
-    );
-  }
-
-  if (type === 'orbit') {
-    return (
-      <div className="relative w-16 h-16">
-        <div className="absolute inset-0 border-4 border-purple-500/30 rounded-full" />
-        <div className="absolute inset-0 border-4 border-t-purple-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (type === 'pulse') {
-    return (
-      <div className="relative w-16 h-16">
-        <div className="absolute inset-0 bg-cyan-500/50 rounded-full animate-ping" />
-        <div className="relative w-16 h-16 bg-cyan-500 rounded-full" />
-      </div>
-    );
-  }
-
-  return null;
+interface StatusData {
+  status: 'ok' | 'degraded' | 'error';
+  timestamp: string;
+  uptime: number;
+  version: {
+    commit?: string;
+    pr?: string;
+    environment: string;
+  };
+  services: {
+    database: ServiceStatus;
+    web: ServiceStatus;
+  };
+  errors: {
+    recent: boolean;
+    lastError?: {
+      message: string;
+      timestamp: string;
+    };
+  };
+  errorComics: Array<{
+    url: string;
+    filename: string;
+    createdAt: string;
+  }>;
 }
 
-function ErrorComic({ comic }: { comic: typeof ERROR_COMICS[0] }) {
-  return (
-    <div className="mt-8 p-6 bg-zinc-900 border border-red-900/50 rounded-lg max-w-md">
-      <h3 className="text-red-400 font-bold mb-4 text-center">{comic.title}</h3>
-      <div className="space-y-4">
-        {comic.panels.map((panel, idx) => (
-          <div key={idx} className="bg-zinc-950 p-4 rounded border border-zinc-800">
-            <div className="text-4xl mb-2 text-center">{panel.emoji}</div>
-            <p className="text-sm text-zinc-400 text-center">{panel.text}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+function formatUptime(ms: number): string {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-function getStateLabel(status: StatusSnapshot): string {
-  const { state, toolName, substate } = status;
-
-  if (state === 'idle') return 'Ready';
-  if (state === 'thinking') return 'Thinking...';
-  if (state === 'running-tool') return toolName ? `Running ${toolName}` : 'Running tool';
-  if (state === 'waiting-network') return 'Waiting on network...';
-  if (state === 'generating-image') return 'Generating image...';
-  if (state === 'success') return 'Success!';
-  if (state === 'error') return 'Error occurred';
-
-  return substate || state;
+  if (days > 0) return `${days}d ${hours % 24}h`;
+  if (hours > 0) return `${hours}h ${minutes % 60}m`;
+  if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+  return `${seconds}s`;
 }
 
 export default function BoopingPage() {
-  const [status, setStatus] = useState<StatusSnapshot | null>(null);
+  const [status, setStatus] = useState<StatusData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errorComic, setErrorComic] = useState<typeof ERROR_COMICS[0] | null>(null);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
+  const [fadeClass, setFadeClass] = useState('opacity-100');
 
-  useEffect(() => {
-    const fetchStatus = async () => {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
+  const fetchStatus = async () => {
+    try {
+      setFadeClass('opacity-50');
+
+      const response = await fetch('/api/status');
+      const data = await response.json();
+
+      setTimeout(() => {
         setStatus(data);
-        setLastUpdate(new Date());
-
-        // Show error comic if in error state
-        if (data.state === 'error' && !errorComic) {
-          const randomComic = ERROR_COMICS[Math.floor(Math.random() * ERROR_COMICS.length)];
-          setErrorComic(randomComic);
-        } else if (data.state !== 'error' && errorComic) {
-          setErrorComic(null);
-        }
-
+        setError(null);
         setLoading(false);
-      } catch (error) {
-        console.error('Failed to fetch status:', error);
+        setFadeClass('opacity-100');
+      }, 200);
+    } catch (err) {
+      setTimeout(() => {
+        setError(err instanceof Error ? err.message : 'Failed to fetch status');
         setLoading(false);
-      }
-    };
-
-    // Initial fetch
-    fetchStatus();
-
-    // Poll every 2 seconds
-    const interval = setInterval(fetchStatus, 2000);
-
-    return () => clearInterval(interval);
-  }, [errorComic]);
-
-  const spinnerType = status ? getSpinnerType(status.state) : 'idle';
-  const stateLabel = status ? getStateLabel(status) : 'Loading...';
-
-  // Format uptime
-  const formatUptime = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) return `${hours}h ${minutes}m ${secs}s`;
-    if (minutes > 0) return `${minutes}m ${secs}s`;
-    return `${secs}s`;
+        setFadeClass('opacity-100');
+      }, 200);
+    }
   };
 
-  // Low power indicator (if available from feelings)
-  const lowPowerMode = status && status.uptimeSec > 3600 * 12; // After 12 hours
+  useEffect(() => {
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading && !status) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-zinc-400">Loading status...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !status) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 border-4 border-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">⚠️</span>
+          </div>
+          <h1 className="text-2xl font-light text-white mb-3">Offline</h1>
+          <p className="text-red-400 mb-2">{error}</p>
+          <p className="text-zinc-500 text-sm">Unable to fetch status data</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!status) return null;
+
+  const getSpinnerColor = () => {
+    switch (status.status) {
+      case 'ok': return 'border-teal-500';
+      case 'degraded': return 'border-yellow-500';
+      case 'error': return 'border-red-500';
+      default: return 'border-zinc-500';
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (status.status) {
+      case 'ok': return 'text-teal-400';
+      case 'degraded': return 'text-yellow-400';
+      case 'error': return 'text-red-400';
+      default: return 'text-zinc-400';
+    }
+  };
+
+  const getStatusBgColor = () => {
+    switch (status.status) {
+      case 'ok': return 'bg-teal-500/10 border-teal-500/20';
+      case 'degraded': return 'bg-yellow-500/10 border-yellow-500/20';
+      case 'error': return 'bg-red-500/10 border-red-500/20';
+      default: return 'bg-zinc-500/10 border-zinc-500/20';
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pt-20 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-zinc-950 py-12 px-6">
+      <div className={`max-w-4xl mx-auto transition-opacity duration-300 ${fadeClass}`}>
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-2">
-            Omega Status{' '}
-            {lowPowerMode && <span className="text-zinc-600 animate-pulse">💤</span>}
+          <h1 className="text-5xl font-light text-white tracking-tight mb-4">
+            Omega Status
           </h1>
-          <p className="text-zinc-400 text-sm">
-            Updated {lastUpdate.toLocaleTimeString('en-US', { hour12: false })} UTC
+          <p className="text-zinc-400">Real-time system health and operational status</p>
+        </div>
+
+        {/* Main Status Indicator */}
+        <div className="text-center mb-12">
+          <div className={`w-32 h-32 border-4 ${getSpinnerColor()} border-t-transparent rounded-full animate-spin mx-auto mb-6`}></div>
+          <h2 className={`text-3xl font-light ${getStatusColor()} uppercase tracking-wider`}>
+            {status.status}
+          </h2>
+          <p className="text-zinc-500 text-sm mt-2">
+            Last updated: {new Date(status.timestamp).toLocaleTimeString()}
           </p>
         </div>
 
-        <div
-          className="bg-zinc-900 rounded-lg p-12 text-center border border-zinc-800"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {loading ? (
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 border-4 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
-              <p className="text-zinc-400">Loading status...</p>
+        {/* System Info */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+            <div className="text-zinc-500 text-sm mb-1">Uptime</div>
+            <div className="text-white text-2xl font-light">{formatUptime(status.uptime)}</div>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+            <div className="text-zinc-500 text-sm mb-1">Environment</div>
+            <div className="text-white text-2xl font-light capitalize">{status.version.environment}</div>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-lg">
+            <div className="text-zinc-500 text-sm mb-1">Version</div>
+            <div className="text-white text-xl font-mono">
+              {status.version.commit || 'dev'}
+              {status.version.pr && <span className="text-zinc-500"> #{status.version.pr}</span>}
             </div>
-          ) : (
-            <div className="flex flex-col items-center gap-6">
-              <Spinner type={spinnerType} />
-
-              <div>
-                <h2 className="text-2xl font-semibold mb-2">{stateLabel}</h2>
-                {status?.currentChannel && (
-                  <p className="text-zinc-500 text-sm">
-                    #{status.currentChannel}
-                    {status.currentUser && ` • @${status.currentUser}`}
-                  </p>
-                )}
-              </div>
-
-              {status && (
-                <div className="grid grid-cols-2 gap-4 mt-4 w-full max-w-md text-sm">
-                  <div className="bg-zinc-950 p-3 rounded">
-                    <div className="text-zinc-500">Uptime</div>
-                    <div className="text-zinc-200 font-mono">
-                      {formatUptime(status.uptimeSec)}
-                    </div>
-                  </div>
-                  <div className="bg-zinc-950 p-3 rounded">
-                    <div className="text-zinc-500">Version</div>
-                    <div className="text-zinc-200 font-mono">{status.version}</div>
-                  </div>
-                  {status.elapsedMs > 0 && (
-                    <div className="bg-zinc-950 p-3 rounded col-span-2">
-                      <div className="text-zinc-500">Current Task Duration</div>
-                      <div className="text-zinc-200 font-mono">
-                        {(status.elapsedMs / 1000).toFixed(1)}s
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {status?.lastError && (
-                <div className="mt-4 p-4 bg-red-950/30 border border-red-900/50 rounded max-w-md">
-                  <div className="text-red-400 font-semibold mb-1">Last Error</div>
-                  <div className="text-red-300/80 text-sm">{status.lastError.message}</div>
-                  <div className="text-red-500/60 text-xs mt-1">
-                    {new Date(status.lastError.at).toLocaleString()}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          </div>
         </div>
 
-        {errorComic && <ErrorComic comic={errorComic} />}
+        {/* Service Status Panels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {/* Database */}
+          <div className={`border p-6 rounded-lg ${getStatusBgColor()}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-lg font-light flex items-center gap-2">
+                <span className="text-2xl">🗄️</span>
+                Database
+              </h3>
+              <div className={`w-3 h-3 rounded-full ${
+                status.services.database.status === 'ok' ? 'bg-teal-500' :
+                status.services.database.status === 'degraded' ? 'bg-yellow-500' :
+                'bg-red-500'
+              } animate-pulse`}></div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Status</span>
+                <span className={getStatusColor()}>{status.services.database.status.toUpperCase()}</span>
+              </div>
+              {status.services.database.latency !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Latency</span>
+                  <span className="text-white font-mono">{status.services.database.latency}ms</span>
+                </div>
+              )}
+              {status.services.database.message && (
+                <div className="mt-2 text-zinc-500 text-xs">{status.services.database.message}</div>
+              )}
+            </div>
+          </div>
 
-        <div className="mt-8 text-center text-zinc-600 text-xs">
-          <p>Status updates every 2 seconds</p>
-          <p className="mt-1">No sensitive data is exposed on this page</p>
+          {/* Web Service */}
+          <div className={`border p-6 rounded-lg ${getStatusBgColor()}`}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-lg font-light flex items-center gap-2">
+                <span className="text-2xl">🌐</span>
+                Web Service
+              </h3>
+              <div className={`w-3 h-3 rounded-full ${
+                status.services.web.status === 'ok' ? 'bg-teal-500' :
+                status.services.web.status === 'degraded' ? 'bg-yellow-500' :
+                'bg-red-500'
+              } animate-pulse`}></div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Status</span>
+                <span className={getStatusColor()}>{status.services.web.status.toUpperCase()}</span>
+              </div>
+              {status.services.web.message && (
+                <div className="mt-2 text-zinc-500 text-xs">{status.services.web.message}</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Error Comics Section */}
+        {status.errors.recent && status.errorComics.length > 0 && (
+          <div className="bg-red-500/10 border border-red-500/20 p-6 rounded-lg mb-8">
+            <h3 className="text-red-400 text-lg font-light mb-4 flex items-center gap-2">
+              <span className="text-2xl">⚠️</span>
+              Recent Error Comics
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {status.errorComics.map((comic, idx) => (
+                <a
+                  key={idx}
+                  href={comic.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-zinc-900 border border-zinc-800 hover:border-red-500/50 transition-all rounded overflow-hidden group"
+                >
+                  <div className="aspect-square bg-zinc-800 flex items-center justify-center">
+                    <img
+                      src={comic.url}
+                      alt={comic.filename}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <div className="text-white text-sm font-mono truncate">{comic.filename}</div>
+                    <div className="text-zinc-500 text-xs mt-1">
+                      {new Date(comic.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            {status.errors.lastError && (
+              <div className="mt-4 text-red-400 text-sm">
+                Last error: {new Date(status.errors.lastError.timestamp).toLocaleString()}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="text-center text-zinc-600 text-sm">
+          <p>Auto-refreshing every 8 seconds</p>
         </div>
       </div>
     </div>
