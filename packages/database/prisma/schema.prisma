@@ -366,3 +366,33 @@ model UserFeeling {
   @@index([userId, recordedAt(sort: Desc)], map: "idx_user_feelings_user_recorded")
   @@map("user_feelings")
 }
+
+model GeneratedImage {
+  id                Int      @id @default(autoincrement())
+  title             String
+  description       String?
+  imageData         Bytes?   @map("image_data")
+  prompt            String   @db.Text
+  revisedPrompt     String?  @map("revised_prompt") @db.Text
+  toolUsed          String   @map("tool_used")
+  modelUsed         String?  @map("model_used")
+  filename          String
+  fileSize          Int?     @map("file_size")
+  artifactPath      String?  @map("artifact_path")
+  publicUrl         String?  @map("public_url")
+  width             Int?
+  height            Int?
+  format            String?  @default("png")
+  metadata          Json?
+  createdBy         String?  @map("created_by")
+  createdByUsername String?  @map("created_by_username")
+  discordMessageId  String?  @map("discord_message_id")
+  githubIssueNumber Int?     @map("github_issue_number")
+  createdAt         DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_generated_images_created_at")
+  @@index([createdBy], map: "idx_generated_images_created_by")
+  @@index([toolUsed], map: "idx_generated_images_tool_used")
+  @@index([modelUsed], map: "idx_generated_images_model_used")
+  @@map("generated_images")
+}

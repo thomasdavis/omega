@@ -16,6 +16,7 @@ import { writeFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
 import { getUploadsDir } from '@repo/shared';
+import { saveGeneratedImage } from '@repo/database';
 
 /**
  * Download image from URL
@@ -49,8 +50,11 @@ Uses model: gpt-image-1 (or any newer model)`,
     imageUrl: z.string().describe('URL of the image to edit (e.g., Discord attachment URL like https://cdn.discordapp.com/...)'),
     prompt: z.string().describe('Description of the edits to make. Be specific about what you want to add, change, or modify. Example: "add a rainbow in the sky" or "make the background a starry night"'),
     size: z.enum(['256x256', '512x512', '1024x1024']).optional().describe('Output image dimensions. Options: "256x256", "512x512", "1024x1024" (default)'),
+    userId: z.string().optional().describe('Optional user ID for tracking who created the image'),
+    username: z.string().optional().describe('Optional username for tracking who created the image'),
+    discordMessageId: z.string().optional().describe('Optional Discord message ID for linking the image to a specific message'),
   }),
-  execute: async ({ imageUrl, prompt, size = '1024x1024' }) => {
+  execute: async ({ imageUrl, prompt, size = '1024x1024', userId, username, discordMessageId }) => {
     try {
       const client = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY!,
@@ -129,6 +133,36 @@ Uses model: gpt-image-1 (or any newer model)`,
         console.error(`   Result.data:`, result.data);
         console.error(`   Result.data[0]:`, result.data?.[0]);
         throw new Error('No edited image returned from API');
+      }
+
+      // Save image metadata to database
+      if (firstResult?.b64_json) {
+        const uploadsDir = getUploadsDir();
+        const filename = `edited-${randomUUID()}.png`;
+        const filepath = join(uploadsDir, filename);
+        const imageBuffer = Buffer.from(firstResult.b64_json, 'base64');
+
+        try {
+          await saveGeneratedImage({
+            title: `Edited Image - ${new Date().toISOString()}`,
+            description: prompt.substring(0, 500),
+            prompt,
+            revisedPrompt: undefined,
+            toolUsed: 'editUserImage',
+            modelUsed: 'gpt-image-1',
+            filename,
+            artifactPath: filepath,
+            publicUrl: edited,
+            format: 'png',
+            imageData: imageBuffer,
+            createdBy: userId,
+            createdByUsername: username,
+            discordMessageId,
+          });
+          console.log('Saved image metadata to database');
+        } catch (dbError) {
+          console.error('Failed to save image metadata to database:', dbError);
+        }
       }
 
       return {

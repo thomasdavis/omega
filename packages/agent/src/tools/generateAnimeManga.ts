@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { generateImageWithGemini } from '../services/geminiImageService.js';
 import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
-import { getDatabase } from '@repo/database';
+import { getDatabase, saveGeneratedImage } from '@repo/database';
 
 /**
  * Available manga styles
@@ -245,8 +245,20 @@ export const generateAnimeMangaTool = tool({
       .number()
       .optional()
       .describe('Optional GitHub issue number to reference in the manga'),
+    userId: z
+      .string()
+      .optional()
+      .describe('User ID of the person who created this manga'),
+    username: z
+      .string()
+      .optional()
+      .describe('Username of the person who created this manga'),
+    discordMessageId: z
+      .string()
+      .optional()
+      .describe('Discord message ID if this manga was posted to Discord'),
   }),
-  execute: async ({ scenario, style, panelCount, conversationParticipants, includeUserIds, issueNumber }) => {
+  execute: async ({ scenario, style, panelCount, conversationParticipants, includeUserIds, issueNumber, userId, username, discordMessageId: inputDiscordMessageId }) => {
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
     const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 
@@ -549,6 +561,33 @@ Generate a professional, authentic vertical manga page that captures the essence
         }
       } else {
         console.warn(`⚠️ [generateAnimeManga] No image buffer available, skipping Discord post`);
+      }
+
+      // Save image metadata to database
+      try {
+        const filename = `manga-${style}-${panelCount}panel-${Date.now()}.png`;
+        const description = `Manga page - ${style} style with ${panelCount} panels${issueNumber ? ` (Issue #${issueNumber})` : ''}`;
+
+        await saveGeneratedImage({
+          title: `Manga - ${style} - ${new Date().toISOString()}`,
+          description,
+          prompt: scenario,
+          revisedPrompt: scenario,
+          toolUsed: 'generateAnimeManga',
+          modelUsed: 'gemini-3-pro-image-preview',
+          filename,
+          artifactPath: imageResult.imagePath,
+          publicUrl: undefined,
+          format: 'png',
+          imageData: imageResult.imageBuffer,
+          createdBy: userId,
+          createdByUsername: username,
+          discordMessageId: discordMessageId || inputDiscordMessageId,
+          githubIssueNumber: issueNumber,
+        });
+        console.log(`💾 Image metadata saved to database`);
+      } catch (dbError) {
+        console.error(`⚠️ Failed to save image metadata to database:`, dbError);
       }
 
       const result = {
