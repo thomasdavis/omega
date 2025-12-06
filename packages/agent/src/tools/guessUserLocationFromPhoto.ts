@@ -238,9 +238,9 @@ export const guessUserLocationFromPhotoTool = tool({
       // 5. Save the guess to database
       await saveGeoGuess({
         userId,
-        photoUrl: profile.uploaded_photo_url || null,
-        guessedLocation: guess.location || null,
-        confidenceScore: guess.confidence || null,
+        photoUrl: profile.uploaded_photo_url,
+        guessedLocation: guess.location,
+        confidenceScore: guess.confidence,
       });
 
       console.log('   ✅ Geographic guess saved to database');

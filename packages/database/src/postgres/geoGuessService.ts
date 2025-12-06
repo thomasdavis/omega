@@ -36,9 +36,9 @@ export async function saveGeoGuess(
                analyzed_at as "analyzedAt"`,
     [
       input.userId,
-      input.photoUrl || null,
-      input.guessedLocation || null,
-      input.confidenceScore || null,
+      input.photoUrl,
+      input.guessedLocation,
+      input.confidenceScore,
     ]
   );
 
