@@ -1,5 +1,17 @@
 [
   {
+    "id": "1980af9f",
+    "filename": "image0_71724776.gif",
+    "originalName": "image0.gif",
+    "size": 111569,
+    "extension": ".gif",
+    "uploadedAt": "2025-12-06T01:35:03.083Z",
+    "uploadedBy": "xenonfun",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/image0_71724776.gif",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/image0_71724776.gif",
+    "description": "User uploaded GIF image"
+  },
+  {
     "id": "b1a93b48",
     "filename": "scrabble_solver_fixed_756aa49b.c",
     "originalName": "scrabble_solver_fixed.c",
