@@ -15,9 +15,9 @@ export interface GeoGuessRecord {
 
 export interface CreateGeoGuessInput {
   userId: string;
-  photoUrl?: string | null;
-  guessedLocation?: string | null;
-  confidenceScore?: number | null;
+  photoUrl: string | null;
+  guessedLocation: string | null;
+  confidenceScore: number | null;
 }
 
 /**
@@ -121,6 +121,10 @@ export async function getGeoGuessCount(userId: string): Promise<number> {
     `SELECT COUNT(*) as count FROM geo_guess WHERE user_id = $1`,
     [userId]
   );
+
+  if (!result.rows[0]) {
+    return 0;
+  }
 
   return parseInt(result.rows[0].count, 10);
 }

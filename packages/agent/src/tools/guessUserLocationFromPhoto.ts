@@ -68,7 +68,7 @@ Guidelines:
 - Return ONLY the JSON object, no other text`;
 
     const analysisResult = await generateText({
-      model: openai(OMEGA_MODEL),
+      model: openai.chat(OMEGA_MODEL),
       prompt: prompt,
     });
 
@@ -88,12 +88,13 @@ Guidelines:
       }
     }
 
+    const LOG_LENGTH = 200;
     let parsed: any;
     try {
       parsed = JSON.parse(cleanJsonText);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', cleanJsonText.substring(0, 200));
-      throw new Error(`AI returned invalid JSON. Response: "${cleanJsonText.substring(0, 100)}..."`);
+      console.error('Failed to parse JSON response:', cleanJsonText.substring(0, LOG_LENGTH));
+      throw new Error(`AI returned invalid JSON. Response: "${cleanJsonText.substring(0, LOG_LENGTH)}..."`);
     }
 
     // Validate required fields
@@ -158,28 +159,28 @@ function formatGeographicGuess(guess: GeographicGuess): string {
  * Guess User Location From Photo Tool
  */
 export const guessUserLocationFromPhotoTool = tool({
-  description: `Analyze a user's profile photo to infer their geographic location based on visual clues.
+  description: `Analyze a user's appearance description to infer their geographic location based on visual clues.
 
 **Call this tool when:**
 - User asks "where am I from my photo?", "guess my location", "where do I live?"
-- User wants geographic insights from their profile picture
+- User wants geographic insights from their profile
 - Playing location guessing games or providing social context
-- User is curious about what location clues their photo reveals
+- User is curious about what location clues their appearance reveals
 
 **What it does:**
-- Analyzes the user's uploaded profile photo (if available)
+- Analyzes the user's appearance description (from uploaded photo or text description)
 - Uses AI to identify landmarks, environmental features, clothing style, and cultural indicators
 - Infers likely geographic location based on visual context
 - Provides confidence score and detailed reasoning
 - Stores the guess in the database for tracking and analytics
 
 **Requirements:**
-- User must have uploaded a profile photo using the uploadMyPhoto tool
-- Works best with photos that include background context (landmarks, architecture, nature)
-- Less accurate with close-up selfies that lack environmental context
+- User must have either uploaded a profile photo OR provided an appearance description
+- Works best when appearance description includes background context (landmarks, architecture, nature)
+- Less accurate with descriptions that only mention facial features
 
 **Privacy Note:**
-- Only analyzes photos the user has voluntarily uploaded
+- Only analyzes information the user has voluntarily provided
 - Does not make assumptions based on physical features or ethnicity
 - Focuses on environmental and cultural context clues`,
 
@@ -237,9 +238,9 @@ export const guessUserLocationFromPhotoTool = tool({
       // 5. Save the guess to database
       await saveGeoGuess({
         userId,
-        photoUrl: profile.uploaded_photo_url,
-        guessedLocation: guess.location,
-        confidenceScore: guess.confidence,
+        photoUrl: profile.uploaded_photo_url || null,
+        guessedLocation: guess.location || null,
+        confidenceScore: guess.confidence || null,
       });
 
       console.log('   ✅ Geographic guess saved to database');
