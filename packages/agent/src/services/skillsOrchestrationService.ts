@@ -342,7 +342,7 @@ function evaluateCondition(
 ): boolean {
   try {
     // Create a safe evaluation context
-    const evalContext = { ...context, results };
+    const evalContext: Record<string, any> = { ...context, results };
 
     // Simple condition parser
     // Supports: variable == value, variable != value, variable > value, etc.
