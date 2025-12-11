@@ -2222,16 +2222,18 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'analyzeLinguisticFeatures',
     name: 'Analyze Linguistic Features',
-    description: 'Analyze conversation messages for interesting linguistic features including phonological, morphological, syntactic, semantic, pragmatic, and discourse patterns',
-    keywords: ['linguistic', 'linguistics', 'language', 'analyze', 'conversation', 'features', 'phonology', 'morphology', 'syntax', 'semantics', 'pragmatics', 'discourse', 'grammar', 'speech'],
-    tags: ['analysis', 'language', 'linguistics', 'conversation'],
+    description: 'Analyze conversation messages for interesting linguistic features including phonological, morphological, syntactic, semantic, pragmatic, and discourse patterns. Find language patterns in discussions.',
+    keywords: ['linguistic', 'linguistics', 'linguisticfeatures', 'analyzeLinguisticFeatures', 'language features', 'language patterns', 'phonology', 'morphology', 'syntax', 'semantics', 'pragmatics', 'discourse', 'grammar', 'speech patterns', 'linguistic analysis'],
+    tags: ['analysis', 'language', 'linguistics', 'specialized'],
     examples: [
-      'analyze the linguistic features',
-      'analyze linguistic features of this conversation',
-      'what linguistic patterns are in this discussion',
-      'examine the language features',
-      'find interesting linguistic features',
-      'linguistic analysis of our conversation'
+      'linguistic analysis',
+      'do a linguistic analysis',
+      'analyze linguistic features',
+      'analyzeLinguisticFeatures',
+      'use the analyzeLinguisticFeatures tool',
+      'linguistic analysis of the above',
+      'what linguistic features are in this conversation',
+      'find linguistic patterns'
     ],
     category: 'specialized'
   },
