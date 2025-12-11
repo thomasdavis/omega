@@ -1,13 +1,29 @@
 import { NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 /**
  * Get the comics directory path
- * Reads from web app's public/comics directory
+ * Priority:
+ * 1. /data/comics (Railway persistent volume - shared with bot service) - only if it contains files
+ * 2. public/comics (Next.js public directory - fallback for built-in comics)
  */
 function getComicsDir(): string {
-  // Next.js public directory
+  // Check for Railway persistent volume with actual comic files
+  const dataComicsPath = '/data/comics';
+  if (existsSync(dataComicsPath)) {
+    try {
+      const files = readdirSync(dataComicsPath);
+      const hasComics = files.some(f => f.startsWith('comic_') && f.endsWith('.png'));
+      if (hasComics) {
+        return dataComicsPath;
+      }
+    } catch (error) {
+      console.warn('Failed to read /data/comics, falling back to public directory:', error);
+    }
+  }
+
+  // Fallback to Next.js public directory
   return join(process.cwd(), 'public/comics');
 }
 
