@@ -2349,6 +2349,44 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'development'
   },
 
+  // ===== TPMJS REGISTRY TOOLS (Core) =====
+  {
+    id: 'tpmjsRegistrySearch',
+    name: 'TPMJS Registry Search',
+    description: 'Search the TPMJS registry to find tools for any task. Returns metadata including the toolId needed for execution with tpmjsRegistryExecute. Use this to discover external tools that can extend your capabilities.',
+    keywords: ['tpmjs', 'registry', 'search', 'find', 'tools', 'discover', 'external', 'plugin', 'capability', 'extend', 'sdk'],
+    tags: ['core', 'registry', 'search', 'tools', 'discovery'],
+    examples: [
+      'search for image processing tools',
+      'find a tool to scrape websites',
+      'discover data processing tools',
+      'search tpmjs registry',
+      'find tools for automation',
+      'what tools can do web scraping',
+      'search for api integration tools'
+    ],
+    isCore: true,
+    category: 'research'
+  },
+
+  {
+    id: 'tpmjsRegistryExecute',
+    name: 'TPMJS Registry Execute',
+    description: 'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. Use tpmjsRegistrySearch first to find tools and get their toolIds.',
+    keywords: ['tpmjs', 'registry', 'execute', 'run', 'tool', 'external', 'sandbox', 'invoke', 'call', 'sdk'],
+    tags: ['core', 'registry', 'execution', 'tools', 'sandbox'],
+    examples: [
+      'execute tpmjs tool',
+      'run external tool',
+      'invoke registry tool',
+      'execute package::toolName',
+      'run tpmjs registry tool',
+      'use external tool'
+    ],
+    isCore: true,
+    category: 'development'
+  },
+
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
 ];
@@ -2364,5 +2402,8 @@ export const CORE_TOOLS: string[] = [
   'webFetch',
   'fileUpload',
   'generateHtmlPage',
-  'whoami'
+  'whoami',
+  // TPMJS Registry - Always available for discovering and executing external tools
+  'tpmjsRegistrySearch',
+  'tpmjsRegistryExecute',
 ];
