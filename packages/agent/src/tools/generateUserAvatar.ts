@@ -150,7 +150,7 @@ Create a beautiful, high-quality portrait that captures this person's essence.`;
           toolName: 'generateUserAvatar',
           prompt: avatarPrompt,
           model: 'Gemini',
-          storageUrl: imageResult.imagePath,
+          storageUrl: imageResult.imagePath || '',
           storageProvider: 'omega',
           mimeType: 'image/png',
           bytes: imageResult.imageBuffer?.length,
