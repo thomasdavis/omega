@@ -141,6 +141,21 @@ export type {
   CreateGeneratedImageInput,
 } from './postgres/imageService.js';
 
+// Export GeoGuessr service functions
+export {
+  saveGeoGuess,
+  getGeoGuessesByUser,
+  getLatestGeoGuess,
+  getAllGeoGuesses,
+  getGeoGuessCount,
+} from './postgres/geoGuessService.js';
+
+// Export GeoGuessr service types
+export type {
+  GeoGuessRecord,
+  CreateGeoGuessInput,
+} from './postgres/geoGuessService.js';
+
 // Database Adapter (PostgreSQL-only after migration)
 export {
   messageService,

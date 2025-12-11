@@ -1,6 +1,6 @@
 /**
  * Tool Metadata Registry
- * Manually curated metadata for all 123 tools for BM25 search optimization
+ * Manually curated metadata for all 124 tools for BM25 search optimization
  */
 
 import { ToolMetadata } from './types.js';
@@ -1434,6 +1434,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'my appearance is'
     ],
     category: 'file'
+  },
+
+  {
+    id: 'guessUserLocationFromPhoto',
+    name: 'Guess User Location From Photo',
+    description: 'Analyze user profile photos to infer geographic location using AI-powered image recognition. Identifies landmarks, environmental features, and cultural indicators to estimate where a person might be located.',
+    keywords: ['location', 'geography', 'geoguesser', 'where', 'place', 'country', 'city', 'guess', 'photo', 'analyze', 'map', 'region'],
+    tags: ['analysis', 'geography', 'location', 'photo', 'ai', 'profile'],
+    examples: [
+      'where am I from my photo',
+      'guess my location',
+      'where do I live',
+      'analyze location from photo',
+      'what does my photo say about where I am',
+      'geoguesser me'
+    ],
+    category: 'research'
   },
 
   {
