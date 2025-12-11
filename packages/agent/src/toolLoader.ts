@@ -195,6 +195,13 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
 
   // Tech Translation
   techTranslate: { path: './tools/techTranslate.js', exportName: 'techTranslateTool' },
+
+  // SDK Integration
+  integrateTpmjsSdk: { path: './tools/integrateTpmjsSdk.js', exportName: 'integrateTpmjsSdkTool' },
+
+  // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
+  tpmjsRegistrySearch: { path: './tools/tpmjsRegistrySearch.js', exportName: 'tpmjsRegistrySearchTool' },
+  tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecute.js', exportName: 'tpmjsRegistryExecuteTool' },
 };
 
 /**

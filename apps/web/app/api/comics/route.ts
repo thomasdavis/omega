@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import { readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { prisma } from '@repo/database';
+
+/**
+ * Check if running in production with persistent volume
+ */
+function isProductionWithVolume(): boolean {
+  return process.env.NODE_ENV === 'production' && existsSync('/data');
+}
 
 /**
  * Get the comics directory path
- * Reads from web app's public/comics directory
+ * Returns persistent volume path in production, local path otherwise
  */
 function getComicsDir(): string {
-  // Next.js public directory
-  const comicsPath = join(process.cwd(), 'public/comics');
+  if (isProductionWithVolume()) {
+    const dir = '/data/comics';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
 
-  // Create directory if it doesn't exist (for local dev)
+  // Local development: use public/comics directory
+  const comicsPath = join(process.cwd(), 'public/comics');
   if (!existsSync(comicsPath)) {
     mkdirSync(comicsPath, { recursive: true });
   }
@@ -20,55 +34,97 @@ function getComicsDir(): string {
 
 export async function GET() {
   try {
-    // Path to comics directory (shared volume in production)
-    const comicsDir = getComicsDir();
+    // First, try to fetch comics from database
+    const dbComics = await prisma.generatedImage.findMany({
+      where: {
+        toolName: 'generateComic',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: {
+        id: true,
+        metadata: true,
+        createdAt: true,
+        bytes: true,
+        imageData: true,
+      },
+    });
 
-    // Check if directory exists
-    if (!existsSync(comicsDir)) {
+    // Transform DB comics to the expected format
+    const comics = dbComics.map((comic) => {
+      const metadata = comic.metadata as any;
+      const issueNumber = metadata?.githubIssueNumber || metadata?.githubPrNumber;
+      const filename = metadata?.filename || `comic_${comic.id}.png`;
+
+      return {
+        id: Number(comic.id),
+        number: issueNumber || Number(comic.id),
+        filename,
+        // Serve from database by ID
+        url: `/api/comics/${comic.id}`,
+        createdAt: comic.createdAt.toISOString(),
+        size: comic.bytes || 0,
+        hasImageData: !!comic.imageData,
+      };
+    });
+
+    // If no comics in DB, fall back to filesystem
+    if (comics.length === 0) {
+      console.log('No comics in database, falling back to filesystem');
+      const comicsDir = getComicsDir();
+
+      if (!existsSync(comicsDir)) {
+        return NextResponse.json({
+          success: false,
+          error: 'No comics found in database or filesystem',
+          path: comicsDir,
+          env: process.env.NODE_ENV,
+        }, { status: 404 });
+      }
+
+      const files = readdirSync(comicsDir);
+
+      const filesystemComics = files
+        .filter((file) => {
+          const filePath = join(comicsDir, file);
+          return (
+            statSync(filePath).isFile() &&
+            file.endsWith('.png') &&
+            file.startsWith('comic_')
+          );
+        })
+        .map((file) => {
+          const filePath = join(comicsDir, file);
+          const stats = statSync(filePath);
+          const match = file.match(/comic_(\d+)\.png/);
+          const number = match ? parseInt(match[1], 10) : 0;
+
+          return {
+            id: number,
+            number,
+            filename: file,
+            url: `/api/comics/${file}`,
+            createdAt: stats.birthtime.toISOString(),
+            size: stats.size,
+            hasImageData: false,
+          };
+        })
+        .sort((a, b) => b.number - a.number);
+
       return NextResponse.json({
-        success: false,
-        error: 'Comics directory not found',
-        path: comicsDir,
-        env: process.env.NODE_ENV,
-      }, { status: 404 });
+        success: true,
+        comics: filesystemComics,
+        count: filesystemComics.length,
+        source: 'filesystem',
+      });
     }
-
-    const files = readdirSync(comicsDir);
-
-    const comics = files
-      .filter((file) => {
-        const filePath = join(comicsDir, file);
-        // Filter for PNG files that match comic_###.png pattern
-        return (
-          statSync(filePath).isFile() &&
-          file.endsWith('.png') &&
-          file.startsWith('comic_')
-        );
-      })
-      .map((file) => {
-        const filePath = join(comicsDir, file);
-        const stats = statSync(filePath);
-
-        // Extract comic number from filename (comic_###.png)
-        const match = file.match(/comic_(\d+)\.png/);
-        const number = match ? parseInt(match[1], 10) : 0;
-
-        return {
-          id: number,
-          number,
-          filename: file,
-          url: `/api/comics/${file}`,
-          createdAt: stats.birthtime.toISOString(),
-          size: stats.size,
-        };
-      })
-      // Sort by number descending (highest number = newest)
-      .sort((a, b) => b.number - a.number);
 
     return NextResponse.json({
       success: true,
       comics,
       count: comics.length,
+      source: 'database',
     });
   } catch (error) {
     console.error('Error listing comics:', error);
