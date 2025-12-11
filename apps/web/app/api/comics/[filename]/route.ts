@@ -1,13 +1,29 @@
 import { NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { prisma } from '@repo/database';
+
+/**
+ * Check if running in production with persistent volume
+ */
+function isProductionWithVolume(): boolean {
+  return process.env.NODE_ENV === 'production' && existsSync('/data');
+}
 
 /**
  * Get the comics directory path
- * Reads from web app's public/comics directory
+ * Returns persistent volume path in production, local path otherwise
  */
 function getComicsDir(): string {
-  // Next.js public directory
+  if (isProductionWithVolume()) {
+    const dir = '/data/comics';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Local development: use public/comics directory
   return join(process.cwd(), 'public/comics');
 }
 
@@ -18,7 +34,32 @@ export async function GET(
   try {
     const { filename } = await params;
 
-    // Security: Only allow PNG files with comic_ prefix
+    // Check if filename is a numeric ID (database lookup)
+    const numericId = parseInt(filename, 10);
+    if (!isNaN(numericId)) {
+      // Try to fetch from database by ID
+      const comic = await prisma.generatedImage.findUnique({
+        where: { id: BigInt(numericId) },
+        select: {
+          imageData: true,
+          mimeType: true,
+        },
+      });
+
+      if (comic && comic.imageData) {
+        return new NextResponse(comic.imageData, {
+          headers: {
+            'Content-Type': comic.mimeType || 'image/png',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
+
+      // If not found in DB, continue to filesystem fallback
+      console.log(`Comic ID ${numericId} not found in database or has no image data`);
+    }
+
+    // Security: Only allow PNG files with comic_ prefix for filesystem access
     if (!filename.endsWith('.png') || !filename.startsWith('comic_')) {
       return NextResponse.json(
         {
@@ -29,6 +70,7 @@ export async function GET(
       );
     }
 
+    // Fallback to filesystem
     const comicsDir = getComicsDir();
     const filePath = join(comicsDir, filename);
 

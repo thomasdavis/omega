@@ -27,6 +27,7 @@ export interface GeneratedImageRecord {
   error?: string | null;
   metadata?: Prisma.JsonValue | null;
   messageId?: string | null;
+  imageData?: Buffer | null;
   createdAt: Date;
 }
 
@@ -51,6 +52,7 @@ export interface CreateGeneratedImageInput {
   error?: string;
   metadata?: Prisma.InputJsonValue | null;
   messageId?: string;
+  imageData?: Buffer;
 }
 
 /**
@@ -81,6 +83,7 @@ export async function saveGeneratedImage(
       error: input.error,
       metadata: input.metadata ?? undefined,
       messageId: input.messageId,
+      imageData: input.imageData,
     },
   });
 
