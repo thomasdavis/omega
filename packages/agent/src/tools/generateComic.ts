@@ -303,7 +303,7 @@ Make it entertaining!`;
           toolName: 'generateComic',
           prompt: customPrompt || `GitHub Issue #${issueNumber}: ${issueTitle}`,
           model: 'gemini-3-pro-image-preview',
-          storageUrl: imageResult.imagePath,
+          storageUrl: imageResult.imagePath || '',
           storageProvider: 'omega',
           mimeType: 'image/png',
           bytes: imageResult.imageBuffer?.length,
