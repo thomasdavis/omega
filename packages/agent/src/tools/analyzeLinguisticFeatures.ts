@@ -59,94 +59,57 @@ function filterToNaturalConversation(messages: string): string {
 }
 
 /**
- * Analyze messages for linguistic features - produces rich markdown analysis
+ * Analyze messages for linguistic features using the comprehensive linguistics database
  */
-async function analyzeLinguisticFeatures(
-  messages: string,
-  analysisType: string = 'general'
-): Promise<string> {
-  const analysisFrameworks: Record<string, string> = {
-    general: `Provide a comprehensive linguistic analysis covering multiple frameworks. Include:
-- **Semantic roles** (Agent, Patient, Instrument, Experiencer, etc.)
-- **Syntactic patterns** (clause structure, word order, embedded clauses)
-- **Morphological features** (derivation, inflection, compounding)
-- **Pragmatic elements** (speech acts, implicature, presupposition)
-- **Discourse features** (cohesion, topic management, register)
+async function analyzeLinguisticFeatures(messages: string): Promise<string> {
+  const prompt = `You are an expert linguist performing deep, scholarly analysis. You have access to a comprehensive database of 800+ linguistic features covering phonology, morphology, syntax, semantics, and discourse.
 
-Use tables where appropriate to show patterns. Quote specific examples from the text.`,
+# LINGUISTIC FEATURES DATABASE
 
-    semantic_roles: `Perform a detailed **semantic role analysis** including:
-- Identify all **Agents** (doers), **Patients** (undergoers), **Instruments** (tools/means)
-- Note **Experiencers**, **Recipients**, **Beneficiaries**, **Locations**, **Goals**
-- Highlight **inanimate actors** - non-sentient entities functioning as agents
-- Show **actor-instrument alternations** where instruments are promoted to subject position
-- Create a predicate-by-predicate table showing: Predicate | Actor | Patient | Instrument | Notes
+This database catalogs linguistic parameters across multiple domains. Use these as your analytical framework:
 
-This is especially interesting for technical/software discourse where tools often become grammatical agents.`,
-
-    syntactic: `Perform a detailed **syntactic analysis** including:
-- Clause types (main, subordinate, relative, complement)
-- Phrase structure (NP, VP, PP patterns)
-- Word order variations and information structure
-- Coordination and subordination patterns
-- Ellipsis and pro-forms
-- Movement and displacement`,
-
-    pragmatic: `Perform a detailed **pragmatic analysis** including:
-- Speech act classification (assertives, directives, commissives, expressives, declarations)
-- Implicature (conversational and conventional)
-- Presupposition triggers
-- Deixis (person, place, time, discourse, social)
-- Politeness strategies
-- Turn-taking and conversation structure`,
-
-    morphological: `Perform a detailed **morphological analysis** including:
-- Derivational processes (prefixation, suffixation, conversion)
-- Inflectional patterns
-- Compounding and blending
-- Nominalization and verbalization
-- Productive vs. lexicalized forms
-- Technical jargon formation`,
-
-    sociolinguistic: `Perform a detailed **sociolinguistic analysis** including:
-- Register and style (formal/informal, technical/casual)
-- Code-switching or style-shifting
-- In-group markers and jargon
-- Power dynamics in language choices
-- Identity construction through language
-- Community of practice markers`,
-  };
-
-  const frameworkPrompt = analysisFrameworks[analysisType] || analysisFrameworks.general;
-
-  const prompt = `You are an expert linguist performing deep, scholarly analysis of natural language. Your analysis should be insightful, precise, and use proper linguistic terminology.
+${linguisticsData}
 
 # TEXT TO ANALYZE
 
 ${messages}
 
-# LINGUISTIC FEATURES REFERENCE DATABASE (for inspiration, not exhaustive)
-
-${linguisticsData.slice(0, 8000)}
-
 # YOUR TASK
 
-${frameworkPrompt}
+Analyze the conversation text through the lens of the linguistic features database above. Your goal is to find the **10 most interesting and relevant linguistic phenomena** in the conversation that connect to features in the database.
+
+For each phenomenon you identify:
+
+1. **Name the feature** using proper linguistic terminology (reference the database parameter IDs where relevant)
+2. **Categorize it** (Phonological, Morphological, Syntactic, Semantic, Pragmatic, Discourse, Sociolinguistic)
+3. **Explain the phenomenon** - what's happening linguistically and WHY it's interesting
+4. **Quote examples** directly from the conversation
+5. **Connect to theory** - relate it to the database features or broader linguistic concepts
 
 # OUTPUT FORMAT
 
-Write your analysis in **rich Markdown format**. Use:
-- Clear section headers with emoji markers (e.g., "# 🔵 Semantic Roles")
-- **Bold** for key terms and linguistic labels
-- *Italics* for examples and quoted text
-- \`code formatting\` for specific morphemes or technical terms
-- Tables for systematic comparisons
-- Blockquotes (>) for extended examples from the text
+Write your analysis in **rich Markdown format**:
+
+Start with a brief **Summary** paragraph (2-3 sentences) characterizing the linguistic profile of this conversation.
+
+Then organize findings into thematic sections with emoji headers like:
+- 🔵 **Semantic & Argument Structure** (agents, patients, instruments, thematic roles)
+- 🟣 **Morphological Patterns** (word formation, affixation, compounding)
+- 🟢 **Syntactic Features** (clause structure, word order, embedding)
+- 🟡 **Pragmatic & Discourse** (speech acts, deixis, cohesion, register)
+- 🔴 **Notable Alternations** (voice, valency, promotion/demotion)
+
+Use:
+- **Bold** for linguistic terms and feature names
+- *Italics* for quoted examples
+- \`code formatting\` for morphemes, phonemes, or specific forms
+- Tables where systematic comparison helps (e.g., predicate-by-predicate analysis)
+- > Blockquotes for longer examples
 - Bullet points for lists of instances
 
-Be thorough, analytical, and specific. Quote directly from the text to support your analysis. Explain WHY patterns are linguistically interesting, not just WHAT they are.
+Be thorough, analytical, and deeply engaged with the linguistic data. Don't just list features—explain their significance and interrelationships.
 
-At the end, offer 2-3 alternative analysis frameworks the user could request (e.g., "I can also provide: Dowty Proto-Agent/Proto-Patient analysis, Construction Grammar analysis, Systemic Functional Grammar analysis").
+End with a brief note offering to explore specific aspects deeper (e.g., "I can provide deeper analysis of the inanimate actor constructions, or examine the nominalization patterns in more detail.").
 
 # YOUR ANALYSIS`;
 
@@ -164,20 +127,13 @@ At the end, offer 2-3 alternative analysis frameworks the user could request (e.
 }
 
 export const analyzeLinguisticFeaturesTool = tool({
-  description: `Perform deep linguistic analysis of conversation text. Produces scholarly, detailed analysis using proper linguistic frameworks and terminology. Can analyze semantic roles (agents, patients, instruments), syntactic structures, morphological patterns, pragmatics, and sociolinguistic features. Outputs rich markdown with tables, examples, and theoretical grounding. Use when someone asks to "analyze linguistic features" or wants to understand language patterns in a conversation.`,
+  description: `Perform deep linguistic analysis of conversation text using a comprehensive database of 800+ linguistic features. Analyzes semantic roles (agents, patients, instruments, inanimate actors), syntactic structures, morphological patterns, pragmatics, and discourse features. Outputs rich scholarly markdown with tables, quoted examples, and theoretical grounding. Use when someone asks to "analyze linguistic features" or wants to understand language patterns in a conversation.`,
 
   inputSchema: z.object({
     messages: z
       .string()
       .describe(
-        'The conversation messages to analyze. Can be a summary or the actual message content from the conversation.'
-      ),
-    analysisType: z
-      .enum(['general', 'semantic_roles', 'syntactic', 'pragmatic', 'morphological', 'sociolinguistic'])
-      .default('general')
-      .optional()
-      .describe(
-        'Type of linguistic analysis to perform: "general" (comprehensive), "semantic_roles" (agents, patients, instruments, inanimate actors), "syntactic" (clause structure, phrase patterns), "pragmatic" (speech acts, implicature), "morphological" (word formation), "sociolinguistic" (register, identity, jargon)'
+        'The conversation messages to analyze. Should be the actual message content from the conversation.'
       ),
     includeAutomatedMessages: z
       .boolean()
@@ -188,11 +144,10 @@ export const analyzeLinguisticFeaturesTool = tool({
       ),
   }),
 
-  execute: async ({ messages, analysisType = 'general', includeAutomatedMessages = false }) => {
+  execute: async ({ messages, includeAutomatedMessages = false }) => {
     try {
       console.log('🔤 Linguistic Analysis: Analyzing conversation...');
       console.log(`   📄 Raw input length: ${messages.length} characters`);
-      console.log(`   🎯 Analysis type: ${analysisType}`);
 
       // Filter to natural conversation unless explicitly requested otherwise
       const filteredMessages = includeAutomatedMessages
@@ -210,14 +165,13 @@ export const analyzeLinguisticFeaturesTool = tool({
         };
       }
 
-      const analysis = await analyzeLinguisticFeatures(filteredMessages, analysisType);
+      const analysis = await analyzeLinguisticFeatures(filteredMessages);
 
       console.log(`   ✅ Analysis complete`);
       console.log(`   📊 Output length: ${analysis.length} characters`);
 
       return {
         success: true,
-        analysisType,
         analysis,
       };
     } catch (error) {
