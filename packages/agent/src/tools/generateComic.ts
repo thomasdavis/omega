@@ -13,7 +13,7 @@ import {
 } from '../services/geminiImageService.js';
 import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
-import { getDatabase, saveGeneratedImage, saveComicImage } from '@repo/database';
+import { getDatabase, saveGeneratedImage } from '@repo/database';
 
 /**
  * Look up user profiles by usernames
@@ -288,7 +288,7 @@ Make it entertaining!`;
         console.warn(`⚠️ [generateComic] No image buffer available, skipping Discord post`);
       }
 
-      // Save image metadata to database
+      // Save image metadata and data to database
       try {
         const filename = issueNumber ? `comic-issue-${issueNumber}-${Date.now()}.png` : `comic-${Date.now()}.png`;
         const description = customPrompt
@@ -316,24 +316,11 @@ Make it entertaining!`;
             timestamp: new Date().toISOString(),
           },
           messageId: discordMessageId || inputDiscordMessageId,
+          imageData: imageResult.imageBuffer,
         });
-        console.log(`💾 Image metadata saved to database`);
-
-        // Save comic image with binary data to comic_images table
-        if (issueNumber && imageResult.imageBuffer) {
-          try {
-            await saveComicImage({
-              comicId: issueNumber,
-              imageUrl: imageResult.imagePath || '',
-              imageData: imageResult.imageBuffer,
-            });
-            console.log(`💾 Comic image data saved to comic_images table for issue #${issueNumber}`);
-          } catch (comicDbError) {
-            console.error(`⚠️ Failed to save comic image data to comic_images table:`, comicDbError);
-          }
-        }
+        console.log(`💾 Image metadata and binary data saved to database`);
       } catch (dbError) {
-        console.error(`⚠️ Failed to save image metadata to database:`, dbError);
+        console.error(`⚠️ Failed to save image to database:`, dbError);
       }
 
       const result = {
