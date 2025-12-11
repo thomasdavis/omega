@@ -19,15 +19,20 @@ dotenv.config();
 initializeStorage();
 
 // Initialize database connection and schema
+// Note: Database connection is optional - bot will work in degraded mode without it
+let databaseAvailable = false;
 try {
   // Initialize PostgreSQL connection pool
   await getPostgresPool();
   // Initialize schema (run migrations)
   await initializePostgresSchema();
   console.log('✅ Database initialized and ready');
+  databaseAvailable = true;
 } catch (error) {
-  console.error('❌ Failed to initialize database:', error);
-  process.exit(1);
+  console.error('⚠️  Failed to initialize database (continuing in degraded mode):', error);
+  console.error('   Bot will work without database features like message history and analytics');
+  console.error('   To enable database features, set DATABASE_URL environment variable');
+  // Don't exit - allow bot to run without database for basic functionality
 }
 
 // Preload core tools for faster first response
