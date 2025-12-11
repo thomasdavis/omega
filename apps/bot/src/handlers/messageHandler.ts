@@ -22,6 +22,7 @@ import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '.
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
+import { updateStatus } from '../services/statusService.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -266,6 +267,9 @@ export async function handleMessage(message: Message): Promise<void> {
   console.log(`\n📨 Processing message from ${message.author.tag}:`);
   console.log(`   Content: "${message.content}"`);
   console.log(`   Channel: #${message.channel.isDMBased() ? 'DM' : (message.channel as any).name}`);
+
+  // Update status: composing
+  await updateStatus('composing', `Processing message from ${message.author.username}`);
 
   // Show typing indicator while processing
   if ('sendTyping' in message.channel) {
@@ -606,6 +610,9 @@ export async function handleMessage(message: Message): Promise<void> {
       );
       console.log(`✅ Sent response (${result.response.length} chars)`);
 
+      // Update status back to idle
+      await updateStatus('idle', 'Waiting for messages');
+
       // Persist AI response to database
       try {
         await saveAIMessage({
@@ -623,6 +630,9 @@ export async function handleMessage(message: Message): Promise<void> {
       }
     }
   } catch (error) {
+    // Update status: error
+    await updateStatus('error', 'Error processing message');
+
     // Log the error with full context and stack trace
     logError(error, {
       operation: 'Process and generate response',
@@ -657,6 +667,14 @@ export async function handleMessage(message: Message): Promise<void> {
           }
         }
       );
+
+      // Update status: recovering after error message sent
+      await updateStatus('recovering', 'Recovering from error');
+
+      // Return to idle after brief delay
+      setTimeout(async () => {
+        await updateStatus('idle', 'Waiting for messages');
+      }, 3000);
     } catch (replyError) {
       logError(replyError, {
         operation: 'Send error message to user',
