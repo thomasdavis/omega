@@ -29,6 +29,7 @@ export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
+export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -140,6 +141,19 @@ export type {
   GeneratedImageRecord,
   CreateGeneratedImageInput,
 } from './postgres/imageService.js';
+
+// Export build failure issue service functions for backward compatibility
+export {
+  hasIssueForMessage,
+  recordBuildFailureIssue,
+  getIssueForMessage,
+  listRecentBuildFailureIssues,
+} from './postgres/buildFailureIssueService.js';
+
+// Export build failure issue service types
+export type {
+  BuildFailureIssueRecord,
+} from './postgres/buildFailureIssueService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
