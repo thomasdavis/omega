@@ -13,7 +13,7 @@ import {
 } from '../services/geminiImageService.js';
 import { postComicToDiscord, postToDiscordChannel } from '../services/discordWebhookService.js';
 import { getUserCharacters } from '../lib/userAppearance.js';
-import { getDatabase, saveGeneratedImage } from '@repo/database';
+import { getDatabase, saveGeneratedImage, saveComicImage } from '@repo/database';
 
 /**
  * Look up user profiles by usernames
@@ -318,6 +318,20 @@ Make it entertaining!`;
           messageId: discordMessageId || inputDiscordMessageId,
         });
         console.log(`💾 Image metadata saved to database`);
+
+        // Save comic image with binary data to comic_images table
+        if (issueNumber && imageResult.imageBuffer) {
+          try {
+            await saveComicImage({
+              comicId: issueNumber,
+              imageUrl: imageResult.imagePath || '',
+              imageData: imageResult.imageBuffer,
+            });
+            console.log(`💾 Comic image data saved to comic_images table for issue #${issueNumber}`);
+          } catch (comicDbError) {
+            console.error(`⚠️ Failed to save comic image data to comic_images table:`, comicDbError);
+          }
+        }
       } catch (dbError) {
         console.error(`⚠️ Failed to save image metadata to database:`, dbError);
       }
