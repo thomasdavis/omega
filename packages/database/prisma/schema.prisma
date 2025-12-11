@@ -557,3 +557,43 @@ model SelfEvolutionRollback {
   @@index([branchName], map: "idx_self_evolution_rollbacks_branch")
   @@map("self_evolution_rollbacks")
 }
+
+model TpmjsSdkTool {
+  id              String    @id
+  toolName        String    @map("tool_name")
+  toolDescription String?   @map("tool_description")
+  sdkVersion      String?   @map("sdk_version")
+  sdkUrl          String?   @default("https://tpmjs.com/sdk") @map("sdk_url")
+  category        String?
+  parameters      Json?
+  metadata        Json?
+  usageCount      Int       @default(0) @map("usage_count")
+  lastUsedAt      DateTime? @map("last_used_at") @db.Timestamptz(6)
+  isEnabled       Boolean   @default(true) @map("is_enabled")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy       String?   @map("created_by")
+
+  @@index([isEnabled], map: "idx_tpmjs_sdk_tools_enabled")
+  @@index([usageCount(sort: Desc)], map: "idx_tpmjs_sdk_tools_usage")
+  @@index([category], map: "idx_tpmjs_sdk_tools_category")
+  @@index([lastUsedAt(sort: Desc)], map: "idx_tpmjs_sdk_tools_last_used")
+  @@map("tpmjs_sdk_tools")
+}
+
+model TpmjsIntegrationLog {
+  id               Int       @id @default(autoincrement())
+  integrationMode  String    @map("integration_mode")
+  sdkUrl           String    @map("sdk_url")
+  toolsFound       Int       @default(0) @map("tools_found")
+  toolsIntegrated  Int       @default(0) @map("tools_integrated")
+  success          Boolean   @default(true)
+  errorMessage     String?   @map("error_message")
+  metadata         Json?
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy        String?   @map("created_by")
+
+  @@index([createdAt(sort: Desc)], map: "idx_tpmjs_integration_logs_created_at")
+  @@index([integrationMode], map: "idx_tpmjs_integration_logs_mode")
+  @@map("tpmjs_integration_logs")
+}
