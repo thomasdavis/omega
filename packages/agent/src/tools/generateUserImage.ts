@@ -16,6 +16,87 @@ import fs from 'fs/promises';
 import path from 'path';
 import { saveGeneratedImage } from '@repo/database';
 import { getUploadsDir } from '@repo/shared';
+import { randomUUID } from 'crypto';
+
+// GitHub configuration for permanent storage
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
+const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
+const GITHUB_STORAGE_PATH = 'file-library'; // Same as fileUpload tool
+
+/**
+ * Upload image to GitHub repository for permanent, accessible storage
+ */
+async function uploadImageToGitHub(
+  imageBuffer: Buffer,
+  filename: string,
+  prompt: string,
+  username?: string
+): Promise<{ githubUrl: string; rawUrl: string } | null> {
+  if (!GITHUB_TOKEN) {
+    console.log('⚠️  GitHub token not configured, skipping GitHub upload');
+    return null;
+  }
+
+  const filePath = `${GITHUB_STORAGE_PATH}/${filename}`;
+  const base64Content = imageBuffer.toString('base64');
+
+  try {
+    // Check if file already exists (to get SHA for updates)
+    let sha: string | undefined;
+    const checkResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+      }
+    );
+
+    if (checkResponse.ok) {
+      const existingFile: any = await checkResponse.json();
+      sha = existingFile.sha;
+      console.log(`📝 File ${filename} exists, updating with SHA: ${sha}`);
+    }
+
+    // Upload file to GitHub
+    const uploadResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${GITHUB_TOKEN}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+          'X-GitHub-Api-Version': '2022-11-28',
+        },
+        body: JSON.stringify({
+          message: `Generated image: ${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}${username ? ` by ${username}` : ''}`,
+          content: base64Content,
+          ...(sha && { sha }), // Include SHA if updating existing file
+        }),
+      }
+    );
+
+    if (!uploadResponse.ok) {
+      const error = await uploadResponse.text();
+      throw new Error(`GitHub API error: ${uploadResponse.status} - ${error}`);
+    }
+
+    const uploadData: any = await uploadResponse.json();
+    const githubUrl = uploadData.content.html_url;
+    const rawUrl = uploadData.content.download_url;
+
+    console.log(`✅ Uploaded to GitHub: ${githubUrl}`);
+    console.log(`🔗 Raw URL (direct access): ${rawUrl}`);
+
+    return { githubUrl, rawUrl };
+  } catch (error) {
+    console.error('❌ Error uploading to GitHub:', error);
+    return null;
+  }
+}
 
 /**
  * Generate an image using Google's Gemini API
@@ -82,18 +163,33 @@ async function generateImage(
       throw new Error('No image data in Gemini response');
     }
 
-    // Save the image to file system using centralized storage utility
-    const outputDir = getUploadsDir();
-    await fs.mkdir(outputDir, { recursive: true });
-
+    // Generate unique filename
     const filename = `user-image-${Date.now()}.png`;
-    const imagePath = path.join(outputDir, filename);
 
-    await fs.writeFile(imagePath, imageData);
-    console.log(`✅ Image saved to: ${imagePath}`);
+    // Try to upload to GitHub first (permanent, accessible storage)
+    const githubUpload = await uploadImageToGitHub(imageData, filename, prompt, username);
 
-    // Return URL that can be served via the /api/uploads endpoint
-    const imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/uploads/${filename}`;
+    let imageUrl: string;
+    let storageProvider: string;
+
+    if (githubUpload) {
+      // Use GitHub raw URL for direct image access
+      imageUrl = githubUpload.rawUrl;
+      storageProvider = 'github';
+      console.log(`✅ Image uploaded to GitHub: ${imageUrl}`);
+    } else {
+      // Fallback: Save to local file system (will have cross-service issues on Railway)
+      const outputDir = getUploadsDir();
+      await fs.mkdir(outputDir, { recursive: true });
+      const imagePath = path.join(outputDir, filename);
+      await fs.writeFile(imagePath, imageData);
+      console.log(`⚠️  Image saved locally (fallback): ${imagePath}`);
+      console.log(`   Note: Local storage has cross-service access issues on Railway`);
+
+      // This URL will likely 404 on Railway due to cross-service volume isolation
+      imageUrl = `${process.env.OMEGA_API_URL || 'https://omegaai.dev'}/uploads/${filename}`;
+      storageProvider = 'local';
+    }
 
     // Save metadata to database
     try {
@@ -105,13 +201,14 @@ async function generateImage(
         model: 'gemini-3-pro-image-preview',
         size: '1024x1024', // Default size for Gemini
         storageUrl: imageUrl,
-        storageProvider: 'omega',
+        storageProvider,
         mimeType: 'image/png',
         bytes: imageData.length,
         status: 'success',
         metadata: {
           filename,
-          artifactPath: imagePath,
+          githubUrl: githubUpload?.githubUrl,
+          rawUrl: githubUpload?.rawUrl,
           timestamp: new Date().toISOString(),
         },
         messageId: discordMessageId,
@@ -141,7 +238,7 @@ async function generateImage(
 }
 
 export const generateUserImageTool = tool({
-  description: 'Generate AI-powered images from text prompts using Google Gemini API. Creates high-quality, creative images based on user descriptions. Perfect for creating artwork, illustrations, visual concepts, and creative content. Uses the same model as GeminiComicService for consistency and improved safety. The generated images are automatically available as URLs that can be displayed in Discord.',
+  description: 'Generate AI-powered images from text prompts using Google Gemini API. Creates high-quality, creative images based on user descriptions. Perfect for creating artwork, illustrations, visual concepts, and creative content. Uses the same model as GeminiComicService for consistency and improved safety. The generated images are automatically uploaded to GitHub for permanent storage and are immediately available as publicly accessible URLs.',
   inputSchema: z.object({
     prompt: z.string().describe('The text description of the image to generate. Be detailed and specific for best results. Example: "A serene mountain landscape at sunset with snow-capped peaks reflecting in a crystal-clear lake"'),
     userId: z.string().optional().describe('User ID of the image creator. Use the current user\'s ID from context if available.'),
