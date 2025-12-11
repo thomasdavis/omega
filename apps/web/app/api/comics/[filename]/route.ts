@@ -1,13 +1,28 @@
 import { NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 /**
+ * Check if running in production with persistent volume
+ */
+function isProductionWithVolume(): boolean {
+  return process.env.NODE_ENV === 'production' && existsSync('/data');
+}
+
+/**
  * Get the comics directory path
- * Reads from web app's public/comics directory
+ * Returns persistent volume path in production, local path otherwise
  */
 function getComicsDir(): string {
-  // Next.js public directory
+  if (isProductionWithVolume()) {
+    const dir = '/data/comics';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
+
+  // Local development: use public/comics directory
   return join(process.cwd(), 'public/comics');
 }
 
