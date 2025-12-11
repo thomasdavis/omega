@@ -574,7 +574,7 @@ Generate a professional, authentic vertical manga page that captures the essence
           toolName: 'generateAnimeManga',
           prompt: scenario,
           model: 'gemini-3-pro-image-preview',
-          storageUrl: imageResult.imagePath,
+          storageUrl: imageResult.imagePath || '',
           storageProvider: 'omega',
           mimeType: 'image/png',
           bytes: imageResult.imageBuffer?.length,
