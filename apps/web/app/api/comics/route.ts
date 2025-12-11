@@ -3,14 +3,27 @@ import { readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 /**
+ * Check if running in production with persistent volume
+ */
+function isProductionWithVolume(): boolean {
+  return process.env.NODE_ENV === 'production' && existsSync('/data');
+}
+
+/**
  * Get the comics directory path
- * Reads from web app's public/comics directory
+ * Returns persistent volume path in production, local path otherwise
  */
 function getComicsDir(): string {
-  // Next.js public directory
-  const comicsPath = join(process.cwd(), 'public/comics');
+  if (isProductionWithVolume()) {
+    const dir = '/data/comics';
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+    return dir;
+  }
 
-  // Create directory if it doesn't exist (for local dev)
+  // Local development: use public/comics directory
+  const comicsPath = join(process.cwd(), 'public/comics');
   if (!existsSync(comicsPath)) {
     mkdirSync(comicsPath, { recursive: true });
   }
