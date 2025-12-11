@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { generateComic, extractConversationContext } from '@repo/agent';
+import { saveGeneratedImage } from '@repo/database';
 import { postComicToDiscord } from '../src/services/discordComicPoster.js';
 import { postComicToTwitter } from '../src/services/twitterComicPoster.js';
 import { extractKeywords, searchDiscordMessages } from '../src/services/discordMessageSearch.js';
@@ -204,6 +205,36 @@ async function main() {
     }
 
     console.log('✅ Comic generated successfully');
+
+    // Save comic to database
+    console.log('💾 Saving comic to database...');
+    try {
+      await saveGeneratedImage({
+        userId: pr.user?.login || prAuthor || 'unknown',
+        username: pr.user?.name || pr.user?.login || prAuthor,
+        toolName: 'generateComic',
+        prompt: `PR #${prNumber}: ${prTitle}`,
+        model: 'gemini-3-pro-image-preview',
+        storageUrl: comicResult.imagePath || '',
+        storageProvider: 'omega',
+        mimeType: 'image/png',
+        bytes: comicResult.imageData.length,
+        status: 'success',
+        metadata: {
+          filename: `comic_${issueNumber || prNumber}.png`,
+          artifactPath: comicResult.imagePath,
+          description: `Comic for PR #${prNumber}: ${prTitle}`,
+          githubPrNumber: prNumber,
+          githubIssueNumber: issueNumber,
+          timestamp: new Date().toISOString(),
+        },
+        imageData: comicResult.imageData,
+      });
+      console.log('✅ Comic saved to database successfully');
+    } catch (dbError) {
+      console.error('⚠️ Failed to save comic to database:', dbError);
+      // Continue anyway - don't fail the workflow for DB errors
+    }
 
     // Post comic to Discord (client already connected from search)
     console.log('📤 Posting comic to Discord...');

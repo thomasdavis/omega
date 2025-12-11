@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import { OMEGA_APPEARANCE } from '../lib/omegaAppearance.js';
 import { getComicsDir } from '../utils/storage.js';
 import { generateScreenplay } from './screenplayService.js';
+import { saveComicImage } from '@repo/database';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -217,6 +218,21 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
 
     await fs.writeFile(imagePath, imageData);
     console.log(`✅ Comic saved to: ${imagePath}`);
+
+    // Save to database if issue number is available
+    if (issueNumber) {
+      try {
+        await saveComicImage({
+          comicId: issueNumber,
+          imageUrl: imagePath,
+          imageData: imageData,
+        });
+        console.log(`💾 Comic image saved to database for issue #${issueNumber}`);
+      } catch (dbError) {
+        console.error(`⚠️ Failed to save comic to database:`, dbError);
+        // Continue even if database save fails - file system save succeeded
+      }
+    }
 
     return {
       success: true,
