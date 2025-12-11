@@ -44,14 +44,6 @@ Analyze the conversation above and identify the ${featureCount} most interesting
 
 3. Explain WHY each feature is interesting in the context of THIS specific conversation
 
-Categories to consider:
-- Phonological (sound patterns, pronunciation discussions)
-- Morphological (word formation, affixes, case systems)
-- Syntactic (sentence structure, word order, clause types)
-- Semantic (meaning, ambiguity, metaphor)
-- Pragmatic (context, implicature, speech acts)
-- Discourse (conversation flow, topic management, cohesion)
-- Sociolinguistic (register, formality, code-switching)
 
 Respond in JSON format:
 {
