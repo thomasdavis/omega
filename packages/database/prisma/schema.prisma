@@ -389,6 +389,7 @@ model GeneratedImage {
   error           String?  @db.Text
   metadata        Json?
   messageId       String?  @map("message_id")
+  imageData       Bytes?   @map("image_data")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_generated_images_user_id_created_at")
