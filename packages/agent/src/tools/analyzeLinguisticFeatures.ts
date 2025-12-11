@@ -59,54 +59,96 @@ function filterToNaturalConversation(messages: string): string {
 }
 
 /**
- * Analyze messages for linguistic features
+ * Analyze messages for linguistic features - produces rich markdown analysis
  */
 async function analyzeLinguisticFeatures(
   messages: string,
-  featureCount: number = 10
-): Promise<{
-  features: Array<{
-    rank: number;
-    featureName: string;
-    category: string;
-    explanation: string;
-    example: string;
-  }>;
-  summary: string;
-}> {
-  const prompt = `You are a linguistics expert analyzing a conversation for interesting linguistic features.
+  analysisType: string = 'general'
+): Promise<string> {
+  const analysisFrameworks: Record<string, string> = {
+    general: `Provide a comprehensive linguistic analysis covering multiple frameworks. Include:
+- **Semantic roles** (Agent, Patient, Instrument, Experiencer, etc.)
+- **Syntactic patterns** (clause structure, word order, embedded clauses)
+- **Morphological features** (derivation, inflection, compounding)
+- **Pragmatic elements** (speech acts, implicature, presupposition)
+- **Discourse features** (cohesion, topic management, register)
 
-CONVERSATION TO ANALYZE:
+Use tables where appropriate to show patterns. Quote specific examples from the text.`,
+
+    semantic_roles: `Perform a detailed **semantic role analysis** including:
+- Identify all **Agents** (doers), **Patients** (undergoers), **Instruments** (tools/means)
+- Note **Experiencers**, **Recipients**, **Beneficiaries**, **Locations**, **Goals**
+- Highlight **inanimate actors** - non-sentient entities functioning as agents
+- Show **actor-instrument alternations** where instruments are promoted to subject position
+- Create a predicate-by-predicate table showing: Predicate | Actor | Patient | Instrument | Notes
+
+This is especially interesting for technical/software discourse where tools often become grammatical agents.`,
+
+    syntactic: `Perform a detailed **syntactic analysis** including:
+- Clause types (main, subordinate, relative, complement)
+- Phrase structure (NP, VP, PP patterns)
+- Word order variations and information structure
+- Coordination and subordination patterns
+- Ellipsis and pro-forms
+- Movement and displacement`,
+
+    pragmatic: `Perform a detailed **pragmatic analysis** including:
+- Speech act classification (assertives, directives, commissives, expressives, declarations)
+- Implicature (conversational and conventional)
+- Presupposition triggers
+- Deixis (person, place, time, discourse, social)
+- Politeness strategies
+- Turn-taking and conversation structure`,
+
+    morphological: `Perform a detailed **morphological analysis** including:
+- Derivational processes (prefixation, suffixation, conversion)
+- Inflectional patterns
+- Compounding and blending
+- Nominalization and verbalization
+- Productive vs. lexicalized forms
+- Technical jargon formation`,
+
+    sociolinguistic: `Perform a detailed **sociolinguistic analysis** including:
+- Register and style (formal/informal, technical/casual)
+- Code-switching or style-shifting
+- In-group markers and jargon
+- Power dynamics in language choices
+- Identity construction through language
+- Community of practice markers`,
+  };
+
+  const frameworkPrompt = analysisFrameworks[analysisType] || analysisFrameworks.general;
+
+  const prompt = `You are an expert linguist performing deep, scholarly analysis of natural language. Your analysis should be insightful, precise, and use proper linguistic terminology.
+
+# TEXT TO ANALYZE
+
 ${messages}
 
-AVAILABLE LINGUISTIC FEATURES DATABASE (CSV format):
-${linguisticsData}
+# LINGUISTIC FEATURES REFERENCE DATABASE (for inspiration, not exhaustive)
 
-YOUR TASK:
-Analyze the conversation above and identify the ${featureCount} most interesting linguistic features that appear in it. For each feature:
+${linguisticsData.slice(0, 8000)}
 
-1. Look at what linguistic phenomena occur in the conversation (e.g., phonological patterns if discussing pronunciation, morphological features like case or tense usage, syntactic structures, discourse patterns, etc.)
+# YOUR TASK
 
-2. Map these to relevant features from the linguistics database OR identify general linguistic features that would be interesting to note
+${frameworkPrompt}
 
-3. Explain WHY each feature is interesting in the context of THIS specific conversation
+# OUTPUT FORMAT
 
+Write your analysis in **rich Markdown format**. Use:
+- Clear section headers with emoji markers (e.g., "# 🔵 Semantic Roles")
+- **Bold** for key terms and linguistic labels
+- *Italics* for examples and quoted text
+- \`code formatting\` for specific morphemes or technical terms
+- Tables for systematic comparisons
+- Blockquotes (>) for extended examples from the text
+- Bullet points for lists of instances
 
-Respond in JSON format:
-{
-  "features": [
-    {
-      "rank": 1,
-      "featureName": "Name of the linguistic feature",
-      "category": "Category (Phonological/Morphological/Syntactic/Semantic/Pragmatic/Discourse/Sociolinguistic)",
-      "explanation": "Why this feature is interesting in this conversation",
-      "example": "A specific quote or example from the conversation demonstrating this feature"
-    }
-  ],
-  "summary": "A brief 2-3 sentence summary of the most notable linguistic aspects of this conversation"
-}
+Be thorough, analytical, and specific. Quote directly from the text to support your analysis. Explain WHY patterns are linguistically interesting, not just WHAT they are.
 
-Be specific, insightful, and relate features directly to what's happening in the conversation.`;
+At the end, offer 2-3 alternative analysis frameworks the user could request (e.g., "I can also provide: Dowty Proto-Agent/Proto-Patient analysis, Construction Grammar analysis, Systemic Functional Grammar analysis").
+
+# YOUR ANALYSIS`;
 
   try {
     const result = await generateText({
@@ -114,60 +156,15 @@ Be specific, insightful, and relate features directly to what's happening in the
       prompt,
     });
 
-    // Clean up potential markdown code blocks
-    let cleanedText = result.text.trim();
-    if (cleanedText.startsWith('```json')) {
-      cleanedText = cleanedText.slice(7);
-    }
-    if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.slice(3);
-    }
-    if (cleanedText.endsWith('```')) {
-      cleanedText = cleanedText.slice(0, -3);
-    }
-
-    const parsed = JSON.parse(cleanedText.trim());
-
-    return {
-      features: parsed.features || [],
-      summary: parsed.summary || '',
-    };
+    return result.text.trim();
   } catch (error) {
     console.error('Error analyzing linguistic features:', error);
-    return {
-      features: [],
-      summary: 'Analysis failed due to technical difficulties. Please try again.',
-    };
+    return 'Analysis failed due to technical difficulties. Please try again.';
   }
-}
-
-/**
- * Format the analysis results for display
- */
-function formatAnalysis(analysis: {
-  features: Array<{
-    rank: number;
-    featureName: string;
-    category: string;
-    explanation: string;
-    example: string;
-  }>;
-  summary: string;
-}): string {
-  let output = `**Linguistic Analysis Summary**\n${analysis.summary}\n\n`;
-  output += `**Top ${analysis.features.length} Linguistic Features Found:**\n\n`;
-
-  for (const feature of analysis.features) {
-    output += `**${feature.rank}. ${feature.featureName}** _(${feature.category})_\n`;
-    output += `${feature.explanation}\n`;
-    output += `> "${feature.example}"\n\n`;
-  }
-
-  return output;
 }
 
 export const analyzeLinguisticFeaturesTool = tool({
-  description: `Analyze the conversation for interesting linguistic features. This tool examines messages from the current conversation and identifies the most notable linguistic phenomena, including phonological patterns, morphological structures, syntactic features, semantic elements, pragmatic aspects, and discourse patterns. Perfect for understanding how language is being used in a discussion. Use when someone asks to "analyze linguistic features" or wants to understand the language patterns in a conversation.`,
+  description: `Perform deep linguistic analysis of conversation text. Produces scholarly, detailed analysis using proper linguistic frameworks and terminology. Can analyze semantic roles (agents, patients, instruments), syntactic structures, morphological patterns, pragmatics, and sociolinguistic features. Outputs rich markdown with tables, examples, and theoretical grounding. Use when someone asks to "analyze linguistic features" or wants to understand language patterns in a conversation.`,
 
   inputSchema: z.object({
     messages: z
@@ -175,24 +172,27 @@ export const analyzeLinguisticFeaturesTool = tool({
       .describe(
         'The conversation messages to analyze. Can be a summary or the actual message content from the conversation.'
       ),
-    featureCount: z
-      .number()
-      .min(1)
-      .max(20)
-      .default(10)
+    analysisType: z
+      .enum(['general', 'semantic_roles', 'syntactic', 'pragmatic', 'morphological', 'sociolinguistic'])
+      .default('general')
       .optional()
-      .describe('Number of linguistic features to identify (default: 10, max: 20)'),
+      .describe(
+        'Type of linguistic analysis to perform: "general" (comprehensive), "semantic_roles" (agents, patients, instruments, inanimate actors), "syntactic" (clause structure, phrase patterns), "pragmatic" (speech acts, implicature), "morphological" (word formation), "sociolinguistic" (register, identity, jargon)'
+      ),
     includeAutomatedMessages: z
       .boolean()
       .default(false)
       .optional()
-      .describe('Whether to include automated bot messages like tool calls, URLs, and reports. Default is false (only analyze natural human/AI conversation).'),
+      .describe(
+        'Whether to include automated bot messages like tool calls, URLs, and reports. Default is false (only analyze natural human/AI conversation).'
+      ),
   }),
 
-  execute: async ({ messages, featureCount = 10, includeAutomatedMessages = false }) => {
+  execute: async ({ messages, analysisType = 'general', includeAutomatedMessages = false }) => {
     try {
       console.log('🔤 Linguistic Analysis: Analyzing conversation...');
       console.log(`   📄 Raw input length: ${messages.length} characters`);
+      console.log(`   🎯 Analysis type: ${analysisType}`);
 
       // Filter to natural conversation unless explicitly requested otherwise
       const filteredMessages = includeAutomatedMessages
@@ -200,39 +200,32 @@ export const analyzeLinguisticFeaturesTool = tool({
         : filterToNaturalConversation(messages);
 
       console.log(`   📝 Filtered length: ${filteredMessages.length} characters`);
-      console.log(`   🎯 Finding top ${featureCount} features`);
 
       if (!filteredMessages || filteredMessages.length < 50) {
         return {
           success: false,
-          error: 'Not enough natural conversation content to analyze after filtering out automated messages.',
-          features: [],
-          summary: '',
-          formattedOutput: '',
+          error:
+            'Not enough natural conversation content to analyze after filtering out automated messages.',
+          analysis: '',
         };
       }
 
-      const analysis = await analyzeLinguisticFeatures(filteredMessages, featureCount);
-      const formattedOutput = formatAnalysis(analysis);
+      const analysis = await analyzeLinguisticFeatures(filteredMessages, analysisType);
 
       console.log(`   ✅ Analysis complete`);
-      console.log(`   📊 Found ${analysis.features.length} features`);
+      console.log(`   📊 Output length: ${analysis.length} characters`);
 
       return {
         success: true,
-        featureCount: analysis.features.length,
-        features: analysis.features,
-        summary: analysis.summary,
-        formattedOutput,
+        analysisType,
+        analysis,
       };
     } catch (error) {
       console.error('Error in linguistic analysis tool:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to analyze linguistic features',
-        features: [],
-        summary: '',
-        formattedOutput: '',
+        analysis: '',
       };
     }
   },
