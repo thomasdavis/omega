@@ -232,7 +232,7 @@ export const renderChartTool = tool({
           toolName: 'renderChart',
           prompt: chartPrompt,
           model: 'quickchart.io',
-          storageUrl: imageUrl,
+          storageUrl: chartUrl,
           storageProvider: 'quickchart',
           mimeType: 'image/png',
           bytes: imageBuffer?.length,
