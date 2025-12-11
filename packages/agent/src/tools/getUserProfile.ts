@@ -53,12 +53,23 @@ export const getUserProfileTool = tool({
         };
       }
 
-      // 3. Parse JSON fields
+      // 3. Parse JSON fields with robust null safety
       const feelings = profile.feelings_json ? JSON.parse(profile.feelings_json) : null;
       const personality = profile.personality_facets ? JSON.parse(profile.personality_facets) : null;
       const photoMetadata = profile.uploaded_photo_metadata
         ? JSON.parse(profile.uploaded_photo_metadata)
         : null;
+
+      // Helper function to safely parse and ensure array
+      const safeParseArray = (jsonField: any): any[] => {
+        if (!jsonField) return [];
+        try {
+          const parsed = typeof jsonField === 'string' ? JSON.parse(jsonField) : jsonField;
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return [];
+        }
+      };
 
       // 4. Get sample recent messages
       const db = await getDatabase();
@@ -232,7 +243,7 @@ ${profile.uploaded_photo_url ? `
 - **Posture:** ${profile.posture || 'not assessed'}
 
 ### F. Distinctive Morphological Markers
-${profile.distinctive_features ? JSON.parse(profile.distinctive_features).map((f: string) => `- ${f}`).join('\n') : '- No distinctive features recorded'}
+${safeParseArray(profile.distinctive_features).length > 0 ? safeParseArray(profile.distinctive_features).map((f: string) => `- ${f}`).join('\n') : '- No distinctive features recorded'}
 
 ### G. Aesthetic Impression & Social Perception
 - **Attractiveness Assessment:** ${profile.attractiveness_assessment || 'not assessed'}
@@ -240,7 +251,7 @@ ${profile.distinctive_features ? JSON.parse(profile.distinctive_features).map((f
 - **Perceived Confidence:** ${profile.perceived_confidence_level || 'not assessed'}
 - **Aesthetic Archetype:** ${profile.aesthetic_archetype || 'unclassified'}
 - **Clothing Style:** ${profile.clothing_style || 'not assessed'}
-- **Accessories:** ${profile.accessories ? JSON.parse(profile.accessories).join(', ') : 'none observed'}
+- **Accessories:** ${safeParseArray(profile.accessories).length > 0 ? safeParseArray(profile.accessories).join(', ') : 'none observed'}
 
 ### H. Demographics
 - **Gender Presentation:** ${profile.ai_detected_gender || 'unspecified'}
@@ -264,7 +275,7 @@ ${profile.distinctive_features ? JSON.parse(profile.distinctive_features).map((f
 - **Overall Sentiment:** ${profile.overall_sentiment || 'neutral'}
 - **Positive Interaction Ratio:** ${profile.positive_interaction_ratio ? (profile.positive_interaction_ratio * 100).toFixed(1) : 'N/A'}%
 - **Negative Interaction Ratio:** ${profile.negative_interaction_ratio ? (profile.negative_interaction_ratio * 100).toFixed(1) : 'N/A'}%
-- **Dominant Emotions:** ${profile.dominant_emotions ? JSON.parse(profile.dominant_emotions).join(', ') : 'not yet identified'}
+- **Dominant Emotions:** ${safeParseArray(profile.dominant_emotions).length > 0 ? safeParseArray(profile.dominant_emotions).join(', ') : 'not yet identified'}
 
 ### B. Psychodynamic Interpretation
 ${profile.affinity_score !== null && profile.affinity_score !== undefined && profile.trust_level !== null && profile.trust_level !== undefined ? `
@@ -277,7 +288,7 @@ Sentiment distribution analysis indicates ${profile.positive_interaction_ratio &
 ${profile.omega_thoughts || 'Pending: Insufficient interaction history for formulated assessment. Current status: observational data collection phase.'}
 
 **Notable Behavioral Patterns Identified:**
-${profile.notable_patterns ? JSON.parse(profile.notable_patterns).map((p: string) => `- ${p}`).join('\n') : '- No significant patterns detected (requires N≥30 for pattern emergence)'}
+${safeParseArray(profile.notable_patterns).length > 0 ? safeParseArray(profile.notable_patterns).map((p: string) => `- ${p}`).join('\n') : '- No significant patterns detected (requires N≥30 for pattern emergence)'}
 
 ---
 
@@ -285,11 +296,11 @@ ${profile.notable_patterns ? JSON.parse(profile.notable_patterns).map((p: string
 
 ### A. Jungian Archetype Constellation
 - **Dominant Archetype:** ${profile.dominant_archetype || 'Unclassified (pending sufficient data)'}
-- **Secondary Archetypes:** ${profile.secondary_archetypes ? JSON.parse(profile.secondary_archetypes).join(', ') : 'None identified'}
+- **Secondary Archetypes:** ${safeParseArray(profile.secondary_archetypes).length > 0 ? safeParseArray(profile.secondary_archetypes).join(', ') : 'None identified'}
 - **Archetype Confidence:** ${profile.archetype_confidence ? (profile.archetype_confidence * 100).toFixed(0) : 'N/A'}%
 - **Shadow Archetype:** ${profile.shadow_archetype || 'Not yet determined (requires extended observation)'}
 
-**Interpretation:** ${profile.dominant_archetype ? `The ${profile.dominant_archetype} archetype manifestation suggests ${profile.dominant_archetype.includes('Creator') || profile.dominant_archetype.includes('Sage') ? 'high openness to experience and knowledge-seeking orientation' : profile.dominant_archetype.includes('Caregiver') || profile.dominant_archetype.includes('Lover') ? 'interpersonal focus with high agreeableness and empathy' : profile.dominant_archetype.includes('Warrior') || profile.dominant_archetype.includes('Ruler') ? 'goal-directed behavior with elevated conscientiousness and low neuroticism' : 'balanced psychological profile with adaptive behavioral repertoire'}. Secondary archetype influences (${profile.secondary_archetypes ? JSON.parse(profile.secondary_archetypes).join(', ') : 'pending'}) provide nuanced understanding of situational behavioral variance.` : 'Archetype classification pending: requires N≥20 interactions with diverse contextual scenarios for reliable typological assessment.'}
+**Interpretation:** ${profile.dominant_archetype ? `The ${profile.dominant_archetype} archetype manifestation suggests ${profile.dominant_archetype.includes('Creator') || profile.dominant_archetype.includes('Sage') ? 'high openness to experience and knowledge-seeking orientation' : profile.dominant_archetype.includes('Caregiver') || profile.dominant_archetype.includes('Lover') ? 'interpersonal focus with high agreeableness and empathy' : profile.dominant_archetype.includes('Warrior') || profile.dominant_archetype.includes('Ruler') ? 'goal-directed behavior with elevated conscientiousness and low neuroticism' : 'balanced psychological profile with adaptive behavioral repertoire'}. Secondary archetype influences (${safeParseArray(profile.secondary_archetypes).length > 0 ? safeParseArray(profile.secondary_archetypes).join(', ') : 'pending'}) provide nuanced understanding of situational behavioral variance.` : 'Archetype classification pending: requires N≥20 interactions with diverse contextual scenarios for reliable typological assessment.'}
 
 ### B. Big Five Personality Dimensions (OCEAN)
 ${profile.openness_score !== null && profile.conscientiousness_score !== null && profile.extraversion_score !== null && profile.agreeableness_score !== null && profile.neuroticism_score !== null ? `
@@ -364,8 +375,8 @@ ${profile.social_dominance_score !== null ? `
 
 ### D. Interests & Demonstrated Expertise
 - **Technical Knowledge Level:** ${profile.technical_knowledge_level || 'unassessed'}
-- **Primary Interest Domains:** ${profile.primary_interests ? JSON.parse(profile.primary_interests).join(', ') : 'Not yet identified (requires N≥30)'}
-- **Expertise Areas:** ${profile.expertise_areas ? JSON.parse(profile.expertise_areas).join(', ') : 'No demonstrated expertise (requires sustained topical engagement)'}
+- **Primary Interest Domains:** ${safeParseArray(profile.primary_interests).length > 0 ? safeParseArray(profile.primary_interests).join(', ') : 'Not yet identified (requires N≥30)'}
+- **Expertise Areas:** ${safeParseArray(profile.expertise_areas).length > 0 ? safeParseArray(profile.expertise_areas).join(', ') : 'No demonstrated expertise (requires sustained topical engagement)'}
 
 ---
 

@@ -29,6 +29,12 @@ interface TwitterPostResult {
  * @returns A friendly, engaging summary (max 60 chars) or the original title if generation fails
  */
 async function generateTweetSummary(prTitle: string, prNumber: number): Promise<string> {
+  // Check if OpenAI API key is available
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('ℹ️ OPENAI_API_KEY not set, using PR title directly for tweet');
+    return prTitle.substring(0, 60);
+  }
+
   try {
     const prompt = `Generate a very short, engaging tweet summary (max 60 characters) for this GitHub PR:
 

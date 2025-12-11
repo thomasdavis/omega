@@ -9,6 +9,7 @@
 import { Pool } from 'pg';
 
 let pgPool: Pool | null = null;
+let isClosing = false;
 
 /**
  * Get PostgreSQL connection pool
@@ -58,13 +59,22 @@ export async function getPostgresPool(): Promise<Pool> {
 /**
  * Close PostgreSQL connection pool
  * Call this on graceful shutdown
+ *
+ * Uses a guard flag to prevent calling end() multiple times on the same pool,
+ * which can happen when multiple signal handlers trigger simultaneously.
  */
 export async function closePostgresPool(): Promise<void> {
-  if (pgPool) {
+  if (pgPool && !isClosing) {
+    isClosing = true;
     console.log('🔌 Closing PostgreSQL pool...');
-    await pgPool.end();
-    pgPool = null;
-    console.log('✅ PostgreSQL pool closed');
+    try {
+      await pgPool.end();
+      console.log('✅ PostgreSQL pool closed');
+    } catch (error) {
+      console.error('❌ Error closing PostgreSQL pool:', error);
+    } finally {
+      pgPool = null;
+    }
   }
 }
 
