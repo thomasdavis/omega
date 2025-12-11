@@ -32,6 +32,10 @@ jobs:
       - name: Setup Node.js and pnpm
         uses: ./.github/actions/setup-node-pnpm
 
+      - name: Set placeholder DATABASE_URL for build
+        run: |
+          echo "DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder" >> $GITHUB_ENV
+
       - name: Install dependencies (with lockfile auto-fix)
         id: install
         run: |
