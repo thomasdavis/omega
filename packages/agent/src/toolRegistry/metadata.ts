@@ -2220,6 +2220,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'analyzeLinguisticFeatures',
+    name: 'Analyze Linguistic Features',
+    description: 'Analyze conversation messages for interesting linguistic features including phonological, morphological, syntactic, semantic, pragmatic, and discourse patterns',
+    keywords: ['linguistic', 'linguistics', 'language', 'analyze', 'conversation', 'features', 'phonology', 'morphology', 'syntax', 'semantics', 'pragmatics', 'discourse', 'grammar', 'speech'],
+    tags: ['analysis', 'language', 'linguistics', 'conversation'],
+    examples: [
+      'analyze the linguistic features',
+      'analyze linguistic features of this conversation',
+      'what linguistic patterns are in this discussion',
+      'examine the language features',
+      'find interesting linguistic features',
+      'linguistic analysis of our conversation'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'unsandboxSubmit',
     name: 'Unsandbox Submit',
     description: 'Submit code to unsandbox execution environment',
