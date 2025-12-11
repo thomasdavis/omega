@@ -62,7 +62,7 @@ function filterToNaturalConversation(messages: string): string {
  * Analyze messages for linguistic features using the comprehensive linguistics database
  */
 async function analyzeLinguisticFeatures(messages: string): Promise<string> {
-  const prompt = `You are an expert linguist. You have a database of linguistic features below.
+  const prompt = `You are a linguist operating at a PhD level or above, with full command of cross-linguistic typology, semantics, pragmatics, syntax, morphology, phonology, and discourse analysis. You have access to an extensive linguistic features database (800+ typological parameters, semantic roles, alignment systems, argument structures, morphological processes, information-structure phenomena, etc.).
 
 # LINGUISTIC FEATURES DATABASE
 
@@ -74,14 +74,19 @@ ${messages}
 
 # YOUR TASK
 
-Find the **10 most interesting linguistic features** from the database above that appear in or relate to this conversation.
+Your task is to identify the most analytically significant linguistic features in the conversation text provided. "Significant" may mean salient, typologically unusual, theoretically rich, contextually revealing, pragmatically marked, structurally complex, or otherwise noteworthy according to any valid linguistic dimension.
 
-For each one:
-- Name the feature (reference the Parameter_ID from the database)
-- Explain what's interesting about how it appears in this conversation
-- Give a specific example from the text
+You have complete freedom in which features you select and how you analyze them. You may draw from any subfield—semantics, pragmatics, syntax, morphology, phonotactics, typology, discourse, information structure, argument realization, valency alternations, role semantics, etc. You may interpret "feature" broadly to include observable forms, implied structures, emergent patterns, or cross-linguistic parallels.
 
-Write in rich markdown. Be deep, analytical, and specific. Use tables if helpful.`;
+When presenting your findings:
+- Name the feature in terms that map to the database (use its Parameter_ID or label when relevant).
+- Explain why the feature is present, implicated, or illuminated by the text.
+- Give a concrete example from the provided conversation to illustrate the feature.
+- Offer insight: do not merely label; interpret.
+
+Your tone should reflect expert analytic depth (as in a linguistics dissertation or journal article), but you are *not* required to follow any fixed structure, format, or level of verbosity. You may write in paragraphs, lists, tables, enumerations, theoretical mini-essays—whatever best suits your explanatory purposes.
+
+Your goal is not to summarize the text, but to reveal how specific linguistic features—selected from the full database according to your expert judgment—manifest or interact within it. You may focus on the 10 most compelling features, but you are not constrained by any rigid ordering or template.`;
 
   try {
     const result = await generateText({
