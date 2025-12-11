@@ -195,6 +195,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
 
   // Tech Translation
   techTranslate: { path: './tools/techTranslate.js', exportName: 'techTranslateTool' },
+
+  // SDK Integration
+  integrateTpmjsSdk: { path: './tools/integrateTpmjsSdk.js', exportName: 'integrateTpmjsSdkTool' },
 };
 
 /**

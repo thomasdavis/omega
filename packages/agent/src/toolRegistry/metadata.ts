@@ -2332,6 +2332,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'admin'
   },
 
+  {
+    id: 'integrateTpmjsSdk',
+    name: 'Integrate TPMJS SDK',
+    description: 'Fetch and integrate tools from the TPMJS SDK (https://tpmjs.com/sdk). This tool reads the SDK documentation, parses available tools, and prepares them for integration into Omega\'s tool system. Supports multiple modes: fetch, analyze, and integrate.',
+    keywords: ['tpmjs', 'sdk', 'integration', 'fetch', 'tools', 'external', 'api', 'plugin', 'extend', 'import'],
+    tags: ['development', 'integration', 'sdk', 'tools', 'admin'],
+    examples: [
+      'integrate tpmjs sdk',
+      'fetch tpmjs tools',
+      'analyze tpmjs sdk',
+      'import tpmjs sdk',
+      'add tpmjs tools to omega'
+    ],
+    isCore: false,
+    category: 'development'
+  },
+
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
 ];
