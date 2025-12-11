@@ -22,6 +22,7 @@ import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '.
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
+import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -212,6 +213,13 @@ export async function handleMessage(message: Message): Promise<void> {
         negativeSignals: 1,
         ambiguousQueries: 0,
       },
+    });
+
+    // Automatically create GitHub issue for build failure
+    console.log('   📋 Automatically creating GitHub issue for build failure...');
+    handleBuildFailureMessage(message).catch((error) => {
+      console.error('   ⚠️  Failed to create GitHub issue for build failure:', error);
+      // Continue processing the message even if issue creation fails
     });
   }
 

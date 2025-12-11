@@ -29,6 +29,8 @@ export * as pgUserProfileService from './postgres/userProfileService.js';
 export * as pgMusicService from './postgres/musicService.js';
 export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
+export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
+export * as pgComicService from './postgres/comicService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -169,6 +171,37 @@ export type {
   GeneratedImageRecord,
   CreateGeneratedImageInput,
 } from './postgres/imageService.js';
+
+// Export build failure issue service functions for backward compatibility
+export {
+  hasIssueForMessage,
+  recordBuildFailureIssue,
+  getIssueForMessage,
+  listRecentBuildFailureIssues,
+} from './postgres/buildFailureIssueService.js';
+
+// Export build failure issue service types
+export type {
+  BuildFailureIssueRecord,
+} from './postgres/buildFailureIssueService.js';
+
+// Export comic service functions for backward compatibility
+export {
+  saveComicImage,
+  getComicImage,
+  listComicImages,
+  listComicImagesMetadata,
+  getComicImageCount,
+  deleteComicImage,
+  comicImageExists,
+} from './postgres/comicService.js';
+
+// Export comic service types
+export type {
+  ComicImageRecord,
+  CreateComicImageInput,
+  ComicImageMetadata,
+} from './postgres/comicService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {

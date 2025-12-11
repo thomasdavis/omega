@@ -288,7 +288,7 @@ Make it entertaining!`;
         console.warn(`⚠️ [generateComic] No image buffer available, skipping Discord post`);
       }
 
-      // Save image metadata to database
+      // Save image metadata and data to database
       try {
         const filename = issueNumber ? `comic-issue-${issueNumber}-${Date.now()}.png` : `comic-${Date.now()}.png`;
         const description = customPrompt
@@ -316,10 +316,11 @@ Make it entertaining!`;
             timestamp: new Date().toISOString(),
           },
           messageId: discordMessageId || inputDiscordMessageId,
+          imageData: imageResult.imageBuffer,
         });
-        console.log(`💾 Image metadata saved to database`);
+        console.log(`💾 Image metadata and binary data saved to database`);
       } catch (dbError) {
-        console.error(`⚠️ Failed to save image metadata to database:`, dbError);
+        console.error(`⚠️ Failed to save image to database:`, dbError);
       }
 
       const result = {
