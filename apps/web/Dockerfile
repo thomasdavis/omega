@@ -66,8 +66,26 @@ COPY --from=base /app/apps/web/.next ./apps/web/.next
 COPY --from=base /app/apps/web/public ./apps/web/public
 COPY --from=base /app/apps/web/next.config.js ./apps/web/
 
+# Copy startup scripts
+COPY --from=base /app/apps/web/scripts ./apps/web/scripts
+
 # Start Next.js
 WORKDIR /app/apps/web
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
-CMD ["pnpm", "start"]
+
+# Create startup script that syncs comics then starts the app
+RUN echo '#!/bin/sh\n\
+set -e\n\
+echo "🚀 Starting omega-web..."\n\
+\n\
+# Sync comics from Docker image to persistent volume\n\
+if [ -f "/app/apps/web/scripts/sync-comics-to-volume.sh" ]; then\n\
+  sh /app/apps/web/scripts/sync-comics-to-volume.sh\n\
+fi\n\
+\n\
+# Start Next.js\n\
+exec pnpm start\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+CMD ["/app/start.sh"]
