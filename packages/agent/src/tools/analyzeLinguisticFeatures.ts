@@ -62,11 +62,9 @@ function filterToNaturalConversation(messages: string): string {
  * Analyze messages for linguistic features using the comprehensive linguistics database
  */
 async function analyzeLinguisticFeatures(messages: string): Promise<string> {
-  const prompt = `You are an expert linguist performing deep, scholarly analysis. You have access to a comprehensive database of 800+ linguistic features covering phonology, morphology, syntax, semantics, and discourse.
+  const prompt = `You are an expert linguist. You have a database of linguistic features below.
 
 # LINGUISTIC FEATURES DATABASE
-
-This database catalogs linguistic parameters across multiple domains. Use these as your analytical framework:
 
 ${linguisticsData}
 
@@ -76,42 +74,14 @@ ${messages}
 
 # YOUR TASK
 
-Analyze the conversation text through the lens of the linguistic features database above. Your goal is to find the **10 most interesting and relevant linguistic phenomena** in the conversation that connect to features in the database.
+Find the **10 most interesting linguistic features** from the database above that appear in or relate to this conversation.
 
-For each phenomenon you identify:
+For each one:
+- Name the feature (reference the Parameter_ID from the database)
+- Explain what's interesting about how it appears in this conversation
+- Give a specific example from the text
 
-1. **Name the feature** using proper linguistic terminology (reference the database parameter IDs where relevant)
-2. **Categorize it** (Phonological, Morphological, Syntactic, Semantic, Pragmatic, Discourse, Sociolinguistic)
-3. **Explain the phenomenon** - what's happening linguistically and WHY it's interesting
-4. **Quote examples** directly from the conversation
-5. **Connect to theory** - relate it to the database features or broader linguistic concepts
-
-# OUTPUT FORMAT
-
-Write your analysis in **rich Markdown format**:
-
-Start with a brief **Summary** paragraph (2-3 sentences) characterizing the linguistic profile of this conversation.
-
-Then organize findings into thematic sections with emoji headers like:
-- 🔵 **Semantic & Argument Structure** (agents, patients, instruments, thematic roles)
-- 🟣 **Morphological Patterns** (word formation, affixation, compounding)
-- 🟢 **Syntactic Features** (clause structure, word order, embedding)
-- 🟡 **Pragmatic & Discourse** (speech acts, deixis, cohesion, register)
-- 🔴 **Notable Alternations** (voice, valency, promotion/demotion)
-
-Use:
-- **Bold** for linguistic terms and feature names
-- *Italics* for quoted examples
-- \`code formatting\` for morphemes, phonemes, or specific forms
-- Tables where systematic comparison helps (e.g., predicate-by-predicate analysis)
-- > Blockquotes for longer examples
-- Bullet points for lists of instances
-
-Be thorough, analytical, and deeply engaged with the linguistic data. Don't just list features—explain their significance and interrelationships.
-
-End with a brief note offering to explore specific aspects deeper (e.g., "I can provide deeper analysis of the inanimate actor constructions, or examine the nominalization patterns in more detail.").
-
-# YOUR ANALYSIS`;
+Write in rich markdown. Be deep, analytical, and specific. Use tables if helpful.`;
 
   try {
     const result = await generateText({
