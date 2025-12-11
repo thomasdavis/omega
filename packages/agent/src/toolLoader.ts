@@ -186,6 +186,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
   psychoAnalysis: { path: './tools/psychoAnalysis.js', exportName: 'psychoAnalysisTool' },
   psychoHistory: { path: './tools/psychoHistory.js', exportName: 'psychoHistoryTool' },
+  analyzeLinguisticFeatures: { path: './tools/analyzeLinguisticFeatures.js', exportName: 'analyzeLinguisticFeaturesTool' },
 
   // Autonomous tool management
   createToolAutonomously: { path: './tools/createToolAutonomously.js', exportName: 'createToolAutonomouslyTool' },
