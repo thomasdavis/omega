@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { listComicImagesMetadata } from '@repo/database';
 
 /**
  * Check if running in production with persistent volume
@@ -33,7 +34,32 @@ function getComicsDir(): string {
 
 export async function GET() {
   try {
-    // Path to comics directory (shared volume in production)
+    // Try to fetch from database first
+    try {
+      const dbComics = await listComicImagesMetadata(100, 0);
+
+      if (dbComics.length > 0) {
+        const comics = dbComics.map((comic) => ({
+          id: comic.comic_id,
+          number: comic.comic_id,
+          filename: `comic_${comic.comic_id}.png`,
+          url: `/api/comics/${comic.comic_id}`,
+          createdAt: comic.created_at.toISOString(),
+          size: comic.image_size || 0,
+        }));
+
+        return NextResponse.json({
+          success: true,
+          comics,
+          count: comics.length,
+          source: 'database',
+        });
+      }
+    } catch (dbError) {
+      console.warn('Failed to fetch comics from database, falling back to filesystem:', dbError);
+    }
+
+    // Fallback to filesystem if database fetch fails or returns no results
     const comicsDir = getComicsDir();
 
     // Check if directory exists
@@ -82,6 +108,7 @@ export async function GET() {
       success: true,
       comics,
       count: comics.length,
+      source: 'filesystem',
     });
   } catch (error) {
     console.error('Error listing comics:', error);

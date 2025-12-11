@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { getComicImage } from '@repo/database';
 
 /**
  * Check if running in production with persistent volume
@@ -33,6 +34,25 @@ export async function GET(
   try {
     const { filename } = await params;
 
+    // Try parsing as comic ID number first (for database lookup)
+    const comicIdMatch = filename.match(/^(\d+)$/);
+    if (comicIdMatch) {
+      const comicId = parseInt(comicIdMatch[1], 10);
+      try {
+        const comic = await getComicImage(comicId);
+        if (comic && comic.image_data) {
+          return new NextResponse(comic.image_data, {
+            headers: {
+              'Content-Type': 'image/png',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          });
+        }
+      } catch (dbError) {
+        console.warn(`Failed to fetch comic ${comicId} from database, falling back to filesystem:`, dbError);
+      }
+    }
+
     // Security: Only allow PNG files with comic_ prefix
     if (!filename.endsWith('.png') || !filename.startsWith('comic_')) {
       return NextResponse.json(
@@ -44,6 +64,26 @@ export async function GET(
       );
     }
 
+    // Extract comic ID from filename for database lookup
+    const filenameMatch = filename.match(/^comic_(\d+)\.png$/);
+    if (filenameMatch) {
+      const comicId = parseInt(filenameMatch[1], 10);
+      try {
+        const comic = await getComicImage(comicId);
+        if (comic && comic.image_data) {
+          return new NextResponse(comic.image_data, {
+            headers: {
+              'Content-Type': 'image/png',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+            },
+          });
+        }
+      } catch (dbError) {
+        console.warn(`Failed to fetch comic ${comicId} from database, falling back to filesystem:`, dbError);
+      }
+    }
+
+    // Fallback to filesystem
     const comicsDir = getComicsDir();
     const filePath = join(comicsDir, filename);
 
