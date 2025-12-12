@@ -1147,6 +1147,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'ffmpegVideoCreator',
+    name: 'FFmpeg Video Creator',
+    description: 'Create videos from sequences of still images using FFmpeg automation. Upload or provide URLs to a series of images to generate MP4 videos.',
+    keywords: ['video', 'ffmpeg', 'images', 'sequence', 'animation', 'create video', 'mp4', 'cartoon', 'frames', 'animate', 'image to video'],
+    tags: ['content', 'video', 'creation', 'media', 'artifact'],
+    examples: [
+      'create a video from images',
+      'make video from pictures',
+      'combine images into video',
+      'animate image sequence',
+      'create video from cartoon frames',
+      'generate mp4 from images',
+      'image sequence to video',
+      'make animation from images'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateMarkdown',
     name: 'Generate Markdown',
     description: 'Generate formatted markdown documents',

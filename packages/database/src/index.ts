@@ -112,6 +112,12 @@ export {
   getMp3FileCount,
   getMp3FileMetadata,
   listMp3FilesMetadata,
+  saveVideoFile,
+  getVideoFile,
+  listVideoFiles,
+  getVideoFileCount,
+  getVideoFileMetadata,
+  listVideoFilesMetadata,
 } from './postgres/musicService.js';
 
 // Export music service types
@@ -122,6 +128,8 @@ export type {
   CreateMidiFileInput,
   Mp3FileRecord,
   CreateMp3FileInput,
+  VideoFileRecord,
+  CreateVideoFileInput,
 } from './postgres/musicService.js';
 
 // Export image service functions for backward compatibility
