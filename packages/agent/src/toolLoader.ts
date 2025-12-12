@@ -135,6 +135,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   generateMyPortrait: { path: './tools/generateMyPortrait.js', exportName: 'generateMyPortraitTool' },
   generateCaricature: { path: './tools/generateCaricature.js', exportName: 'generateCaricatureTool' },
 
+  // AI Provider Integration tools
+  openrouterCompletion: { path: './tools/openrouterCompletion.js', exportName: 'openrouterCompletionTool' },
+
   // Blog and documentation tools
   createBlogPost: { path: './tools/createBlogPost.js', exportName: 'createBlogPostTool' },
   updateBlogPost: { path: './tools/updateBlogPost.js', exportName: 'updateBlogPostTool' },
