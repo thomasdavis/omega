@@ -200,8 +200,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   integrateTpmjsSdk: { path: './tools/integrateTpmjsSdk.js', exportName: 'integrateTpmjsSdkTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
-  tpmjsRegistrySearch: { path: './tools/tpmjsRegistrySearch.js', exportName: 'tpmjsRegistrySearchTool' },
-  tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecute.js', exportName: 'tpmjsRegistryExecuteTool' },
+  // Imported from official @tpmjs npm packages
+  tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
+  tpmjsRegistryExecute: { path: '@tpmjs/registry-execute', exportName: 'registryExecuteTool' },
 };
 
 /**
