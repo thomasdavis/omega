@@ -22,7 +22,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   calculator: { path: './tools/calculator.js', exportName: 'calculatorTool' },
   webFetch: { path: './tools/webFetch.js', exportName: 'webFetchTool' },
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },
-  generateHtmlPage: { path: './tools/generateHtmlPage.js', exportName: 'generateHtmlPageTool' },
   whoami: { path: './tools/whoami.js', exportName: 'whoamiTool' },
   listTools: { path: './tools/listTools.js', exportName: 'listToolsTool' },
 
@@ -57,7 +56,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   pgCreateIndex: { path: '@repo/database', exportName: 'pgCreateIndexTool' },
   pgListIndexes: { path: '@repo/database', exportName: 'pgListIndexesTool' },
   pgDropIndex: { path: '@repo/database', exportName: 'pgDropIndexTool' },
-  analyzeMessageWords: { path: '@repo/database', exportName: 'analyzeMessageWordsTool' },
 
   // Todo List CRUD tools (5) - imported from @repo/database
   createTodo: { path: '@repo/database', exportName: 'createTodoTool' },
