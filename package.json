@@ -16,7 +16,7 @@
     "prepare": "husky || true"
   },
   "devDependencies": {
-    "@types/node": "^22.8.6",
+    "@types/node": "^22.19.1",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
