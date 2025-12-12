@@ -281,26 +281,25 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
       },
     });
 
-    console.log('🔍 DEBUG: streamText call initiated successfully');
-    console.log('🔍 DEBUG: streamResult type =', typeof streamResult);
-    console.log('🔍 DEBUG: Now waiting for streamResult.text...');
-
     // Wait for the full stream to complete and get final text
     let finalText;
     try {
       finalText = await streamResult.text;
-      console.log('🔍 DEBUG: Successfully got finalText from stream');
     } catch (textError) {
-      console.error('🔍 DEBUG: Error getting text from stream:', textError);
+      console.error('❌ Error getting text from stream:', textError);
       throw textError;
     }
 
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
-    console.log(`🔍 DEBUG: Returning tool calls:`, JSON.stringify(toolCalls, null, 2));
 
-    // Debug: Log the final text
-    console.log(`🔍 DEBUG: finalText =`, finalText);
-    console.log(`🔍 DEBUG: finalText.length =`, finalText?.length || 0);
+    // Concise debug logging - only show tool names, not full results
+    if (toolCalls.length > 0) {
+      const toolSummary = toolCalls.map(tc => tc.toolName).join(', ');
+      console.log(`🔧 Tools used: ${toolSummary}`);
+    }
+
+    // Log final response length (not full content to reduce noise)
+    console.log(`📊 Response length: ${finalText?.length || 0} chars`);
 
     // Update status: success
     statusManager.setState('success');
