@@ -198,6 +198,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // SDK Integration
   integrateTpmjsSdk: { path: './tools/integrateTpmjsSdk.js', exportName: 'integrateTpmjsSdkTool' },
 
+  // LLM Provider Integrations
+  openrouterChat: { path: './tools/openrouterChat.js', exportName: 'openrouterChatTool' },
+
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
