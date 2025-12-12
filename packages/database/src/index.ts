@@ -31,6 +31,7 @@ export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
 export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
 export * as pgComicService from './postgres/comicService.js';
+export * as pgRssService from './postgres/rssService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -173,6 +174,22 @@ export type {
   CreateComicImageInput,
   ComicImageMetadata,
 } from './postgres/comicService.js';
+
+// Export RSS service functions for backward compatibility
+export {
+  saveRssFeedItem,
+  rssFeedItemExists,
+  listRssFeedItems,
+  getRssFeedItemByMessageId,
+  getRssFeedItemCount,
+  deleteRssFeedItem,
+} from './postgres/rssService.js';
+
+// Export RSS service types
+export type {
+  RssFeedItemRecord,
+  CreateRssFeedItemInput,
+} from './postgres/rssService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
