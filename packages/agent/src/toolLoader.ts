@@ -154,6 +154,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   sentimentClassification: { path: './tools/sentimentClassification.js', exportName: 'sentimentClassificationTool' },
   axllmExecutor: { path: './tools/axllmExecutor.js', exportName: 'axllmExecutorTool' },
   weather: { path: './tools/weather.js', exportName: 'weatherTool' },
+  locationMap: { path: './tools/locationMap.js', exportName: 'locationMapTool' },
   linuxAdvantages: { path: './tools/linuxAdvantages.js', exportName: 'linuxAdvantagesTool' },
   jsonAgentGenerator: { path: './tools/jsonAgentGenerator.js', exportName: 'jsonAgentGeneratorTool' },
   hackerNewsPhilosophy: { path: './tools/hackerNewsPhilosophy.js', exportName: 'hackerNewsPhilosophyTool' },
