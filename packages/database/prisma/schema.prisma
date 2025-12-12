@@ -597,3 +597,15 @@ model TpmjsIntegrationLog {
   @@index([integrationMode], map: "idx_tpmjs_integration_logs_mode")
   @@map("tpmjs_integration_logs")
 }
+
+model RssFeedItem {
+  id        String   @id
+  messageId String   @unique @map("message_id") @db.VarChar(255)
+  summary   String   @db.Text
+  link      String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([messageId], map: "idx_rss_message_id")
+  @@index([createdAt(sort: Desc)], map: "idx_rss_created_at")
+  @@map("rss_feed_items")
+}
