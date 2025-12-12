@@ -95,22 +95,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
-    id: 'generateHtmlPage',
-    name: 'Generate HTML Page',
-    description: 'Generate complete HTML pages with custom styling and interactivity',
-    keywords: ['html', 'webpage', 'website', 'create', 'generate', 'page', 'web'],
-    tags: ['content', 'html', 'web', 'core'],
-    examples: [
-      'generate an HTML page',
-      'create a portfolio page',
-      'make a landing page',
-      'build a webpage'
-    ],
-    isCore: true,
-    category: 'content'
-  },
-
-  {
     id: 'whoami',
     name: 'Who Am I',
     description: 'Explain bot capabilities and features',
@@ -562,22 +546,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'drop PostgreSQL index',
       'delete index',
       'remove postgres index'
-    ],
-    category: 'database'
-  },
-
-  {
-    id: 'analyzeMessageWords',
-    name: 'Analyze Message Words',
-    description: 'Count the most commonly used words in recent messages from the messages table',
-    keywords: ['messages', 'words', 'analyze', 'count', 'common', 'frequent', 'vocabulary', 'keywords', 'conversation', 'text analysis'],
-    tags: ['database', 'postgresql', 'analysis', 'messages', 'text'],
-    examples: [
-      'what are the most common words in recent messages',
-      'analyze message vocabulary',
-      'count frequent words in conversations',
-      'show top words in last 100 messages',
-      'keyword analysis of messages'
     ],
     category: 'database'
   },
@@ -2401,7 +2369,6 @@ export const CORE_TOOLS: string[] = [
   'unsandbox',
   'webFetch',
   'fileUpload',
-  'generateHtmlPage',
   'whoami',
   // TPMJS Registry - Always available for discovering and executing external tools
   'tpmjsRegistrySearch',
