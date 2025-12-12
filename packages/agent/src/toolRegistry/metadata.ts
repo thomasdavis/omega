@@ -2389,7 +2389,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'access multiple llm models',
       'generate text with openrouter'
     ],
-    category: 'ai'
+    category: 'specialized'
   },
 
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
