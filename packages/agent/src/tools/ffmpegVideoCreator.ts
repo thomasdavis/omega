@@ -217,18 +217,8 @@ async function createVideoFromImages(
       createdAt: videoRecord.createdAt,
     };
   } catch (error) {
-    // Cleanup on error
-    try {
-      const files = imagePaths || [];
-      for (const file of files) {
-        if (existsSync(file)) {
-          unlinkSync(file);
-        }
-      }
-    } catch (cleanupError) {
-      console.warn('⚠️  Warning: Failed to cleanup temporary files after error:', cleanupError);
-    }
-
+    // Cleanup on error - imagePaths is only available in the try block
+    console.warn('⚠️  Warning: Error occurred during video creation, temporary files may need manual cleanup:', error);
     throw error;
   }
 }

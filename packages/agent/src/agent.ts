@@ -28,7 +28,6 @@ import { moodUplifterTool } from './tools/moodUplifter.js';
 import { tellJokeTool } from './tools/tellJoke.js';
 import { fishJokeTool } from './tools/fishJoke.js';
 import { tellHistoricalFactTool } from './tools/tellHistoricalFact.js';
-import { generateHtmlPageTool } from './tools/generateHtmlPage.js';
 import { recipeGeneratorTool } from './tools/recipeGenerator.js';
 import { oodaTool } from './tools/ooda.js';
 import { renderChartTool } from './tools/renderChart.js';
