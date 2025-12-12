@@ -2393,6 +2393,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'development'
   },
 
+  // ===== LLM PROVIDER INTEGRATIONS =====
+  {
+    id: 'openrouterChat',
+    name: 'OpenRouter Chat',
+    description: 'Generate chat completions using OpenRouter API. Provides access to multiple LLM providers including Claude, GPT-4, Gemini, Llama, and more through a unified API.',
+    keywords: ['openrouter', 'llm', 'chat', 'completion', 'ai', 'model', 'claude', 'gpt', 'gemini', 'llama', 'language model', 'generation'],
+    tags: ['ai', 'llm', 'chat', 'generation', 'openrouter'],
+    examples: [
+      'use openrouter to generate text',
+      'chat with claude via openrouter',
+      'generate completion with gpt-4',
+      'use openrouter for ai generation',
+      'access multiple llm models',
+      'generate text with openrouter'
+    ],
+    category: 'specialized'
+  },
+
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
 ];
