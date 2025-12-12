@@ -247,6 +247,12 @@ importers:
       '@slidev/cli':
         specifier: ^0.50.0
         version: 0.50.0(@babel/parser@7.28.5)(@nuxt/kit@3.20.1(magicast@0.3.5))(@types/markdown-it@14.1.2)(@types/node@20.19.25)(@vue/compiler-sfc@3.5.24)(magicast@0.3.5)(playwright-chromium@1.56.1)(postcss@8.5.6)(react@19.2.0)(rollup@4.53.3)(terser@5.44.1)(tsx@4.20.6)
+      '@tpmjs/registry-execute':
+        specifier: ^0.1.0
+        version: 0.1.0(zod@3.25.76)
+      '@tpmjs/registry-search':
+        specifier: ^0.1.0
+        version: 0.1.0(zod@3.25.76)
       abcjs:
         specifier: ^6.5.2
         version: 6.5.2
@@ -419,6 +425,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/gateway@2.0.0-beta.68':
+    resolution: {integrity: sha512-eYv3hBfu/M+0XmxE1RoH4X7uhYplNbSDvRClzirKzTY+ZM5yQwP86L3DqLR7Y9/vH7yrQaSIwsBT3OMmcBnGaw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/openai@2.0.67':
     resolution: {integrity: sha512-JhB3fUpY+IxAocyJt2PHuhfNwH+e+rDbZ8Q+d0hgSyNycuPRrV0xutLaf7mgDTvjr5FCrVEkXmM73tJprzZMiA==}
     engines: {node: '>=18'}
@@ -447,12 +459,32 @@ packages:
       effect:
         optional: true
 
+  '@ai-sdk/provider-utils@4.0.0-beta.40':
+    resolution: {integrity: sha512-5345iQxWV1coKbs85vkrThsEmiFcIkgqMZUKFrVDM7E4FRqgsnWtn4394/RnShOKRun5K7TWIYCLz3GfRGy/Ig==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@valibot/to-json-schema': ^1.3.0
+      arktype: ^2.1.22
+      effect: ^3.18.4
+      zod: ^3.25.76 || ^4.1.8
+    peerDependenciesMeta:
+      '@valibot/to-json-schema':
+        optional: true
+      arktype:
+        optional: true
+      effect:
+        optional: true
+
   '@ai-sdk/provider@2.0.0':
     resolution: {integrity: sha512-6o7Y2SeO9vFKB8lArHXehNuusnpddKPk7xqL7T2/b+OvXMRIXUO1rR4wcv1hAFUAT9avGZshty3Wlua/XA7TvA==}
     engines: {node: '>=18'}
 
   '@ai-sdk/provider@3.0.0-beta.16':
     resolution: {integrity: sha512-R62Z0fziX467Eu6MtVhkmHm0VFtJrq4vPGo8w4mcc4LhSPncHwn+b9yoyxv3f2pkWyUAhPR4ttgWyZoFG/lXIA==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@3.0.0-beta.22':
+    resolution: {integrity: sha512-Ss0tgCZwzccS6MREhjAI28lkAV5PfJnoBFbv8mas74Cs5OseFKqxg3dEd1lRL8mf4Qapu1xpBLkV4/ldSShSdA==}
     engines: {node: '>=18'}
 
   '@alloc/quick-lru@5.2.0':
@@ -2031,6 +2063,12 @@ packages:
     resolution: {integrity: sha512-+PmQX0PiAYPMeVYe237LJAYvOMYW1j2rH5YROyS3b4CTVJum34HfRvKvAzozHAQG0TnHNdUfY9nCeUyRAs//cw==}
     engines: {node: '>=14.16'}
 
+  '@tpmjs/registry-execute@0.1.0':
+    resolution: {integrity: sha512-F6Ehclsg4VeO0anzzqFBESPU32lg4OzQCHspTzqEX+cmFhYd4Oc6icqZrlii5i3QuYAg7RqNyLVhKWXuJFDvnw==}
+
+  '@tpmjs/registry-search@0.1.0':
+    resolution: {integrity: sha512-THKDq6ntXoecX5xtCZWXY8YCWMHe7tey42Blg7KrWZRPm1XmjfN7eJ9AKsXl6w6KWykhPPX7IEq8HlF7nDCQ1Q==}
+
   '@tweenjs/tween.js@23.1.3':
     resolution: {integrity: sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA==}
 
@@ -2556,6 +2594,10 @@ packages:
     resolution: {integrity: sha512-yNEQvPcVrK9sIe637+I0jD6leluPxzwJKx/Haw6F4H77CdDsszUn5V3o96LPziXkSNE2B83+Z3mjqGKBK/R6Gg==}
     engines: {node: '>= 20'}
 
+  '@vercel/oidc@3.0.5':
+    resolution: {integrity: sha512-fnYhv671l+eTTp48gB4zEsTW/YtRgRPnkI2nT7x6qw5rkI1Lq2hTmQIpHPgyThI0znLK+vX2n9XxKdXZ7BUbbw==}
+    engines: {node: '>= 20'}
+
   '@vitejs/plugin-vue-jsx@4.2.0':
     resolution: {integrity: sha512-DSTrmrdLp+0LDNF77fqrKfx7X0ErRbOcUAgJL/HbSesqQwoUvUQ4uYQqaex+rovqgGcoPqVk+AwUh3v9CuiYIw==}
     engines: {node: ^18.0.0 || >=20.0.0}
@@ -2791,6 +2833,12 @@ packages:
   agentkeepalive@4.6.0:
     resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
     engines: {node: '>= 8.0.0'}
+
+  ai@6.0.0-beta.124:
+    resolution: {integrity: sha512-Apl4uNZLzc4sAUtu4W77DpM9o+bJJB46A/ayVLDck3MBv+rw4/qGBY9H6/gY9Xpc/CeVogyyEr1DxBMv47olCw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   ai@6.0.0-beta.99:
     resolution: {integrity: sha512-Z/TQByUwZepN2425FepmvDNNpqVufNtqv1QJju6tGL8uiWLwHc9HKN36+joSuCozeZq9JE77FaQ0TBuRh6Hh/A==}
@@ -6737,6 +6785,17 @@ snapshots:
       - arktype
       - effect
 
+  '@ai-sdk/gateway@2.0.0-beta.68(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.0-beta.22
+      '@ai-sdk/provider-utils': 4.0.0-beta.40(zod@3.25.76)
+      '@vercel/oidc': 3.0.5
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
+
   '@ai-sdk/openai@2.0.67(zod@3.25.76)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -6757,11 +6816,22 @@ snapshots:
       eventsource-parser: 3.0.6
       zod: 3.25.76
 
+  '@ai-sdk/provider-utils@4.0.0-beta.40(zod@3.25.76)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.0-beta.22
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.6
+      zod: 3.25.76
+
   '@ai-sdk/provider@2.0.0':
     dependencies:
       json-schema: 0.4.0
 
   '@ai-sdk/provider@3.0.0-beta.16':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@3.0.0-beta.22':
     dependencies:
       json-schema: 0.4.0
 
@@ -8687,6 +8757,24 @@ snapshots:
     dependencies:
       defer-to-connect: 2.0.1
 
+  '@tpmjs/registry-execute@0.1.0(zod@3.25.76)':
+    dependencies:
+      ai: 6.0.0-beta.124(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
+      - zod
+
+  '@tpmjs/registry-search@0.1.0(zod@3.25.76)':
+    dependencies:
+      ai: 6.0.0-beta.124(zod@3.25.76)
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
+      - zod
+
   '@tweenjs/tween.js@23.1.3': {}
 
   '@tybys/wasm-util@0.10.1':
@@ -9364,6 +9452,8 @@ snapshots:
 
   '@vercel/oidc@3.0.3': {}
 
+  '@vercel/oidc@3.0.5': {}
+
   '@vitejs/plugin-vue-jsx@4.2.0(vite@6.4.1(@types/node@20.19.25)(jiti@2.6.1)(terser@5.44.1)(tsx@4.20.6)(yaml@2.8.1))(vue@3.5.24(typescript@5.6.3))':
     dependencies:
       '@babel/core': 7.28.5
@@ -9733,6 +9823,18 @@ snapshots:
   agentkeepalive@4.6.0:
     dependencies:
       humanize-ms: 1.2.1
+
+  ai@6.0.0-beta.124(zod@3.25.76):
+    dependencies:
+      '@ai-sdk/gateway': 2.0.0-beta.68(zod@3.25.76)
+      '@ai-sdk/provider': 3.0.0-beta.22
+      '@ai-sdk/provider-utils': 4.0.0-beta.40(zod@3.25.76)
+      '@opentelemetry/api': 1.9.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@valibot/to-json-schema'
+      - arktype
+      - effect
 
   ai@6.0.0-beta.99(zod@3.25.76):
     dependencies:
