@@ -36,6 +36,10 @@ function getInjectedEnvVars(): Record<string, string> {
     envVars.BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY;
   }
 
+  if (process.env.UNSANDBOX_API_KEY) {
+    envVars.UNSANDBOX_API_KEY = process.env.UNSANDBOX_API_KEY;
+  }
+
   return envVars;
 }
 
