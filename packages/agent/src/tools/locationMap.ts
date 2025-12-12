@@ -101,6 +101,20 @@ function generateMapsLink(
   return `https://www.google.com/maps/@${latitude},${longitude},${zoom}z`;
 }
 
+// Google Maps Geocoding API response type
+interface GeocodeResponse {
+  status: string;
+  results?: Array<{
+    formatted_address: string;
+    geometry: {
+      location: {
+        lat: number;
+        lng: number;
+      };
+    };
+  }>;
+}
+
 // Geocode address/place to coordinates using Google Maps Geocoding API
 async function geocodeLocation(address: string): Promise<{
   success: boolean;
@@ -131,7 +145,7 @@ async function geocodeLocation(address: string): Promise<{
       };
     }
 
-    const data = await response.json();
+    const data = await response.json() as GeocodeResponse;
 
     if (data.status !== 'OK' || !data.results || data.results.length === 0) {
       return {
