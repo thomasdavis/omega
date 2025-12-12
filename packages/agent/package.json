@@ -18,6 +18,8 @@
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
     "@slidev/cli": "^0.50.0",
+    "@tpmjs/registry-execute": "^0.1.0",
+    "@tpmjs/registry-search": "^0.1.0",
     "abcjs": "^6.5.2",
     "ai": "6.0.0-beta.99",
     "discord.js": "^14.24.2",
