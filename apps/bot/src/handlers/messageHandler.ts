@@ -550,12 +550,20 @@ export async function handleMessage(message: Message): Promise<void> {
           const durationText = toolCall.duration ? ` • ${toolCall.duration.toFixed(2)}s` : '';
           let plainTextReport = `🔧 ${i + 1}/${result.toolCalls.length}: ${toolCall.toolName}\n${statusEmoji} ${statusText}${durationText}`;
 
-          // Add result info if available and not too verbose
+          // Add args info
+          if (toolCall.args && typeof toolCall.args === 'object') {
+            const argsStr = JSON.stringify(toolCall.args, null, 2);
+            // Truncate args if too long (keep under 800 chars for readability)
+            const truncatedArgs = argsStr.length > 800 ? argsStr.substring(0, 800) + '\n... (truncated)' : argsStr;
+            plainTextReport += `\n**Args:**\n\`\`\`json\n${truncatedArgs}\n\`\`\``;
+          }
+
+          // Add result info - always show, truncate if too long
           if (toolCall.result && typeof toolCall.result === 'object') {
             const resultStr = JSON.stringify(toolCall.result, null, 2);
-            if (resultStr.length < 500) {
-              plainTextReport += `\n\`\`\`json\n${resultStr}\n\`\`\``;
-            }
+            // Truncate result if too long (keep under 1500 chars to stay within Discord limits after chunking)
+            const truncatedResult = resultStr.length > 1500 ? resultStr.substring(0, 1500) + '\n... (truncated)' : resultStr;
+            plainTextReport += `\n**Result:**\n\`\`\`json\n${truncatedResult}\n\`\`\``;
           }
 
           const channel = message.channel;
