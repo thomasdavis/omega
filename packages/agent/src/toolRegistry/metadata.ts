@@ -1693,6 +1693,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'locationMap',
+    name: 'Location Map',
+    description: 'Detect physical locations (GPS coordinates, addresses, zip codes, postal codes, place names) and generate Google Maps static image snapshot and clickable link',
+    keywords: ['location', 'map', 'maps', 'google maps', 'address', 'coordinates', 'gps', 'latitude', 'longitude', 'zip code', 'postal code', 'place', 'directions', 'geography', 'geocode'],
+    tags: ['research', 'maps', 'location', 'utility', 'geography'],
+    examples: [
+      'show me a map of',
+      'where is 47.6205, -122.3493',
+      'map of Seattle',
+      'show 10001 on a map',
+      'get location for',
+      'coordinates of',
+      'map this address',
+      'show me where'
+    ],
+    category: 'research'
+  },
+
+  {
     id: 'linuxAdvantages',
     name: 'Linux Advantages',
     description: 'Educational content about Linux and open-source',
