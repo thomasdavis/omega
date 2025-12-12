@@ -200,9 +200,10 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   integrateTpmjsSdk: { path: './tools/integrateTpmjsSdk.js', exportName: 'integrateTpmjsSdkTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
-  // Imported from official @tpmjs npm packages
+  // Search imported directly from @tpmjs/registry-search
+  // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
   tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
-  tpmjsRegistryExecute: { path: '@tpmjs/registry-execute', exportName: 'registryExecuteTool' },
+  tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
 };
 
 /**
