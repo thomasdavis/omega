@@ -114,6 +114,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   abcToMidi: { path: './tools/abcToMidi.js', exportName: 'abcToMidiTool' },
   abcToMp3: { path: './tools/abcToMp3.js', exportName: 'abcToMp3Tool' },
   ffmpegVideoCreator: { path: './tools/ffmpegVideoCreator.js', exportName: 'ffmpegVideoCreatorTool' },
+  novaVideoCreator: { path: './tools/novaVideoCreator.js', exportName: 'novaVideoCreatorTool' },
   generateMarkdown: { path: './tools/generateMarkdown.js', exportName: 'generateMarkdownTool' },
   generateCrossword: { path: './tools/generateCrossword.js', exportName: 'generateCrosswordTool' },
   generateMarketingCopy: { path: './tools/generateMarketingCopy.js', exportName: 'generateMarketingCopyTool' },
