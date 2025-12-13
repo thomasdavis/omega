@@ -5,6 +5,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import { saveLocationMention, isPostGISAvailable } from '@repo/database';
 
 // Helper function to detect and parse location from text
 function detectLocation(text: string): {
@@ -172,14 +173,16 @@ async function geocodeLocation(address: string): Promise<{
 }
 
 export const locationMapTool = tool({
-  description: 'Detect physical locations (GPS coordinates, addresses, zip codes, postal codes, or place names) and generate a Google Maps static image snapshot and clickable link. Useful when users mention locations, want to see a map, or ask about places.',
+  description: 'Detect physical locations (GPS coordinates, addresses, zip codes, postal codes, or place names) and generate a Google Maps static image snapshot and clickable link. Useful when users mention locations, want to see a map, or ask about places. Automatically saves location data to PostGIS if available.',
   inputSchema: z.object({
     text: z.string().describe('The text to scan for location mentions (e.g., "47.6205, -122.3493" or "Seattle, WA" or "10001")'),
     zoom: z.number().min(1).max(21).default(18).optional().describe('Google Maps zoom level (1-21, default 18 which shows ~1000 feet on each side)'),
     width: z.number().min(100).max(640).default(600).optional().describe('Map image width in pixels (max 640)'),
     height: z.number().min(100).max(640).default(400).optional().describe('Map image height in pixels (max 640)'),
+    userId: z.string().optional().describe('User ID for saving location mention to database'),
+    username: z.string().optional().describe('Username for saving location mention to database'),
   }),
-  execute: async ({ text, zoom = 18, width = 600, height = 400 }) => {
+  execute: async ({ text, zoom = 18, width = 600, height = 400, userId, username }) => {
     console.log(`🗺️ Detecting location in text: "${text}"`);
 
     // Step 1: Detect location in text
@@ -236,7 +239,32 @@ export const locationMapTool = tool({
     console.log(`   Static: ${staticMapUrl}`);
     console.log(`   Link: ${mapsLink}`);
 
-    // Step 4: Return formatted response
+    // Step 4: Save to PostGIS database if userId and username provided
+    let savedToDatabase = false;
+    let locationId: number | undefined;
+
+    if (userId && username) {
+      try {
+        const postgisAvailable = await isPostGISAvailable();
+        if (postgisAvailable) {
+          locationId = await saveLocationMention(
+            userId,
+            username,
+            formattedAddress || detection.location,
+            latitude,
+            longitude
+          );
+          savedToDatabase = true;
+          console.log(`💾 Location saved to database with ID: ${locationId}`);
+        } else {
+          console.log('⚠️  PostGIS not available - location not saved to database');
+        }
+      } catch (error) {
+        console.error('❌ Failed to save location to database:', error);
+      }
+    }
+
+    // Step 5: Return formatted response
     return {
       success: true,
       location: {
@@ -250,6 +278,10 @@ export const locationMapTool = tool({
         staticImageUrl: staticMapUrl,
         interactiveLink: mapsLink,
         zoom,
+      },
+      database: {
+        saved: savedToDatabase,
+        locationId,
       },
       // Include markdown-formatted output for easy Discord posting
       markdown: `**📍 Location: ${formattedAddress || detection.location}**\n\n` +
