@@ -1662,6 +1662,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'queryDecisionLogs',
+    name: 'Query Decision Logs',
+    description: 'Query and analyze decision logs to learn from past decisions, track patterns, and support autonomous growth',
+    keywords: ['decision', 'logs', 'query', 'analyze', 'learn', 'autonomous', 'growth', 'patterns', 'audit', 'history', 'tracking', 'sentiment', 'confidence', 'tools'],
+    tags: ['database', 'analytics', 'autonomous', 'decision', 'learning'],
+    examples: [
+      'show recent decisions',
+      'analyze my decision patterns',
+      'search decision logs for sentiment',
+      'how many decisions have I made',
+      'what are my confidence trends',
+      'show me tool execution decisions',
+      'query decision logs',
+      'analyze past decisions'
+    ],
+    category: 'analytics'
+  },
+
+  {
     id: 'reportMessageAsIssue',
     name: 'Report Message as Issue',
     description: 'Report Discord message as GitHub issue',
