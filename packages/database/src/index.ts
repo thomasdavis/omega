@@ -32,6 +32,7 @@ export * as newImageService from './postgres/newImageService.js';
 export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
 export * as pgComicService from './postgres/comicService.js';
 export * as pgConversationService from './postgres/conversationService.js';
+export * as pgDecisionLogService from './postgres/decisionLogService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -213,6 +214,22 @@ export {
   getRecentConversations,
   deleteOldConversations,
 } from './postgres/conversationService.js';
+
+// Export decision log service functions
+export {
+  logDecision,
+  queryDecisionLogs,
+  getUserDecisionLogs,
+  getRecentDecisionLogs,
+  countDecisionLogs,
+  searchDecisionLogs,
+} from './postgres/decisionLogService.js';
+
+// Export decision log service types
+export type {
+  DecisionLogRecord,
+  LogDecisionParams,
+} from './postgres/decisionLogService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {

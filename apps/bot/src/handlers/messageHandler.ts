@@ -15,7 +15,7 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
@@ -116,6 +116,29 @@ export async function handleMessage(message: Message): Promise<void> {
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
+
+  // Log the response decision to the append-only audit trail
+  try {
+    await logDecision({
+      userId: message.author.id,
+      username: message.author.username,
+      decisionDescription: `Response Decision: ${decision.shouldRespond ? 'RESPOND' : 'IGNORE'} - ${decision.reason}`,
+      blame: 'shouldRespond.ts',
+      metadata: {
+        decisionType: 'shouldRespond',
+        shouldRespond: decision.shouldRespond,
+        confidence: decision.confidence,
+        reason: decision.reason,
+        channelId: message.channel.id,
+        channelName: channelName,
+        messageId: message.id,
+        messageSnippet: message.content.substring(0, 100),
+      },
+    });
+  } catch (decisionLogError) {
+    console.error('⚠️  Failed to log decision:', decisionLogError);
+    // Continue execution even if decision logging fails
+  }
   // if ('send' in message.channel && channelName === 'omega') {
   //   const emoji = decision.shouldRespond ? '✅' : '❌';
   //   // Use spoiler tags to hide verbose reasoning while keeping key info visible
@@ -175,6 +198,29 @@ export async function handleMessage(message: Message): Promise<void> {
         // User is replying to Omega's message - check intent
         console.log('   🚪 Running intent gate (user replying to Omega)...');
         const intentResult = await checkIntentGate(message, messageHistory, repliedTo.content);
+
+        // Log the intent gate decision to the append-only audit trail
+        try {
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Intent Gate: ${intentResult.shouldProceed ? 'PROCEED' : 'BLOCKED'} - ${intentResult.reason}`,
+            blame: 'intentGate.ts',
+            metadata: {
+              decisionType: 'intentGate',
+              shouldProceed: intentResult.shouldProceed,
+              confidence: intentResult.confidence,
+              classification: intentResult.classification,
+              reason: intentResult.reason,
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+              repliedToMessageId: repliedTo.id,
+            },
+          });
+        } catch (decisionLogError) {
+          console.error('⚠️  Failed to log intent gate decision:', decisionLogError);
+        }
 
         // Store intent gate decision in database for telemetry
         // This is included in the response decision field for tracking
@@ -464,6 +510,22 @@ export async function handleMessage(message: Message): Promise<void> {
             toolArgs: toolCall.args,
             toolResult: toolCall.result,
             parentMessageId: message.id,
+          });
+
+          // Log tool execution decision to the append-only audit trail
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Tool Execution: ${toolCall.toolName}`,
+            blame: 'runAgent',
+            metadata: {
+              decisionType: 'toolExecution',
+              toolName: toolCall.toolName,
+              toolArgs: toolCall.args,
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+            },
           });
         } catch (dbError) {
           console.error(`⚠️  Failed to persist tool execution (${toolCall.toolName}) to database:`, dbError);
