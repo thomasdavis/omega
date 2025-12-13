@@ -206,6 +206,9 @@ model UserProfile {
   approachabilityScore         Int?                  @map("approachability_score")
   perceivedConfidenceLevel     String?               @map("perceived_confidence_level")
   aestheticArchetype           String?               @map("aesthetic_archetype")
+  avatarUrl                    String?               @map("avatar_url")
+  bio                          String?
+  preferences                  Json?
   firstSeenAt                  BigInt                @map("first_seen_at")
   lastInteractionAt            BigInt                @map("last_interaction_at")
   lastAnalyzedAt               BigInt?               @map("last_analyzed_at")
@@ -217,6 +220,7 @@ model UserProfile {
 
   @@index([lastAnalyzedAt], map: "idx_user_profiles_last_analyzed")
   @@index([userId], map: "idx_user_profiles_user_id")
+  @@index([preferences], type: Gin, map: "idx_user_profiles_preferences_gin")
   @@map("user_profiles")
 }
 

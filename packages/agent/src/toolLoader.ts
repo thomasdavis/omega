@@ -183,6 +183,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   queryDatabase: { path: './tools/queryDatabase.js', exportName: 'queryDatabaseTool' },
   defineWord: { path: './tools/defineWord.js', exportName: 'defineWordTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
+  updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
   bullshitDetector: { path: './tools/bullshitDetector.js', exportName: 'bullshitDetectorTool' },
   tweet: { path: './tools/tweet.js', exportName: 'tweetTool' },
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
