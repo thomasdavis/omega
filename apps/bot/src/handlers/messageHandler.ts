@@ -23,6 +23,7 @@ import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
+import { analyzeSentiment } from '@repo/shared';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -665,6 +666,66 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
+      // Analyze sentiment of bot's response to detect final answers/key decisions
+      try {
+        const responseAnalysis = await analyzeSentiment(
+          result.response,
+          message.client.user!.username,
+          { previousMessages: messageHistory.map(m => ({ content: m.content })) }
+        );
+
+        // Detect if this is a final answer or key decision based on sentiment and keywords
+        const decisionKeywords = [
+          'recommend', 'conclude', 'solution', 'final', 'decision', 'resolved',
+          'determined', 'suggest', 'advise', 'best approach', 'should use',
+          'here\'s how', 'the answer is', 'in conclusion', 'to summarize',
+          'my recommendation', 'key takeaway', 'bottom line'
+        ];
+
+        const containsDecisionKeyword = decisionKeywords.some(keyword =>
+          result.response.toLowerCase().includes(keyword)
+        );
+
+        const isFinalAnswer =
+          (responseAnalysis.confidence >= 0.75) &&
+          (containsDecisionKeyword ||
+           result.response.length > 300 ||
+           (result.toolCalls && result.toolCalls.length >= 2));
+
+        if (isFinalAnswer) {
+          // Log this as a key decision/final answer
+          const decisionDescription = result.response.length > 150
+            ? result.response.substring(0, 147) + '...'
+            : result.response;
+
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Final Answer / Key Decision: ${decisionDescription}`,
+            blame: 'messageHandler.ts:sentimentBasedDecisionDetection',
+            metadata: {
+              decisionType: 'finalAnswer',
+              sentiment: responseAnalysis.sentiment,
+              confidence: responseAnalysis.confidence,
+              emotionalTone: responseAnalysis.emotionalTone,
+              archetypeAlignment: responseAnalysis.archetypeAlignment,
+              responseLength: result.response.length,
+              toolsUsed: result.toolCalls?.length || 0,
+              toolNames: result.toolCalls?.map(tc => tc.toolName) || [],
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+              containsDecisionKeyword,
+            },
+          });
+
+          console.log(`📊 Logged final answer decision (sentiment: ${responseAnalysis.sentiment}, confidence: ${responseAnalysis.confidence})`);
+        }
+      } catch (analysisError) {
+        console.error('⚠️  Failed to analyze response sentiment for decision logging:', analysisError);
+        // Continue anyway - don't block message sending
+      }
+
       // Extract large code blocks before chunking
       const { message: cleanedResponse, codeBlocks } = extractLargeCodeBlocks(result.response);
 

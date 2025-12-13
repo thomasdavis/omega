@@ -147,6 +147,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   conversationToSlidev: { path: './tools/conversationToSlidev.js', exportName: 'conversationToSlidevTool' },
   buildSlidevPresentation: { path: './tools/buildSlidevPresentation.js', exportName: 'buildSlidevPresentationTool' },
   queryMessages: { path: './tools/queryMessages.js', exportName: 'queryMessagesTool' },
+  queryDecisionLogs: { path: './tools/queryDecisionLogs.js', exportName: 'queryDecisionLogsTool' },
   reportMessageAsIssue: { path: './tools/reportMessageAsIssue.js', exportName: 'reportMessageAsIssueTool' },
   summarizeCommits: { path: './tools/summarizeCommits.js', exportName: 'summarizeCommitsTool' },
 
