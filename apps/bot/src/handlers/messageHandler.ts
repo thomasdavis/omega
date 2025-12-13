@@ -15,7 +15,7 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
@@ -140,6 +140,26 @@ export async function handleMessage(message: Message): Promise<void> {
   } catch (dbError) {
     console.error('⚠️  Failed to persist message to database:', dbError);
     // Continue execution even if database write fails
+  }
+
+  // Track conversation for better context and analytics
+  try {
+    const conversationId = await getOrCreateConversation({
+      userId: message.author.id,
+      username: message.author.username,
+      channelId: message.channel.id,
+    });
+
+    await addMessageToConversation({
+      conversationId,
+      senderType: 'user',
+      userId: message.author.id,
+      username: message.author.username,
+      content: message.content,
+    });
+  } catch (conversationError) {
+    console.error('⚠️  Failed to track conversation:', conversationError);
+    // Continue execution even if conversation tracking fails
   }
 
   if (!decision.shouldRespond) {
@@ -636,6 +656,26 @@ export async function handleMessage(message: Message): Promise<void> {
       } catch (dbError) {
         console.error('⚠️  Failed to persist AI response to database:', dbError);
         // Continue execution even if database write fails
+      }
+
+      // Track bot's response in conversation
+      try {
+        const conversationId = await getOrCreateConversation({
+          userId: message.author.id,
+          username: message.author.username,
+          channelId: message.channel.id,
+        });
+
+        await addMessageToConversation({
+          conversationId,
+          senderType: 'bot',
+          userId: message.client.user!.id,
+          username: message.client.user!.username,
+          content: result.response,
+        });
+      } catch (conversationError) {
+        console.error('⚠️  Failed to track bot response in conversation:', conversationError);
+        // Continue execution even if conversation tracking fails
       }
     }
   } catch (error) {

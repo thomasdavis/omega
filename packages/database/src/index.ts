@@ -31,6 +31,7 @@ export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
 export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
 export * as pgComicService from './postgres/comicService.js';
+export * as pgConversationService from './postgres/conversationService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -200,6 +201,18 @@ export type {
   ProximityResult,
   BoundingBox,
 } from './postgres/spatialService.js';
+
+// Export conversation service functions
+export {
+  createConversation,
+  getOrCreateConversation,
+  addMessageToConversation,
+  getConversationMessages,
+  getUserConversations,
+  getConversationStats,
+  getRecentConversations,
+  deleteOldConversations,
+} from './postgres/conversationService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
