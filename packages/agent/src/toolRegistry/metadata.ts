@@ -1677,7 +1677,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'query decision logs',
       'analyze past decisions'
     ],
-    category: 'analytics'
+    category: 'database'
   },
 
   {
