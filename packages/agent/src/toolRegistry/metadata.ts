@@ -1712,6 +1712,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'spatialQuery',
+    name: 'Spatial Query',
+    description: 'Query location data using PostGIS spatial capabilities - find nearby locations, calculate distances, search within areas, and track location mentions',
+    keywords: ['spatial', 'postgis', 'proximity', 'nearby', 'distance', 'location query', 'geospatial', 'radius', 'bounding box', 'nearest', 'geography'],
+    tags: ['database', 'location', 'spatial', 'postgis', 'geography'],
+    examples: [
+      'find locations near',
+      'locations within 10km',
+      'calculate distance between',
+      'find nearest locations',
+      'locations in area',
+      'spatial search',
+      'proximity query',
+      'user locations'
+    ],
+    category: 'research'
+  },
+
+  {
     id: 'linuxAdvantages',
     name: 'Linux Advantages',
     description: 'Educational content about Linux and open-source',

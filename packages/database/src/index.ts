@@ -182,6 +182,25 @@ export type {
   ComicImageMetadata,
 } from './postgres/comicService.js';
 
+// Export spatial service (PostGIS)
+export * as pgSpatialService from './postgres/spatialService.js';
+export {
+  saveLocationMention,
+  findLocationsNearby,
+  findNearestLocations,
+  findLocationsInBoundingBox,
+  calculateDistance,
+  getUserLocationMentions,
+  getSpatialStatistics,
+  isPostGISAvailable,
+} from './postgres/spatialService.js';
+
+export type {
+  LocationPoint,
+  ProximityResult,
+  BoundingBox,
+} from './postgres/spatialService.js';
+
 // Database Adapter (PostgreSQL-only after migration)
 export {
   messageService,
