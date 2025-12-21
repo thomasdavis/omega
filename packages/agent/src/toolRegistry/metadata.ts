@@ -2608,6 +2608,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'development'
   },
+
+  // ===== DISCORD TOOLS =====
+  {
+    id: 'discordChannelDescriptionManager',
+    name: 'Discord Channel Description Manager',
+    description: 'Manage Discord channel descriptions through pinned messages. Fetch all channels with topics and pins, or pin description messages to specific channels.',
+    keywords: ['discord', 'channel', 'description', 'topic', 'pin', 'pinned', 'message', 'manage', 'organize'],
+    tags: ['discord', 'utility', 'management', 'organization'],
+    examples: [
+      'fetch all channel names and descriptions in my Discord server',
+      'list all Discord channels with their topics',
+      'pin default description messages in channels',
+      'update pinned description message in a channel',
+      'show me channels missing descriptions',
+      'manage Discord channel descriptions'
+    ],
+    category: 'utility'
+  },
 ];
 
 /**
