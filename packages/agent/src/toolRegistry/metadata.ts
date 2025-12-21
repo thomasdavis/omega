@@ -1681,6 +1681,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'queryDecisionLogs',
+    name: 'Query Decision Logs',
+    description: 'Query and analyze decision logs to learn from past decisions, track patterns, and support autonomous growth',
+    keywords: ['decision', 'logs', 'query', 'analyze', 'learn', 'autonomous', 'growth', 'patterns', 'audit', 'history', 'tracking', 'sentiment', 'confidence', 'tools'],
+    tags: ['database', 'analytics', 'autonomous', 'decision', 'learning'],
+    examples: [
+      'show recent decisions',
+      'analyze my decision patterns',
+      'search decision logs for sentiment',
+      'how many decisions have I made',
+      'what are my confidence trends',
+      'show me tool execution decisions',
+      'query decision logs',
+      'analyze past decisions'
+    ],
+    category: 'database'
+  },
+
+  {
     id: 'reportMessageAsIssue',
     name: 'Report Message as Issue',
     description: 'Report Discord message as GitHub issue',
@@ -1707,6 +1726,44 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'weather forecast',
       'what is the weather',
       'check weather'
+    ],
+    category: 'research'
+  },
+
+  {
+    id: 'locationMap',
+    name: 'Location Map',
+    description: 'Detect physical locations (GPS coordinates, addresses, zip codes, postal codes, place names) and generate Google Maps static image snapshot and clickable link',
+    keywords: ['location', 'map', 'maps', 'google maps', 'address', 'coordinates', 'gps', 'latitude', 'longitude', 'zip code', 'postal code', 'place', 'directions', 'geography', 'geocode'],
+    tags: ['research', 'maps', 'location', 'utility', 'geography'],
+    examples: [
+      'show me a map of',
+      'where is 47.6205, -122.3493',
+      'map of Seattle',
+      'show 10001 on a map',
+      'get location for',
+      'coordinates of',
+      'map this address',
+      'show me where'
+    ],
+    category: 'research'
+  },
+
+  {
+    id: 'spatialQuery',
+    name: 'Spatial Query',
+    description: 'Query location data using PostGIS spatial capabilities - find nearby locations, calculate distances, search within areas, and track location mentions',
+    keywords: ['spatial', 'postgis', 'proximity', 'nearby', 'distance', 'location query', 'geospatial', 'radius', 'bounding box', 'nearest', 'geography'],
+    tags: ['database', 'location', 'spatial', 'postgis', 'geography'],
+    examples: [
+      'find locations near',
+      'locations within 10km',
+      'calculate distance between',
+      'find nearest locations',
+      'locations in area',
+      'spatial search',
+      'proximity query',
+      'user locations'
     ],
     category: 'research'
   },
@@ -1919,6 +1976,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'translate this'
     ],
     category: 'specialized'
+  },
+
+  {
+    id: 'summarizeToS',
+    name: 'Summarize Terms of Service',
+    description: 'Fetch and analyze Terms of Service documents from URLs, extracting key points, privacy concerns, and risk flags',
+    keywords: ['terms', 'service', 'tos', 'legal', 'privacy', 'policy', 'agreement', 'contract', 'summarize', 'analyze'],
+    tags: ['legal', 'document', 'analysis', 'privacy'],
+    examples: [
+      'summarize these terms of service',
+      'analyze this ToS',
+      'what does this privacy policy say',
+      'explain these terms',
+      'terms of service summary',
+      'check this agreement'
+    ],
+    category: 'research'
   },
 
   {
@@ -2393,8 +2467,121 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'development'
   },
 
+  // ===== LLM PROVIDER INTEGRATIONS =====
+  {
+    id: 'openrouterChat',
+    name: 'OpenRouter Chat',
+    description: 'Generate chat completions using OpenRouter API. Provides access to multiple LLM providers including Claude, GPT-4, Gemini, Llama, and more through a unified API.',
+    keywords: ['openrouter', 'llm', 'chat', 'completion', 'ai', 'model', 'claude', 'gpt', 'gemini', 'llama', 'language model', 'generation'],
+    tags: ['ai', 'llm', 'chat', 'generation', 'openrouter'],
+    examples: [
+      'use openrouter to generate text',
+      'chat with claude via openrouter',
+      'generate completion with gpt-4',
+      'use openrouter for ai generation',
+      'access multiple llm models',
+      'generate text with openrouter'
+    ],
+    category: 'specialized'
+  },
+
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
+
+  // ===== SHARED LINKS TOOLS (3) =====
+  {
+    id: 'addSharedLink',
+    name: 'Add Shared Link',
+    description: 'Save a link to the shared links collection with AI-generated topic tags',
+    keywords: ['link', 'save', 'bookmark', 'url', 'share', 'store', 'collection', 'tag', 'categorize'],
+    tags: ['content', 'links', 'bookmarks', 'sharing', 'organization'],
+    examples: [
+      'save this link',
+      'bookmark this URL',
+      'add to shared links',
+      'store this website',
+      'save the link I just posted'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'browseSharedLinks',
+    name: 'Browse Shared Links',
+    description: 'Browse and search the shared links collection with flexible filtering by tags, user, channel, or time',
+    keywords: ['browse', 'search', 'links', 'find', 'filter', 'query', 'bookmarks', 'shared', 'collection', 'discover'],
+    tags: ['content', 'links', 'bookmarks', 'search', 'discovery'],
+    examples: [
+      'show me links about AI',
+      'find links about TypeScript',
+      'what links were shared recently',
+      'browse shared links',
+      'show me tutorial links'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'getPopularTags',
+    name: 'Get Popular Tags',
+    description: 'Get a list of all unique tags used in saved links, sorted by frequency',
+    keywords: ['tags', 'topics', 'categories', 'popular', 'trending', 'browse', 'discover'],
+    tags: ['content', 'links', 'discovery', 'analytics'],
+    examples: [
+      'what topics are available',
+      'show popular tags',
+      'what tags are used',
+      'browse link categories'
+    ],
+    category: 'content'
+  },
+
+  // ===== VAL TOWN TOOLS =====
+  {
+    id: 'valTownCreateVal',
+    name: 'Val Town Create Val',
+    description: 'Create a new val on Val Town for rapid deployment of webpages, APIs, webhooks without database migrations',
+    keywords: ['val', 'valtown', 'deploy', 'create', 'webpage', 'api', 'webhook', 'prototype', 'live', 'public', 'serverless'],
+    tags: ['deployment', 'development', 'prototyping', 'web', 'api'],
+    examples: [
+      'deploy a bookmark page on Val Town',
+      'create a webhook endpoint',
+      'make a public API',
+      'deploy a quick prototype',
+      'create a live webpage'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownUpdateVal',
+    name: 'Val Town Update Val',
+    description: 'Update an existing val on Val Town (code, privacy, or README)',
+    keywords: ['val', 'valtown', 'update', 'modify', 'edit', 'change', 'fix', 'deploy'],
+    tags: ['deployment', 'development', 'management'],
+    examples: [
+      'update my Val Town page',
+      'fix bug in my val',
+      'change val privacy',
+      'update val code'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownListVals',
+    name: 'Val Town List Vals',
+    description: 'List all vals deployed on Val Town',
+    keywords: ['val', 'valtown', 'list', 'show', 'deployed', 'my', 'vals', 'deployments'],
+    tags: ['deployment', 'management', 'discovery'],
+    examples: [
+      'show my Val Town deployments',
+      'list my vals',
+      'what vals do I have',
+      'show deployed vals'
+    ],
+    category: 'development'
+  },
 ];
 
 /**

@@ -32,5 +32,6 @@ export { searchDocumentsTool } from './tools/searchDocuments.js';
 export { analyzeDocumentAndCreateIssueTool } from './tools/analyzeDocumentAndCreateIssue.js';
 export { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 export { marketPredictionTool } from './tools/marketPrediction.js';
+export { extractAndSaveLinks } from './tools/addSharedLink.js';
 
 export const AGENT_PACKAGE_VERSION = '1.0.0';
