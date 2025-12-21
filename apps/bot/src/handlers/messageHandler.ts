@@ -24,6 +24,7 @@ import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
 import { analyzeSentiment } from '@repo/shared';
+import { processMessageForBookmarks } from '../utils/valTownBookmarks.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -166,6 +167,20 @@ export async function handleMessage(message: Message): Promise<void> {
     // Continue execution even if database write fails
   }
 
+  // Extract and send links to Val Town for bookmark tracking
+  // This runs async and doesn't block message processing
+  processMessageForBookmarks(
+    message.content,
+    message.author.id,
+    message.author.username,
+    message.channel.id,
+    channelName,
+    message.id
+  ).catch(error => {
+    console.error('⚠️  Failed to process bookmarks for Val Town:', error);
+    // Fail silently - don't interrupt message flow
+  });
+
   // Track conversation for better context and analytics
   try {
     const conversationId = await getOrCreateConversation({
@@ -184,6 +199,24 @@ export async function handleMessage(message: Message): Promise<void> {
   } catch (conversationError) {
     console.error('⚠️  Failed to track conversation:', conversationError);
     // Continue execution even if conversation tracking fails
+  }
+
+  // Monitor message for links and auto-save to shared collection
+  // This runs for ALL messages (regardless of response decision)
+  try {
+    const { monitorMessageForLinks } = await import('../services/linkMonitoringService.js');
+    await monitorMessageForLinks(
+      message.content,
+      message.author.id,
+      message.author.username,
+      message.channel.id,
+      channelName,
+      message.id,
+      message.guild?.id
+    );
+  } catch (linkError) {
+    console.error('⚠️  Failed to monitor links:', linkError);
+    // Continue execution even if link monitoring fails
   }
 
   if (!decision.shouldRespond) {
