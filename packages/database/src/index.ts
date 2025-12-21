@@ -31,6 +31,8 @@ export * as pgImageService from './postgres/imageService.js';
 export * as newImageService from './postgres/newImageService.js';
 export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService.js';
 export * as pgComicService from './postgres/comicService.js';
+export * as pgConversationService from './postgres/conversationService.js';
+export * as pgDecisionLogService from './postgres/decisionLogService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -141,6 +143,12 @@ export {
   getMp3FileCount,
   getMp3FileMetadata,
   listMp3FilesMetadata,
+  saveVideoFile,
+  getVideoFile,
+  listVideoFiles,
+  getVideoFileCount,
+  getVideoFileMetadata,
+  listVideoFilesMetadata,
 } from './postgres/musicService.js';
 
 // Export music service types
@@ -151,6 +159,8 @@ export type {
   CreateMidiFileInput,
   Mp3FileRecord,
   CreateMp3FileInput,
+  VideoFileRecord,
+  CreateVideoFileInput,
 } from './postgres/musicService.js';
 
 // Export image service functions for backward compatibility
@@ -202,6 +212,53 @@ export type {
   CreateComicImageInput,
   ComicImageMetadata,
 } from './postgres/comicService.js';
+
+// Export spatial service (PostGIS)
+export * as pgSpatialService from './postgres/spatialService.js';
+export {
+  saveLocationMention,
+  findLocationsNearby,
+  findNearestLocations,
+  findLocationsInBoundingBox,
+  calculateDistance,
+  getUserLocationMentions,
+  getSpatialStatistics,
+  isPostGISAvailable,
+} from './postgres/spatialService.js';
+
+export type {
+  LocationPoint,
+  ProximityResult,
+  BoundingBox,
+} from './postgres/spatialService.js';
+
+// Export conversation service functions
+export {
+  createConversation,
+  getOrCreateConversation,
+  addMessageToConversation,
+  getConversationMessages,
+  getUserConversations,
+  getConversationStats,
+  getRecentConversations,
+  deleteOldConversations,
+} from './postgres/conversationService.js';
+
+// Export decision log service functions
+export {
+  logDecision,
+  queryDecisionLogs,
+  getUserDecisionLogs,
+  getRecentDecisionLogs,
+  countDecisionLogs,
+  searchDecisionLogs,
+} from './postgres/decisionLogService.js';
+
+// Export decision log service types
+export type {
+  DecisionLogRecord,
+  LogDecisionParams,
+} from './postgres/decisionLogService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
