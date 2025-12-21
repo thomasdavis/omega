@@ -70,9 +70,9 @@ export const summarizeToSTool = tool({
         userAgent: 'OmegaBot/1.0 (ToS Analyzer)',
         mode: 'parsed',
         maxRedirects: 10,
-      }, {});
+      }) as Awaited<ReturnType<typeof webFetchTool.execute>>;
 
-      if (!fetchResult.success) {
+      if (!('success' in fetchResult) || !fetchResult.success) {
         // Save failed fetch to database
         const errorId = crypto.randomUUID();
         const domain = new URL(url).hostname;
