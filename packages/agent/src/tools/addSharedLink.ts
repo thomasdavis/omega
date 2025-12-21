@@ -206,7 +206,7 @@ export async function extractAndSaveLinks(
 
   for (const url of urls) {
     try {
-      await addSharedLinkTool.execute(
+      const result = await addSharedLinkTool.execute(
         {
           url,
           userId,
@@ -217,9 +217,14 @@ export async function extractAndSaveLinks(
           messageId,
           messageContent,
         },
-        {}
+        {
+          toolCallId: randomUUID(),
+          messages: [],
+        }
       );
-      savedCount++;
+      if (result.success) {
+        savedCount++;
+      }
     } catch (error) {
       console.error(`Failed to save URL ${url}:`, error);
     }
