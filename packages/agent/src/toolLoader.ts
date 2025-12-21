@@ -148,6 +148,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   conversationToSlidev: { path: './tools/conversationToSlidev.js', exportName: 'conversationToSlidevTool' },
   buildSlidevPresentation: { path: './tools/buildSlidevPresentation.js', exportName: 'buildSlidevPresentationTool' },
   queryMessages: { path: './tools/queryMessages.js', exportName: 'queryMessagesTool' },
+  queryDecisionLogs: { path: './tools/queryDecisionLogs.js', exportName: 'queryDecisionLogsTool' },
   reportMessageAsIssue: { path: './tools/reportMessageAsIssue.js', exportName: 'reportMessageAsIssueTool' },
   summarizeCommits: { path: './tools/summarizeCommits.js', exportName: 'summarizeCommitsTool' },
 
@@ -156,6 +157,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   axllmExecutor: { path: './tools/axllmExecutor.js', exportName: 'axllmExecutorTool' },
   weather: { path: './tools/weather.js', exportName: 'weatherTool' },
   locationMap: { path: './tools/locationMap.js', exportName: 'locationMapTool' },
+  spatialQuery: { path: './tools/spatialQuery.js', exportName: 'spatialQueryTool' },
   linuxAdvantages: { path: './tools/linuxAdvantages.js', exportName: 'linuxAdvantagesTool' },
   jsonAgentGenerator: { path: './tools/jsonAgentGenerator.js', exportName: 'jsonAgentGeneratorTool' },
   hackerNewsPhilosophy: { path: './tools/hackerNewsPhilosophy.js', exportName: 'hackerNewsPhilosophyTool' },
@@ -182,6 +184,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   queryDatabase: { path: './tools/queryDatabase.js', exportName: 'queryDatabaseTool' },
   defineWord: { path: './tools/defineWord.js', exportName: 'defineWordTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
+  updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
   bullshitDetector: { path: './tools/bullshitDetector.js', exportName: 'bullshitDetectorTool' },
   tweet: { path: './tools/tweet.js', exportName: 'tweetTool' },
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
@@ -202,6 +205,19 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
 
   // LLM Provider Integrations
   openrouterChat: { path: './tools/openrouterChat.js', exportName: 'openrouterChatTool' },
+
+  // Legal & Document Analysis Tools
+  summarizeToS: { path: './tools/summarizeToS.js', exportName: 'summarizeToSTool' },
+
+  // Shared Links Tools
+  addSharedLink: { path: './tools/addSharedLink.js', exportName: 'addSharedLinkTool' },
+  browseSharedLinks: { path: './tools/browseSharedLinks.js', exportName: 'browseSharedLinksTool' },
+  getPopularTags: { path: './tools/browseSharedLinks.js', exportName: 'getPopularTagsTool' },
+
+  // Val Town Tools
+  valTownCreateVal: { path: './tools/valTownCreateVal.js', exportName: 'valTownCreateValTool' },
+  valTownUpdateVal: { path: './tools/valTownUpdateVal.js', exportName: 'valTownUpdateValTool' },
+  valTownListVals: { path: './tools/valTownListVals.js', exportName: 'valTownListValsTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search
