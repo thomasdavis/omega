@@ -206,6 +206,11 @@ export async function extractAndSaveLinks(
 
   for (const url of urls) {
     try {
+      if (!addSharedLinkTool.execute) {
+        console.error('Execute method not available on addSharedLinkTool');
+        continue;
+      }
+
       const result = await addSharedLinkTool.execute(
         {
           url,
@@ -222,7 +227,9 @@ export async function extractAndSaveLinks(
           messages: [],
         }
       );
-      if (result.success) {
+
+      // Handle the result - it could be AsyncIterable or the actual result object
+      if (typeof result === 'object' && result !== null && 'success' in result && result.success) {
         savedCount++;
       }
     } catch (error) {
