@@ -186,6 +186,24 @@ export async function handleMessage(message: Message): Promise<void> {
     // Continue execution even if conversation tracking fails
   }
 
+  // Monitor message for links and auto-save to shared collection
+  // This runs for ALL messages (regardless of response decision)
+  try {
+    const { monitorMessageForLinks } = await import('../services/linkMonitoringService.js');
+    await monitorMessageForLinks(
+      message.content,
+      message.author.id,
+      message.author.username,
+      message.channel.id,
+      channelName,
+      message.id,
+      message.guild?.id
+    );
+  } catch (linkError) {
+    console.error('⚠️  Failed to monitor links:', linkError);
+    // Continue execution even if link monitoring fails
+  }
+
   if (!decision.shouldRespond) {
     return;
   }

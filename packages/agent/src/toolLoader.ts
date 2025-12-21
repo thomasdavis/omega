@@ -208,6 +208,11 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // Legal & Document Analysis Tools
   summarizeToS: { path: './tools/summarizeToS.js', exportName: 'summarizeToSTool' },
 
+  // Shared Links Tools
+  addSharedLink: { path: './tools/addSharedLink.js', exportName: 'addSharedLinkTool' },
+  browseSharedLinks: { path: './tools/browseSharedLinks.js', exportName: 'browseSharedLinksTool' },
+  getPopularTags: { path: './tools/browseSharedLinks.js', exportName: 'getPopularTagsTool' },
+
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
