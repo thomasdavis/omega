@@ -1960,6 +1960,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'summarizeToS',
+    name: 'Summarize Terms of Service',
+    description: 'Fetch and analyze Terms of Service documents from URLs, extracting key points, privacy concerns, and risk flags',
+    keywords: ['terms', 'service', 'tos', 'legal', 'privacy', 'policy', 'agreement', 'contract', 'summarize', 'analyze'],
+    tags: ['legal', 'document', 'analysis', 'privacy'],
+    examples: [
+      'summarize these terms of service',
+      'analyze this ToS',
+      'what does this privacy policy say',
+      'explain these terms',
+      'terms of service summary',
+      'check this agreement'
+    ],
+    category: 'research'
+  },
+
+  {
     id: 'marketPrediction',
     name: 'Market Prediction',
     description: 'Generate market predictions and analysis',
