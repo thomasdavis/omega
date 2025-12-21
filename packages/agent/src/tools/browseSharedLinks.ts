@@ -4,7 +4,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getPostgresPool } from '@repo/database/postgres/client';
+import { getPostgresPool } from '@repo/database';
 
 export const browseSharedLinksTool = tool({
   description: `Browse and search the shared links collection with flexible filtering.
@@ -151,7 +151,7 @@ Examples:
       console.log(`✅ [Browse Shared Links] Found ${result.rowCount} links (total: ${total})`);
 
       // Format results
-      const links = result.rows.map(row => ({
+      const links = result.rows.map((row: any) => ({
         id: row.id,
         url: row.url,
         title: row.title,
@@ -241,7 +241,7 @@ Returns tags with usage counts, sorted by popularity.`,
 
       console.log(`✅ [Get Popular Tags] Found ${result.rowCount} unique tags`);
 
-      const tags = result.rows.map(row => ({
+      const tags = result.rows.map((row: any) => ({
         tag: row.tag,
         count: parseInt(row.count, 10),
       }));

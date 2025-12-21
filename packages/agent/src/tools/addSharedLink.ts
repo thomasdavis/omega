@@ -6,7 +6,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { getPostgresPool } from '@repo/database/postgres/client';
+import { getPostgresPool } from '@repo/database';
 import { randomUUID } from 'crypto';
 
 interface LinkMetadata {
@@ -206,16 +206,19 @@ export async function extractAndSaveLinks(
 
   for (const url of urls) {
     try {
-      await addSharedLinkTool.execute({
-        url,
-        userId,
-        username,
-        channelId,
-        channelName,
-        guildId,
-        messageId,
-        messageContent,
-      });
+      await addSharedLinkTool.execute(
+        {
+          url,
+          userId,
+          username,
+          channelId,
+          channelName,
+          guildId,
+          messageId,
+          messageContent,
+        },
+        {}
+      );
       savedCount++;
     } catch (error) {
       console.error(`Failed to save URL ${url}:`, error);

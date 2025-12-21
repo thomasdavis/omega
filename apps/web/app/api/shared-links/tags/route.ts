@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostgresPool } from '@repo/database/postgres/client';
+import { getPostgresPool } from '@repo/database';
 
 export async function GET(request: NextRequest) {
   try {
