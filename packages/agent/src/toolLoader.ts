@@ -213,6 +213,11 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   browseSharedLinks: { path: './tools/browseSharedLinks.js', exportName: 'browseSharedLinksTool' },
   getPopularTags: { path: './tools/browseSharedLinks.js', exportName: 'getPopularTagsTool' },
 
+  // Val Town Tools
+  valTownCreateVal: { path: './tools/valTownCreateVal.js', exportName: 'valTownCreateValTool' },
+  valTownUpdateVal: { path: './tools/valTownUpdateVal.js', exportName: 'valTownUpdateValTool' },
+  valTownListVals: { path: './tools/valTownListVals.js', exportName: 'valTownListValsTool' },
+
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)

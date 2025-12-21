@@ -2516,6 +2516,53 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'content'
   },
+
+  // ===== VAL TOWN TOOLS =====
+  {
+    id: 'valTownCreateVal',
+    name: 'Val Town Create Val',
+    description: 'Create a new val on Val Town for rapid deployment of webpages, APIs, webhooks without database migrations',
+    keywords: ['val', 'valtown', 'deploy', 'create', 'webpage', 'api', 'webhook', 'prototype', 'live', 'public', 'serverless'],
+    tags: ['deployment', 'development', 'prototyping', 'web', 'api'],
+    examples: [
+      'deploy a bookmark page on Val Town',
+      'create a webhook endpoint',
+      'make a public API',
+      'deploy a quick prototype',
+      'create a live webpage'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownUpdateVal',
+    name: 'Val Town Update Val',
+    description: 'Update an existing val on Val Town (code, privacy, or README)',
+    keywords: ['val', 'valtown', 'update', 'modify', 'edit', 'change', 'fix', 'deploy'],
+    tags: ['deployment', 'development', 'management'],
+    examples: [
+      'update my Val Town page',
+      'fix bug in my val',
+      'change val privacy',
+      'update val code'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownListVals',
+    name: 'Val Town List Vals',
+    description: 'List all vals deployed on Val Town',
+    keywords: ['val', 'valtown', 'list', 'show', 'deployed', 'my', 'vals', 'deployments'],
+    tags: ['deployment', 'management', 'discovery'],
+    examples: [
+      'show my Val Town deployments',
+      'list my vals',
+      'what vals do I have',
+      'show deployed vals'
+    ],
+    category: 'development'
+  },
 ];
 
 /**
