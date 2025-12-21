@@ -65,12 +65,18 @@ export const summarizeToSTool = tool({
         };
       }
 
-      const fetchResult = await webFetchTool.execute({
-        url,
-        userAgent: 'OmegaBot/1.0 (ToS Analyzer)',
-        mode: 'parsed',
-        maxRedirects: 10,
-      }) as Awaited<ReturnType<typeof webFetchTool.execute>>;
+      const fetchResult = await webFetchTool.execute(
+        {
+          url,
+          userAgent: 'OmegaBot/1.0 (ToS Analyzer)',
+          mode: 'parsed',
+          maxRedirects: 10,
+        },
+        {
+          toolCallId: crypto.randomUUID(),
+          messages: [],
+        }
+      ) as Awaited<ReturnType<typeof webFetchTool.execute>>;
 
       if (!('success' in fetchResult) || !fetchResult.success) {
         // Save failed fetch to database
