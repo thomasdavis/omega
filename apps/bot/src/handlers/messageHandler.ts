@@ -15,7 +15,7 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
@@ -23,6 +23,8 @@ import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
+import { analyzeSentiment } from '@repo/shared';
+import { processMessageForBookmarks } from '../utils/valTownBookmarks.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -116,6 +118,29 @@ export async function handleMessage(message: Message): Promise<void> {
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
+
+  // Log the response decision to the append-only audit trail
+  try {
+    await logDecision({
+      userId: message.author.id,
+      username: message.author.username,
+      decisionDescription: `Response Decision: ${decision.shouldRespond ? 'RESPOND' : 'IGNORE'} - ${decision.reason}`,
+      blame: 'shouldRespond.ts',
+      metadata: {
+        decisionType: 'shouldRespond',
+        shouldRespond: decision.shouldRespond,
+        confidence: decision.confidence,
+        reason: decision.reason,
+        channelId: message.channel.id,
+        channelName: channelName,
+        messageId: message.id,
+        messageSnippet: message.content.substring(0, 100),
+      },
+    });
+  } catch (decisionLogError) {
+    console.error('⚠️  Failed to log decision:', decisionLogError);
+    // Continue execution even if decision logging fails
+  }
   // if ('send' in message.channel && channelName === 'omega') {
   //   const emoji = decision.shouldRespond ? '✅' : '❌';
   //   // Use spoiler tags to hide verbose reasoning while keeping key info visible
@@ -142,6 +167,58 @@ export async function handleMessage(message: Message): Promise<void> {
     // Continue execution even if database write fails
   }
 
+  // Extract and send links to Val Town for bookmark tracking
+  // This runs async and doesn't block message processing
+  processMessageForBookmarks(
+    message.content,
+    message.author.id,
+    message.author.username,
+    message.channel.id,
+    channelName,
+    message.id
+  ).catch(error => {
+    console.error('⚠️  Failed to process bookmarks for Val Town:', error);
+    // Fail silently - don't interrupt message flow
+  });
+
+  // Track conversation for better context and analytics
+  try {
+    const conversationId = await getOrCreateConversation({
+      userId: message.author.id,
+      username: message.author.username,
+      channelId: message.channel.id,
+    });
+
+    await addMessageToConversation({
+      conversationId,
+      senderType: 'user',
+      userId: message.author.id,
+      username: message.author.username,
+      content: message.content,
+    });
+  } catch (conversationError) {
+    console.error('⚠️  Failed to track conversation:', conversationError);
+    // Continue execution even if conversation tracking fails
+  }
+
+  // Monitor message for links and auto-save to shared collection
+  // This runs for ALL messages (regardless of response decision)
+  try {
+    const { monitorMessageForLinks } = await import('../services/linkMonitoringService.js');
+    await monitorMessageForLinks(
+      message.content,
+      message.author.id,
+      message.author.username,
+      message.channel.id,
+      channelName,
+      message.id,
+      message.guild?.id
+    );
+  } catch (linkError) {
+    console.error('⚠️  Failed to monitor links:', linkError);
+    // Continue execution even if link monitoring fails
+  }
+
   if (!decision.shouldRespond) {
     return;
   }
@@ -155,6 +232,29 @@ export async function handleMessage(message: Message): Promise<void> {
         // User is replying to Omega's message - check intent
         console.log('   🚪 Running intent gate (user replying to Omega)...');
         const intentResult = await checkIntentGate(message, messageHistory, repliedTo.content);
+
+        // Log the intent gate decision to the append-only audit trail
+        try {
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Intent Gate: ${intentResult.shouldProceed ? 'PROCEED' : 'BLOCKED'} - ${intentResult.reason}`,
+            blame: 'intentGate.ts',
+            metadata: {
+              decisionType: 'intentGate',
+              shouldProceed: intentResult.shouldProceed,
+              confidence: intentResult.confidence,
+              classification: intentResult.classification,
+              reason: intentResult.reason,
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+              repliedToMessageId: repliedTo.id,
+            },
+          });
+        } catch (decisionLogError) {
+          console.error('⚠️  Failed to log intent gate decision:', decisionLogError);
+        }
 
         // Store intent gate decision in database for telemetry
         // This is included in the response decision field for tracking
@@ -445,6 +545,22 @@ export async function handleMessage(message: Message): Promise<void> {
             toolResult: toolCall.result,
             parentMessageId: message.id,
           });
+
+          // Log tool execution decision to the append-only audit trail
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Tool Execution: ${toolCall.toolName}`,
+            blame: 'runAgent',
+            metadata: {
+              decisionType: 'toolExecution',
+              toolName: toolCall.toolName,
+              toolArgs: toolCall.args,
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+            },
+          });
         } catch (dbError) {
           console.error(`⚠️  Failed to persist tool execution (${toolCall.toolName}) to database:`, dbError);
           // Continue execution even if database write fails
@@ -583,6 +699,66 @@ export async function handleMessage(message: Message): Promise<void> {
 
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
+      // Analyze sentiment of bot's response to detect final answers/key decisions
+      try {
+        const responseAnalysis = await analyzeSentiment(
+          result.response,
+          message.client.user!.username,
+          { previousMessages: messageHistory.map(m => ({ content: m.content })) }
+        );
+
+        // Detect if this is a final answer or key decision based on sentiment and keywords
+        const decisionKeywords = [
+          'recommend', 'conclude', 'solution', 'final', 'decision', 'resolved',
+          'determined', 'suggest', 'advise', 'best approach', 'should use',
+          'here\'s how', 'the answer is', 'in conclusion', 'to summarize',
+          'my recommendation', 'key takeaway', 'bottom line'
+        ];
+
+        const containsDecisionKeyword = decisionKeywords.some(keyword =>
+          result.response.toLowerCase().includes(keyword)
+        );
+
+        const isFinalAnswer =
+          (responseAnalysis.confidence >= 0.75) &&
+          (containsDecisionKeyword ||
+           result.response.length > 300 ||
+           (result.toolCalls && result.toolCalls.length >= 2));
+
+        if (isFinalAnswer) {
+          // Log this as a key decision/final answer
+          const decisionDescription = result.response.length > 150
+            ? result.response.substring(0, 147) + '...'
+            : result.response;
+
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `Final Answer / Key Decision: ${decisionDescription}`,
+            blame: 'messageHandler.ts:sentimentBasedDecisionDetection',
+            metadata: {
+              decisionType: 'finalAnswer',
+              sentiment: responseAnalysis.sentiment,
+              confidence: responseAnalysis.confidence,
+              emotionalTone: responseAnalysis.emotionalTone,
+              archetypeAlignment: responseAnalysis.archetypeAlignment,
+              responseLength: result.response.length,
+              toolsUsed: result.toolCalls?.length || 0,
+              toolNames: result.toolCalls?.map(tc => tc.toolName) || [],
+              channelId: message.channel.id,
+              channelName: channelName,
+              messageId: message.id,
+              containsDecisionKeyword,
+            },
+          });
+
+          console.log(`📊 Logged final answer decision (sentiment: ${responseAnalysis.sentiment}, confidence: ${responseAnalysis.confidence})`);
+        }
+      } catch (analysisError) {
+        console.error('⚠️  Failed to analyze response sentiment for decision logging:', analysisError);
+        // Continue anyway - don't block message sending
+      }
+
       // Extract large code blocks before chunking
       const { message: cleanedResponse, codeBlocks } = extractLargeCodeBlocks(result.response);
 
@@ -636,6 +812,26 @@ export async function handleMessage(message: Message): Promise<void> {
       } catch (dbError) {
         console.error('⚠️  Failed to persist AI response to database:', dbError);
         // Continue execution even if database write fails
+      }
+
+      // Track bot's response in conversation
+      try {
+        const conversationId = await getOrCreateConversation({
+          userId: message.author.id,
+          username: message.author.username,
+          channelId: message.channel.id,
+        });
+
+        await addMessageToConversation({
+          conversationId,
+          senderType: 'bot',
+          userId: message.client.user!.id,
+          username: message.client.user!.username,
+          content: result.response,
+        });
+      } catch (conversationError) {
+        console.error('⚠️  Failed to track bot response in conversation:', conversationError);
+        // Continue execution even if conversation tracking fails
       }
     }
   } catch (error) {
