@@ -226,6 +226,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
   tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
+
+  // Discord Tools
+  discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
 };
 
 /**
