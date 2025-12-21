@@ -24,6 +24,7 @@ import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
 import { analyzeSentiment } from '@repo/shared';
+import { processMessageForBookmarks } from '../utils/valTownBookmarks.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -165,6 +166,20 @@ export async function handleMessage(message: Message): Promise<void> {
     console.error('⚠️  Failed to persist message to database:', dbError);
     // Continue execution even if database write fails
   }
+
+  // Extract and send links to Val Town for bookmark tracking
+  // This runs async and doesn't block message processing
+  processMessageForBookmarks(
+    message.content,
+    message.author.id,
+    message.author.username,
+    message.channel.id,
+    channelName,
+    message.id
+  ).catch(error => {
+    console.error('⚠️  Failed to process bookmarks for Val Town:', error);
+    // Fail silently - don't interrupt message flow
+  });
 
   // Track conversation for better context and analytics
   try {
