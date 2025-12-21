@@ -2,7 +2,7 @@
  * Link Monitoring Service - Automatically extracts and saves links from Discord messages
  */
 
-import { extractAndSaveLinks } from '@repo/agent/tools/addSharedLink';
+import { extractAndSaveLinks } from '@repo/agent';
 
 /**
  * Channels to monitor for link collection
