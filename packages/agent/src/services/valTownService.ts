@@ -376,7 +376,7 @@ export class ValTownClient {
       const queryString = params
         ? '?' +
           new URLSearchParams(
-            Object.entries(params).map(([k, v]) => [k, String(v)])
+            Object.entries(params).map(([k, v]) => [k, String(v)] as [string, string])
           ).toString()
         : '';
 

@@ -16,7 +16,7 @@ Use this when:
 - User wants to check if a val already exists before creating a new one
 - User asks about their Val Town deployments`,
 
-  parameters: z.object({
+  inputSchema: z.object({
     limit: z
       .number()
       .min(1)

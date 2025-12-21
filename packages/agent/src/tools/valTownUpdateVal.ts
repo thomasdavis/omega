@@ -18,7 +18,7 @@ Use this when:
 
 Note: You need the val ID to update it. Use valTownListVals to find the ID first.`,
 
-  parameters: z.object({
+  inputSchema: z.object({
     valId: z.string().describe('Val ID (get from valTownListVals or valTownCreateVal)'),
     code: z.string().optional().describe('Updated JavaScript/TypeScript code'),
     privacy: z

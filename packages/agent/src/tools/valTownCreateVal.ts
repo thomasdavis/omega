@@ -34,7 +34,7 @@ Example use cases:
 - Quick prototype of a new feature
 - Public dashboard or status page`,
 
-  parameters: z.object({
+  inputSchema: z.object({
     name: z
       .string()
       .describe(
