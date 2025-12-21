@@ -217,6 +217,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   valTownCreateVal: { path: './tools/valTownCreateVal.js', exportName: 'valTownCreateValTool' },
   valTownUpdateVal: { path: './tools/valTownUpdateVal.js', exportName: 'valTownUpdateValTool' },
   valTownListVals: { path: './tools/valTownListVals.js', exportName: 'valTownListValsTool' },
+  valTownGetVal: { path: './tools/valTownGetVal.js', exportName: 'valTownGetValTool' },
+  valTownDeleteVal: { path: './tools/valTownDeleteVal.js', exportName: 'valTownDeleteValTool' },
+  valTownRunVal: { path: './tools/valTownRunVal.js', exportName: 'valTownRunValTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search

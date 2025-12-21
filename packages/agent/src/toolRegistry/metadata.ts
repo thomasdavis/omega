@@ -2563,6 +2563,51 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'development'
   },
+
+  {
+    id: 'valTownGetVal',
+    name: 'Val Town Get Val',
+    description: 'Get details of a specific val on Val Town by ID',
+    keywords: ['val', 'valtown', 'get', 'fetch', 'inspect', 'details', 'view', 'check'],
+    tags: ['deployment', 'management', 'inspection'],
+    examples: [
+      'get details of val ID xyz',
+      'show me val xyz',
+      'inspect val xyz',
+      'what is in val xyz'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownDeleteVal',
+    name: 'Val Town Delete Val',
+    description: 'Delete a val on Val Town permanently',
+    keywords: ['val', 'valtown', 'delete', 'remove', 'destroy', 'cleanup'],
+    tags: ['deployment', 'management', 'cleanup'],
+    examples: [
+      'delete val xyz',
+      'remove my test val',
+      'clean up old vals',
+      'delete unused vals'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownRunVal',
+    name: 'Val Town Run Val',
+    description: 'Execute an HTTP val on Val Town and get the response',
+    keywords: ['val', 'valtown', 'run', 'execute', 'trigger', 'test', 'call', 'invoke'],
+    tags: ['deployment', 'testing', 'execution'],
+    examples: [
+      'run my val',
+      'execute val xyz',
+      'test my val deployment',
+      'trigger val with parameters'
+    ],
+    category: 'development'
+  },
 ];
 
 /**
