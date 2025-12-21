@@ -206,6 +206,9 @@ model UserProfile {
   approachabilityScore         Int?                  @map("approachability_score")
   perceivedConfidenceLevel     String?               @map("perceived_confidence_level")
   aestheticArchetype           String?               @map("aesthetic_archetype")
+  avatarUrl                    String?               @map("avatar_url")
+  bio                          String?
+  preferences                  Json?
   firstSeenAt                  BigInt                @map("first_seen_at")
   lastInteractionAt            BigInt                @map("last_interaction_at")
   lastAnalyzedAt               BigInt?               @map("last_analyzed_at")
@@ -217,6 +220,7 @@ model UserProfile {
 
   @@index([lastAnalyzedAt], map: "idx_user_profiles_last_analyzed")
   @@index([userId], map: "idx_user_profiles_user_id")
+  @@index([preferences], type: Gin, map: "idx_user_profiles_preferences_gin")
   @@map("user_profiles")
 }
 
@@ -610,4 +614,57 @@ model TpmjsIntegrationLog {
   @@index([createdAt(sort: Desc)], map: "idx_tpmjs_integration_logs_created_at")
   @@index([integrationMode], map: "idx_tpmjs_integration_logs_mode")
   @@map("tpmjs_integration_logs")
+}
+
+model VideoFile {
+  id                Int      @id @default(autoincrement())
+  title             String
+  description       String?
+  videoData         Bytes    @map("video_data")
+  filename          String
+  fileSize          Int?     @map("file_size")
+  format            String?  @default("mp4")
+  duration          Float?   @db.Real
+  width             Int?
+  height            Int?
+  fps               Int?
+  imageReferences   Json?    @map("image_references")
+  metadata          Json?
+  createdBy         String?  @map("created_by")
+  createdByUsername String?  @map("created_by_username")
+  createdAt         DateTime @default(dbgenerated("CURRENT_TIMESTAMP")) @map("created_at") @db.Timestamptz(6)
+
+  @@index([createdAt(sort: Desc)], map: "idx_video_files_created_at")
+  @@index([createdBy], map: "idx_video_files_created_by")
+  @@map("video_files")
+}
+
+model Conversation {
+  id                   Int                   @id @default(autoincrement())
+  userId               String                @map("user_id") @db.VarChar(255)
+  username             String?               @db.VarChar(255)
+  channelId            String?               @map("channel_id") @db.VarChar(255)
+  startedAt            DateTime              @default(now()) @map("started_at") @db.Timestamptz(6)
+  conversationMessages ConversationMessage[]
+
+  @@index([userId], map: "idx_conversations_user_id")
+  @@index([channelId], map: "idx_conversations_channel_id")
+  @@index([startedAt(sort: Desc)], map: "idx_conversations_started_at")
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             Int          @id @default(autoincrement())
+  conversationId Int          @map("conversation_id")
+  senderType     String       @map("sender_type") @db.VarChar(50)
+  userId         String?      @db.VarChar(255)
+  username       String?      @db.VarChar(255)
+  content        String       @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([conversationId], map: "idx_conversation_messages_conversation_id")
+  @@index([createdAt(sort: Desc)], map: "idx_conversation_messages_created_at")
+  @@index([userId], map: "idx_conversation_messages_user_id")
+  @@map("conversation_messages")
 }
