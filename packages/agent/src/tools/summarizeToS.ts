@@ -23,7 +23,7 @@ export const summarizeToSTool = tool({
   execute: async ({ url, userId, username, forceRefresh }) => {
     console.log(`📜 Summarizing ToS from: ${url}`);
 
-    const pool = getPostgresPool();
+    const pool = await getPostgresPool();
 
     try {
       // Step 1: Check if we already have this URL cached
@@ -56,33 +56,43 @@ export const summarizeToSTool = tool({
 
       // Step 2: Fetch the ToS content using webFetch tool
       console.log(`🌐 Fetching ToS content from ${url}...`);
+      if (!webFetchTool.execute) {
+        return {
+          success: false,
+          error: 'tool_unavailable',
+          message: 'Web fetch tool is not available',
+          url,
+        };
+      }
+
       const fetchResult = await webFetchTool.execute({
         url,
         userAgent: 'OmegaBot/1.0 (ToS Analyzer)',
         mode: 'parsed',
         maxRedirects: 10,
-      });
+      }, {});
 
       if (!fetchResult.success) {
         // Save failed fetch to database
         const errorId = crypto.randomUUID();
         const domain = new URL(url).hostname;
+        const errorMessage = 'message' in fetchResult ? fetchResult.message : ('error' in fetchResult ? fetchResult.error : 'Unknown error');
 
         await pool.query(`
           INSERT INTO tos_summaries (
             id, url, domain, fetch_status, fetch_error, requested_by, requested_by_username
           ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `, [errorId, url, domain, 'failed', fetchResult.message || fetchResult.error, userId, username]);
+        `, [errorId, url, domain, 'failed', errorMessage, userId, username]);
 
         return {
           success: false,
           error: 'fetch_failed',
-          message: `Failed to fetch ToS: ${fetchResult.message || fetchResult.error}`,
+          message: `Failed to fetch ToS: ${errorMessage}`,
           url,
         };
       }
 
-      const rawContent = fetchResult.content || fetchResult.body || '';
+      const rawContent = ('content' in fetchResult ? fetchResult.content : undefined) || ('body' in fetchResult ? fetchResult.body : undefined) || '';
 
       if (!rawContent || rawContent.trim().length < 50) {
         return {
