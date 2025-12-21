@@ -47,7 +47,7 @@ export async function GET(
       });
 
       if (comic && comic.imageData) {
-        return new NextResponse(comic.imageData, {
+        return new NextResponse(new Uint8Array(comic.imageData), {
           headers: {
             'Content-Type': comic.mimeType || 'image/png',
             'Cache-Control': 'public, max-age=31536000, immutable',
@@ -88,7 +88,7 @@ export async function GET(
     // Read and serve the file
     const fileBuffer = readFileSync(filePath);
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': 'image/png',
         'Cache-Control': 'public, max-age=31536000, immutable',
