@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const image = await getGeneratedImage(imageId);
+    const image = await getGeneratedImage(BigInt(imageId));
 
     if (!image) {
       return NextResponse.json(
@@ -31,49 +31,46 @@ export async function GET(
         ? new Uint8Array(image.imageData)
         : image.imageData;
 
-      // Determine content type from format
-      const contentType = image.format === 'jpg' || image.format === 'jpeg'
-        ? 'image/jpeg'
-        : image.format === 'gif'
-        ? 'image/gif'
-        : image.format === 'webp'
-        ? 'image/webp'
-        : 'image/png';
+      // Determine content type from mimeType, fallback to image/png
+      const contentType = image.mimeType || 'image/png';
 
       return new NextResponse(imageBuffer, {
         headers: {
           'Content-Type': contentType,
-          'Content-Disposition': `inline; filename="${image.filename}"`,
+          'Content-Disposition': `inline; filename="image-${image.id}.${contentType.split('/')[1] || 'png'}"`,
           'Cache-Control': 'public, max-age=31536000, immutable',
         },
       });
     }
 
-    // If no image data in database, return metadata with public URL
+    // If no image data in database, return metadata with storage URL
     return NextResponse.json({
       success: true,
       image: {
-        id: image.id,
-        title: image.title,
-        description: image.description,
+        id: image.id.toString(),
+        requestId: image.requestId,
+        userId: image.userId,
+        username: image.username,
+        toolName: image.toolName,
         prompt: image.prompt,
-        revisedPrompt: image.revisedPrompt,
-        toolUsed: image.toolUsed,
-        modelUsed: image.modelUsed,
-        filename: image.filename,
-        fileSize: image.fileSize,
-        publicUrl: image.publicUrl,
-        width: image.width,
-        height: image.height,
-        format: image.format,
+        model: image.model,
+        size: image.size,
+        quality: image.quality,
+        style: image.style,
+        n: image.n,
+        storageUrl: image.storageUrl,
+        storageProvider: image.storageProvider,
+        mimeType: image.mimeType,
+        bytes: image.bytes,
+        sha256: image.sha256,
+        tags: image.tags,
+        status: image.status,
+        error: image.error,
         metadata: image.metadata,
-        createdBy: image.createdBy,
-        createdByUsername: image.createdByUsername,
-        discordMessageId: image.discordMessageId,
-        githubIssueNumber: image.githubIssueNumber,
+        messageId: image.messageId,
         createdAt: image.createdAt.toISOString(),
       },
-      message: 'Image data not stored in database. Use publicUrl or artifactPath to access the image.',
+      message: 'Image data not stored in database. Use storageUrl to access the image.',
     });
   } catch (error) {
     console.error('Error fetching generated image:', error);
