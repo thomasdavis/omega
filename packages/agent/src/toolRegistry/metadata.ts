@@ -2624,7 +2624,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'show me channels missing descriptions',
       'manage Discord channel descriptions'
     ],
-    category: 'utility'
+    category: 'specialized'
   },
 ];
 

@@ -150,10 +150,10 @@ async function pinDescriptionMessage(
     }
 
     // Check existing pinned messages if updateExisting is true
-    if (updateExisting) {
+    if (updateExisting && client.user) {
       const pinnedMessages = await channel.messages.fetchPinned();
       const botMessages = pinnedMessages.filter(
-        msg => msg.author.id === client.user?.id
+        msg => msg.author.id === client.user.id
       );
 
       // Unpin existing bot messages
