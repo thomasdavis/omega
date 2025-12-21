@@ -2468,6 +2468,54 @@ export const TOOL_METADATA: ToolMetadata[] = [
 
   // Note: Entries for logFeeling, queryFeelings, and getFeelingSummary
   // are already defined above (lines 745-794)
+
+  // ===== SHARED LINKS TOOLS (3) =====
+  {
+    id: 'addSharedLink',
+    name: 'Add Shared Link',
+    description: 'Save a link to the shared links collection with AI-generated topic tags',
+    keywords: ['link', 'save', 'bookmark', 'url', 'share', 'store', 'collection', 'tag', 'categorize'],
+    tags: ['content', 'links', 'bookmarks', 'sharing', 'organization'],
+    examples: [
+      'save this link',
+      'bookmark this URL',
+      'add to shared links',
+      'store this website',
+      'save the link I just posted'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'browseSharedLinks',
+    name: 'Browse Shared Links',
+    description: 'Browse and search the shared links collection with flexible filtering by tags, user, channel, or time',
+    keywords: ['browse', 'search', 'links', 'find', 'filter', 'query', 'bookmarks', 'shared', 'collection', 'discover'],
+    tags: ['content', 'links', 'bookmarks', 'search', 'discovery'],
+    examples: [
+      'show me links about AI',
+      'find links about TypeScript',
+      'what links were shared recently',
+      'browse shared links',
+      'show me tutorial links'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'getPopularTags',
+    name: 'Get Popular Tags',
+    description: 'Get a list of all unique tags used in saved links, sorted by frequency',
+    keywords: ['tags', 'topics', 'categories', 'popular', 'trending', 'browse', 'discover'],
+    tags: ['content', 'links', 'discovery', 'analytics'],
+    examples: [
+      'what topics are available',
+      'show popular tags',
+      'what tags are used',
+      'browse link categories'
+    ],
+    category: 'content'
+  },
 ];
 
 /**
