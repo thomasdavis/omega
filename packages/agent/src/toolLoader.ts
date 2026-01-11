@@ -184,6 +184,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   defineWord: { path: './tools/defineWord.js', exportName: 'defineWordTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
   updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
+  repairUserProfileSchema: { path: './tools/repairUserProfileSchema.js', exportName: 'repairUserProfileSchemaTool' },
   bullshitDetector: { path: './tools/bullshitDetector.js', exportName: 'bullshitDetectorTool' },
   tweet: { path: './tools/tweet.js', exportName: 'tweetTool' },
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
@@ -217,12 +218,18 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   valTownCreateVal: { path: './tools/valTownCreateVal.js', exportName: 'valTownCreateValTool' },
   valTownUpdateVal: { path: './tools/valTownUpdateVal.js', exportName: 'valTownUpdateValTool' },
   valTownListVals: { path: './tools/valTownListVals.js', exportName: 'valTownListValsTool' },
+  valTownGetVal: { path: './tools/valTownGetVal.js', exportName: 'valTownGetValTool' },
+  valTownDeleteVal: { path: './tools/valTownDeleteVal.js', exportName: 'valTownDeleteValTool' },
+  valTownRunVal: { path: './tools/valTownRunVal.js', exportName: 'valTownRunValTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
   // Search imported directly from @tpmjs/registry-search
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
   tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
+
+  // Discord Tools
+  discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
 };
 
 /**
