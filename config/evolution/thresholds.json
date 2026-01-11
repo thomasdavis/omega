@@ -1,0 +1,95 @@
+{
+  "$schema": "./thresholds-schema.json",
+  "description": "Operational thresholds for the evolution engine",
+  "version": "1.0.0",
+  "scheduling": {
+    "cronExpression": "0 2 * * *",
+    "timezone": "UTC",
+    "jitterMinutes": 20,
+    "exclusiveLock": true,
+    "dryRunDurationHours": 48
+  },
+  "proposalSelection": {
+    "minProposalsPerDay": 2,
+    "maxProposalsPerDay": 4,
+    "required": {
+      "capability": 1,
+      "anticipatory": 1,
+      "wildcard": 1
+    },
+    "optional": {
+      "other": 1
+    }
+  },
+  "diffLimits": {
+    "maxLinesOfCode": 500,
+    "maxFiles": 10,
+    "maxFileSizeBytes": 102400,
+    "warnThresholdLines": 300,
+    "warnThresholdFiles": 7
+  },
+  "branchNaming": {
+    "prefix": "auto/evolve",
+    "format": "auto/evolve/YYYY-MM-DD",
+    "includeSlug": false
+  },
+  "sanityChecks": {
+    "required": [
+      "lint",
+      "typecheck",
+      "build"
+    ],
+    "optional": [
+      "test",
+      "security-scan"
+    ],
+    "minimumScore": 70,
+    "blockers": [
+      "lint-errors",
+      "type-errors",
+      "build-failures",
+      "blocked-paths",
+      "missing-feature-flags"
+    ]
+  },
+  "featureFlags": {
+    "required": true,
+    "defaultEnabled": false,
+    "defaultRolloutPercent": 0,
+    "initialRollout": {
+      "observationHours": 24,
+      "firstRolloutPercent": 5,
+      "incrementPercent": 10,
+      "incrementIntervalHours": 24
+    }
+  },
+  "rollbackTriggers": {
+    "errorRateIncreasePercent": 10,
+    "performanceDegradationPercent": 15,
+    "sentimentScoreDropPoints": 20,
+    "manualRevert": true
+  },
+  "observationWindow": {
+    "lookbackHours": 24,
+    "minMessagesForAnalysis": 10,
+    "minUsersForAnalysis": 2
+  },
+  "prTemplate": {
+    "path": ".github/PULL_REQUEST_TEMPLATE/evolution.md",
+    "requiredLabels": ["ai-ops", "enhancement", "safety", "evolution"],
+    "requiredReviewers": ["maintainers"],
+    "additionalReviewers": ["claude"],
+    "autoMerge": false
+  },
+  "wildcardConstraints": {
+    "maxRiskLevel": "low",
+    "requiresReversibility": true,
+    "personaChangesRequireApproval": true,
+    "examples": [
+      "Comedic mouth pulse probability parameter",
+      "Smart callback quip library",
+      "Tiny ASCII graph preset",
+      "Safe text transformer utility"
+    ]
+  }
+}
