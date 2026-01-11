@@ -2189,6 +2189,39 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'updateMyProfile',
+    name: 'Update My Profile',
+    description: 'Update user profile information including username, avatar URL, bio, and preferences',
+    keywords: ['update', 'profile', 'edit', 'modify', 'avatar', 'bio', 'preferences', 'user'],
+    tags: ['admin', 'user', 'profile', 'update'],
+    examples: [
+      'update my profile',
+      'change my avatar',
+      'set my bio',
+      'edit my preferences',
+      'update user profile'
+    ],
+    category: 'admin'
+  },
+
+  {
+    id: 'repairUserProfileSchema',
+    name: 'Repair User Profile Schema',
+    description: 'Fix database schema issues in user_profiles table by adding missing columns (avatar_url, bio, preferences) and ensuring schema compatibility',
+    keywords: ['repair', 'schema', 'database', 'fix', 'profile', 'migration', 'columns', 'user_profiles', 'avatar_url', 'bio', 'preferences', 'database repair'],
+    tags: ['database', 'admin', 'repair', 'schema', 'migration'],
+    examples: [
+      'fix user profile database schema',
+      'repair missing columns in user_profiles',
+      'check profile schema',
+      'add avatar_url column to user_profiles',
+      'repair profile database',
+      'fix database schema issues'
+    ],
+    category: 'database'
+  },
+
+  {
     id: 'bullshitDetector',
     name: 'Bullshit Detector',
     description: 'Detect and analyze misleading information',
