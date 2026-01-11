@@ -1166,6 +1166,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'novaVideoCreator',
+    name: 'Amazon Nova Video Creator',
+    description: 'Create AI-generated videos from images using Amazon Nova Lite model via AWS Bedrock. Intelligently generates smooth transitions, animations, and effects between images.',
+    keywords: ['video', 'ai video', 'amazon nova', 'nova', 'bedrock', 'aws', 'images', 'transitions', 'animation', 'create video', 'mp4', 'ai generated', 'smart transitions', 'image to video'],
+    tags: ['content', 'video', 'creation', 'ai', 'media', 'artifact', 'aws'],
+    examples: [
+      'create ai video from images',
+      'make video with nova',
+      'use amazon nova for video',
+      'generate video with transitions',
+      'ai animated video from images',
+      'create professional video from images',
+      'smart video generation',
+      'amazon nova video'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateMarkdown',
     name: 'Generate Markdown',
     description: 'Generate formatted markdown documents',
