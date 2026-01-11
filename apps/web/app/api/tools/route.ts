@@ -32,14 +32,14 @@ export async function GET(request: NextRequest) {
       filteredTools = filteredTools.filter(tool =>
         tool.name.toLowerCase().includes(searchLower) ||
         tool.description.toLowerCase().includes(searchLower) ||
-        tool.keywords.some(k => k.toLowerCase().includes(searchLower)) ||
-        tool.tags.some(t => t.toLowerCase().includes(searchLower))
+        tool.keywords.some((k: string) => k.toLowerCase().includes(searchLower)) ||
+        tool.tags.some((t: string) => t.toLowerCase().includes(searchLower))
       );
     }
 
     if (tags.length > 0) {
       filteredTools = filteredTools.filter(tool =>
-        tags.some(tag => tool.tags.includes(tag))
+        tags.some((tag: string) => tool.tags.includes(tag))
       );
     }
 
