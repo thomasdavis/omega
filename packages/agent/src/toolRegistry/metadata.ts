@@ -2189,6 +2189,39 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'updateMyProfile',
+    name: 'Update My Profile',
+    description: 'Update user profile information including username, avatar URL, bio, and preferences',
+    keywords: ['update', 'profile', 'edit', 'modify', 'avatar', 'bio', 'preferences', 'user'],
+    tags: ['admin', 'user', 'profile', 'update'],
+    examples: [
+      'update my profile',
+      'change my avatar',
+      'set my bio',
+      'edit my preferences',
+      'update user profile'
+    ],
+    category: 'admin'
+  },
+
+  {
+    id: 'repairUserProfileSchema',
+    name: 'Repair User Profile Schema',
+    description: 'Fix database schema issues in user_profiles table by adding missing columns (avatar_url, bio, preferences) and ensuring schema compatibility',
+    keywords: ['repair', 'schema', 'database', 'fix', 'profile', 'migration', 'columns', 'user_profiles', 'avatar_url', 'bio', 'preferences', 'database repair'],
+    tags: ['database', 'admin', 'repair', 'schema', 'migration'],
+    examples: [
+      'fix user profile database schema',
+      'repair missing columns in user_profiles',
+      'check profile schema',
+      'add avatar_url column to user_profiles',
+      'repair profile database',
+      'fix database schema issues'
+    ],
+    category: 'database'
+  },
+
+  {
     id: 'bullshitDetector',
     name: 'Bullshit Detector',
     description: 'Detect and analyze misleading information',
@@ -2562,6 +2595,69 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'show deployed vals'
     ],
     category: 'development'
+  },
+
+  {
+    id: 'valTownGetVal',
+    name: 'Val Town Get Val',
+    description: 'Get details of a specific val on Val Town by ID',
+    keywords: ['val', 'valtown', 'get', 'fetch', 'inspect', 'details', 'view', 'check'],
+    tags: ['deployment', 'management', 'inspection'],
+    examples: [
+      'get details of val ID xyz',
+      'show me val xyz',
+      'inspect val xyz',
+      'what is in val xyz'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownDeleteVal',
+    name: 'Val Town Delete Val',
+    description: 'Delete a val on Val Town permanently',
+    keywords: ['val', 'valtown', 'delete', 'remove', 'destroy', 'cleanup'],
+    tags: ['deployment', 'management', 'cleanup'],
+    examples: [
+      'delete val xyz',
+      'remove my test val',
+      'clean up old vals',
+      'delete unused vals'
+    ],
+    category: 'development'
+  },
+
+  {
+    id: 'valTownRunVal',
+    name: 'Val Town Run Val',
+    description: 'Execute an HTTP val on Val Town and get the response',
+    keywords: ['val', 'valtown', 'run', 'execute', 'trigger', 'test', 'call', 'invoke'],
+    tags: ['deployment', 'testing', 'execution'],
+    examples: [
+      'run my val',
+      'execute val xyz',
+      'test my val deployment',
+      'trigger val with parameters'
+    ],
+    category: 'development'
+  },
+
+  // ===== DISCORD TOOLS =====
+  {
+    id: 'discordChannelDescriptionManager',
+    name: 'Discord Channel Description Manager',
+    description: 'Manage Discord channel descriptions through pinned messages. Fetch all channels with topics and pins, or pin description messages to specific channels.',
+    keywords: ['discord', 'channel', 'description', 'topic', 'pin', 'pinned', 'message', 'manage', 'organize'],
+    tags: ['discord', 'utility', 'management', 'organization'],
+    examples: [
+      'fetch all channel names and descriptions in my Discord server',
+      'list all Discord channels with their topics',
+      'pin default description messages in channels',
+      'update pinned description message in a channel',
+      'show me channels missing descriptions',
+      'manage Discord channel descriptions'
+    ],
+    category: 'specialized'
   },
 ];
 
