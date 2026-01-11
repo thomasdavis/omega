@@ -1,5 +1,32 @@
 [
   {
+    "id": "f65cc5c9",
+    "filename": "MAIRY_v3_Academic_Paper_7839d6d7.docx",
+    "originalName": "MAIRY_v3_Academic_Paper.docx",
+    "size": 19015,
+    "extension": ".docx",
+    "uploadedAt": "2026-01-11T06:12:57.594Z",
+    "uploadedBy": "therosegoblin",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/MAIRY_v3_Academic_Paper_7839d6d7.docx",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/MAIRY_v3_Academic_Paper_7839d6d7.docx",
+    "description": "MAIRY project version 3 academic paper docx file",
+    "tags": [
+      "auto-transfer"
+    ]
+  },
+  {
+    "id": "a9f4e5d6",
+    "filename": "MAIRY_Architecture_Diagram_Guide_cace62c4.md",
+    "originalName": "MAIRY_Architecture_Diagram_Guide.md",
+    "size": 13800,
+    "extension": ".md",
+    "uploadedAt": "2026-01-11T06:12:55.939Z",
+    "uploadedBy": "therosegoblin",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/MAIRY_Architecture_Diagram_Guide_cace62c4.md",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/MAIRY_Architecture_Diagram_Guide_cace62c4.md",
+    "description": "MAIRY project architecture diagram guide markdown file"
+  },
+  {
     "id": "1980af9f",
     "filename": "image0_71724776.gif",
     "originalName": "image0.gif",
