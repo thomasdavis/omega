@@ -1,5 +1,18 @@
 [
   {
+    "id": "2445c33a",
+    "filename": "mairy_pipeline_a931128e.py",
+    "originalName": "mairy_pipeline.py",
+    "size": 20785,
+    "extension": ".py",
+    "mimeType": "text/x-python",
+    "uploadedAt": "2026-01-12T20:52:58.148Z",
+    "uploadedBy": "therosegoblin",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/mairy_pipeline_a931128e.py",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/mairy_pipeline_a931128e.py",
+    "description": "MAIRY v3.0 pipeline source code for semantic understanding, triadic scoring, and safety constraints in Mistral models."
+  },
+  {
     "id": "f65cc5c9",
     "filename": "MAIRY_v3_Academic_Paper_7839d6d7.docx",
     "originalName": "MAIRY_v3_Academic_Paper.docx",
