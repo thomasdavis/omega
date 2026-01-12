@@ -181,6 +181,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   runBatchAnalysis: { path: './tools/runBatchAnalysis.js', exportName: 'runBatchAnalysisTool' },
   quantumComputing: { path: './tools/quantumComputing.js', exportName: 'quantumComputingTool' },
   queryDatabase: { path: './tools/queryDatabase.js', exportName: 'queryDatabaseTool' },
+  postgresQueryExecutor: { path: './tools/postgresQueryExecutor.js', exportName: 'postgresQueryExecutorTool' },
   defineWord: { path: './tools/defineWord.js', exportName: 'defineWordTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
   updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
