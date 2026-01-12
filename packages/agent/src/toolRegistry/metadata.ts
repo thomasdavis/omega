@@ -2178,6 +2178,27 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'postgresQueryExecutor',
+    name: 'PostgreSQL Query Executor',
+    description: 'Execute PostgreSQL SELECT queries with parameterized inputs for safe data retrieval, analytics, and inspection',
+    keywords: ['postgres', 'postgresql', 'query', 'sql', 'execute', 'database', 'select', 'parameterized', 'analytics', 'data', 'history', 'inspect'],
+    tags: ['database', 'postgres', 'query', 'sql', 'analytics'],
+    examples: [
+      'run this SQL query',
+      'execute postgres query',
+      'query channel message history',
+      'fetch messages from last 7 days',
+      'show count of users per channel',
+      'get last 10 messages',
+      'query semantic alignment data',
+      'SELECT * FROM table WHERE condition',
+      'run parameterized query',
+      'execute database query'
+    ],
+    category: 'database'
+  },
+
+  {
     id: 'defineWord',
     name: 'Define Word',
     description: 'Get dictionary definitions',
