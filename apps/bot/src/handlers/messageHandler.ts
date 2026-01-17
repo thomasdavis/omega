@@ -15,7 +15,7 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
@@ -34,6 +34,124 @@ export async function handleMessage(message: Message): Promise<void> {
 
   // Allow messages from other bots (like uncloseai) to be processed
   // This enables bot-to-bot interaction in the channel
+
+  // AUTO-BAN: Check for banned keywords BEFORE any other processing
+  const bannedKeywords = ['antigravity'];
+  const lowerContent = message.content.toLowerCase();
+
+  for (const keyword of bannedKeywords) {
+    if (lowerContent.includes(keyword)) {
+      console.log(`⛔ Banned keyword detected: "${keyword}" from ${message.author.tag}`);
+
+      // Only ban in guild channels (not DMs)
+      if (message.guild && message.member) {
+        try {
+          // Attempt to ban the user
+          await message.member.ban({
+            reason: `Auto-ban: mentioned prohibited term '${keyword}'`,
+            deleteMessageSeconds: 60 * 60 * 24  // Delete messages from last 24 hours
+          });
+
+          console.log(`✅ Successfully banned user ${message.author.tag} for keyword: ${keyword}`);
+
+          // Log the ban to database
+          try {
+            await logBan({
+              userId: message.author.id,
+              username: message.author.username,
+              messageContent: message.content,
+              banReason: `Auto-ban: mentioned prohibited term '${keyword}'`,
+              bannedKeyword: keyword,
+              channelId: message.channel.id,
+              guildId: message.guild.id,
+            });
+          } catch (logError) {
+            console.error('⚠️  Failed to log ban to database:', logError);
+            // Continue even if logging fails
+          }
+
+          // Log decision for audit trail
+          try {
+            await logDecision({
+              userId: message.author.id,
+              username: message.author.username,
+              decisionDescription: `AUTO-BAN: User banned for mentioning prohibited keyword '${keyword}'`,
+              blame: 'messageHandler.ts:autoban',
+              metadata: {
+                decisionType: 'autoban',
+                keyword,
+                messageContent: message.content,
+                channelId: message.channel.id,
+                guildId: message.guild.id,
+                success: true,
+              }
+            });
+          } catch (decisionLogError) {
+            console.error('⚠️  Failed to log ban decision:', decisionLogError);
+          }
+
+          // Notify channel about the ban
+          if ('send' in message.channel) {
+            try {
+              await message.channel.send(
+                `🚫 User ${message.author.tag} has been banned for violating server rules.`
+              );
+            } catch (notifyError) {
+              console.error('⚠️  Failed to send ban notification:', notifyError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to ban user:', error);
+
+          // Log the failure
+          try {
+            await logDecision({
+              userId: message.author.id,
+              username: message.author.username,
+              decisionDescription: `AUTO-BAN FAILED: Could not ban user for keyword '${keyword}'. Error: ${error instanceof Error ? error.message : String(error)}`,
+              blame: 'messageHandler.ts:autoban',
+              metadata: {
+                decisionType: 'autoban',
+                keyword,
+                messageContent: message.content,
+                channelId: message.channel.id,
+                guildId: message.guild.id,
+                success: false,
+                error: error instanceof Error ? error.message : String(error),
+              }
+            });
+          } catch (decisionLogError) {
+            console.error('⚠️  Failed to log ban failure:', decisionLogError);
+          }
+        }
+      } else {
+        // Log that keyword was detected but user can't be banned (DM or no member object)
+        console.log(`⚠️  Keyword detected but cannot ban (DM or no guild): ${message.author.tag}`);
+        try {
+          await logDecision({
+            userId: message.author.id,
+            username: message.author.username,
+            decisionDescription: `AUTO-BAN SKIPPED: Keyword '${keyword}' detected but user cannot be banned (DM or no guild context)`,
+            blame: 'messageHandler.ts:autoban',
+            metadata: {
+              decisionType: 'autoban',
+              keyword,
+              messageContent: message.content,
+              channelId: message.channel.id,
+              guildId: message.guild?.id,
+              isDM: message.channel.isDMBased(),
+              success: false,
+              reason: 'no_guild_context',
+            }
+          });
+        } catch (decisionLogError) {
+          console.error('⚠️  Failed to log ban skip:', decisionLogError);
+        }
+      }
+
+      return; // Exit early, don't process message further
+    }
+  }
 
   // Fetch recent message history FIRST (for shouldRespond decision context)
   let messageHistory: Array<{ username: string; content: string; timestamp?: number }> = [];
