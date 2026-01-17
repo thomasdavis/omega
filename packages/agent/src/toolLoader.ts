@@ -104,6 +104,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   renderChart: { path: './tools/renderChart.js', exportName: 'renderChartTool' },
   generateComic: { path: './tools/generateComic.js', exportName: 'generateComicTool' },
   generateDilbertComic: { path: './tools/generateDilbertComic.js', exportName: 'generateDilbertComicTool' },
+  generateXkcdComic: { path: './tools/generateXkcdComic.js', exportName: 'generateXkcdComicTool' },
   generateSonnet: { path: './tools/generateSonnet.js', exportName: 'generateSonnetTool' },
   generateHaiku: { path: './tools/generateHaiku.js', exportName: 'generateHaikuTool' },
   generatePersonalizedPoem: { path: './tools/generatePersonalizedPoem.js', exportName: 'generatePersonalizedPoemTool' },
