@@ -97,7 +97,7 @@ model DocumentCollaborator {
 }
 
 model UserProfile {
-  id                           String                @id
+  id                           String                @id @default(dbgenerated("gen_random_uuid()::text"))
   userId                       String                @unique @map("user_id")
   username                     String
   dominant_archetype           String?

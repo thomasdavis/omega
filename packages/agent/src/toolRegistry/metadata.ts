@@ -988,6 +988,38 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateDilbertComic',
+    name: 'Generate Dilbert-Style Comic',
+    description: 'Generate enhanced Dilbert-style comic strips with workplace satire, tech humor, crisp panels, and clear text bubbles',
+    keywords: ['dilbert', 'comic', 'workplace', 'satire', 'office', 'tech humor', 'cartoon', 'developer', 'strip'],
+    tags: ['content', 'image', 'comic', 'workplace', 'humor'],
+    examples: [
+      'create a Dilbert-style comic about remote work',
+      'generate workplace satire comic',
+      'make a Dilbert comic about AI',
+      'create office politics comic strip',
+      'generate tech satire comic'
+    ],
+    category: 'content'
+  },
+
+  {
+    id: 'generateXkcdComic',
+    name: 'Generate XKCD-Style Comic',
+    description: 'Generate minimalist stick figure comics in XKCD style with dry humor, scientific/technical wit, and clever explanations',
+    keywords: ['xkcd', 'comic', 'stick figure', 'science', 'tech', 'programming', 'math', 'geek', 'humor', 'minimalist', 'cartoon', 'strip'],
+    tags: ['content', 'image', 'comic', 'xkcd', 'humor', 'science', 'tech'],
+    examples: [
+      'create an xkcd style comic about programming',
+      'make an xkcd comic explaining quantum mechanics',
+      'generate an xkcd strip on AI humor',
+      'create xkcd comic about debugging',
+      'make xkcd style comic about machine learning'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateSonnet',
     name: 'Generate Sonnet',
     description: 'Generate sonnets and poetry',
@@ -2679,6 +2711,27 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'manage Discord channel descriptions'
     ],
     category: 'specialized'
+  },
+
+  {
+    id: 'antigravityConceptExplainer',
+    name: 'Antigravity Concept Explainer',
+    description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
+    keywords: ['antigravity', 'gravity', 'physics', 'science fiction', 'scifi', 'theoretical', 'levitation', 'propulsion', 'spaceflight', 'exotic matter'],
+    tags: ['research', 'education', 'physics', 'science'],
+    examples: [
+      'explain antigravity',
+      'what is antigravity',
+      'antigravity in physics',
+      'antigravity technology',
+      'how does antigravity work',
+      'antigravity in sci-fi',
+      'antigravity theories',
+      'is antigravity possible',
+      'antigravity challenges',
+      'antigravity applications'
+    ],
+    category: 'research'
   },
 ];
 
