@@ -988,6 +988,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateDilbertComic',
+    name: 'Generate Dilbert-Style Comic',
+    description: 'Generate enhanced Dilbert-style comic strips with workplace satire, tech humor, crisp panels, and clear text bubbles',
+    keywords: ['dilbert', 'comic', 'workplace', 'satire', 'office', 'tech humor', 'cartoon', 'developer', 'strip'],
+    tags: ['content', 'image', 'comic', 'workplace', 'humor'],
+    examples: [
+      'create a Dilbert-style comic about remote work',
+      'generate workplace satire comic',
+      'make a Dilbert comic about AI',
+      'create office politics comic strip',
+      'generate tech satire comic'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateSonnet',
     name: 'Generate Sonnet',
     description: 'Generate sonnets and poetry',
