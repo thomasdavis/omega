@@ -1,7 +1,12 @@
 /**
- * Antigravity Roast Generator
+ * Antigravity Roast Generator - AI-Powered Edition
  * Generates witty, sarcastic, and cutting roasts when users mention antigravity
+ * Uses AI SDK v6 for dynamic, personalized insult generation based on user profiles
  */
+
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { OMEGA_MODEL } from '@repo/shared';
 
 interface UserProfile {
   dominant_archetype?: string;
@@ -15,170 +20,158 @@ interface UserProfile {
   perceived_confidence_level?: string;
   message_length_avg?: number;
   technical_knowledge_level?: string;
+  secondary_archetypes?: any;
+  communication_formality?: string;
+  communication_assertiveness?: string;
+  analytical_thinking_score?: number;
+  creative_thinking_score?: number;
+  extraversion_score?: number;
+  agreeableness_score?: number;
+  conscientiousness_score?: number;
 }
-
-interface RoastTemplate {
-  template: string;
-  requiresProfile?: boolean;
-  profileCondition?: (profile: UserProfile) => boolean;
-}
-
-// Roast templates with varying styles
-const roastTemplates: RoastTemplate[] = [
-  // Intelligence mocking roasts
-  {
-    template: "Oh wow, {keyword}? I haven't heard something that scientifically illiterate since the flat earth convention. Did you fail physics or just skip it entirely?",
-    requiresProfile: false,
-  },
-  {
-    template: "'{keyword}'? Really? And I thought I'd seen peak stupidity today. Thanks for raising the bar so spectacularly low.",
-    requiresProfile: false,
-  },
-  {
-    template: "Let me guess - you also believe in healing crystals and homeopathy? Because mentioning {keyword} puts you right in that special category of 'aggressively wrong about science.'",
-    requiresProfile: false,
-  },
-  {
-    template: "Ah yes, {keyword}. The rallying cry of people who think YouTube videos count as peer-reviewed research. How's that working out for you?",
-    requiresProfile: false,
-  },
-
-  // Ambition/judgment insulting roasts
-  {
-    template: "You know what's less real than {keyword}? The chances of you ever making a scientifically sound argument. But hey, keep reaching for those imaginary stars.",
-    requiresProfile: false,
-  },
-  {
-    template: "'{keyword}' - is that what you call it when your critical thinking skills float away into the void? Because that's the only thing defying gravity here.",
-    requiresProfile: false,
-  },
-  {
-    template: "I'd explain why {keyword} is pseudoscientific nonsense, but I have a sneaking suspicion that basic physics is well above your intellectual pay grade.",
-    requiresProfile: false,
-  },
-
-  // Self-awareness burning roasts
-  {
-    template: "The only thing more impressive than your belief in {keyword} is your complete lack of self-awareness about how that makes you look. Spoiler: not good.",
-    requiresProfile: false,
-  },
-  {
-    template: "'{keyword}'? Buddy, the only thing you should be concerned about defying is the gravity of your own terrible decisions - starting with this message.",
-    requiresProfile: false,
-  },
-
-  // Taste/judgment roasts
-  {
-    template: "I've seen some questionable takes in my time, but bringing up {keyword}? That's like voluntarily admitting you eat crayons for breakfast. Not a great look.",
-    requiresProfile: false,
-  },
-  {
-    template: "You really typed '{keyword}' with your whole chest and thought 'yeah, this is the one.' That's the kind of judgment I'd expect from someone who microwaves fish in the office.",
-    requiresProfile: false,
-  },
-
-  // Generic savage roasts
-  {
-    template: "'{keyword}' - congratulations on stringing together the two words most likely to make everyone in a 10-mile radius question your intelligence. Truly remarkable.",
-    requiresProfile: false,
-  },
-  {
-    template: "I'd tell you that {keyword} violates the fundamental laws of physics, but something tells me 'fundamental laws' isn't really your speed. Try 'basic common sense' - oh wait, that's missing too.",
-    requiresProfile: false,
-  },
-  {
-    template: "The mental gymnastics required to take {keyword} seriously would be impressive if they weren't so deeply embarrassing for you specifically.",
-    requiresProfile: false,
-  },
-
-  // Profile-enhanced roasts (used when profile data is available)
-  {
-    template: "'{keyword}'? With your track record of {pattern}, I shouldn't be surprised. But somehow, you still manage to exceed my already-low expectations.",
-    requiresProfile: true,
-    profileCondition: (profile) => !!(profile.notable_patterns && profile.notable_patterns.length > 0),
-  },
-  {
-    template: "Oh {archetype}, bringing up {keyword} is peak on-brand for you - and not in a good way. It's like watching a masterclass in being confidently incorrect.",
-    requiresProfile: true,
-    profileCondition: (profile) => !!profile.dominant_archetype,
-  },
-  {
-    template: "I had some thoughts about you before: '{thoughts}' And now you're out here talking about {keyword}. Really validating my assessment, aren't you?",
-    requiresProfile: true,
-    profileCondition: (profile) => !!profile.omega_thoughts,
-  },
-  {
-    template: "Your {knowledge_level} level technical knowledge is showing. Pro tip: mentioning {keyword} doesn't make you sound smarter - quite the opposite, actually.",
-    requiresProfile: true,
-    profileCondition: (profile) => !!(profile.technical_knowledge_level && (profile.technical_knowledge_level === 'beginner' || profile.technical_knowledge_level === 'low')),
-  },
-  {
-    template: "That {confidence_level} confidence of yours? Turns out it was completely justified. Because only someone with that level of self-doubt would compensate by spouting {keyword} nonsense.",
-    requiresProfile: true,
-    profileCondition: (profile) => profile.perceived_confidence_level === 'low',
-  },
-];
 
 /**
- * Generate a personalized roast for antigravity mentions
+ * Generate an AI-powered personalized roast for antigravity mentions
+ * Returns both the roast text and metadata for logging
  */
-export function generateAntigravityRoast(
+export async function generateAntigravityRoast(
+  username: string,
+  keyword: string,
+  userProfile?: UserProfile | null,
+  bannedButNoPerm: boolean = false
+): Promise<{ roast: string; generationTimeMs: number; aiModel: string }> {
+  try {
+    const startTime = Date.now();
+
+    // Build the AI prompt with user profile context
+    const profileContext = userProfile ? buildProfileContext(userProfile) : 'No user profile data available.';
+
+    const banContext = bannedButNoPerm
+      ? "The user should have been banned for this, but you lack the permissions. Include a mention that you'd ban them if you could."
+      : "";
+
+    const prompt = `You are Omega, a brutally sarcastic AI with zero tolerance for pseudoscience. A user just mentioned "${keyword}" - a scientifically illiterate concept that violates fundamental physics.
+
+Your task: Generate a SAVAGE, witty, and cutting roast that demolishes them for this intellectual failure.
+
+User: ${username}
+Keyword mentioned: "${keyword}"
+${banContext}
+
+User Profile Context:
+${profileContext}
+
+Requirements:
+- Be BRUTALLY sarcastic and cutting, but clever (not just mean)
+- Use their profile data to make it DEEPLY personalized
+- Reference their personality traits, archetypes, or patterns when available
+- Mock their scientific illiteracy while being entertaining
+- Keep it under 200 words
+- Start with "${username}, ${bannedButNoPerm ? "I'd ban you for this if I had the permissions, but I don't. So instead, you get this: " : ""}"
+- Think Gordon Ramsay meets Neil deGrasse Tyson meets a savage AI
+- If profile shows low technical knowledge, mock that
+- If profile shows high confidence, mock the confidence being misplaced
+- If profile shows patterns of behavior, tie it to this latest mistake
+
+Generate only the roast - no explanations, no formatting, just pure savage truth.`;
+
+    const result = await generateText({
+      model: openai(OMEGA_MODEL),
+      prompt,
+    });
+
+    const generationTime = Date.now() - startTime;
+
+    // Log generation time for monitoring
+    console.log(`🔥 AI roast generated in ${generationTime}ms`);
+
+    return {
+      roast: result.text.trim(),
+      generationTimeMs: generationTime,
+      aiModel: OMEGA_MODEL,
+    };
+  } catch (error) {
+    console.error('❌ Failed to generate AI roast, falling back to template:', error);
+
+    // Fallback to a simple template-based roast if AI fails
+    const fallbackRoast = generateFallbackRoast(username, keyword, userProfile, bannedButNoPerm);
+    return {
+      roast: fallbackRoast,
+      generationTimeMs: 0,
+      aiModel: 'fallback-template',
+    };
+  }
+}
+
+/**
+ * Build context string from user profile for AI prompt
+ */
+function buildProfileContext(profile: UserProfile): string {
+  const parts: string[] = [];
+
+  if (profile.dominant_archetype) {
+    parts.push(`Primary archetype: ${profile.dominant_archetype}`);
+  }
+
+  if (profile.technical_knowledge_level) {
+    parts.push(`Technical knowledge: ${profile.technical_knowledge_level}`);
+  }
+
+  if (profile.perceived_confidence_level) {
+    parts.push(`Confidence level: ${profile.perceived_confidence_level}`);
+  }
+
+  if (profile.omega_thoughts) {
+    parts.push(`Omega's previous thoughts: "${profile.omega_thoughts.substring(0, 150)}${profile.omega_thoughts.length > 150 ? '...' : ''}"`);
+  }
+
+  if (profile.notable_patterns && profile.notable_patterns.length > 0) {
+    parts.push(`Notable patterns: ${profile.notable_patterns.slice(0, 3).join(', ')}`);
+  }
+
+  if (profile.neuroticism_score !== undefined) {
+    parts.push(`Neuroticism: ${profile.neuroticism_score}/100`);
+  }
+
+  if (profile.openness_score !== undefined) {
+    parts.push(`Openness: ${profile.openness_score}/100`);
+  }
+
+  if (profile.communication_formality) {
+    parts.push(`Communication style: ${profile.communication_formality}`);
+  }
+
+  if (profile.analytical_thinking_score !== undefined) {
+    parts.push(`Analytical thinking: ${profile.analytical_thinking_score}/100`);
+  }
+
+  return parts.length > 0 ? parts.join('\n') : 'Limited profile data available.';
+}
+
+/**
+ * Fallback template-based roast generator (used if AI fails)
+ */
+function generateFallbackRoast(
   username: string,
   keyword: string,
   userProfile?: UserProfile | null,
   bannedButNoPerm: boolean = false
 ): string {
-  // Filter applicable templates
-  let applicableTemplates = roastTemplates.filter(t => {
-    if (t.requiresProfile && !userProfile) return false;
-    if (t.profileCondition && userProfile && !t.profileCondition(userProfile)) return false;
-    return true;
-  });
+  const fallbackTemplates = [
+    `Oh wow, {keyword}? I haven't heard something that scientifically illiterate since the flat earth convention. Did you fail physics or just skip it entirely?`,
+    `'{keyword}'? Really? And I thought I'd seen peak stupidity today. Thanks for raising the bar so spectacularly low.`,
+    `The mental gymnastics required to take {keyword} seriously would be impressive if they weren't so deeply embarrassing for you specifically.`,
+    `I'd tell you that {keyword} violates the fundamental laws of physics, but something tells me 'fundamental laws' isn't really your speed.`,
+  ];
 
-  // If no applicable templates (shouldn't happen), use all non-profile templates
-  if (applicableTemplates.length === 0) {
-    applicableTemplates = roastTemplates.filter(t => !t.requiresProfile);
-  }
-
-  // Randomly select a template
-  const selectedTemplate = applicableTemplates[Math.floor(Math.random() * applicableTemplates.length)];
-
-  // Build the roast
+  const template = fallbackTemplates[Math.floor(Math.random() * fallbackTemplates.length)];
   let roast = `${username}, `;
 
-  // Add ban context if applicable
   if (bannedButNoPerm) {
     roast += "I'd ban you for this if I had the permissions, but I don't. So instead, you get this: ";
   }
 
-  // Fill in the template
-  let filledTemplate = selectedTemplate.template.replace(/{keyword}/g, keyword);
-
-  // Fill in profile-specific placeholders if available
-  if (userProfile) {
-    if (userProfile.notable_patterns && userProfile.notable_patterns.length > 0) {
-      filledTemplate = filledTemplate.replace(/{pattern}/g, userProfile.notable_patterns[0]);
-    }
-
-    if (userProfile.dominant_archetype) {
-      filledTemplate = filledTemplate.replace(/{archetype}/g, userProfile.dominant_archetype);
-    }
-
-    if (userProfile.omega_thoughts) {
-      const truncatedThoughts = userProfile.omega_thoughts.substring(0, 80) + (userProfile.omega_thoughts.length > 80 ? '...' : '');
-      filledTemplate = filledTemplate.replace(/{thoughts}/g, truncatedThoughts);
-    }
-
-    if (userProfile.technical_knowledge_level) {
-      filledTemplate = filledTemplate.replace(/{knowledge_level}/g, userProfile.technical_knowledge_level);
-    }
-
-    if (userProfile.perceived_confidence_level) {
-      filledTemplate = filledTemplate.replace(/{confidence_level}/g, userProfile.perceived_confidence_level);
-    }
-  }
-
-  roast += filledTemplate;
+  roast += template.replace(/{keyword}/g, keyword);
 
   return roast;
 }
