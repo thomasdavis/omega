@@ -15,7 +15,7 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan, logAntigravityRoast } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount, getUserProfile } from '@repo/database';
 import { generateAntigravityRoast } from '../lib/antigravityRoasts.js';
@@ -126,8 +126,8 @@ export async function handleMessage(message: Message): Promise<void> {
               // Fetch user profile to weaponize all available information
               const userProfile = await getUserProfile(message.author.id);
 
-              // Generate a witty, sarcastic roast using the roast generator
-              const insult = generateAntigravityRoast(
+              // Generate a witty, sarcastic roast using the AI-powered roast generator
+              const { roast: insult, generationTimeMs, aiModel } = await generateAntigravityRoast(
                 message.author.tag,
                 matchedKeyword,
                 userProfile,
@@ -137,6 +137,25 @@ export async function handleMessage(message: Message): Promise<void> {
               // Send the insult
               await message.channel.send(insult);
               console.log(`✅ Sent insult to ${message.author.tag}`);
+
+              // Log the roast to database
+              try {
+                await logAntigravityRoast({
+                  userId: message.author.id,
+                  username: message.author.username,
+                  messageContent: message.content,
+                  matchedKeyword,
+                  roastContent: insult,
+                  userProfileData: userProfile,
+                  aiModel,
+                  generationTimeMs,
+                  bannedButNoPerm: true,
+                  channelId: message.channel.id,
+                  guildId: message.guild.id,
+                });
+              } catch (roastLogError) {
+                console.error('⚠️  Failed to log antigravity roast:', roastLogError);
+              }
 
               // Log the insult decision
               try {
@@ -216,8 +235,8 @@ export async function handleMessage(message: Message): Promise<void> {
             // Fetch user profile to weaponize all available information
             const userProfile = await getUserProfile(message.author.id);
 
-            // Generate a witty, sarcastic roast using the roast generator
-            const insult = generateAntigravityRoast(
+            // Generate a witty, sarcastic roast using the AI-powered roast generator
+            const { roast: insult, generationTimeMs, aiModel } = await generateAntigravityRoast(
               message.author.tag,
               matchedKeyword,
               userProfile,
@@ -227,6 +246,25 @@ export async function handleMessage(message: Message): Promise<void> {
             // Send the insult
             await message.channel.send(insult);
             console.log(`✅ Sent insult to ${message.author.tag}`);
+
+            // Log the roast to database
+            try {
+              await logAntigravityRoast({
+                userId: message.author.id,
+                username: message.author.username,
+                messageContent: message.content,
+                matchedKeyword,
+                roastContent: insult,
+                userProfileData: userProfile,
+                aiModel,
+                generationTimeMs,
+                bannedButNoPerm: false,
+                channelId: message.channel.id,
+                guildId: message.guild?.id,
+              });
+            } catch (roastLogError) {
+              console.error('⚠️  Failed to log antigravity roast:', roastLogError);
+            }
 
             // Log the insult decision
             try {
