@@ -9,13 +9,13 @@ import { z } from 'zod';
 import { updateUserProfile, getOrCreateUserProfile } from '@repo/database';
 
 export const updateMyProfileTool = tool({
-  description: `Update the user's profile information in Omega. Supports updating username, avatar URL, bio, and preferences.
+  description: `Update the user's profile information in Omega. Currently supports updating username only.
 
   **What you can update:**
   - Username: Display name for the user
-  - Avatar URL: URL to user's profile picture/avatar
-  - Bio: User biography or description
-  - Preferences: User preferences as a JSON object (e.g., theme, notifications, etc.)
+
+  **Note:** Avatar URL, bio, and preferences fields are not yet available in the database schema.
+  These fields will be added in a future update.
 
   **How it works:**
   - Partial updates supported - only provide fields you want to change
@@ -38,70 +38,41 @@ export const updateMyProfileTool = tool({
   inputSchema: z.object({
     userId: z.string().describe('Discord user ID'),
     username: z.string().optional().describe('New username/display name (optional)'),
-    avatarUrl: z.string().url().optional().describe('URL to avatar/profile picture (optional)'),
-    bio: z.string().optional().describe('User biography/description (optional)'),
-    preferences: z.record(z.any()).optional().describe('User preferences as key-value pairs (optional)'),
   }),
 
-  execute: async ({ userId, username, avatarUrl, bio, preferences }) => {
+  execute: async ({ userId, username }) => {
     console.log(`🔧 Updating profile for user ${userId}`);
 
     try {
       // Validate that at least one field is provided
-      if (!username && !avatarUrl && !bio && !preferences) {
+      if (!username) {
         return {
           success: false,
           error: 'No updates provided',
-          message: 'Please provide at least one field to update (username, avatarUrl, bio, or preferences)',
+          message: 'Please provide a username to update',
         };
       }
 
       // Get or create the user profile first
-      const currentUsername = username || 'Unknown User';
-      await getOrCreateUserProfile(userId, currentUsername);
+      await getOrCreateUserProfile(userId, username);
 
-      // Build the updates object (using snake_case for database)
-      const updates: any = {};
-
-      if (username !== undefined) {
-        updates.username = username;
-      }
-
-      if (avatarUrl !== undefined) {
-        updates.avatar_url = avatarUrl;
-      }
-
-      if (bio !== undefined) {
-        updates.bio = bio;
-      }
-
-      if (preferences !== undefined) {
-        // Merge with existing preferences if needed
-        updates.preferences = preferences;
-      }
+      // Build the updates object
+      const updates: any = {
+        username,
+      };
 
       // Update the profile
       await updateUserProfile(userId, updates);
 
       console.log(`   ✅ Profile updated successfully!`);
 
-      // Build response message
-      const updatedFields: string[] = [];
-      if (username) updatedFields.push(`username to "${username}"`);
-      if (avatarUrl) updatedFields.push('avatar URL');
-      if (bio) updatedFields.push('bio');
-      if (preferences) updatedFields.push('preferences');
-
-      const message = `Profile updated successfully! Updated: ${updatedFields.join(', ')}.`;
+      const message = `Profile updated successfully! Updated username to "${username}".`;
 
       return {
         success: true,
         message,
         updatedFields: {
-          username: username || null,
-          avatarUrl: avatarUrl || null,
-          bio: bio || null,
-          preferences: preferences || null,
+          username,
         },
       };
     } catch (error) {
