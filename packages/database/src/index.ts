@@ -33,6 +33,8 @@ export * as pgBuildFailureIssueService from './postgres/buildFailureIssueService
 export * as pgComicService from './postgres/comicService.js';
 export * as pgConversationService from './postgres/conversationService.js';
 export * as pgDecisionLogService from './postgres/decisionLogService.js';
+export * as pgBannedUsersService from './postgres/bannedUsersService.js';
+export * as pgAntigravityRoastsService from './postgres/antigravityRoastsService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -259,6 +261,37 @@ export type {
   DecisionLogRecord,
   LogDecisionParams,
 } from './postgres/decisionLogService.js';
+
+// Export banned users service functions
+export {
+  logBan,
+  getUserBans,
+  getRecentBans,
+  getBansByKeyword,
+  countBans,
+} from './postgres/bannedUsersService.js';
+
+// Export banned users service types
+export type {
+  BannedUserLogRecord,
+  LogBanParams,
+} from './postgres/bannedUsersService.js';
+
+// Export antigravity roasts service functions
+export {
+  logAntigravityRoast,
+  getUserRoasts,
+  getRecentRoasts,
+  getRoastsByKeyword,
+  countRoasts,
+  getAverageGenerationTime,
+} from './postgres/antigravityRoastsService.js';
+
+// Export antigravity roasts service types
+export type {
+  AntigravityRoastRecord,
+  LogAntigravityRoastParams,
+} from './postgres/antigravityRoastsService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
