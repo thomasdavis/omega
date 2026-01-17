@@ -9,32 +9,19 @@ import { z } from 'zod';
 import { getDatabase } from '@repo/database';
 
 export const repairUserProfileSchemaTool = tool({
-  description: `Repair and update the user_profiles database schema to ensure all required columns exist.
+  description: `[DEPRECATED] This tool is deprecated as avatar_url, bio, and preferences columns are not part of the current schema.
 
-  **What this tool does:**
-  - Inspects the current user_profiles table schema
-  - Identifies missing columns (avatar_url, bio, preferences, etc.)
-  - Adds missing columns with appropriate types and defaults
-  - Creates necessary indexes for performance
-  - Verifies schema integrity after repair
+  These fields were removed from the Prisma schema to match the production database structure.
+  If you need to add these fields in the future, use a proper database migration instead.
 
-  **When to use:**
-  - When user profile operations fail due to missing columns
-  - After database migrations that may have incomplete schema
-  - To ensure schema compatibility with code expectations
-  - When debugging profile access issues
+  **Alternative:**
+  - Use the database migration scripts in packages/database/scripts/
+  - Run: railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && bash packages/database/scripts/add-user-profile-basic-fields.sh'
 
-  **Safety:**
-  - Only adds missing columns (never removes or modifies existing data)
-  - Uses IF NOT EXISTS to make operations idempotent
-  - Runs in a transaction to ensure atomicity
-  - Returns detailed report of changes made
-
-  **Example requests:**
-  - "fix user profile database schema"
-  - "repair missing columns in user_profiles"
-  - "check and fix profile schema"
-  - "ensure user_profiles table has all required fields"`,
+  **Why deprecated:**
+  - Prisma schema now matches actual database structure
+  - These fields don't exist in production and aren't needed for current functionality
+  - Comic tools work without these fields`,
 
   inputSchema: z.object({
     dryRun: z.boolean().optional().default(false).describe('If true, only checks what would be fixed without making changes'),
@@ -42,8 +29,15 @@ export const repairUserProfileSchemaTool = tool({
   }),
 
   execute: async ({ dryRun, verbose }) => {
-    console.log(`🔧 ${dryRun ? 'Checking' : 'Repairing'} user_profiles schema...`);
+    console.log(`⚠️ repairUserProfileSchema tool is deprecated`);
 
+    return {
+      success: false,
+      error: 'This tool is deprecated',
+      message: 'The repairUserProfileSchema tool is deprecated. Avatar URL, bio, and preferences fields are not part of the current schema. If you need to add these fields, use the migration script: railway run bash -c \'export DATABASE_URL=$DATABASE_PUBLIC_URL && bash packages/database/scripts/add-user-profile-basic-fields.sh\'',
+    };
+
+    /* DEPRECATED CODE - kept for reference
     try {
       const db = await getDatabase();
 
@@ -187,5 +181,6 @@ export const repairUserProfileSchemaTool = tool({
         repaired: false,
       };
     }
+    */
   },
 });
