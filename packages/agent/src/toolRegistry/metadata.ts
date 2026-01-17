@@ -988,6 +988,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateDilbertComic',
+    name: 'Generate Dilbert-Style Comic',
+    description: 'Generate enhanced Dilbert-style comic strips with workplace satire, tech humor, crisp panels, and clear text bubbles',
+    keywords: ['dilbert', 'comic', 'workplace', 'satire', 'office', 'tech humor', 'cartoon', 'developer', 'strip'],
+    tags: ['content', 'image', 'comic', 'workplace', 'humor'],
+    examples: [
+      'create a Dilbert-style comic about remote work',
+      'generate workplace satire comic',
+      'make a Dilbert comic about AI',
+      'create office politics comic strip',
+      'generate tech satire comic'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateSonnet',
     name: 'Generate Sonnet',
     description: 'Generate sonnets and poetry',
@@ -2679,6 +2695,27 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'manage Discord channel descriptions'
     ],
     category: 'specialized'
+  },
+
+  {
+    id: 'antigravityConceptExplainer',
+    name: 'Antigravity Concept Explainer',
+    description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
+    keywords: ['antigravity', 'gravity', 'physics', 'science fiction', 'scifi', 'theoretical', 'levitation', 'propulsion', 'spaceflight', 'exotic matter'],
+    tags: ['research', 'education', 'physics', 'science'],
+    examples: [
+      'explain antigravity',
+      'what is antigravity',
+      'antigravity in physics',
+      'antigravity technology',
+      'how does antigravity work',
+      'antigravity in sci-fi',
+      'antigravity theories',
+      'is antigravity possible',
+      'antigravity challenges',
+      'antigravity applications'
+    ],
+    category: 'research'
   },
 ];
 
