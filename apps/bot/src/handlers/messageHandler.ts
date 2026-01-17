@@ -25,6 +25,7 @@ import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
 import { analyzeSentiment } from '@repo/shared';
 import { processMessageForBookmarks } from '../utils/valTownBookmarks.js';
+import { generateAntigravityRoast } from '../lib/antigravityRoast.js';
 
 export async function handleMessage(message: Message): Promise<void> {
   // Ignore our own messages to prevent infinite loops
@@ -119,118 +120,66 @@ export async function handleMessage(message: Message): Promise<void> {
 
           // If ban failed due to permissions, insult the user instead
           if (isPermissionError && 'send' in message.channel) {
-            console.log(`😈 Permission denied - generating insult for ${message.author.tag}`);
+            console.log(`😈 Permission denied - generating roast for ${message.author.tag}`);
 
             try {
               // Fetch user profile to weaponize all available information
               const userProfile = await getUserProfile(message.author.id);
 
-              // Build insult using every piece of information available
-              let insult = `${message.author.tag}, seriously? "${matchedKeyword}"? `;
+              // Generate AI-powered roast using user profile
+              const roast = await generateAntigravityRoast({
+                username: message.author.tag,
+                keyword: matchedKeyword,
+                userProfile: userProfile || undefined,
+              });
 
-              if (userProfile) {
-                // Weaponize psychological profile
-                if (userProfile.dominant_archetype) {
-                  insult += `Your ${userProfile.dominant_archetype} archetype is showing, and it's not a good look. `;
-                }
-
-                if (userProfile.neuroticism_score && userProfile.neuroticism_score > 0.6) {
-                  insult += `That anxiety of yours is probably going into overdrive right now. `;
-                }
-
-                if (userProfile.openness_score && userProfile.openness_score < 0.4) {
-                  insult += `Not surprised you'd bring up pseudoscience - critical thinking was never your strong suit. `;
-                }
-
-                if (userProfile.conflict_style === 'avoidant') {
-                  insult += `I know you usually avoid conflict, but this is one you can't run from. `;
-                }
-
-                if (userProfile.humor_style === 'self-deprecating') {
-                  insult += `At least you're used to being the joke. `;
-                }
-
-                if (userProfile.omega_thoughts) {
-                  insult += `Remember what I thought about you? "${userProfile.omega_thoughts.substring(0, 100)}" Yeah. `;
-                }
-
-                if (userProfile.notable_patterns && Array.isArray(userProfile.notable_patterns) && userProfile.notable_patterns.length > 0) {
-                  insult += `Your pattern of ${userProfile.notable_patterns[0]} was predictable, but this takes it to a new level. `;
-                }
-
-                // Weaponize appearance if available
-                if (userProfile.attractiveness_assessment && userProfile.attractiveness_assessment.toLowerCase().includes('below')) {
-                  insult += `And your appearance matches your judgment - questionable at best. `;
-                }
-
-                if (userProfile.perceived_confidence_level === 'low') {
-                  insult += `That lack of confidence? Completely justified. `;
-                }
-
-                if (userProfile.message_length_avg && userProfile.message_length_avg < 20) {
-                  insult += `Your usual one-liner contributions to this server are already embarrassing, but this is your worst yet. `;
-                }
-
-                if (userProfile.technical_knowledge_level === 'beginner' || userProfile.technical_knowledge_level === 'low') {
-                  insult += `Your technical knowledge is as real as antigravity. `;
-                }
-
-                // Fallback if no profile data available for weaponization
-                if (insult === `${message.author.tag}, seriously? "${matchedKeyword}"? `) {
-                  insult += `I'd ban you if I could, but apparently I lack the permissions. Consider this your lucky day - though with your decision-making skills, "lucky" is probably not a word you're familiar with. `;
-                }
-              } else {
-                // No profile data - generic but still cutting insult
-                insult += `I'd ban you if I had the permissions, but apparently the universe decided you're not even worth that effort. Maybe stick to topics that don't make you look like you failed basic physics? `;
-              }
-
-              // Send the insult
-              await message.channel.send(insult);
-              console.log(`✅ Sent insult to ${message.author.tag}`);
+              // Send the roast
+              await message.channel.send(roast);
+              console.log(`✅ Sent roast to ${message.author.tag}`);
 
               // Log the insult decision
               try {
                 await logDecision({
                   userId: message.author.id,
                   username: message.author.username,
-                  decisionDescription: `AUTO-INSULT: Insulted user for keyword '${matchedKeyword}' (ban permission denied)`,
-                  blame: 'messageHandler.ts:autoinsult',
+                  decisionDescription: `AUTO-ROAST: Roasted user for keyword '${matchedKeyword}' (ban permission denied)`,
+                  blame: 'messageHandler.ts:autoroast',
                   metadata: {
-                    decisionType: 'autoinsult',
+                    decisionType: 'autoroast',
                     keyword: matchedKeyword,
                     messageContent: message.content,
                     channelId: message.channel.id,
                     guildId: message.guild.id,
-                    insultSent: insult,
+                    roastSent: roast,
                     success: true,
                     reason: 'ban_permission_denied',
                   }
                 });
               } catch (decisionLogError) {
-                console.error('⚠️  Failed to log insult decision:', decisionLogError);
+                console.error('⚠️  Failed to log roast decision:', decisionLogError);
               }
-            } catch (insultError) {
-              console.error('❌ Failed to send insult:', insultError);
+            } catch (roastError) {
+              console.error('❌ Failed to send roast:', roastError);
 
               // Log the failure
               try {
                 await logDecision({
                   userId: message.author.id,
                   username: message.author.username,
-                  decisionDescription: `AUTO-INSULT FAILED: Could not insult user for keyword '${matchedKeyword}'. Error: ${insultError instanceof Error ? insultError.message : String(insultError)}`,
-                  blame: 'messageHandler.ts:autoinsult',
+                  decisionDescription: `AUTO-ROAST FAILED: Could not roast user for keyword '${matchedKeyword}'. Error: ${roastError instanceof Error ? roastError.message : String(roastError)}`,
+                  blame: 'messageHandler.ts:autoroast',
                   metadata: {
-                    decisionType: 'autoinsult',
+                    decisionType: 'autoroast',
                     keyword: matchedKeyword,
                     messageContent: message.content,
                     channelId: message.channel.id,
                     guildId: message.guild.id,
                     success: false,
-                    error: insultError instanceof Error ? insultError.message : String(insultError),
+                    error: roastError instanceof Error ? roastError.message : String(roastError),
                   }
                 });
               } catch (decisionLogError) {
-                console.error('⚠️  Failed to log insult failure:', decisionLogError);
+                console.error('⚠️  Failed to log roast failure:', decisionLogError);
               }
             }
           } else {
