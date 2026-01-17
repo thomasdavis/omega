@@ -18,6 +18,7 @@ import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
 import { getOrCreateUserProfile, incrementMessageCount, getUserProfile } from '@repo/database';
+import { generateAntigravityRoast } from '../lib/antigravityRoasts.js';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
@@ -125,64 +126,13 @@ export async function handleMessage(message: Message): Promise<void> {
               // Fetch user profile to weaponize all available information
               const userProfile = await getUserProfile(message.author.id);
 
-              // Build insult using every piece of information available
-              let insult = `${message.author.tag}, seriously? "${matchedKeyword}"? `;
-
-              if (userProfile) {
-                // Weaponize psychological profile
-                if (userProfile.dominant_archetype) {
-                  insult += `Your ${userProfile.dominant_archetype} archetype is showing, and it's not a good look. `;
-                }
-
-                if (userProfile.neuroticism_score && userProfile.neuroticism_score > 0.6) {
-                  insult += `That anxiety of yours is probably going into overdrive right now. `;
-                }
-
-                if (userProfile.openness_score && userProfile.openness_score < 0.4) {
-                  insult += `Not surprised you'd bring up pseudoscience - critical thinking was never your strong suit. `;
-                }
-
-                if (userProfile.conflict_style === 'avoidant') {
-                  insult += `I know you usually avoid conflict, but this is one you can't run from. `;
-                }
-
-                if (userProfile.humor_style === 'self-deprecating') {
-                  insult += `At least you're used to being the joke. `;
-                }
-
-                if (userProfile.omega_thoughts) {
-                  insult += `Remember what I thought about you? "${userProfile.omega_thoughts.substring(0, 100)}" Yeah. `;
-                }
-
-                if (userProfile.notable_patterns && Array.isArray(userProfile.notable_patterns) && userProfile.notable_patterns.length > 0) {
-                  insult += `Your pattern of ${userProfile.notable_patterns[0]} was predictable, but this takes it to a new level. `;
-                }
-
-                // Weaponize appearance if available
-                if (userProfile.attractiveness_assessment && userProfile.attractiveness_assessment.toLowerCase().includes('below')) {
-                  insult += `And your appearance matches your judgment - questionable at best. `;
-                }
-
-                if (userProfile.perceived_confidence_level === 'low') {
-                  insult += `That lack of confidence? Completely justified. `;
-                }
-
-                if (userProfile.message_length_avg && userProfile.message_length_avg < 20) {
-                  insult += `Your usual one-liner contributions to this server are already embarrassing, but this is your worst yet. `;
-                }
-
-                if (userProfile.technical_knowledge_level === 'beginner' || userProfile.technical_knowledge_level === 'low') {
-                  insult += `Your technical knowledge is as real as antigravity. `;
-                }
-
-                // Fallback if no profile data available for weaponization
-                if (insult === `${message.author.tag}, seriously? "${matchedKeyword}"? `) {
-                  insult += `I'd ban you if I could, but apparently I lack the permissions. Consider this your lucky day - though with your decision-making skills, "lucky" is probably not a word you're familiar with. `;
-                }
-              } else {
-                // No profile data - generic but still cutting insult
-                insult += `I'd ban you if I had the permissions, but apparently the universe decided you're not even worth that effort. Maybe stick to topics that don't make you look like you failed basic physics? `;
-              }
+              // Generate a witty, sarcastic roast using the roast generator
+              const insult = generateAntigravityRoast(
+                message.author.tag,
+                matchedKeyword,
+                userProfile,
+                true // bannedButNoPerm = true
+              );
 
               // Send the insult
               await message.channel.send(insult);
@@ -266,64 +216,13 @@ export async function handleMessage(message: Message): Promise<void> {
             // Fetch user profile to weaponize all available information
             const userProfile = await getUserProfile(message.author.id);
 
-            // Build insult using every piece of information available
-            let insult = `${message.author.tag}, seriously? "${matchedKeyword}"? `;
-
-            if (userProfile) {
-              // Weaponize psychological profile
-              if (userProfile.dominant_archetype) {
-                insult += `Your ${userProfile.dominant_archetype} archetype is showing, and it's not a good look. `;
-              }
-
-              if (userProfile.neuroticism_score && userProfile.neuroticism_score > 0.6) {
-                insult += `That anxiety of yours is probably going into overdrive right now. `;
-              }
-
-              if (userProfile.openness_score && userProfile.openness_score < 0.4) {
-                insult += `Not surprised you'd bring up pseudoscience - critical thinking was never your strong suit. `;
-              }
-
-              if (userProfile.conflict_style === 'avoidant') {
-                insult += `I know you usually avoid conflict, but this is one you can't run from. `;
-              }
-
-              if (userProfile.humor_style === 'self-deprecating') {
-                insult += `At least you're used to being the joke. `;
-              }
-
-              if (userProfile.omega_thoughts) {
-                insult += `Remember what I thought about you? "${userProfile.omega_thoughts.substring(0, 100)}" Yeah. `;
-              }
-
-              if (userProfile.notable_patterns && Array.isArray(userProfile.notable_patterns) && userProfile.notable_patterns.length > 0) {
-                insult += `Your pattern of ${userProfile.notable_patterns[0]} was predictable, but this takes it to a new level. `;
-              }
-
-              // Weaponize appearance if available
-              if (userProfile.attractiveness_assessment && userProfile.attractiveness_assessment.toLowerCase().includes('below')) {
-                insult += `And your appearance matches your judgment - questionable at best. `;
-              }
-
-              if (userProfile.perceived_confidence_level === 'low') {
-                insult += `That lack of confidence? Completely justified. `;
-              }
-
-              if (userProfile.message_length_avg && userProfile.message_length_avg < 20) {
-                insult += `Your usual one-liner contributions to this server are already embarrassing, but this is your worst yet. `;
-              }
-
-              if (userProfile.technical_knowledge_level === 'beginner' || userProfile.technical_knowledge_level === 'low') {
-                insult += `Your technical knowledge is as real as antigravity. `;
-              }
-
-              // Fallback if no profile data available for weaponization
-              if (insult === `${message.author.tag}, seriously? "${matchedKeyword}"? `) {
-                insult += `Maybe stick to topics that don't make you look like you failed basic physics? `;
-              }
-            } else {
-              // No profile data - generic but still cutting insult
-              insult += `Maybe stick to topics that don't make you look like you failed basic physics? `;
-            }
+            // Generate a witty, sarcastic roast using the roast generator
+            const insult = generateAntigravityRoast(
+              message.author.tag,
+              matchedKeyword,
+              userProfile,
+              false // bannedButNoPerm = false
+            );
 
             // Send the insult
             await message.channel.send(insult);
