@@ -183,6 +183,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   queryDatabase: { path: './tools/queryDatabase.js', exportName: 'queryDatabaseTool' },
   postgresQueryExecutor: { path: './tools/postgresQueryExecutor.js', exportName: 'postgresQueryExecutorTool' },
   defineWord: { path: './tools/defineWord.js', exportName: 'defineWordTool' },
+  antigravityConceptExplainer: { path: './tools/antigravityConceptExplainer.js', exportName: 'antigravityConceptExplainerTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
   updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
   repairUserProfileSchema: { path: './tools/repairUserProfileSchema.js', exportName: 'repairUserProfileSchemaTool' },

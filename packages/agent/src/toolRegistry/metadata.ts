@@ -2680,6 +2680,27 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'specialized'
   },
+
+  {
+    id: 'antigravityConceptExplainer',
+    name: 'Antigravity Concept Explainer',
+    description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
+    keywords: ['antigravity', 'gravity', 'physics', 'science fiction', 'scifi', 'theoretical', 'levitation', 'propulsion', 'spaceflight', 'exotic matter'],
+    tags: ['research', 'education', 'physics', 'science'],
+    examples: [
+      'explain antigravity',
+      'what is antigravity',
+      'antigravity in physics',
+      'antigravity technology',
+      'how does antigravity work',
+      'antigravity in sci-fi',
+      'antigravity theories',
+      'is antigravity possible',
+      'antigravity challenges',
+      'antigravity applications'
+    ],
+    category: 'research'
+  },
 ];
 
 /**
