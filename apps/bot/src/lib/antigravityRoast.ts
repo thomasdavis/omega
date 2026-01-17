@@ -68,7 +68,6 @@ Generate ONE devastating roast that will make them regret mentioning antigravity
     const result = await generateText({
       model: openai(OMEGA_MODEL),
       prompt,
-      maxTokens: 200,
       temperature: 0.9, // Higher temperature for more creative, varied roasts
     });
 
