@@ -1004,6 +1004,22 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'generateXkcdComic',
+    name: 'Generate XKCD-Style Comic',
+    description: 'Generate minimalist stick figure comics in XKCD style with dry humor, scientific/technical wit, and clever explanations',
+    keywords: ['xkcd', 'comic', 'stick figure', 'science', 'tech', 'programming', 'math', 'geek', 'humor', 'minimalist', 'cartoon', 'strip'],
+    tags: ['content', 'image', 'comic', 'xkcd', 'humor', 'science', 'tech'],
+    examples: [
+      'create an xkcd style comic about programming',
+      'make an xkcd comic explaining quantum mechanics',
+      'generate an xkcd strip on AI humor',
+      'create xkcd comic about debugging',
+      'make xkcd style comic about machine learning'
+    ],
+    category: 'content'
+  },
+
+  {
     id: 'generateSonnet',
     name: 'Generate Sonnet',
     description: 'Generate sonnets and poetry',
