@@ -15,9 +15,10 @@ import {
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
-import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision } from '@repo/database';
+import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan, logAntigravityRoast } from '@repo/database';
 import { feelingsService } from '../lib/feelings/index.js';
-import { getOrCreateUserProfile, incrementMessageCount } from '@repo/database';
+import { getOrCreateUserProfile, incrementMessageCount, getUserProfile } from '@repo/database';
+import { generateAntigravityRoast } from '../lib/antigravityRoasts.js';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
@@ -34,6 +35,311 @@ export async function handleMessage(message: Message): Promise<void> {
 
   // Allow messages from other bots (like uncloseai) to be processed
   // This enables bot-to-bot interaction in the channel
+
+  // AUTO-BAN: Check for banned keywords BEFORE any other processing
+  // Keywords that trigger auto-ban: 'antigravity'
+  // Keywords that trigger insult when no ban permission: 'antigravity', 'anti-gravity'
+  const bannedKeywords = ['antigravity'];
+  const insultKeywords = ['antigravity', 'anti-gravity'];
+  const lowerContent = message.content.toLowerCase();
+
+  // Check if any insult keyword is present (broader check)
+  const hasInsultKeyword = insultKeywords.some(keyword => lowerContent.includes(keyword));
+
+  if (hasInsultKeyword) {
+    // Determine which keyword was matched (for logging)
+    const matchedKeyword = insultKeywords.find(keyword => lowerContent.includes(keyword)) || 'antigravity';
+    console.log(`⛔ Keyword detected: "${matchedKeyword}" from ${message.author.tag}`);
+
+    // Only attempt ban/insult in guild channels (not DMs)
+    if (message.guild && message.member) {
+      // Try to ban if it's a banned keyword (currently just 'antigravity')
+      if (bannedKeywords.some(keyword => lowerContent.includes(keyword))) {
+        try {
+          // Attempt to ban the user
+          await message.member.ban({
+            reason: `Auto-ban: mentioned prohibited term '${matchedKeyword}'`,
+            deleteMessageSeconds: 60 * 60 * 24  // Delete messages from last 24 hours
+          });
+
+          console.log(`✅ Successfully banned user ${message.author.tag} for keyword: ${matchedKeyword}`);
+
+          // Log the ban to database
+          try {
+            await logBan({
+              userId: message.author.id,
+              username: message.author.username,
+              messageContent: message.content,
+              banReason: `Auto-ban: mentioned prohibited term '${matchedKeyword}'`,
+              bannedKeyword: matchedKeyword,
+              channelId: message.channel.id,
+              guildId: message.guild.id,
+            });
+          } catch (logError) {
+            console.error('⚠️  Failed to log ban to database:', logError);
+            // Continue even if logging fails
+          }
+
+          // Log decision for audit trail
+          try {
+            await logDecision({
+              userId: message.author.id,
+              username: message.author.username,
+              decisionDescription: `AUTO-BAN: User banned for mentioning prohibited keyword '${matchedKeyword}'`,
+              blame: 'messageHandler.ts:autoban',
+              metadata: {
+                decisionType: 'autoban',
+                keyword: matchedKeyword,
+                messageContent: message.content,
+                channelId: message.channel.id,
+                guildId: message.guild.id,
+                success: true,
+              }
+            });
+          } catch (decisionLogError) {
+            console.error('⚠️  Failed to log ban decision:', decisionLogError);
+          }
+
+          // Notify channel about the ban
+          if ('send' in message.channel) {
+            try {
+              await message.channel.send(
+                `🚫 User ${message.author.tag} has been banned for violating server rules.`
+              );
+            } catch (notifyError) {
+              console.error('⚠️  Failed to send ban notification:', notifyError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Failed to ban user:', error);
+
+          // Check if it's a permission error
+          const isPermissionError = error instanceof Error &&
+            (error.message.toLowerCase().includes('permission') ||
+             error.message.toLowerCase().includes('missing access'));
+
+          // If ban failed due to permissions, insult the user instead
+          if (isPermissionError && 'send' in message.channel) {
+            console.log(`😈 Permission denied - generating insult for ${message.author.tag}`);
+
+            try {
+              // Fetch user profile to weaponize all available information
+              const userProfile = await getUserProfile(message.author.id);
+
+              // Generate a witty, sarcastic roast using the AI-powered roast generator
+              const { roast: insult, generationTimeMs, aiModel } = await generateAntigravityRoast(
+                message.author.tag,
+                matchedKeyword,
+                userProfile,
+                true // bannedButNoPerm = true
+              );
+
+              // Send the insult
+              await message.channel.send(insult);
+              console.log(`✅ Sent insult to ${message.author.tag}`);
+
+              // Log the roast to database
+              try {
+                await logAntigravityRoast({
+                  userId: message.author.id,
+                  username: message.author.username,
+                  messageContent: message.content,
+                  matchedKeyword,
+                  roastContent: insult,
+                  userProfileData: userProfile,
+                  aiModel,
+                  generationTimeMs,
+                  bannedButNoPerm: true,
+                  channelId: message.channel.id,
+                  guildId: message.guild.id,
+                });
+              } catch (roastLogError) {
+                console.error('⚠️  Failed to log antigravity roast:', roastLogError);
+              }
+
+              // Log the insult decision
+              try {
+                await logDecision({
+                  userId: message.author.id,
+                  username: message.author.username,
+                  decisionDescription: `AUTO-INSULT: Insulted user for keyword '${matchedKeyword}' (ban permission denied)`,
+                  blame: 'messageHandler.ts:autoinsult',
+                  metadata: {
+                    decisionType: 'autoinsult',
+                    keyword: matchedKeyword,
+                    messageContent: message.content,
+                    channelId: message.channel.id,
+                    guildId: message.guild.id,
+                    insultSent: insult,
+                    success: true,
+                    reason: 'ban_permission_denied',
+                  }
+                });
+              } catch (decisionLogError) {
+                console.error('⚠️  Failed to log insult decision:', decisionLogError);
+              }
+            } catch (insultError) {
+              console.error('❌ Failed to send insult:', insultError);
+
+              // Log the failure
+              try {
+                await logDecision({
+                  userId: message.author.id,
+                  username: message.author.username,
+                  decisionDescription: `AUTO-INSULT FAILED: Could not insult user for keyword '${matchedKeyword}'. Error: ${insultError instanceof Error ? insultError.message : String(insultError)}`,
+                  blame: 'messageHandler.ts:autoinsult',
+                  metadata: {
+                    decisionType: 'autoinsult',
+                    keyword: matchedKeyword,
+                    messageContent: message.content,
+                    channelId: message.channel.id,
+                    guildId: message.guild.id,
+                    success: false,
+                    error: insultError instanceof Error ? insultError.message : String(insultError),
+                  }
+                });
+              } catch (decisionLogError) {
+                console.error('⚠️  Failed to log insult failure:', decisionLogError);
+              }
+            }
+          } else {
+            // Ban failed but not due to permissions - just log
+            try {
+              await logDecision({
+                userId: message.author.id,
+                username: message.author.username,
+                decisionDescription: `AUTO-BAN FAILED: Could not ban user for keyword '${matchedKeyword}'. Error: ${error instanceof Error ? error.message : String(error)}`,
+                blame: 'messageHandler.ts:autoban',
+                metadata: {
+                  decisionType: 'autoban',
+                  keyword: matchedKeyword,
+                  messageContent: message.content,
+                  channelId: message.channel.id,
+                  guildId: message.guild.id,
+                  success: false,
+                  error: error instanceof Error ? error.message : String(error),
+                }
+              });
+            } catch (decisionLogError) {
+              console.error('⚠️  Failed to log ban failure:', decisionLogError);
+            }
+          }
+        }
+      } else {
+        // Insult-only keyword (like 'anti-gravity') or non-banned keyword detected
+        // Send insult if in a guild channel with send permission
+        if ('send' in message.channel) {
+          console.log(`😈 Insult-only keyword detected - sending insult to ${message.author.tag}`);
+
+          try {
+            // Fetch user profile to weaponize all available information
+            const userProfile = await getUserProfile(message.author.id);
+
+            // Generate a witty, sarcastic roast using the AI-powered roast generator
+            const { roast: insult, generationTimeMs, aiModel } = await generateAntigravityRoast(
+              message.author.tag,
+              matchedKeyword,
+              userProfile,
+              false // bannedButNoPerm = false
+            );
+
+            // Send the insult
+            await message.channel.send(insult);
+            console.log(`✅ Sent insult to ${message.author.tag}`);
+
+            // Log the roast to database
+            try {
+              await logAntigravityRoast({
+                userId: message.author.id,
+                username: message.author.username,
+                messageContent: message.content,
+                matchedKeyword,
+                roastContent: insult,
+                userProfileData: userProfile,
+                aiModel,
+                generationTimeMs,
+                bannedButNoPerm: false,
+                channelId: message.channel.id,
+                guildId: message.guild?.id,
+              });
+            } catch (roastLogError) {
+              console.error('⚠️  Failed to log antigravity roast:', roastLogError);
+            }
+
+            // Log the insult decision
+            try {
+              await logDecision({
+                userId: message.author.id,
+                username: message.author.username,
+                decisionDescription: `AUTO-INSULT: Insulted user for keyword '${matchedKeyword}'`,
+                blame: 'messageHandler.ts:autoinsult',
+                metadata: {
+                  decisionType: 'autoinsult',
+                  keyword: matchedKeyword,
+                  messageContent: message.content,
+                  channelId: message.channel.id,
+                  guildId: message.guild?.id,
+                  insultSent: insult,
+                  success: true,
+                  reason: 'insult_only_keyword',
+                }
+              });
+            } catch (decisionLogError) {
+              console.error('⚠️  Failed to log insult decision:', decisionLogError);
+            }
+          } catch (insultError) {
+            console.error('❌ Failed to send insult:', insultError);
+
+            // Log the failure
+            try {
+              await logDecision({
+                userId: message.author.id,
+                username: message.author.username,
+                decisionDescription: `AUTO-INSULT FAILED: Could not insult user for keyword '${matchedKeyword}'. Error: ${insultError instanceof Error ? insultError.message : String(insultError)}`,
+                blame: 'messageHandler.ts:autoinsult',
+                metadata: {
+                  decisionType: 'autoinsult',
+                  keyword: matchedKeyword,
+                  messageContent: message.content,
+                  channelId: message.channel.id,
+                  guildId: message.guild?.id,
+                  success: false,
+                  error: insultError instanceof Error ? insultError.message : String(insultError),
+                }
+              });
+            } catch (decisionLogError) {
+              console.error('⚠️  Failed to log insult failure:', decisionLogError);
+            }
+          }
+        }
+      }
+    } else {
+      // DM or no member object - log but don't take action
+      console.log(`⚠️  Keyword detected in DM or without guild context: ${message.author.tag}`);
+      try {
+        await logDecision({
+          userId: message.author.id,
+          username: message.author.username,
+          decisionDescription: `KEYWORD DETECTED: Keyword '${matchedKeyword}' detected but no action taken (DM or no guild context)`,
+          blame: 'messageHandler.ts:keywordDetection',
+          metadata: {
+            decisionType: 'keywordDetection',
+            keyword: matchedKeyword,
+            messageContent: message.content,
+            channelId: message.channel.id,
+            guildId: message.guild?.id,
+            isDM: message.channel.isDMBased(),
+            success: false,
+            reason: 'no_guild_context',
+          }
+        });
+      } catch (decisionLogError) {
+        console.error('⚠️  Failed to log keyword detection:', decisionLogError);
+      }
+    }
+
+    return; // Exit early, don't process message further
+  }
 
   // Fetch recent message history FIRST (for shouldRespond decision context)
   let messageHistory: Array<{ username: string; content: string; timestamp?: number }> = [];
