@@ -1,7 +1,10 @@
 /**
  * Update My Profile Tool
- * Allows users to update their profile information (username, avatar, bio, preferences)
+ * Allows users to update their profile information (username only for now)
  * Supports partial updates - only updates fields that are provided
+ *
+ * Note: Additional fields (avatar, bio, preferences) require database migration
+ * See: packages/database/scripts/add-user-profile-basic-fields.sh
  */
 
 import { tool } from 'ai';
@@ -14,9 +17,6 @@ export const updateMyProfileTool = tool({
   **What you can update:**
   - Username: Display name for the user
 
-  **Note:** Avatar URL, bio, and preferences fields are not yet available in the database schema.
-  These fields will be added in a future update.
-
   **How it works:**
   - Partial updates supported - only provide fields you want to change
   - Creates profile if it doesn't exist
@@ -24,16 +24,15 @@ export const updateMyProfileTool = tool({
   - Validates all inputs
 
   **Use when:**
-  - User asks to "update my profile", "change my bio", "set my avatar"
-  - User wants to modify their display name or profile picture
-  - User needs to update their preferences or settings
+  - User asks to "update my profile", "change my username"
+  - User wants to modify their display name
   - User asks to "edit my profile information"
 
   **Example requests:**
-  - "Update my bio to say I'm a software engineer"
-  - "Change my avatar to https://example.com/avatar.png"
-  - "Set my theme preference to dark mode"
-  - "Update my username to JohnDoe"`,
+  - "Update my username to JohnDoe"
+  - "Change my display name to Alice"
+
+  **Note:** Additional profile fields (avatar, bio, preferences) will be available after running database migration: packages/database/scripts/add-user-profile-basic-fields.sh`,
 
   inputSchema: z.object({
     userId: z.string().describe('Discord user ID'),
@@ -49,30 +48,37 @@ export const updateMyProfileTool = tool({
         return {
           success: false,
           error: 'No updates provided',
-          message: 'Please provide a username to update',
+          message: 'Please provide username to update',
         };
       }
 
       // Get or create the user profile first
-      await getOrCreateUserProfile(userId, username);
+      const currentUsername = username || 'Unknown User';
+      await getOrCreateUserProfile(userId, currentUsername);
 
-      // Build the updates object
-      const updates: any = {
-        username,
-      };
+      // Build the updates object (using snake_case for database)
+      const updates: any = {};
+
+      if (username !== undefined) {
+        updates.username = username;
+      }
 
       // Update the profile
       await updateUserProfile(userId, updates);
 
       console.log(`   ✅ Profile updated successfully!`);
 
-      const message = `Profile updated successfully! Updated username to "${username}".`;
+      // Build response message
+      const updatedFields: string[] = [];
+      if (username) updatedFields.push(`username to "${username}"`);
+
+      const message = `Profile updated successfully! Updated: ${updatedFields.join(', ')}.`;
 
       return {
         success: true,
         message,
         updatedFields: {
-          username,
+          username: username || null,
         },
       };
     } catch (error) {
