@@ -11,11 +11,12 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@repo/agent": "workspace:*",
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
     "@repo/ui": "workspace:*",
     "mime-types": "^3.0.2",
-    "next": "^15.1.0",
+    "next": "^15.5.9",
     "openai": "^4.104.0",
     "p5": "^2.1.1",
     "paper": "^0.12.18",
