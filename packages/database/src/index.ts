@@ -35,6 +35,7 @@ export * as pgConversationService from './postgres/conversationService.js';
 export * as pgDecisionLogService from './postgres/decisionLogService.js';
 export * as pgBannedUsersService from './postgres/bannedUsersService.js';
 export * as pgAntigravityRoastsService from './postgres/antigravityRoastsService.js';
+export * as pgTweetLogService from './postgres/tweetLogService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -292,6 +293,24 @@ export type {
   AntigravityRoastRecord,
   LogAntigravityRoastParams,
 } from './postgres/antigravityRoastsService.js';
+
+// Export tweet log service functions
+export {
+  logTweet,
+  updateTweetLog,
+  queryTweetLogs,
+  getUserTweetLogs,
+  getRecentTweetLogs,
+  countTweetLogs,
+  searchTweetLogs,
+  getUserTweetStats,
+} from './postgres/tweetLogService.js';
+
+// Export tweet log service types
+export type {
+  TweetLogRecord,
+  LogTweetParams,
+} from './postgres/tweetLogService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
