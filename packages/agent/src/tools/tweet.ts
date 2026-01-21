@@ -16,7 +16,7 @@ export const tweetTool = tool({
   Keep tweets under 280 characters. Do NOT use hashtags or emoji - plain text only.
 
   IMPORTANT: Only use this when a user explicitly asks you to post a tweet. All tweets are logged for audit purposes.`,
-  parameters: z.object({
+  inputSchema: z.object({
     tweetText: z
       .string()
       .max(280)
@@ -59,15 +59,6 @@ export const tweetTool = tool({
     channelName,
     guildId,
     messageId
-  }: {
-    tweetText: string;
-    reasoning?: string;
-    userId?: string;
-    username?: string;
-    channelId?: string;
-    channelName?: string;
-    guildId?: string;
-    messageId?: string;
   }) => {
     // Default userId and username if not provided (for backwards compatibility)
     const effectiveUserId = userId || 'system';
