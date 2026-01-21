@@ -50,13 +50,31 @@ export const tweetTool = tool({
       .optional()
       .describe('Discord message ID of the request (for audit logging)'),
   }),
-  execute: async ({ tweetText, reasoning, userId, username, channelId, channelName, guildId, messageId }) => {
+  execute: async ({
+    tweetText,
+    reasoning,
+    userId,
+    username,
+    channelId,
+    channelName,
+    guildId,
+    messageId
+  }: {
+    tweetText: string;
+    reasoning?: string;
+    userId?: string;
+    username?: string;
+    channelId?: string;
+    channelName?: string;
+    guildId?: string;
+    messageId?: string;
+  }) => {
     // Default userId and username if not provided (for backwards compatibility)
     const effectiveUserId = userId || 'system';
     const effectiveUsername = username || 'omega-bot';
 
     // Log the tweet attempt to database
-    let logId: number;
+    let logId: number | undefined;
     try {
       logId = await logTweet({
         userId: effectiveUserId,
