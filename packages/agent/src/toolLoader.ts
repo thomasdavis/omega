@@ -234,6 +234,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
 
   // Discord Tools
   discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
+  spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
 };
 
 /**
