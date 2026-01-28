@@ -1,5 +1,17 @@
 [
   {
+    "id": "3031fb07",
+    "filename": "text-to-speech_540c0ed7.html",
+    "originalName": "text-to-speech.html",
+    "size": 14666,
+    "extension": ".html",
+    "uploadedAt": "2026-01-28T12:12:26.241Z",
+    "uploadedBy": "uncloseai",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/text-to-speech_540c0ed7.html",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/text-to-speech_540c0ed7.html",
+    "description": "The new default model and voices page for the omega blog TTS service to integrate with new qwen model and voices"
+  },
+  {
     "id": "2445c33a",
     "filename": "mairy_pipeline_a931128e.py",
     "originalName": "mairy_pipeline.py",
