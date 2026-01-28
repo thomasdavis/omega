@@ -1,0 +1,83 @@
+{
+  "name": "@omega/tech-translate",
+  "version": "0.1.0",
+  "description": "AI-powered tech translation tool that converts informal user requests into detailed, actionable technical specifications",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "tech-translate": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "keywords": [
+    "ai",
+    "llm",
+    "spec",
+    "architecture",
+    "devops",
+    "database",
+    "nlp",
+    "pam",
+    "technical-specification",
+    "requirements"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thomasdavis/omega.git",
+    "directory": "packages/tech-translate"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.23.8",
+    "commander": "^12.0.0"
+  },
+  "peerDependencies": {
+    "ai": ">=6.0.0",
+    "@ai-sdk/openai": ">=2.0.0",
+    "@ai-sdk/anthropic": ">=0.0.50"
+  },
+  "peerDependenciesMeta": {
+    "@ai-sdk/openai": {
+      "optional": true
+    },
+    "@ai-sdk/anthropic": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "typescript": "^5.6.3",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
