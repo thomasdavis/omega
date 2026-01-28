@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#43a047">
+    <meta name="color-scheme" content="light dark">
+    <title>Open-Source Text-to-Speech | uncloseai-speech | uncloseai.com</title>
+    <meta name="description" content="Self-hostable OpenAI-compatible text-to-speech API with 5 TTS engines, 42+ built-in cloned voices, and zero API keys. Default: Qwen3-TTS with voice cloning.">
+
+    <link rel="stylesheet" href="/css/pico.classless.min.css">
+    <link rel="stylesheet" href="/css/chunkfive/stylesheet.css" type="text/css" charset="utf-8" />
+    <link rel="stylesheet" href="/css/sidebar-theme.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/a11y-dark.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.6.0/highlight.min.js"></script>
+
+    <script>
+        function switchTheme(theme) {
+            if (theme === "auto") {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+
+            var iframe = document.getElementById('remarkbox-iframe');
+            if (iframe && window.buildRbSrc) {
+                iframe.src = buildRbSrc();
+            }
+        }
+
+        window.UNCLOSEAI_CUSTOM_STYLING = false;
+    </script>
+
+    <script src="https://uncloseai.com/uncloseai.js" type="module"></script>
+</head>
+
+<body>
+    <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">
+        ☰
+    </button>
+
+    <aside class="sidebar">
+        <div class="table-of-contents">
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/c-examples.html">C Examples</a></li>
+                    <li><a href="/csharp-examples.html">C# Examples</a></li>
+                    <li><a href="/dart-examples.html">Dart Examples</a></li>
+                    <li><a href="/elixir-examples.html">Elixir Examples</a></li>
+                    <li><a href="/go-examples.html">Go Examples</a></li>
+                    <li><a href="/java-examples.html">Java Examples</a></li>
+                    <li><a href="/kotlin-examples.html">Kotlin Examples</a></li>
+                    <li><a href="/nodejs-examples.html">Node.js Examples</a></li>
+                    <li><a href="/php-examples.html">PHP Examples</a></li>
+                    <li><a href="/python-examples.html">Python Examples</a></li>
+                    <li><a href="/ruby-examples.html">Ruby Examples</a></li>
+                    <li><a href="/rust-examples.html">Rust Examples</a></li>
+                    <li><a href="/swift-examples.html">Swift Examples</a></li>
+                    <li><a href="/uncloseai-js.html">uncloseai.js Docs</a></li>
+                    <li><a href="/inference.html">Inference Setup</a></li>
+                    <li><a href="/text-to-speech.html" class="active">Text-to-Speech</a></li>
+                    <li><a href="/tts/voice-cloning.html" style="padding-left:2em">Qwen3-TTS</a></li>
+                    <li><a href="/tts/fast-synthesis.html" style="padding-left:2em">Piper TTS</a></li>
+                    <li><a href="/tts/hd-cloning.html" style="padding-left:2em">XTTS v2</a></li>
+                    <li><a href="/tts/multilingual-cpu.html" style="padding-left:2em">Silero TTS</a></li>
+                    <li><a href="/tts/lightweight.html" style="padding-left:2em">Kokoro TTS</a></li>
+                    <li><a href="/crawler.html">Our Crawler</a></li>
+                    <li><a href="/languages" target="_blank">All Languages</a></li>
+                    <li><a href="https://shop.unturf.com/p/8486f492-a93e-11f0-b477-02dfe05770ee/uncloseai-machine-learning-reference-guide-to-inference-clients" target="_blank">Book</a></li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+        <hgroup>
+            <a href="https://uncloseai.com"><h1 class="unturf" style="font-family: 'ChunkFiveRegular';">uncloseai.</h1></a>
+            <p>Open-Source Text-to-Speech</p>
+        </hgroup>
+        <nav>
+            <ul>
+                <li><a href="#" onclick="switchTheme('auto')">Auto</a></li>
+                <li><a href="#" onclick="switchTheme('light')">Light</a></li>
+                <li><a href="#" onclick="switchTheme('dark')">Dark</a></li>
+            </ul>
+        </nav>
+        </header>
+
+        <h2>Raccoon Mission: Rescuing Abandoned TTS Models</h2>
+
+        <p><strong>uncloseai-speech</strong> is our community-driven initiative to rescue, preserve, and unify abandoned text-to-speech models into a single, resilient, self-hostable API.</p>
+
+        <blockquote>
+            <p><strong>"Why raccoons?"</strong> Because like raccoons, we dig through the digital dumpsters of abandoned GitHub repos and archived projects, rescuing valuable open-source TTS models that organizations have left behind. We give them a new home, maintain them, and make them accessible to everyone.</p>
+        </blockquote>
+
+        <ul>
+            <li><strong>Zero API Keys:</strong> No registration, no tracking, no rate limits on your own infrastructure</li>
+            <li><strong>OpenAI-Compatible:</strong> Drop-in replacement &mdash; change one URL and you're running</li>
+            <li><strong>Five TTS Engines:</strong> Each with different strengths, all behind the same API</li>
+            <li><strong>42+ Built-In Cloned Voices:</strong> With 10-language support</li>
+            <li><strong>Self-Hostable:</strong> Docker compose, Makefile-driven, runs on your hardware</li>
+            <li><strong>AGPL v3 Licensed:</strong> Keeps TTS libre forever</li>
+        </ul>
+
+        <h2>What's Live Right Now</h2>
+
+        <p>Our public endpoint runs the <a href="/tts/voice-cloning.html"><strong>Voice Cloning engine</strong></a> &mdash; 42+ distinct human voices cloned from the LibriSpeech public domain corpus, speaking 10 languages natively. First audio arrives in under 100 milliseconds.</p>
+
+        <pre><code class="bash"># Female voice
+curl https://speech.ai.unturf.com/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "We rescue abandoned text-to-speech models and give them a new home. No API keys, no tracking, just open source voices for everyone.",
+    "voice": "aria"
+  }' > aria.mp3
+
+# Male voice
+curl https://speech.ai.unturf.com/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "Like raccoons digging through digital dumpsters, we find the best open source TTS models that big companies left behind, and we make them accessible to everyone.",
+    "voice": "atlas"
+  }' > atlas.mp3</code></pre>
+
+        <pre><code class="python">from openai import OpenAI
+
+client = OpenAI(
+    api_key="not-needed",
+    base_url="https://speech.ai.unturf.com/v1"
+)
+
+client.audio.speech.create(
+    voice="aria",
+    input="Raccoon mission. We dig through abandoned repos and rescue the best open source speech models before they disappear."
+).stream_to_file("aria.mp3")
+
+client.audio.speech.create(
+    voice="atlas",
+    input="Five engines, one API. Self-host it, clone any voice, speak ten languages. No vendor lock-in, no API keys, no limits."
+).stream_to_file("atlas.mp3")</code></pre>
+
+        <h3>Browse Voices &amp; Models</h3>
+
+        <p>Every voice has a name, a gender, and a personality. The API tells you exactly what's available.</p>
+
+        <p><a href="https://speech.ai.unturf.com/v1/voices" target="_blank"><strong>&rarr; See all voices</strong></a> &nbsp; <a href="https://speech.ai.unturf.com/v1/models" target="_blank"><strong>&rarr; See all engines</strong></a></p>
+
+        <h2>The Five Engines</h2>
+
+        <p>Five TTS engines, each rescued from a different corner of open source, all running behind the same OpenAI-compatible API. Our public endpoint runs Qwen3-TTS. The other four are ready for anyone who clones the repo.</p>
+
+        <h3><a href="/tts/voice-cloning.html">Qwen3-TTS</a> &mdash; <mark>Live</mark></h3>
+        <p>42+ cloned voices, 10 languages, voice cloning from 3-second samples. 1.7 billion parameters, 97ms first-packet latency. This is what's running on our public endpoint right now.</p>
+
+        <h3><a href="/tts/fast-synthesis.html">Piper TTS</a> &mdash; <small>Self-host</small></h3>
+        <p>100+ English voices, CPU-only, ONNX runtime. The fastest engine in the dumpster &mdash; built for high-volume batch jobs and real-time applications where latency matters most.</p>
+
+        <h3><a href="/tts/hd-cloning.html">XTTS v2</a> &mdash; <small>Self-host</small></h3>
+        <p>Clone any voice from a 6-second sample across 16 languages. The highest fidelity option, rescued from the Coqui TTS project. Needs a GPU with ~4GB VRAM.</p>
+
+        <h3><a href="/tts/multilingual-cpu.html">Silero TTS</a> &mdash; <small>Self-host</small></h3>
+        <p>148 voices across 5 languages, all running on CPU. English, Russian, German, Spanish, and French. Clean 48kHz output, no GPU required.</p>
+
+        <h3><a href="/tts/lightweight.html">Kokoro TTS</a> &mdash; <small>Self-host</small></h3>
+        <p>82 million parameters, 34 voices. Small enough for a Raspberry Pi or an edge device. Apache 2.0 licensed, 24kHz output.</p>
+
+        <h2>Self-Hosting</h2>
+
+        <p>Clone the repo, deploy, and you have your own production TTS API. All five engines are included &mdash; enable whichever ones you need.</p>
+
+        <pre><code class="bash">git clone https://git.unturf.com/engineering/unturf/uncloseai-speech.git
+cd uncloseai-speech
+
+# Deploy with GPU (Qwen3-TTS, default)
+make deploy
+
+# Or CPU-only (works anywhere, slower)
+make deploy-cpu
+
+# Download 42+ cloned voice samples from LibriSpeech
+make voices-qwen
+
+# Test it (Qwen3-TTS model ~3.4GB downloads automatically on first use)
+make test
+
+# Enable additional engines
+make voices-piper    # Piper TTS
+make voices-xtts     # XTTS v2
+make voices-silero   # Silero TTS
+make voices-kokoro   # Kokoro TTS</code></pre>
+
+        <p>For full documentation, see the <a href="https://git.unturf.com/engineering/unturf/uncloseai-speech" target="_blank">uncloseai-speech repository</a>.</p>
+
+        <h2>Get Involved</h2>
+
+        <p>We run a free public endpoint at <code>https://speech.ai.unturf.com/v1</code> but we need help scaling:</p>
+
+        <ul>
+            <li><strong>Donate GPU Time:</strong> Run an instance, we'll load-balance community traffic</li>
+            <li><strong>Host Regional Mirrors:</strong> Reduce latency for users in your region</li>
+            <li><strong>Integrate New Engines:</strong> StyleTTS2, Fish Speech, Chatterbox are on the roadmap</li>
+            <li><strong>Add Voice Samples:</strong> Expand the voice library with diverse accents</li>
+        </ul>
+
+        <h2>Resources</h2>
+
+        <ul>
+            <li><strong>Repository:</strong> <a href="https://git.unturf.com/engineering/unturf/uncloseai-speech" target="_blank">git.unturf.com/engineering/unturf/uncloseai-speech</a></li>
+            <li><strong>API Endpoint:</strong> <code>https://speech.ai.unturf.com/v1</code></li>
+            <li><strong>Voices:</strong> <a href="https://speech.ai.unturf.com/v1/voices" target="_blank">speech.ai.unturf.com/v1/voices</a></li>
+            <li><strong>Models:</strong> <a href="https://speech.ai.unturf.com/v1/models" target="_blank">speech.ai.unturf.com/v1/models</a></li>
+        </ul>
+
+        <h2>Questions &amp; Community</h2>
+
+        <p>Ask questions, share your deployments, or discuss TTS research below!</p>
+
+        <div id="remarkbox-div">
+            <noscript>
+                <iframe id=remarkbox-iframe src="https://my.remarkbox.com/embed?nojs=true" style="height:600px;width:100%;border:none!important" tabindex=0></iframe>
+            </noscript>
+        </div>
+        <script src="https://my.remarkbox.com/static/js/iframe-resizer/iframeResizer.min.js"></script>
+        <script>
+            var rb_owner_key = "944c8dfa-8b2b-11ef-af0e-29ab4fb285a0";
+            var thread_uri = window.location.href;
+            var thread_title = window.document.title;
+            var thread_fragment = window.location.hash;
+
+            function getCurrentTheme() {
+                var theme = document.documentElement.getAttribute('data-theme');
+                if (theme) {
+                    return theme;
+                }
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    return 'dark';
+                }
+                return 'light';
+            }
+
+            function buildRbSrc() {
+                var mode = getCurrentTheme();
+                return "https://my.remarkbox.com/embed" +
+                    "?rb_owner_key=" + rb_owner_key +
+                    "&thread_title=" + encodeURI(thread_title) +
+                    "&thread_uri=" + encodeURIComponent(thread_uri) +
+                    "&mode=" + mode +
+                    thread_fragment;
+            }
+
+            var rb_src = buildRbSrc();
+
+            function create_remarkbox_iframe() {
+                var ifrm = document.createElement("iframe");
+                ifrm.setAttribute("id", "remarkbox-iframe");
+                ifrm.setAttribute("scrolling", "no");
+                ifrm.setAttribute("src", rb_src);
+                ifrm.setAttribute("frameborder", "0");
+                ifrm.setAttribute("tabindex", "0");
+                ifrm.setAttribute("title", "Remarkbox");
+                ifrm.style.width = "100%";
+                document.getElementById("remarkbox-div").appendChild(ifrm);
+            }
+            create_remarkbox_iframe();
+            iFrameResize(
+                {
+                    checkOrigin: ["https://my.remarkbox.com"],
+                    inPageLinks: true,
+                    initCallback: function(e) { e.iFrameResizer.moveToAnchor(thread_fragment) }
+                },
+                document.getElementById("remarkbox-iframe")
+            );
+        </script>
+
+        <script>hljs.highlightAll();</script>
+
+        <footer>
+        <small>&copy; uncloseai. 2025</small>
+        <br>
+        <small>Stylesheets by <a href="https://picocss.com" target="_blank">PicoCSS</a></small>
+        <small>& <a href="https://highlightjs.org/" target="_blank">highlight.js</a></small>
+        <br>
+        <small><a href="/privacy-policy.html">Privacy Policy</a> | <a href="/terms-of-use.html">Terms of Use</a></small>
+        </footer>
+    </main>
+</body>
+
+</html>
