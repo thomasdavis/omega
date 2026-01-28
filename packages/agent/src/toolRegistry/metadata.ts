@@ -2714,6 +2714,42 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'spamBotMonitorAndResponse',
+    name: 'Spam Bot Monitor and Response',
+    description: 'Monitor Discord channels for spam bot messages and respond with cartoon-based deterrents. Detects spam using pattern analysis and posts humorous cartoon responses.',
+    keywords: ['discord', 'spam', 'bot', 'monitor', 'detect', 'cartoon', 'response', 'moderate', 'filter', 'anti-spam'],
+    tags: ['discord', 'moderation', 'spam', 'security', 'automation'],
+    examples: [
+      'monitor general channel for spam bots',
+      'auto-respond to spam bots in general with cartoons',
+      'detect and fight spam bots in chat',
+      'send cartoons to spam bots automatically',
+      'moderate spam bots with funny cartoons',
+      'check #general for spam',
+      'analyze recent messages for spam'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'humorousJobSeekerResponseComicPoster',
+    name: 'Humorous Job Seeker Response Comic Poster',
+    description: 'Scan Discord channels for job seeker posts and respond with personalized, humorous comic responses to engage and lighten the mood. Automatically detects users seeking jobs or offering skills and creates witty, friendly comic panels as replies.',
+    keywords: ['discord', 'job', 'seeker', 'comic', 'humor', 'welcome', 'community', 'engagement', 'career', 'hiring', 'skills', 'recruitment'],
+    tags: ['discord', 'community', 'engagement', 'comics', 'automation', 'social'],
+    examples: [
+      'find job seeker posts and reply with comics',
+      'respond to job seekers in #general with humorous comics',
+      'auto-post welcome comics to new job seekers',
+      'monitor general channel for job posts and respond',
+      'detect job seekers and send funny comics',
+      'reply to job posts with personalized comics',
+      'welcome job seekers with comic strips'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
