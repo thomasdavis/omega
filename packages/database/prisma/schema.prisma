@@ -242,14 +242,18 @@ model jokes {
 }
 
 model TodoList {
-  id           Int      @id @default(autoincrement())
-  task         String
-  isCompleted  Boolean  @default(false) @map("is_completed")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
+  id                 Int      @id @default(autoincrement())
+  task               String
+  userId             String?  @map("user_id") @db.VarChar(255)
+  githubIssueNumber  Int?     @map("github_issue_number")
+  isCompleted        Boolean  @default(false) @map("is_completed")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(6)
 
   @@index([createdAt(sort: Desc)], map: "idx_todo_list_created_at")
   @@index([isCompleted], map: "idx_todo_list_is_completed")
+  @@index([userId], map: "idx_todo_user")
+  @@index([githubIssueNumber], map: "idx_todo_github_issue")
   @@map("todo_list")
 }
 
