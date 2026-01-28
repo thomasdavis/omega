@@ -4,7 +4,7 @@
 
 ## Overview
 
-The TTS integration allows blog posts to provide audio descriptions for images and slide content. It uses UncloseAI's TTS API with 227+ available voices, with `bm_fable` as the recommended default voice.
+The TTS integration allows blog posts to provide audio descriptions for images and slide content. It uses UncloseAI's **Qwen3-TTS model** (1.7B parameters, 97ms first-packet latency) with 42+ cloned voices from the LibriSpeech corpus, supporting 10 languages. The default voice is `bm_fable`.
 
 ## Features
 
@@ -12,10 +12,24 @@ The TTS integration allows blog posts to provide audio descriptions for images a
 - ✅ Smart caching system to avoid re-generating audio
 - ✅ Rate limiting (20 requests/minute per IP)
 - ✅ Accessible play buttons with keyboard support
-- ✅ Support for 227+ voices from UncloseAI
+- ✅ Support for 42+ voices from UncloseAI (Qwen3-TTS model)
+- ✅ 10-language support with voice cloning capabilities
 - ✅ Mobile-responsive design
 - ✅ High contrast mode support
 - ✅ Reduced motion support for accessibility
+
+## TTS Model
+
+The integration uses **Qwen3-TTS**, a state-of-the-art text-to-speech model with the following characteristics:
+
+- **Parameters**: 1.7 billion parameters
+- **Latency**: 97ms first-packet latency
+- **Voices**: 42+ cloned voices from LibriSpeech corpus
+- **Languages**: 10 language support with native pronunciation
+- **Voice Cloning**: Can clone voices from 3-second audio samples
+- **Quality**: High-fidelity, natural-sounding speech synthesis
+
+The model parameter sent to the API is `tts-1`, which is OpenAI-compatible and maps to Qwen3-TTS on the UncloseAI endpoint.
 
 ## Architecture
 
@@ -75,16 +89,20 @@ The caption text will be read aloud when the play button is clicked.
 
 ### Available Voices
 
-The UncloseAI API provides 227+ voices. Some popular options:
+The UncloseAI Qwen3-TTS API provides 42+ cloned voices from the LibriSpeech public domain corpus. Some popular options:
 
 - `bm_fable` (recommended default) - Natural, clear voice
+- `aria` - Female voice, versatile and balanced
+- `atlas` - Male voice, warm and authoritative
 - `alloy` - Versatile, balanced voice
 - `echo` - Warm, expressive voice
 - `shimmer` - Bright, energetic voice
 - `onyx` - Deep, authoritative voice
 - `nova` - Friendly, conversational voice
 
-See the full voice list at: https://uncloseai.com/text-to-speech.html
+**Voice Cloning**: Qwen3-TTS supports cloning any voice from a 3-second audio sample.
+
+See the full voice list at: https://speech.ai.unturf.com/v1/voices or https://uncloseai.com/text-to-speech.html
 
 ## API Endpoint
 
@@ -410,5 +428,5 @@ Potential improvements:
 
 ---
 
-**Last Updated:** 2025-11-20
-**Version:** 1.0.0
+**Last Updated:** 2026-01-28
+**Version:** 1.1.0 - Updated to Qwen3-TTS model with 42+ cloned voices
