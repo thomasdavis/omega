@@ -9,7 +9,7 @@ interface ShellmatesConfig {
   baseUrl?: string;
 }
 
-interface ShellmatesUser {
+export interface ShellmatesUser {
   id: string;
   username: string;
   level?: number;
@@ -19,7 +19,7 @@ interface ShellmatesUser {
   profile_url?: string;
 }
 
-interface ShellmatesChallenge {
+export interface ShellmatesChallenge {
   id: string;
   title: string;
   category?: string;
