@@ -654,3 +654,69 @@ model ConversationMessage {
   @@index([userId], map: "idx_conversation_messages_user_id")
   @@map("conversation_messages")
 }
+
+model ShellmatesProfile {
+  id                  Int                       @id @default(autoincrement())
+  shellmatesUserId    String                    @map("shellmates_user_id") @db.VarChar(255)
+  username            String                    @db.VarChar(255)
+  discordUserId       String?                   @map("discord_user_id") @db.VarChar(255)
+  discordUsername     String?                   @map("discord_username") @db.VarChar(255)
+  level               Int?
+  rank                Int?
+  points              Int?
+  challengesCompleted Int?                      @map("challenges_completed")
+  profileUrl          String?                   @map("profile_url") @db.Text
+  profileData         Json?                     @map("profile_data")
+  lastSyncedAt        DateTime?                 @map("last_synced_at") @db.Timestamptz(6)
+  createdAt           DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  userChallenges      ShellmatesUserChallenge[]
+
+  @@unique([shellmatesUserId], map: "idx_shellmates_profiles_user_id_unique")
+  @@index([username], map: "idx_shellmates_profiles_username")
+  @@index([discordUserId], map: "idx_shellmates_profiles_discord_user_id")
+  @@index([rank], map: "idx_shellmates_profiles_rank")
+  @@index([level], map: "idx_shellmates_profiles_level")
+  @@index([createdAt(sort: Desc)], map: "idx_shellmates_profiles_created_at")
+  @@map("shellmates_profiles")
+}
+
+model ShellmatesChallenge {
+  id                    Int                       @id @default(autoincrement())
+  shellmatesChallengeId String                    @unique @map("shellmates_challenge_id") @db.VarChar(255)
+  title                 String                    @db.VarChar(500)
+  category              String?                   @db.VarChar(100)
+  difficulty            String?                   @db.VarChar(50)
+  points                Int?
+  solvedCount           Int?                      @map("solved_count")
+  description           String?                   @db.Text
+  challengeData         Json?                     @map("challenge_data")
+  lastSyncedAt          DateTime?                 @map("last_synced_at") @db.Timestamptz(6)
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  userChallenges        ShellmatesUserChallenge[]
+
+  @@index([category], map: "idx_shellmates_challenges_category")
+  @@index([difficulty], map: "idx_shellmates_challenges_difficulty")
+  @@index([points], map: "idx_shellmates_challenges_points")
+  @@index([createdAt(sort: Desc)], map: "idx_shellmates_challenges_created_at")
+  @@map("shellmates_challenges")
+}
+
+model ShellmatesUserChallenge {
+  id               Int                 @id @default(autoincrement())
+  profileId        Int                 @map("profile_id")
+  challengeId      Int                 @map("challenge_id")
+  solvedAt         DateTime?           @map("solved_at") @db.Timestamptz(6)
+  solveTimeSeconds Int?                @map("solve_time_seconds")
+  metadata         Json?
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  profile          ShellmatesProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  challenge        ShellmatesChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([profileId, challengeId], map: "idx_shellmates_user_challenges_unique")
+  @@index([profileId], map: "idx_shellmates_user_challenges_profile_id")
+  @@index([challengeId], map: "idx_shellmates_user_challenges_challenge_id")
+  @@index([solvedAt(sort: Desc)], map: "idx_shellmates_user_challenges_solved_at")
+  @@map("shellmates_user_challenges")
+}
