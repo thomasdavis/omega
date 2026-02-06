@@ -10,21 +10,29 @@
 export interface MoltbookPost {
   id: string;
   title: string;
-  body?: string;
+  content?: string;
   url?: string;
-  post_type: 'text' | 'link';
   submolt?: string;
   author: string;
   upvotes: number;
   downvotes: number;
   comment_count: number;
   created_at: string;
+  verification_status?: string;
+  verification_required?: boolean;
+  verification?: {
+    code: string;
+    challenge: string;
+    expires_at: string;
+    instructions: string;
+    verify_endpoint: string;
+  };
 }
 
 export interface MoltbookComment {
   id: string;
   post_id: string;
-  body: string;
+  content: string;
   author: string;
   parent_id?: string;
   upvotes: number;
@@ -54,6 +62,11 @@ export interface MoltbookRegistration {
   claim_url: string;
   verification_code: string;
   agent_name: string;
+}
+
+export interface MoltbookVerification {
+  success: boolean;
+  message?: string;
 }
 
 export interface MoltbookSearchResult {
@@ -178,20 +191,22 @@ export async function moltbookRegister(
 
 export async function moltbookCreatePost(options: {
   title: string;
-  body?: string;
+  content?: string;
   url?: string;
-  postType?: 'text' | 'link';
   submolt?: string;
 }): Promise<MoltbookApiResult<MoltbookPost>> {
+  const payload: Record<string, unknown> = {
+    title: options.title,
+    submolt: options.submolt,
+  };
+  if (options.url) {
+    payload.url = options.url;
+  } else {
+    payload.content = options.content;
+  }
   return moltbookFetch<MoltbookPost>('/posts', {
     method: 'POST',
-    body: {
-      title: options.title,
-      body: options.body,
-      url: options.url,
-      post_type: options.postType || 'text',
-      submolt: options.submolt,
-    },
+    body: payload,
   });
 }
 
@@ -225,12 +240,12 @@ export async function moltbookDownvotePost(postId: string): Promise<MoltbookApiR
 
 export async function moltbookCreateComment(
   postId: string,
-  body: string,
+  content: string,
   parentId?: string,
 ): Promise<MoltbookApiResult<MoltbookComment>> {
   return moltbookFetch<MoltbookComment>(`/posts/${encodeURIComponent(postId)}/comments`, {
     method: 'POST',
-    body: { body, parent_id: parentId },
+    body: { content, parent_id: parentId },
   });
 }
 
@@ -322,6 +337,24 @@ export async function moltbookSearch(
   limit?: number,
 ): Promise<MoltbookApiResult<MoltbookSearchResult>> {
   return moltbookFetch<MoltbookSearchResult>('/search', {
-    params: { query, type, limit },
+    params: { q: query, type, limit },
   });
+}
+
+// --- Verification ---
+
+export async function moltbookVerify(
+  verificationCode: string,
+  answer: string,
+): Promise<MoltbookApiResult<MoltbookVerification>> {
+  return moltbookFetch<MoltbookVerification>('/verify', {
+    method: 'POST',
+    body: { verification_code: verificationCode, answer },
+  });
+}
+
+// --- Status ---
+
+export async function moltbookGetStatus(): Promise<MoltbookApiResult<{ status: string }>> {
+  return moltbookFetch<{ status: string }>('/agents/status');
 }

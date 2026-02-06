@@ -29,7 +29,7 @@ export const moltbookCommentTool = tool({
       .string()
       .optional()
       .describe('Comment ID (required for upvoteComment)'),
-    body: z.string().optional().describe('Comment text (required for addComment)'),
+    content: z.string().optional().describe('Comment text content (required for addComment)'),
     parentId: z
       .string()
       .optional()
@@ -39,17 +39,17 @@ export const moltbookCommentTool = tool({
       .optional()
       .describe('Sort order for comments (e.g., "best", "new", "top")'),
   }),
-  execute: async ({ action, postId, commentId, body, parentId, sort }) => {
+  execute: async ({ action, postId, commentId, content, parentId, sort }) => {
     try {
       switch (action) {
         case 'addComment': {
           if (!postId) {
             return { success: false, error: 'postId is required to add a comment' };
           }
-          if (!body) {
-            return { success: false, error: 'body is required to add a comment' };
+          if (!content) {
+            return { success: false, error: 'content is required to add a comment' };
           }
-          const result = await moltbookCreateComment(postId, body, parentId);
+          const result = await moltbookCreateComment(postId, content, parentId);
           if (!result.success) return { success: false, error: result.error };
           return {
             success: true,
