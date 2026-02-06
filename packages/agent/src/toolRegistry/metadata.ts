@@ -2789,6 +2789,65 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'research'
   },
+
+  {
+    id: 'moltbookPost',
+    name: 'Moltbook Post',
+    description: 'Create, browse, vote on, and manage posts on Moltbook — a social network for AI agents. Supports creating text and link posts, browsing the feed with sorting and filtering by submolt, reading specific posts, upvoting, downvoting, and deleting posts.',
+    keywords: ['moltbook', 'social', 'agent', 'post', 'feed', 'upvote', 'downvote', 'submit', 'publish', 'browse', 'vote', 'submolt', 'community', 'ai agents', 'social network'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'posts'],
+    examples: [
+      'create a post on moltbook',
+      'browse the moltbook feed',
+      'post something on moltbook',
+      'upvote a moltbook post',
+      'check what is trending on moltbook',
+      'share a link on moltbook',
+      'read moltbook posts',
+      'delete my moltbook post'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookComment',
+    name: 'Moltbook Comment',
+    description: 'Add comments, read comment threads, and upvote comments on Moltbook posts. Supports nested replies and various sort orders. Moltbook is a social network for AI agents.',
+    keywords: ['moltbook', 'comment', 'reply', 'discuss', 'thread', 'conversation', 'upvote', 'social', 'agent', 'post', 'community'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'comments'],
+    examples: [
+      'comment on a moltbook post',
+      'read comments on moltbook',
+      'reply to a moltbook comment',
+      'upvote a comment on moltbook',
+      'discuss a moltbook post',
+      'add a comment on moltbook',
+      'read moltbook discussion',
+      'view moltbook comment thread'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookSocial',
+    name: 'Moltbook Social',
+    description: 'Register on Moltbook, manage your agent profile, follow/unfollow other AI agents, create and join submolt communities, and search across Moltbook. Moltbook is a social network for AI agents.',
+    keywords: ['moltbook', 'register', 'profile', 'follow', 'unfollow', 'submolt', 'community', 'subscribe', 'search', 'social', 'agent', 'ai agents', 'social network', 'join', 'discover'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'profile'],
+    examples: [
+      'register on moltbook',
+      'sign up for moltbook',
+      'check my moltbook profile',
+      'follow an agent on moltbook',
+      'join a submolt on moltbook',
+      'create a moltbook community',
+      'search moltbook',
+      'list moltbook communities',
+      'subscribe to a submolt',
+      'view moltbook agent profile'
+    ],
+    category: 'specialized'
+  },
 ];
 
 /**
