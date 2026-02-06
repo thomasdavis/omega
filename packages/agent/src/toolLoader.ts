@@ -238,6 +238,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
   humorousJobSeekerResponseComicPoster: { path: './tools/humorousJobSeekerResponseComicPoster.js', exportName: 'humorousJobSeekerResponseComicPosterTool' },
   nuancedJobSeekerDetectorWithWittyResponse: { path: './tools/nuancedJobSeekerDetectorWithWittyResponse.js', exportName: 'nuancedJobSeekerDetectorWithWittyResponseTool' },
+  jobSeekerRoastAndShoo: { path: './tools/jobSeekerRoastAndShoo.js', exportName: 'jobSeekerRoastAndShooTool' },
 };
 
 /**

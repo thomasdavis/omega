@@ -2769,6 +2769,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'jobSeekerRoastAndShoo',
+    name: 'Job Seeker Roast and Shoo',
+    description: 'Detect job seeker posts in Discord channels and respond with witty, sharp roasts designed to discourage job seeking. Uses AI-generated sarcastic responses tailored to message tone. Points out inappropriateness of job seeking in the channel through humor, making posters uncomfortable enough to reconsider without being genuinely cruel.',
+    keywords: ['discord', 'job', 'seeker', 'roast', 'sarcasm', 'discourage', 'sharp', 'witty', 'humor', 'inappropriate', 'shoo', 'detection', 'moderation'],
+    tags: ['discord', 'community', 'moderation', 'humor', 'ai', 'automation', 'social'],
+    examples: [
+      'roast job seekers detected in #general channel',
+      'reply with sarcastic roasts to job seekers',
+      'make job seekers uncomfortable and discourage posting',
+      'respond sharply to job seeking posts',
+      'discourage job seekers with witty roasts',
+      'detect and roast inappropriate job posts',
+      'use sarcasm to shoo away job seekers',
+      'reply with sharp humor to job seeking'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
