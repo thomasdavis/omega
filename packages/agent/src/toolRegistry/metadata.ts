@@ -2750,6 +2750,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'nuancedJobSeekerDetectorWithWittyResponse',
+    name: 'Nuanced Job Seeker Detector with Witty Response',
+    description: 'Detect subtle and indirect job seeker mentions in Discord messages using advanced NLP, and respond with witty, clever text replies. Captures nuanced self-introductions, skill mentions, and indirect job seeking language. AI-powered responses are context-aware, tailored to message tone, and incorporate tech/developer humor.',
+    keywords: ['discord', 'job', 'seeker', 'detect', 'subtle', 'nlp', 'witty', 'text', 'response', 'smart', 'clever', 'nuanced', 'indirect', 'career', 'skills', 'ai', 'context-aware'],
+    tags: ['discord', 'community', 'engagement', 'nlp', 'ai', 'automation', 'social', 'text'],
+    examples: [
+      'detect job seekers with subtle language and respond with witty text',
+      'reply cleverly to nuanced job seeker posts in Discord',
+      'improve job seeker detection to capture indirect mentions',
+      'send witty text replies instead of comics to job seeker posts',
+      'monitor for subtle job seeking language',
+      'detect indirect job posts and respond smartly',
+      'reply with clever text to job seekers',
+      'find nuanced job seeking and send witty responses'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
