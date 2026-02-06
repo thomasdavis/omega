@@ -21,7 +21,17 @@ Each image with alt text or caption can have a play button that reads the text a
 
 ## Features
 
-- High-quality TTS with 227+ voices
+- High-quality TTS with **Qwen3-TTS model** (1.7B parameters, 97ms latency)
+- **42+ cloned voices** from LibriSpeech corpus
+- **10-language support** with native pronunciation
+- **Voice cloning** from 3-second audio samples
 - Caching for faster playback
 - Accessible keyboard controls
 - Responsive design
+
+## Voice Examples
+
+You can use different voices by setting `ttsVoice` in the frontmatter:
+- `bm_fable` (default) - Natural, clear voice
+- `aria` - Female voice, versatile and balanced
+- `atlas` - Male voice, warm and authoritative

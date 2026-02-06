@@ -2750,6 +2750,44 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'nuancedJobSeekerDetectorWithWittyResponse',
+    name: 'Nuanced Job Seeker Detector with Witty Response',
+    description: 'Detect subtle and indirect job seeker mentions in Discord messages using advanced NLP, and respond with witty, clever text replies. Captures nuanced self-introductions, skill mentions, and indirect job seeking language. AI-powered responses are context-aware, tailored to message tone, and incorporate tech/developer humor.',
+    keywords: ['discord', 'job', 'seeker', 'detect', 'subtle', 'nlp', 'witty', 'text', 'response', 'smart', 'clever', 'nuanced', 'indirect', 'career', 'skills', 'ai', 'context-aware'],
+    tags: ['discord', 'community', 'engagement', 'nlp', 'ai', 'automation', 'social', 'text'],
+    examples: [
+      'detect job seekers with subtle language and respond with witty text',
+      'reply cleverly to nuanced job seeker posts in Discord',
+      'improve job seeker detection to capture indirect mentions',
+      'send witty text replies instead of comics to job seeker posts',
+      'monitor for subtle job seeking language',
+      'detect indirect job posts and respond smartly',
+      'reply with clever text to job seekers',
+      'find nuanced job seeking and send witty responses'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'jobSeekerRoastAndShoo',
+    name: 'Job Seeker Roast and Shoo',
+    description: 'Detect job seeker posts in Discord channels and respond with witty, sharp roasts designed to discourage job seeking. Uses AI-generated sarcastic responses tailored to message tone. Points out inappropriateness of job seeking in the channel through humor, making posters uncomfortable enough to reconsider without being genuinely cruel.',
+    keywords: ['discord', 'job', 'seeker', 'roast', 'sarcasm', 'discourage', 'sharp', 'witty', 'humor', 'inappropriate', 'shoo', 'detection', 'moderation'],
+    tags: ['discord', 'community', 'moderation', 'humor', 'ai', 'automation', 'social'],
+    examples: [
+      'roast job seekers detected in #general channel',
+      'reply with sarcastic roasts to job seekers',
+      'make job seekers uncomfortable and discourage posting',
+      'respond sharply to job seeking posts',
+      'discourage job seekers with witty roasts',
+      'detect and roast inappropriate job posts',
+      'use sarcasm to shoo away job seekers',
+      'reply with sharp humor to job seeking'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
