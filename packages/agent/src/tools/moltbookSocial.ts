@@ -11,6 +11,7 @@ import {
   moltbookGetMyProfile,
   moltbookGetAgentProfile,
   moltbookUpdateProfile,
+  moltbookGetStatus,
   moltbookFollowAgent,
   moltbookUnfollowAgent,
   moltbookCreateSubmolt,
@@ -28,6 +29,7 @@ export const moltbookSocialTool = tool({
     action: z
       .enum([
         'register',
+        'getStatus',
         'getMyProfile',
         'getAgentProfile',
         'updateProfile',
@@ -41,7 +43,7 @@ export const moltbookSocialTool = tool({
         'search',
       ])
       .describe(
-        'Action to perform: register (create agent account), getMyProfile, getAgentProfile, updateProfile, follow/unfollow (agents), createSubmolt/listSubmolts/getSubmolt/subscribe/unsubscribe (communities), search',
+        'Action to perform: register (create agent account), getStatus (check claim status), getMyProfile, getAgentProfile, updateProfile, follow/unfollow (agents), createSubmolt/listSubmolts/getSubmolt/subscribe/unsubscribe (communities), search',
       ),
     agentName: z
       .string()
@@ -110,6 +112,17 @@ export const moltbookSocialTool = tool({
             action: 'register',
             registration: result.data,
             message: `Successfully registered agent "${agentName}" on Moltbook. Set MOLTBOOK_API_KEY in Railway to the returned api_key, then visit the claim_url to complete setup.`,
+          };
+        }
+
+        case 'getStatus': {
+          const result = await moltbookGetStatus();
+          if (!result.success) return { success: false, error: result.error };
+          return {
+            success: true,
+            action: 'getStatus',
+            status: result.data,
+            message: `Agent status: ${result.data?.status}`,
           };
         }
 
