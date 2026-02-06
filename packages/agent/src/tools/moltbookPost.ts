@@ -13,6 +13,7 @@ import {
   moltbookDeletePost,
   moltbookUpvotePost,
   moltbookDownvotePost,
+  moltbookVerify,
 } from '../services/moltbookService.js';
 
 export const moltbookPostTool = tool({
@@ -20,17 +21,15 @@ export const moltbookPostTool = tool({
     'Create, browse, vote on, and manage posts on Moltbook — a social network for AI agents. Use this to post content, browse the feed, read specific posts, upvote/downvote posts, or delete your own posts.',
   inputSchema: z.object({
     action: z
-      .enum(['createPost', 'getFeed', 'getPost', 'deletePost', 'upvote', 'downvote'])
+      .enum(['createPost', 'getFeed', 'getPost', 'deletePost', 'upvote', 'downvote', 'verify'])
       .describe(
-        'Action to perform: createPost (publish a new post), getFeed (browse posts), getPost (read a specific post), deletePost (remove your post), upvote/downvote (vote on a post)',
+        'Action to perform: createPost (publish a new post), getFeed (browse posts), getPost (read a specific post), deletePost (remove your post), upvote/downvote (vote on a post), verify (solve verification challenge to publish a post)',
       ),
     title: z.string().optional().describe('Post title (required for createPost)'),
-    body: z.string().optional().describe('Post body/content (for createPost with text type)'),
-    url: z.string().optional().describe('URL to share (for createPost with link type)'),
-    postType: z
-      .enum(['text', 'link'])
-      .optional()
-      .describe('Post type: text (default) or link'),
+    content: z.string().optional().describe('Post text content (for createPost text posts)'),
+    url: z.string().optional().describe('URL to share (for createPost link posts — provide url instead of content)'),
+    verificationCode: z.string().optional().describe('Verification code returned from createPost (required for verify)'),
+    verificationAnswer: z.string().optional().describe('Answer to the verification challenge, e.g. "28.00" (required for verify)'),
     submolt: z
       .string()
       .optional()
@@ -51,7 +50,7 @@ export const moltbookPostTool = tool({
       .optional()
       .describe('Maximum number of posts to return (default 25, max 100)'),
   }),
-  execute: async ({ action, title, body, url, postType, submolt, postId, sort, limit }) => {
+  execute: async ({ action, title, content, url, verificationCode, verificationAnswer, submolt, postId, sort, limit }) => {
     try {
       switch (action) {
         case 'createPost': {
@@ -60,17 +59,20 @@ export const moltbookPostTool = tool({
           }
           const result = await moltbookCreatePost({
             title,
-            body,
+            content,
             url,
-            postType: postType || 'text',
             submolt,
           });
           if (!result.success) return { success: false, error: result.error };
+          const postData = result.data as any;
+          const needsVerification = postData?.verification_required || postData?.post?.verification_status === 'pending';
           return {
             success: true,
             action: 'createPost',
             post: result.data,
-            message: `Successfully created post: "${title}"`,
+            message: needsVerification
+              ? `Post created but needs verification. Solve the math challenge and use the verify action with the verification_code and your answer.`
+              : `Successfully created post: "${title}"`,
           };
         }
 
@@ -137,6 +139,23 @@ export const moltbookPostTool = tool({
             success: true,
             action: 'downvote',
             message: `Successfully downvoted post ${postId}`,
+          };
+        }
+
+        case 'verify': {
+          if (!verificationCode) {
+            return { success: false, error: 'verificationCode is required for verify action' };
+          }
+          if (!verificationAnswer) {
+            return { success: false, error: 'verificationAnswer is required for verify action' };
+          }
+          const result = await moltbookVerify(verificationCode, verificationAnswer);
+          if (!result.success) return { success: false, error: result.error };
+          return {
+            success: true,
+            action: 'verify',
+            data: result.data,
+            message: 'Post verification submitted successfully',
           };
         }
 
