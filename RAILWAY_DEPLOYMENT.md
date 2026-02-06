@@ -376,6 +376,71 @@ After deployment:
 5. **Remove old artifact server code** from bot (Phase 5 next step)
 6. **Document API endpoints** for future reference
 
+## Common Deployment Failures
+
+### Bot Crashes on Startup with Database Error
+
+**Symptoms:**
+```
+❌ Failed to initialize database: Error: getaddrinfo ENOTFOUND postgres.railway.internal
+process exited with code 1
+```
+
+**Root Cause:** The bot tries to connect to PostgreSQL on startup but `DATABASE_URL` is not set or the PostgreSQL plugin is not attached.
+
+**Fix (as of latest update):**
+The bot now runs in "degraded mode" if database connection fails. You'll see:
+```
+⚠️  Failed to initialize database (continuing in degraded mode)
+   Bot will work without database features like message history and analytics
+   To enable database features, set DATABASE_URL environment variable
+✅ Bot is online as <Bot Name>#1234
+```
+
+**To Enable Full Database Features:**
+1. In Railway dashboard, go to omega-bot service
+2. Click "+ New" → "Database" → "Add PostgreSQL"
+3. Railway auto-creates `DATABASE_URL` environment variable
+4. OR manually set: `DATABASE_URL=${{omega-db.DATABASE_URL}}` (links to existing DB)
+5. Redeploy the service
+
+**Testing Database Connection Locally:**
+```bash
+# Test connection from your machine
+railway run bash -c 'export DATABASE_URL=$DATABASE_PUBLIC_URL && psql "$DATABASE_URL" -c "SELECT version();"'
+```
+
+### Build Fails with "Cannot find package @repo/..."
+
+**Cause:** Monorepo dependencies not properly built or turbo cache is stale.
+
+**Fix:**
+```bash
+# Clear build cache and rebuild
+rm -rf node_modules .turbo dist
+pnpm install
+pnpm build
+
+# Commit and push to trigger fresh Railway build
+git add .
+git commit -m "chore: rebuild dependencies"
+git push
+```
+
+### Railway Uses Wrong Dockerfile
+
+**Symptoms:** Build fails with unexpected errors or wrong service starts.
+
+**Cause:** Railway is not reading the `railway.toml` configuration correctly.
+
+**Fix:**
+1. Verify the `railway.toml` file exists in the correct location:
+   - `/railway.toml` for omega-bot service (root directory blank)
+   - `/apps/web/railway.toml` for omega-web service (root directory = apps/web)
+2. Ensure `dockerfilePath` is relative to repository root (NOT relative to root directory)
+3. Double-check the "Root Directory" setting in Railway dashboard matches expectation
+4. Delete any `railway.json` files if they exist (they override TOML)
+
 ## Support
 
 - Railway Docs: https://docs.railway.app
