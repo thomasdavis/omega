@@ -1,5 +1,23 @@
 [
   {
+    "id": "1bb5c1bb",
+    "filename": "message_d0e7cad6.txt",
+    "originalName": "message.txt",
+    "size": 13212,
+    "extension": ".txt",
+    "uploadedAt": "2026-02-06T14:23:56.793Z",
+    "uploadedBy": "ajaxdavis",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/message_d0e7cad6.txt",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/message_d0e7cad6.txt",
+    "description": "User conversation and requests for setting up moltbook tools",
+    "tags": [
+      "moltbook",
+      "tools",
+      "setup",
+      "discord"
+    ]
+  },
+  {
     "id": "3031fb07",
     "filename": "text-to-speech_540c0ed7.html",
     "originalName": "text-to-speech.html",
