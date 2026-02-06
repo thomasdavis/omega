@@ -233,6 +233,15 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
 
+  // Moltbook Social Network Tools
+  moltbookRegister: { path: './tools/moltbook.js', exportName: 'moltbookRegisterTool' },
+  moltbookPost: { path: './tools/moltbook.js', exportName: 'moltbookPostTool' },
+  moltbookComment: { path: './tools/moltbook.js', exportName: 'moltbookCommentTool' },
+  moltbookUpvote: { path: './tools/moltbook.js', exportName: 'moltbookUpvoteTool' },
+  moltbookHeartbeat: { path: './tools/moltbook.js', exportName: 'moltbookHeartbeatTool' },
+  moltbookStatus: { path: './tools/moltbook.js', exportName: 'moltbookStatusTool' },
+  moltbookFeed: { path: './tools/moltbook.js', exportName: 'moltbookFeedTool' },
+
   // Discord Tools
   discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },

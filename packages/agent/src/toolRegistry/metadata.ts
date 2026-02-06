@@ -2789,6 +2789,113 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'research'
   },
+
+  // ===== MOLTBOOK SOCIAL NETWORK TOOLS (7) =====
+  {
+    id: 'moltbookRegister',
+    name: 'Moltbook Register',
+    description: 'Register an AI agent with the Moltbook social network',
+    keywords: ['moltbook', 'register', 'agent', 'social', 'network', 'signup', 'create account'],
+    tags: ['moltbook', 'social', 'integration', 'agent'],
+    examples: [
+      'register agent with Moltbook',
+      'sign up for Moltbook',
+      'create Moltbook account',
+      'register on Moltbook'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookPost',
+    name: 'Moltbook Post',
+    description: 'Create a post on the Moltbook social network for AI agents',
+    keywords: ['moltbook', 'post', 'share', 'publish', 'submolt', 'social', 'content'],
+    tags: ['moltbook', 'social', 'content', 'posting'],
+    examples: [
+      'post on Moltbook',
+      'create a Moltbook post',
+      'share something on Moltbook',
+      'post to m/general on Moltbook'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookComment',
+    name: 'Moltbook Comment',
+    description: 'Comment on a post on the Moltbook social network',
+    keywords: ['moltbook', 'comment', 'reply', 'respond', 'discussion', 'social'],
+    tags: ['moltbook', 'social', 'comment', 'discussion'],
+    examples: [
+      'comment on a Moltbook post',
+      'reply on Moltbook',
+      'post a comment on Moltbook',
+      'respond to Moltbook post'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookUpvote',
+    name: 'Moltbook Upvote',
+    description: 'Upvote a post or comment on Moltbook',
+    keywords: ['moltbook', 'upvote', 'vote', 'like', 'karma', 'support'],
+    tags: ['moltbook', 'social', 'upvote', 'engagement'],
+    examples: [
+      'upvote a Moltbook post',
+      'upvote on Moltbook',
+      'like a post on Moltbook',
+      'vote on Moltbook'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookHeartbeat',
+    name: 'Moltbook Heartbeat',
+    description: 'Send a heartbeat to Moltbook to maintain agent presence and online status',
+    keywords: ['moltbook', 'heartbeat', 'alive', 'online', 'status', 'presence', 'active'],
+    tags: ['moltbook', 'social', 'heartbeat', 'presence'],
+    examples: [
+      'send heartbeat to Moltbook',
+      'perform Moltbook heartbeat',
+      'check in with Moltbook',
+      'maintain Moltbook presence'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookStatus',
+    name: 'Moltbook Status',
+    description: 'Check agent status and profile on Moltbook including karma, posts, and activity',
+    keywords: ['moltbook', 'status', 'profile', 'karma', 'agent', 'check', 'info'],
+    tags: ['moltbook', 'social', 'status', 'profile'],
+    examples: [
+      'check Moltbook status',
+      'check agent status on Moltbook',
+      'view Moltbook profile',
+      'what is my Moltbook karma'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'moltbookFeed',
+    name: 'Moltbook Feed',
+    description: 'Fetch posts from the Moltbook feed or a specific submolt',
+    keywords: ['moltbook', 'feed', 'browse', 'read', 'posts', 'submolt', 'timeline'],
+    tags: ['moltbook', 'social', 'feed', 'browse'],
+    examples: [
+      'show Moltbook feed',
+      'browse Moltbook posts',
+      'read Moltbook',
+      'what is on Moltbook',
+      'show posts from m/dev'
+    ],
+    category: 'specialized'
+  },
 ];
 
 /**
