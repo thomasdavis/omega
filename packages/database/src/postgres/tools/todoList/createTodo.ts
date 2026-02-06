@@ -22,15 +22,19 @@ Examples:
 
   inputSchema: z.object({
     task: z.string().min(1).describe('The task description'),
+    userId: z.string().optional().describe('The user ID who created the task'),
+    githubIssueNumber: z.number().int().positive().optional().describe('Link to GitHub issue number'),
   }),
 
-  execute: async ({ task }) => {
+  execute: async ({ task, userId, githubIssueNumber }) => {
     console.log(`📝 [Todo] Creating task: ${task}`);
 
     try {
       const todo = await prisma.todoList.create({
         data: {
           task,
+          userId,
+          githubIssueNumber,
           isCompleted: false,
         },
       });
@@ -42,6 +46,8 @@ Examples:
         todo: {
           id: todo.id,
           task: todo.task,
+          userId: todo.userId,
+          githubIssueNumber: todo.githubIssueNumber,
           isCompleted: todo.isCompleted,
           createdAt: todo.createdAt.toISOString(),
           updatedAt: todo.updatedAt.toISOString(),
