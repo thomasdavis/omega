@@ -26,10 +26,12 @@ Examples:
   inputSchema: z.object({
     id: z.number().int().positive().describe('The task ID to update'),
     task: z.string().min(1).optional().describe('New task description (optional)'),
+    userId: z.string().optional().describe('New user ID (optional)'),
+    githubIssueNumber: z.number().int().positive().optional().describe('Link to GitHub issue number (optional)'),
     isCompleted: z.boolean().optional().describe('New completion status (optional)'),
   }),
 
-  execute: async ({ id, task, isCompleted }) => {
+  execute: async ({ id, task, userId, githubIssueNumber, isCompleted }) => {
     console.log(`✏️ [Todo] Updating task with id: ${id}`);
 
     try {
@@ -52,6 +54,12 @@ Examples:
       if (task !== undefined) {
         updateData.task = task;
       }
+      if (userId !== undefined) {
+        updateData.userId = userId;
+      }
+      if (githubIssueNumber !== undefined) {
+        updateData.githubIssueNumber = githubIssueNumber;
+      }
       if (isCompleted !== undefined) {
         updateData.isCompleted = isCompleted;
       }
@@ -60,7 +68,7 @@ Examples:
         return {
           success: false,
           error: 'NO_UPDATES',
-          message: 'No updates provided. Specify task text or completion status.',
+          message: 'No updates provided. Specify task text, user ID, GitHub issue number, or completion status.',
         };
       }
 
@@ -76,6 +84,8 @@ Examples:
         todo: {
           id: updatedTodo.id,
           task: updatedTodo.task,
+          userId: updatedTodo.userId,
+          githubIssueNumber: updatedTodo.githubIssueNumber,
           isCompleted: updatedTodo.isCompleted,
           createdAt: updatedTodo.createdAt.toISOString(),
           updatedAt: updatedTodo.updatedAt.toISOString(),

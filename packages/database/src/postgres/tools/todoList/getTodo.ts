@@ -48,6 +48,8 @@ Examples:
         todo: {
           id: todo.id,
           task: todo.task,
+          userId: todo.userId,
+          githubIssueNumber: todo.githubIssueNumber,
           isCompleted: todo.isCompleted,
           createdAt: todo.createdAt.toISOString(),
           updatedAt: todo.updatedAt.toISOString(),
