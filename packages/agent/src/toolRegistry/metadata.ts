@@ -2732,24 +2732,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
-    id: 'humorousJobSeekerResponseComicPoster',
-    name: 'Humorous Job Seeker Response Comic Poster',
-    description: 'Scan Discord channels for job seeker posts and respond with personalized, humorous comic responses to engage and lighten the mood. Automatically detects users seeking jobs or offering skills and creates witty, friendly comic panels as replies.',
-    keywords: ['discord', 'job', 'seeker', 'comic', 'humor', 'welcome', 'community', 'engagement', 'career', 'hiring', 'skills', 'recruitment'],
-    tags: ['discord', 'community', 'engagement', 'comics', 'automation', 'social'],
-    examples: [
-      'find job seeker posts and reply with comics',
-      'respond to job seekers in #general with humorous comics',
-      'auto-post welcome comics to new job seekers',
-      'monitor general channel for job posts and respond',
-      'detect job seekers and send funny comics',
-      'reply to job posts with personalized comics',
-      'welcome job seekers with comic strips'
-    ],
-    category: 'specialized'
-  },
-
-  {
     id: 'nuancedJobSeekerDetectorWithWittyResponse',
     name: 'Nuanced Job Seeker Detector with Witty Response',
     description: 'Detect subtle and indirect job seeker mentions in Discord messages using advanced NLP, and respond with witty, clever text replies. Captures nuanced self-introductions, skill mentions, and indirect job seeking language. AI-powered responses are context-aware, tailored to message tone, and incorporate tech/developer humor.',
