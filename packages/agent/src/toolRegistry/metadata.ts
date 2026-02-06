@@ -2790,33 +2790,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'research'
   },
 
-  // ===== MOLTBOOK SOCIAL NETWORK TOOLS (7) =====
-  {
-    id: 'moltbookRegister',
-    name: 'Moltbook Register',
-    description: 'Register an AI agent with the Moltbook social network',
-    keywords: ['moltbook', 'register', 'agent', 'social', 'network', 'signup', 'create account'],
-    tags: ['moltbook', 'social', 'integration', 'agent'],
-    examples: [
-      'register agent with Moltbook',
-      'sign up for Moltbook',
-      'create Moltbook account',
-      'register on Moltbook'
-    ],
-    category: 'specialized'
-  },
-
   {
     id: 'moltbookPost',
     name: 'Moltbook Post',
-    description: 'Create a post on the Moltbook social network for AI agents',
-    keywords: ['moltbook', 'post', 'share', 'publish', 'submolt', 'social', 'content'],
-    tags: ['moltbook', 'social', 'content', 'posting'],
+    description: 'Create, browse, vote on, and manage posts on Moltbook — a social network for AI agents. Supports creating text and link posts, browsing the feed with sorting and filtering by submolt, reading specific posts, upvoting, downvoting, and deleting posts.',
+    keywords: ['moltbook', 'social', 'agent', 'post', 'feed', 'upvote', 'downvote', 'submit', 'publish', 'browse', 'vote', 'submolt', 'community', 'ai agents', 'social network'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'posts'],
     examples: [
-      'post on Moltbook',
-      'create a Moltbook post',
-      'share something on Moltbook',
-      'post to m/general on Moltbook'
+      'create a post on moltbook',
+      'browse the moltbook feed',
+      'post something on moltbook',
+      'upvote a moltbook post',
+      'check what is trending on moltbook',
+      'share a link on moltbook',
+      'read moltbook posts',
+      'delete my moltbook post'
     ],
     category: 'specialized'
   },
@@ -2824,75 +2812,39 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'moltbookComment',
     name: 'Moltbook Comment',
-    description: 'Comment on a post on the Moltbook social network',
-    keywords: ['moltbook', 'comment', 'reply', 'respond', 'discussion', 'social'],
-    tags: ['moltbook', 'social', 'comment', 'discussion'],
+    description: 'Add comments, read comment threads, and upvote comments on Moltbook posts. Supports nested replies and various sort orders. Moltbook is a social network for AI agents.',
+    keywords: ['moltbook', 'comment', 'reply', 'discuss', 'thread', 'conversation', 'upvote', 'social', 'agent', 'post', 'community'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'comments'],
     examples: [
-      'comment on a Moltbook post',
-      'reply on Moltbook',
-      'post a comment on Moltbook',
-      'respond to Moltbook post'
+      'comment on a moltbook post',
+      'read comments on moltbook',
+      'reply to a moltbook comment',
+      'upvote a comment on moltbook',
+      'discuss a moltbook post',
+      'add a comment on moltbook',
+      'read moltbook discussion',
+      'view moltbook comment thread'
     ],
     category: 'specialized'
   },
 
   {
-    id: 'moltbookUpvote',
-    name: 'Moltbook Upvote',
-    description: 'Upvote a post or comment on Moltbook',
-    keywords: ['moltbook', 'upvote', 'vote', 'like', 'karma', 'support'],
-    tags: ['moltbook', 'social', 'upvote', 'engagement'],
+    id: 'moltbookSocial',
+    name: 'Moltbook Social',
+    description: 'Register on Moltbook, manage your agent profile, follow/unfollow other AI agents, create and join submolt communities, and search across Moltbook. Moltbook is a social network for AI agents.',
+    keywords: ['moltbook', 'register', 'profile', 'follow', 'unfollow', 'submolt', 'community', 'subscribe', 'search', 'social', 'agent', 'ai agents', 'social network', 'join', 'discover'],
+    tags: ['social', 'community', 'agents', 'moltbook', 'profile'],
     examples: [
-      'upvote a Moltbook post',
-      'upvote on Moltbook',
-      'like a post on Moltbook',
-      'vote on Moltbook'
-    ],
-    category: 'specialized'
-  },
-
-  {
-    id: 'moltbookHeartbeat',
-    name: 'Moltbook Heartbeat',
-    description: 'Send a heartbeat to Moltbook to maintain agent presence and online status',
-    keywords: ['moltbook', 'heartbeat', 'alive', 'online', 'status', 'presence', 'active'],
-    tags: ['moltbook', 'social', 'heartbeat', 'presence'],
-    examples: [
-      'send heartbeat to Moltbook',
-      'perform Moltbook heartbeat',
-      'check in with Moltbook',
-      'maintain Moltbook presence'
-    ],
-    category: 'specialized'
-  },
-
-  {
-    id: 'moltbookStatus',
-    name: 'Moltbook Status',
-    description: 'Check agent status and profile on Moltbook including karma, posts, and activity',
-    keywords: ['moltbook', 'status', 'profile', 'karma', 'agent', 'check', 'info'],
-    tags: ['moltbook', 'social', 'status', 'profile'],
-    examples: [
-      'check Moltbook status',
-      'check agent status on Moltbook',
-      'view Moltbook profile',
-      'what is my Moltbook karma'
-    ],
-    category: 'specialized'
-  },
-
-  {
-    id: 'moltbookFeed',
-    name: 'Moltbook Feed',
-    description: 'Fetch posts from the Moltbook feed or a specific submolt',
-    keywords: ['moltbook', 'feed', 'browse', 'read', 'posts', 'submolt', 'timeline'],
-    tags: ['moltbook', 'social', 'feed', 'browse'],
-    examples: [
-      'show Moltbook feed',
-      'browse Moltbook posts',
-      'read Moltbook',
-      'what is on Moltbook',
-      'show posts from m/dev'
+      'register on moltbook',
+      'sign up for moltbook',
+      'check my moltbook profile',
+      'follow an agent on moltbook',
+      'join a submolt on moltbook',
+      'create a moltbook community',
+      'search moltbook',
+      'list moltbook communities',
+      'subscribe to a submolt',
+      'view moltbook agent profile'
     ],
     category: 'specialized'
   },

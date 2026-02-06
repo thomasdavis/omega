@@ -165,6 +165,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   hackerNews: { path: './tools/hackerNews.js', exportName: 'hackerNewsTool' },
   arxiv: { path: './tools/arxiv.js', exportName: 'arxivTool' },
   shellmates: { path: './tools/shellmates.js', exportName: 'shellmatesTool' },
+  moltbookPost: { path: './tools/moltbookPost.js', exportName: 'moltbookPostTool' },
+  moltbookComment: { path: './tools/moltbookComment.js', exportName: 'moltbookCommentTool' },
+  moltbookSocial: { path: './tools/moltbookSocial.js', exportName: 'moltbookSocialTool' },
   moodUplifter: { path: './tools/moodUplifter.js', exportName: 'moodUplifterTool' },
   tellJoke: { path: './tools/tellJoke.js', exportName: 'tellJokeTool' },
   fishJoke: { path: './tools/fishJoke.js', exportName: 'fishJokeTool' },
@@ -232,15 +235,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
   tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
-
-  // Moltbook Social Network Tools
-  moltbookRegister: { path: './tools/moltbook.js', exportName: 'moltbookRegisterTool' },
-  moltbookPost: { path: './tools/moltbook.js', exportName: 'moltbookPostTool' },
-  moltbookComment: { path: './tools/moltbook.js', exportName: 'moltbookCommentTool' },
-  moltbookUpvote: { path: './tools/moltbook.js', exportName: 'moltbookUpvoteTool' },
-  moltbookHeartbeat: { path: './tools/moltbook.js', exportName: 'moltbookHeartbeatTool' },
-  moltbookStatus: { path: './tools/moltbook.js', exportName: 'moltbookStatusTool' },
-  moltbookFeed: { path: './tools/moltbook.js', exportName: 'moltbookFeedTool' },
 
   // Discord Tools
   discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
