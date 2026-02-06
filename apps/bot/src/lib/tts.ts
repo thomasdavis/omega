@@ -1,6 +1,7 @@
 /**
  * TTS (Text-to-Speech) Library
  * Integrates with UncloseAI TTS API for high-quality voice synthesis
+ * Uses Qwen3-TTS model with 42+ cloned voices and 10-language support
  *
  */
 
@@ -24,7 +25,8 @@ export interface TTSResponse {
 
 /**
  * Available TTS voices - dynamically fetched from UncloseAI
- * This will be populated from the API
+ * Qwen3-TTS provides 42+ cloned voices from LibriSpeech corpus
+ * This cache will be populated from the API
  */
 let CACHED_VOICES: string[] = [];
 const VOICES_CACHE_FILE = 'tts-voices-cache.json';
@@ -304,7 +306,7 @@ export async function synthesizeSpeech(
   const requestBody = {
     input: sanitized,
     voice: voice,
-    model: 'tts-1',
+    model: 'tts-1', // OpenAI-compatible parameter, maps to Qwen3-TTS on UncloseAI
   };
 
   const headers = {
