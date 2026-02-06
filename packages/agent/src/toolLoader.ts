@@ -165,6 +165,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   hackerNewsPhilosophy: { path: './tools/hackerNewsPhilosophy.js', exportName: 'hackerNewsPhilosophyTool' },
   hackerNews: { path: './tools/hackerNews.js', exportName: 'hackerNewsTool' },
   arxiv: { path: './tools/arxiv.js', exportName: 'arxivTool' },
+  shellmates: { path: './tools/shellmates.js', exportName: 'shellmatesTool' },
   moodUplifter: { path: './tools/moodUplifter.js', exportName: 'moodUplifterTool' },
   tellJoke: { path: './tools/tellJoke.js', exportName: 'tellJokeTool' },
   fishJoke: { path: './tools/fishJoke.js', exportName: 'fishJokeTool' },
@@ -237,6 +238,8 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
   humorousJobSeekerResponseComicPoster: { path: './tools/humorousJobSeekerResponseComicPoster.js', exportName: 'humorousJobSeekerResponseComicPosterTool' },
+  nuancedJobSeekerDetectorWithWittyResponse: { path: './tools/nuancedJobSeekerDetectorWithWittyResponse.js', exportName: 'nuancedJobSeekerDetectorWithWittyResponseTool' },
+  jobSeekerRoastAndShoo: { path: './tools/jobSeekerRoastAndShoo.js', exportName: 'jobSeekerRoastAndShooTool' },
 };
 
 /**
