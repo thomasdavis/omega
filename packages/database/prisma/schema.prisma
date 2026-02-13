@@ -371,6 +371,20 @@ model UserFeeling {
   @@map("user_feelings")
 }
 
+model Caricature {
+  id               String  @id @default(uuid())
+  userId           String  @map("user_id")
+  username         String
+  imageUrl         String  @map("image_url")
+  description      String?
+  personalityTags  Json?   @map("personality_tags")
+  metadata         Json?
+  createdAt        BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  updatedAt        BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
+
+  @@index([userId], map: "idx_caricatures_user_id")
+  @@index([createdAt(sort: Desc)], map: "idx_caricatures_created_at")
+  @@map("caricatures")
 model GeneratedImage {
   id              BigInt   @id @default(autoincrement())
   requestId       String?  @map("request_id")
