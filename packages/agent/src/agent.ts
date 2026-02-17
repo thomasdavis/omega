@@ -137,12 +137,14 @@ export interface AgentContext {
 export interface AgentResult {
   response: string;
   toolCalls?: ToolCallInfo[];
+  toolErrors?: ToolCallInfo[];
 }
 
 export interface ToolCallInfo {
   toolName: string;
   args: Record<string, any>;
   result: any;
+  error?: string;
 }
 
 /**
@@ -242,10 +244,11 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
       // Increased to 30 to allow thorough setup for complex data storage requests
       stopWhen: stepCountIs(30),
       onStepFinish: (step) => {
-        // Track tool calls - step.content contains an array of tool-call and tool-result objects
+        // Track tool calls - step.content contains tool-call, tool-result, and tool-error items
         if (step.content && Array.isArray(step.content)) {
           const toolCallItems = step.content.filter(item => item.type === 'tool-call');
           const toolResultItems = step.content.filter(item => item.type === 'tool-result');
+          const toolErrorItems = step.content.filter(item => item.type === 'tool-error');
 
           for (const toolCallItem of toolCallItems) {
             const toolName = toolCallItem.toolName;
@@ -261,17 +264,28 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
               statusManager.setState('running-tool', { toolName });
             }
 
-            // Find the corresponding result
+            // Check for thrown error first, then successful result
+            const errorItem = toolErrorItems.find((e: any) => e.toolCallId === toolCallId);
             const resultItem = toolResultItems.find(r => r.toolCallId === toolCallId);
-            const result = resultItem?.output;
 
-            console.log(`   🔧 Tool called: ${toolName} with args:`, args);
+            if (errorItem) {
+              const errorMsg = (errorItem as any).error?.message || String((errorItem as any).error);
+              console.error(`   ❌ Tool threw: ${toolName} — ${errorMsg}`);
+              toolCalls.push({ toolName, args, result: undefined, error: errorMsg });
+            } else {
+              const result = resultItem?.output;
+              console.log(`   🔧 Tool called: ${toolName} with args:`, args);
 
-            toolCalls.push({
-              toolName,
-              args,
-              result,
-            });
+              // Check for soft failures (tools that return { success: false })
+              const resultObj = result as Record<string, any> | undefined;
+              const isSoftFailure = resultObj && resultObj.success === false;
+              toolCalls.push({
+                toolName,
+                args,
+                result,
+                error: isSoftFailure ? (resultObj.error || resultObj.message || 'Tool returned success: false') : undefined,
+              });
+            }
 
             // After tool completes, return to thinking state
             statusManager.setState('thinking');
@@ -308,9 +322,17 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
       statusManager.reset();
     }, 3000);
 
+    // Collect tool failures for reporting
+    const toolErrors = toolCalls.filter(tc => tc.error);
+
+    if (toolErrors.length > 0) {
+      console.warn(`⚠️  ${toolErrors.length} tool error(s): ${toolErrors.map(e => `${e.toolName}: ${e.error}`).join('; ')}`);
+    }
+
     return {
       response: finalText,
       toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+      toolErrors: toolErrors.length > 0 ? toolErrors : undefined,
     };
   } catch (error) {
     // Update status: error
