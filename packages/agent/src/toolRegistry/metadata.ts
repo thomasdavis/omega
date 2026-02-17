@@ -2848,6 +2848,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'specialized'
   },
+
+  {
+    id: 'renderGeojson',
+    name: 'GeoJSON Renderer',
+    description: 'Render GeoJSON data as SVG map visualizations with customizable styling. Supports all standard GeoJSON types: Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon, GeometryCollection, Feature, and FeatureCollection.',
+    keywords: ['geojson', 'map', 'render', 'svg', 'geography', 'coordinates', 'polygon', 'linestring', 'point', 'visualization', 'spatial', 'geo', 'geometry', 'feature', 'featurecollection'],
+    tags: ['visualization', 'map', 'geojson', 'svg', 'geography'],
+    examples: [
+      'render this GeoJSON data',
+      'show me a map with these GeoJSON coordinates',
+      'visualize GeoJSON point and polygon',
+      'create an image from my GeoJSON file',
+      'draw these geographic features on a map',
+      'render geojson',
+    ],
+    category: 'content'
+  },
 ];
 
 /**
