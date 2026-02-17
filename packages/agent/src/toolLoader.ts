@@ -102,6 +102,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   asciiGraph: { path: './tools/asciiGraph.js', exportName: 'asciiGraphTool' },
   asciiMap: { path: './tools/asciiMap.js', exportName: 'asciiMapTool' },
   renderChart: { path: './tools/renderChart.js', exportName: 'renderChartTool' },
+  renderGeojson: { path: './tools/renderGeojson.js', exportName: 'renderGeojsonTool' },
   generateComic: { path: './tools/generateComic.js', exportName: 'generateComicTool' },
   generateDilbertComic: { path: './tools/generateDilbertComic.js', exportName: 'generateDilbertComicTool' },
   generateXkcdComic: { path: './tools/generateXkcdComic.js', exportName: 'generateXkcdComicTool' },
