@@ -76,7 +76,8 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
       .describe('Tool identifier in format `package::exportName` (get this from tpmjsRegistrySearch)'),
     params: z
       .record(z.any())
-      .describe('Arguments to pass to the tool (varies by tool)'),
+      .default({})
+      .describe('Arguments to pass to the tool (varies by tool, defaults to {} if none needed)'),
     env: z
       .record(z.string())
       .optional()
