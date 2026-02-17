@@ -2718,6 +2718,39 @@ export const TOOL_METADATA: ToolMetadata[] = [
 
   // ===== DISCORD TOOLS =====
   {
+    id: 'setDefaultGuild',
+    name: 'Set Default Guild',
+    description: 'Set or update the default Discord guild ID for the current server. Once configured, Discord commands that require a guild ID will automatically use this default.',
+    keywords: ['discord', 'guild', 'default', 'set', 'configure', 'server', 'channel', 'list'],
+    tags: ['discord', 'configuration', 'guild', 'settings'],
+    examples: [
+      'set the default guild ID',
+      'make this the default guild',
+      'configure default Discord server',
+      'set guild ID for channel listing',
+      'save this guild as default',
+      'use this guild ID by default'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'getDefaultGuild',
+    name: 'Get Default Guild',
+    description: 'Get the currently configured default Discord guild ID for the current server. Shows which guild ID is being used by default for Discord operations.',
+    keywords: ['discord', 'guild', 'default', 'get', 'check', 'current', 'server', 'configured'],
+    tags: ['discord', 'configuration', 'guild', 'settings'],
+    examples: [
+      'what is the default guild',
+      'show default guild ID',
+      'check configured guild',
+      'get current default server',
+      'which guild is set as default'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'discordChannelDescriptionManager',
     name: 'Discord Channel Description Manager',
     description: 'Manage Discord channel descriptions through pinned messages. Fetch all channels with topics and pins, or pin description messages to specific channels.',

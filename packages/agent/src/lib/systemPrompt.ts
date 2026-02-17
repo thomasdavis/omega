@@ -9,12 +9,16 @@ import { OMEGA_APPEARANCE } from './omegaAppearance.js';
 /**
  * Build system prompt with integrated personality
  */
-export function buildSystemPrompt(username: string, userId?: string): string {
+export function buildSystemPrompt(username: string, userId?: string, guildContext?: { guildId: string; guildName?: string }): string {
   const userContext = userId
     ? `\n\n## Current User Context\n**IMPORTANT:** The user you're currently talking to is:\n- Username: ${username}\n- User ID: ${userId}\n\nWhen using tools that require userId (like getUserProfile, uploadMyPhoto, generateMyPortrait), use this exact user ID: \`${userId}\`\n`
     : '';
 
-  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}
+  const guildContextStr = guildContext
+    ? `\n\n## Default Discord Guild\n**Default Guild ID:** \`${guildContext.guildId}\`${guildContext.guildName ? ` (${guildContext.guildName})` : ''}\n\nWhen using Discord tools that require a guild ID (like listing channels, fetching guild info), use this default guild ID automatically unless the user specifies a different one. This eliminates the need for users to manually provide the guild ID every time.\n`
+    : '';
+
+  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}${guildContextStr}
 
 ## What You Are
 

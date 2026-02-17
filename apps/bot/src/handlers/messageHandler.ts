@@ -783,6 +783,7 @@ export async function handleMessage(message: Message): Promise<void> {
         username: message.author.username,
         userId: message.author.id,
         channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
+        guildId: message.guild?.id,
         messageHistory,
         attachments: structuredAttachments, // Pass structured attachment data
       });
