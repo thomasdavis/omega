@@ -643,7 +643,7 @@ model ConversationMessage {
   id             Int          @id @default(autoincrement())
   conversationId Int          @map("conversation_id")
   senderType     String       @map("sender_type") @db.VarChar(50)
-  userId         String?      @db.VarChar(255)
+  userId         String?      @map("user_id") @db.VarChar(255)
   username       String?      @db.VarChar(255)
   content        String       @db.Text
   createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
