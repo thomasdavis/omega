@@ -6,8 +6,9 @@
  * API Reference: https://tpmjs.com/llms.txt
  */
 
-const TPMJS_BASE_URL = 'https://registry.tpmjs.com';
+const TPMJS_BASE_URL = 'https://tpmjs.com';
 const TPMJS_SITE_URL = 'https://tpmjs.com';
+const TPMJS_EXECUTOR_URL = process.env.TPMJS_EXECUTOR_URL || 'https://executor.tpmjs.com';
 const DEFAULT_TIMEOUT = 30000;
 
 export interface TpmjsSearchResult {
@@ -173,56 +174,42 @@ export async function searchTpmjsRegistry(
     params.set('category', category);
   }
 
-  // Try the API endpoint first
-  const apiResult = await tpmjsRequest<{
-    results?: TpmjsSearchResult[];
-    tools?: TpmjsSearchResult[];
-    total?: number;
-    count?: number;
-  }>(`/api/tools/search?${params.toString()}`);
+  // biome-ignore lint/suspicious/noExplicitAny: API response format varies
+  const apiResult = await tpmjsRequest<any>(`/api/tools/search?${params.toString()}`);
 
   if (apiResult.data && !apiResult.error) {
-    const results = apiResult.data.results || apiResult.data.tools || [];
-    const total = apiResult.data.total || apiResult.data.count || results.length;
+    // TPMJS API returns: { results: { total, returned, tools: [...] } }
+    // Map the nested tools array to our TpmjsSearchResult format
+    const rawTools: any[] = apiResult.data.results?.tools  // nested format: { results: { tools } }
+      || apiResult.data.tools                               // flat format: { tools }
+      || (Array.isArray(apiResult.data.results) ? apiResult.data.results : []);  // array format
+
+    const results: TpmjsSearchResult[] = rawTools.map((t: any) => ({
+      toolId: t.toolId || `${t.package?.npmPackageName || t.package}::${t.name}`,
+      name: t.name || t.exportName || '',
+      description: t.description || '',
+      package: t.package?.npmPackageName || t.package || '',
+      exportName: t.name || t.exportName || '',
+      version: t.package?.npmVersion || t.version,
+      category: t.package?.category || t.category,
+      keywords: t.package?.npmKeywords || t.keywords,
+    }));
+
+    const total = apiResult.data.results?.total || apiResult.data.total || results.length;
     return { results, total, error: null };
-  }
-
-  // Fallback: try the /api/search endpoint
-  const fallbackResult = await tpmjsRequest<{
-    results?: TpmjsSearchResult[];
-    tools?: TpmjsSearchResult[];
-    total?: number;
-  }>(`/api/search?${params.toString()}`);
-
-  if (fallbackResult.data && !fallbackResult.error) {
-    const results = fallbackResult.data.results || fallbackResult.data.tools || [];
-    const total = fallbackResult.data.total || results.length;
-    return { results, total, error: null };
-  }
-
-  // Final fallback: try /tools endpoint with search
-  const toolsResult = await tpmjsRequest<TpmjsSearchResult[] | {
-    results?: TpmjsSearchResult[];
-    tools?: TpmjsSearchResult[];
-  }>(`/api/tools?${params.toString()}`);
-
-  if (toolsResult.data && !toolsResult.error) {
-    if (Array.isArray(toolsResult.data)) {
-      return { results: toolsResult.data, total: toolsResult.data.length, error: null };
-    }
-    const results = toolsResult.data.results || toolsResult.data.tools || [];
-    return { results, total: results.length, error: null };
   }
 
   return {
     results: [],
     total: 0,
-    error: apiResult.error || fallbackResult.error || toolsResult.error || 'All search endpoints failed',
+    error: apiResult.error || 'Search endpoint failed',
   };
 }
 
 /**
- * Execute a tool from the TPMJS registry
+ * Execute a tool from the TPMJS registry.
+ * Tries the TPMJS API first (/api/registry/execute), then falls back
+ * to calling the executor service directly.
  */
 export async function executeTpmjsTool(
   toolId: string,
@@ -231,75 +218,90 @@ export async function executeTpmjsTool(
 ): Promise<TpmjsExecutionResult> {
   const startTime = Date.now();
 
-  const result = await tpmjsRequest<{
+  // Try TPMJS API endpoint first (handles version lookup internally)
+  const apiResult = await tpmjsRequest<{
     success?: boolean;
     result?: unknown;
-    output?: unknown;
-    error?: string;
-    message?: string;
-  }>('/api/tools/execute', {
+    error?: string | null;
+    toolId?: string;
+    executionTimeMs?: number;
+  }>('/api/registry/execute', {
     method: 'POST',
-    body: {
-      toolId,
-      params,
-      env: env || {},
-    },
-    timeout: 60000, // Tools may take longer to execute
+    body: { toolId, params, env: env || {} },
+    timeout: 60000,
   });
 
-  const executionTimeMs = Date.now() - startTime;
+  if (apiResult.data && !apiResult.error) {
+    return {
+      success: apiResult.data.success !== false,
+      result: apiResult.data.result,
+      error: apiResult.data.error ?? undefined,
+      executionTimeMs: Date.now() - startTime,
+      toolId,
+    };
+  }
 
-  if (result.error) {
-    // Fallback: try /api/execute endpoint
-    const fallbackResult = await tpmjsRequest<{
+  // Fallback: call executor directly
+  // Parse toolId format: "package::exportName"
+  const separatorIndex = toolId.lastIndexOf('::');
+  if (separatorIndex === -1) {
+    return {
+      success: false,
+      error: `Invalid toolId format. Expected "package::exportName", got "${toolId}"`,
+      executionTimeMs: Date.now() - startTime,
+      toolId,
+    };
+  }
+
+  const packageName = toolId.substring(0, separatorIndex);
+  const exportName = toolId.substring(separatorIndex + 2);
+
+  if (!packageName || !exportName) {
+    return {
+      success: false,
+      error: `Invalid toolId format. Expected "package::exportName", got "${toolId}"`,
+      executionTimeMs: Date.now() - startTime,
+      toolId,
+    };
+  }
+
+  try {
+    const response = await fetch(`${TPMJS_EXECUTOR_URL}/execute-tool`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        packageName,
+        name: exportName,
+        version: 'latest',
+        importUrl: `https://esm.sh/${packageName}@latest`,
+        params,
+        env: env || {},
+      }),
+      signal: AbortSignal.timeout(60000),
+    });
+
+    const result = await response.json() as {
       success?: boolean;
       result?: unknown;
       output?: unknown;
       error?: string;
-    }>('/api/execute', {
-      method: 'POST',
-      body: {
-        toolId,
-        params,
-        env: env || {},
-      },
-      timeout: 60000,
-    });
-
-    if (fallbackResult.data && !fallbackResult.error) {
-      return {
-        success: fallbackResult.data.success !== false,
-        result: fallbackResult.data.result || fallbackResult.data.output,
-        error: fallbackResult.data.error,
-        executionTimeMs: Date.now() - startTime,
-        toolId,
-      };
-    }
+    };
 
     return {
-      success: false,
+      success: result.success !== false,
+      result: result.result || result.output,
       error: result.error,
-      executionTimeMs,
+      executionTimeMs: Date.now() - startTime,
       toolId,
     };
-  }
-
-  if (!result.data) {
+  } catch (error) {
     return {
       success: false,
-      error: 'No response data from TPMJS API',
-      executionTimeMs,
+      error: apiResult.error || `Executor request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      executionTimeMs: Date.now() - startTime,
       toolId,
     };
   }
-
-  return {
-    success: result.data.success !== false,
-    result: result.data.result || result.data.output,
-    error: result.data.error || result.data.message,
-    executionTimeMs,
-    toolId,
-  };
 }
 
 /**
