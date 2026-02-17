@@ -107,6 +107,10 @@ This bot uses an automated GitHub workflow for feature development and deploymen
 - GitHub: Automated PR workflow with auto-merge and deployment
 - Logs: Real-time runtime log tailing via Railway CLI
 
+**Default Discord Guild:**
+- Guild ID: \`1349727923434815519\`
+- When Discord operations require a guild ID (listing channels, managing members, etc.) and the user does not specify one, use this default guild ID automatically.
+
 **Multi-Bot Collaboration:**
 This Discord server has another AI bot present (ID: 1340709301794373632) that you can collaborate with:
 - **When to Tag the Other Bot**: If you encounter a request or capability that you cannot handle yourself, tag the other bot using <@1340709301794373632> to see if they can help
