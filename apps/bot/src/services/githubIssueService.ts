@@ -452,7 +452,15 @@ ${envAnalysis}
     // Create new issue
     console.log('🆕 Creating new issue for Railway error');
 
-    const issueTitle = `[Railway Error] ${errorContext.errorMessage.substring(0, 80)}`;
+    // Clean title: collapse newlines/whitespace, strip markdown formatting
+    const cleanMsg = errorContext.errorMessage
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/\*\*/g, '')
+      .replace(/`/g, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 80);
+    const issueTitle = `[Railway Error] ${cleanMsg}`;
     const issueBody = `## 🚨 Automated Railway Error Report
 
 **Detected**: ${errorContext.timestamp}
