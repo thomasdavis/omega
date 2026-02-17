@@ -279,11 +279,15 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
               // Check for soft failures (tools that return { success: false })
               const resultObj = result as Record<string, any> | undefined;
               const isSoftFailure = resultObj && resultObj.success === false;
+              // Combine error code and message for richer context (e.g. "execution_failed: Tool execution failed via both API and npm package")
+              const softErrorMsg = isSoftFailure
+                ? [resultObj.error, resultObj.message].filter(Boolean).join(': ') || 'Tool returned success: false'
+                : undefined;
               toolCalls.push({
                 toolName,
                 args,
                 result,
-                error: isSoftFailure ? (resultObj.error || resultObj.message || 'Tool returned success: false') : undefined,
+                error: softErrorMsg,
               });
             }
 

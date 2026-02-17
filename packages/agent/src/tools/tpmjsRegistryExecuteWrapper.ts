@@ -134,7 +134,10 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
         };
       } catch (fallbackError) {
         // Both API and npm package failed
+        const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
         console.error('❌ Both API and npm package execution failed');
+        console.error(`   API error: ${apiResult.error || 'unknown'}`);
+        console.error(`   Fallback error: ${fallbackMsg}`);
 
         // Provide helpful error with tool metadata if available
         const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
@@ -142,11 +145,19 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
           error: null,
         }));
 
+        // Build a detailed error message combining both failure reasons
+        const errorParts = [];
+        if (apiResult.error) errorParts.push(`API: ${apiResult.error}`);
+        if (fallbackMsg) errorParts.push(`Fallback: ${fallbackMsg}`);
+        const detailedMessage = errorParts.length > 0
+          ? errorParts.join('; ')
+          : 'Tool execution failed via both API and npm package';
+
         return {
           success: false,
           authenticated: hasApiKey,
           error: 'execution_failed',
-          message: apiResult.error || 'Tool execution failed via both API and npm package',
+          message: detailedMessage,
           toolId,
           toolMetadata: metadataResult.metadata
             ? {

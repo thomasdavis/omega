@@ -1011,8 +1011,18 @@ export async function handleMessage(message: Message): Promise<void> {
     }
 
     // Report tool errors to GitHub for automated fixing
+    // Skip TPMJS external tool failures — those are issues with the external tool,
+    // not bugs in omega's codebase. Only report failures of omega's own tools.
     if (result.toolErrors && result.toolErrors.length > 0) {
       for (const toolErr of result.toolErrors) {
+        // Skip reporting tpmjsRegistryExecute failures — these are external TPMJS
+        // tool execution issues (e.g. @tpmjs/tools-discord::listChannels failing),
+        // not bugs in omega. The wrapper tool itself worked correctly.
+        if (toolErr.toolName === 'tpmjsRegistryExecute') {
+          console.warn(`⚠️  Skipping GitHub report for TPMJS external tool failure: ${toolErr.error}`);
+          continue;
+        }
+
         const errorDetail = [
           `Tool "${toolErr.toolName}" failed during execution.`,
           '',
