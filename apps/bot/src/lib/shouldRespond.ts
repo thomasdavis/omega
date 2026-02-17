@@ -3,7 +3,7 @@
  */
 
 import { Message } from 'discord.js';
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { buildSystemPrompt } from './systemPrompt.js';
@@ -183,9 +183,9 @@ export async function shouldRespond(
       contextFlags += '- ⚠️ Message contains casual feature suggestion pattern (e.g., "would be nice if...")\n';
     }
 
-    const result = await generateObject({
+    const result = await generateText({
       model: openai.chat(OMEGA_MODEL), // Use centralized model config, force Chat Completions API
-      schema: DecisionSchema,
+      output: Output.object({ schema: DecisionSchema }),
       prompt: `You are analyzing whether Omega (an AI Discord bot) should respond to this message.
 
 Think of this like teaching a child when to join a conversation: clear rules, observable behaviors, respect for boundaries.
@@ -307,9 +307,9 @@ Analyze this message through the 4-level framework:
 **IMPORTANT**: If context flags indicate indirect addressing or casual suggestions, give strong weight to responding unless there are clear rejection signals. These patterns historically result in missed opportunities to help users.`,
     });
 
-    const shouldRespond = result.object.decision === 'yes';
-    const confidence = result.object.confidence;
-    const reason = result.object.reason;
+    const shouldRespond = result.output!.decision === 'yes';
+    const confidence = result.output!.confidence;
+    const reason = result.output!.reason;
 
     if (shouldRespond) {
       console.log(`   🤖 AI decided to respond (${confidence}%): ${reason}`);
