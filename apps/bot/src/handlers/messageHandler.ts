@@ -1010,6 +1010,35 @@ export async function handleMessage(message: Message): Promise<void> {
       console.log(`✅ Sent ${result.toolCalls.length} tool usage reports`);
     }
 
+    // Report tool errors to GitHub for automated fixing
+    if (result.toolErrors && result.toolErrors.length > 0) {
+      for (const toolErr of result.toolErrors) {
+        const errorDetail = [
+          `Tool "${toolErr.toolName}" failed during execution.`,
+          '',
+          `**Error**: ${toolErr.error}`,
+          `**Args passed**: ${JSON.stringify(toolErr.args, null, 2)}`,
+          `**User message**: ${message.content.substring(0, 200)}`,
+          '',
+          'This could be caused by:',
+          '- A bug in the tool\'s execute function',
+          '- The tool\'s inputSchema allowing invalid parameters',
+          '- The tool description misleading the AI into passing wrong args',
+          '- A missing or misconfigured environment variable',
+          '- An external API the tool depends on being down or changed',
+        ].join('\n');
+        captureError(new Error(errorDetail), {
+          railwayService: 'omega-bot',
+          logContext: [
+            `Tool: ${toolErr.toolName}`,
+            `Args: ${JSON.stringify(toolErr.args).substring(0, 300)}`,
+            `User: ${message.author.username}`,
+            `Channel: ${channelName}`,
+          ],
+        }).catch(() => {});
+      }
+    }
+
     // Send the final response AFTER tool reports (in order of occurrence)
     if (result.response) {
       // Analyze sentiment of bot's response to detect final answers/key decisions
