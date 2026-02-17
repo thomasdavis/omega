@@ -232,10 +232,11 @@ export async function executeTpmjsTool(
   });
 
   if (apiResult.data && !apiResult.error) {
+    const isSuccess = apiResult.data.success !== false;
     return {
-      success: apiResult.data.success !== false,
+      success: isSuccess,
       result: apiResult.data.result,
-      error: apiResult.data.error ?? undefined,
+      error: isSuccess ? undefined : (apiResult.data.error || 'TPMJS API returned success: false with no error details'),
       executionTimeMs: Date.now() - startTime,
       toolId,
     };

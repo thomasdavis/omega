@@ -279,11 +279,17 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
               // Check for soft failures (tools that return { success: false })
               const resultObj = result as Record<string, any> | undefined;
               const isSoftFailure = resultObj && resultObj.success === false;
+              // Combine error and message fields for complete diagnostics
+              let softFailureError: string | undefined;
+              if (isSoftFailure) {
+                const parts = [resultObj.error, resultObj.message].filter(Boolean);
+                softFailureError = parts.length > 0 ? parts.join(' — ') : 'Tool returned success: false';
+              }
               toolCalls.push({
                 toolName,
                 args,
                 result,
-                error: isSoftFailure ? (resultObj.error || resultObj.message || 'Tool returned success: false') : undefined,
+                error: softFailureError,
               });
             }
 
