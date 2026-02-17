@@ -91,7 +91,16 @@ client.on(Events.MessageCreate, async (message: Message) => {
     await handleMessage(message);
   } catch (error) {
     console.error('Error handling message:', error);
-    // Don't crash the bot on errors
+    // Report uncaught message-handler errors to GitHub issue pipeline
+    const { captureError } = await import('./services/errorMonitoringService.js');
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      railwayService: 'omega-bot',
+      logContext: [
+        `User: ${message.author?.username}`,
+        `Channel: ${message.channel.isDMBased() ? 'DM' : (message.channel as any).name}`,
+        `Content: ${message.content?.substring(0, 200)}`,
+      ],
+    }).catch(() => {}); // Don't crash the bot on reporting errors
   }
 });
 
