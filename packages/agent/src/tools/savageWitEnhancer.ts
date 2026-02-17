@@ -1,12 +1,12 @@
 /**
- * Savage Wit Enhancer Tool - Rewrites text with sharp, savage wit and sarcasm
+ * Savage Wit Enhancer Tool - Rewrites text with sharp, biting humor
  *
  * Features:
- * - AI-powered rewriting with biting humor inspired by Jimmy Carr's style
- * - Multiple intensity levels from mild to nuclear
- * - Various comedy styles (Jimmy Carr, roast, sarcastic, deadpan, self-deprecating)
- * - Context-aware humor that maintains the original message's intent
- * - Keeps intelligence and respect while being entertainingly ruthless
+ * - AI-powered text enhancement with savage wit and sarcasm
+ * - Multiple intensity levels (mild, medium, savage, nuclear)
+ * - Multiple comedy styles (jimmyCarr, roast, sarcastic, deadpan, selfDeprecating)
+ * - Context-aware humor that maintains the core message
+ * - Entertaining and edgy while avoiding genuine disrespect
  */
 
 import { tool } from 'ai';
@@ -15,89 +15,51 @@ import { generateText } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '@repo/shared';
 
-const WIT_INTENSITIES = ['mild', 'medium', 'savage', 'nuclear'] as const;
-const COMEDY_STYLES = ['jimmyCarr', 'roast', 'sarcastic', 'deadpan', 'selfDeprecating'] as const;
+const INTENSITY_LEVELS = ['mild', 'medium', 'savage', 'nuclear'] as const;
+const COMEDY_STYLES = [
+  'jimmyCarr',
+  'roast',
+  'sarcastic',
+  'deadpan',
+  'selfDeprecating',
+] as const;
 
-type WitIntensity = typeof WIT_INTENSITIES[number];
-type ComedyStyle = typeof COMEDY_STYLES[number];
+type IntensityLevel = (typeof INTENSITY_LEVELS)[number];
+type ComedyStyle = (typeof COMEDY_STYLES)[number];
 
 /**
- * Build style-specific guidance for the AI
+ * Get style-specific prompt guidance
  */
 function getStyleGuidance(style: ComedyStyle): string {
   const guidance: Record<ComedyStyle, string> = {
-    jimmyCarr: `Channel Jimmy Carr's signature style:
-- Sharp, quick-witted one-liners with unexpected punchlines
-- Dark humor that walks the line but never crosses into cruelty
-- Confident, almost smug delivery that makes the audience laugh despite themselves
-- Clever wordplay and double meanings
-- That signature "Ha ha ha HAAA" energy in written form
-- Observations that are uncomfortably accurate`,
-
-    roast: `Channel classic comedy roast energy:
-- Direct, personal jabs that are clearly in good fun
-- Exaggerated insults that are so over-the-top they're obviously jokes
-- Callback humor referencing what was just said
-- "I kid, I kid" energy - brutal but lovable
-- The kind of burns that make even the target laugh`,
-
-    sarcastic: `Channel peak sarcasm:
-- Say the opposite of what you mean with devastating precision
-- Dry delivery that makes people question if you're serious
-- Eye-roll-inducing observations stated as if they're profound truths
-- Master of the backhanded compliment
-- "Oh, how delightful" energy when things are clearly not delightful`,
-
-    deadpan: `Channel deadpan comedy delivery:
-- Deliver absurd statements with complete sincerity
-- Zero emotional inflection - let the words do all the work
-- Understated reactions to outrageous situations
-- Mitch Hedberg meets Steven Wright energy
-- The humor comes from the gap between delivery and content`,
-
-    selfDeprecating: `Channel self-deprecating wit:
-- Turn the savage wit inward before directing it outward
-- Acknowledge your own absurdity while pointing out others'
-- "I'm a mess, but at least I know it" energy
-- Humble enough to be relatable, sharp enough to be funny
-- Self-awareness as a weapon of comedy`,
+    jimmyCarr:
+      'Channel Jimmy Carr\'s comedy style: razor-sharp one-liners, perfectly timed delivery, dark humor with a cheeky grin, and that signature "ha ha ha" energy. Mix in clever wordplay and observations that are simultaneously shocking and hilarious.',
+    roast:
+      'Write in the style of a comedy roast. Be brutally honest, target weaknesses with surgical precision, and make every line land like a punchline at a celebrity roast. Think Jeff Ross meets a Shakespearean insult generator.',
+    sarcastic:
+      'Drip with pure, undiluted sarcasm. Every sentence should sound like it\'s wearing invisible air quotes. Be the human equivalent of an eye-roll, where genuine compliments sound like insults and insults sound like awards.',
+    deadpan:
+      'Deliver with bone-dry, deadpan wit. No exclamation marks, no enthusiasm — just devastatingly funny observations stated as matter-of-fact truths. Think Steven Wright or Mitch Hedberg: absurd logic presented with a straight face.',
+    selfDeprecating:
+      'Turn the wit inward while still making the point. Be self-aware and humble in the most hilariously brutal way possible. Make fun of yourself while simultaneously roasting the topic. Think Bo Burnham or John Mulaney.',
   };
-
   return guidance[style];
 }
 
 /**
- * Build intensity-specific guidance
+ * Get intensity-specific prompt modifiers
  */
-function getIntensityGuidance(intensity: WitIntensity): string {
-  const guidance: Record<WitIntensity, string> = {
-    mild: `Intensity: MILD
-- Light teasing, gentle ribbing
-- PG-rated humor, suitable for all audiences
-- More playful than cutting
-- Think: friendly banter at a dinner party`,
-
-    medium: `Intensity: MEDIUM
-- Noticeable edge to the humor
-- Witty observations that sting a little
-- Clever enough to earn a grudging laugh
-- Think: sharp-tongued friend who tells it like it is`,
-
-    savage: `Intensity: SAVAGE
-- Properly cutting remarks with surgical precision
-- The kind of humor that makes people say "oh NO they didn't"
-- Vulgar enough to be edgy, clever enough to be art
-- Think: Jimmy Carr on a good night at a live show`,
-
-    nuclear: `Intensity: NUCLEAR
-- Absolutely devastating, no-holds-barred wit
-- The verbal equivalent of a controlled demolition
-- So brutal it circles back around to being impressive
-- Vulgar, sharp, and unrelenting - but still fundamentally clever
-- Think: Jimmy Carr after three drinks doing an uncensored special`,
+function getIntensityModifier(intensity: IntensityLevel): string {
+  const modifiers: Record<IntensityLevel, string> = {
+    mild: 'Keep it light and playful — more cheeky than cutting. Think witty dinner party banter. Suitable for polite company.',
+    medium:
+      'Turn up the heat. Be noticeably sarcastic and sharp, but still in good fun. Think pub banter with clever friends.',
+    savage:
+      'Go hard. Be brutally witty, cutting, and entertainingly ruthless. No sacred cows. The kind of humor that makes people gasp-laugh.',
+    nuclear:
+      'Maximum savagery. Hold absolutely nothing back. Every sentence should be a verbal war crime wrapped in comedy gold. This is the comedy equivalent of a controlled demolition — beautiful destruction.',
   };
-
-  return guidance[intensity];
+  return modifiers[intensity];
 }
 
 /**
@@ -105,48 +67,44 @@ function getIntensityGuidance(intensity: WitIntensity): string {
  */
 async function enhanceWithWit(
   text: string,
-  intensity: WitIntensity,
+  intensity: IntensityLevel,
   style: ComedyStyle,
   context?: string
 ): Promise<{
   enhanced: string;
   wittyObservation: string;
   savageryRating: number;
-  style: string;
-  intensity: string;
 }> {
   const styleGuidance = getStyleGuidance(style);
-  const intensityGuidance = getIntensityGuidance(intensity);
+  const intensityModifier = getIntensityModifier(intensity);
 
   let contextSection = '';
   if (context) {
-    contextSection = `\n\nConversational Context: ${context}
-Use this context to make the enhanced version more relevant and targeted.`;
+    contextSection = `\n\nConversation context for more targeted humor: ${context}`;
   }
 
-  const prompt = `You are a world-class comedy writer specializing in savage wit and sharp humor. Your job is to take the given text and rewrite it with devastating comedic flair.
+  const prompt = `You are a world-class comedy writer specializing in savage wit and sharp humor. Your job is to take the given text and rewrite it with biting humor, clever sarcasm, and entertaining ruthlessness.
 
-${styleGuidance}
+Style: ${styleGuidance}
 
-${intensityGuidance}
-
-RULES:
-- Maintain the CORE MESSAGE and intent of the original text
-- Add savage wit, sarcasm, and biting humor
-- Be clever, not just vulgar - wit requires intelligence
-- Never cross into genuine hate speech, racism, sexism, or targeted harassment
-- The enhanced version should be funnier and more entertaining while still communicating the same point
-- Keep it concise - brevity is the soul of wit
-- If the original text is a question, keep it as a question but make it devastatingly funnier
-- If the original text is a statement, make it a statement that could kill at a comedy club
+Intensity: ${intensityModifier}
 
 Original text to enhance: "${text}"${contextSection}
+
+Requirements:
+- Preserve the core meaning/message of the original text
+- Make it genuinely funny, not just mean
+- Use clever wordplay, unexpected turns, and sharp observations
+- Be entertaining and edgy without crossing into genuine cruelty or bigotry
+- The enhanced version should be roughly the same length as the original (give or take 50%)
+- Add a separate witty observation about the original text itself
+- Rate the savagery on a scale of 1-10
 
 Respond in JSON format:
 {
   "enhanced": "The rewritten text with savage wit applied",
-  "wittyObservation": "A brief meta-observation about the original text that's itself funny (1-2 sentences)",
-  "savageryRating": <number 1-10 rating how savage the result is>
+  "wittyObservation": "A separate meta-observation or quip about the original text",
+  "savageryRating": 7
 }`;
 
   try {
@@ -159,62 +117,83 @@ Respond in JSON format:
 
     return {
       enhanced: parsed.enhanced,
-      wittyObservation: parsed.wittyObservation || '',
+      wittyObservation: parsed.wittyObservation,
       savageryRating: Math.min(10, Math.max(1, parsed.savageryRating || 5)),
-      style,
-      intensity,
     };
   } catch (error) {
-    console.error('Error enhancing with wit:', error);
+    console.error('Error enhancing text with wit:', error);
     return {
-      enhanced: `${text} (I tried to make this savage, but even my wit has its limits. The original was already painful enough.)`,
-      wittyObservation: "My comedy circuits briefly short-circuited. Even AI has bad days at the comedy club.",
-      savageryRating: 3,
-      style,
-      intensity,
+      enhanced:
+        "I tried to make this savage, but even my sarcasm generator threw an exception. That's how unremarkable the input was.",
+      wittyObservation:
+        'The fact that my AI crashed trying to roast this text is, ironically, the funniest thing about this whole exchange.',
+      savageryRating: 5,
     };
   }
 }
 
 export const savageWitEnhancerTool = tool({
-  description: 'Enhance text with savage wit, sarcasm, and biting humor inspired by Jimmy Carr\'s comedy style. Rewrites messages to be sharper, more cutting, and entertainingly ruthless while maintaining the core message. Supports multiple intensity levels (mild to nuclear) and comedy styles (Jimmy Carr, roast, sarcastic, deadpan, self-deprecating). Use when users want their messages to be more savage, witty, or sarcastic.',
+  description:
+    'Rewrite text with savage wit, sharp sarcasm, and biting humor. Supports multiple intensity levels (mild, medium, savage, nuclear) and comedy styles (jimmyCarr, roast, sarcastic, deadpan, selfDeprecating). Use when users want their message enhanced with cutting humor, want a savage rewrite, or ask for more sarcasm and wit in responses.',
   inputSchema: z.object({
-    text: z.string().describe('The text to enhance with savage wit and sarcasm'),
-    intensity: z.enum(['mild', 'medium', 'savage', 'nuclear']).optional().describe('Level of savagery: mild (light teasing), medium (noticeable edge), savage (properly cutting), nuclear (devastatingly brutal). Defaults to savage.'),
-    style: z.enum(['jimmyCarr', 'roast', 'sarcastic', 'deadpan', 'selfDeprecating']).optional().describe('Comedy style: jimmyCarr (sharp one-liners), roast (direct jabs), sarcastic (dry opposite-meaning), deadpan (absurd sincerity), selfDeprecating (self-aware humor). Defaults to jimmyCarr.'),
-    context: z.string().optional().describe('Optional context about the conversation or situation for more targeted humor'),
+    text: z.string().describe('The text to enhance with savage wit'),
+    intensity: z
+      .enum(INTENSITY_LEVELS)
+      .optional()
+      .default('savage')
+      .describe(
+        'How savage the wit should be: mild (playful), medium (sharp), savage (brutal), nuclear (maximum devastation)'
+      ),
+    style: z
+      .enum(COMEDY_STYLES)
+      .optional()
+      .default('jimmyCarr')
+      .describe(
+        'Comedy style: jimmyCarr (sharp one-liners), roast (brutal honesty), sarcastic (dripping irony), deadpan (dry wit), selfDeprecating (humble brutality)'
+      ),
+    context: z
+      .string()
+      .optional()
+      .describe(
+        'Optional conversation context for more targeted and relevant humor'
+      ),
   }),
   execute: async ({ text, intensity, style, context }) => {
     try {
-      const selectedIntensity = intensity || 'savage';
-      const selectedStyle = style || 'jimmyCarr';
+      console.log('🔥 Savage Wit Enhancer: Processing text...');
+      console.log(`   🎭 Style: ${style}`);
+      console.log(`   💀 Intensity: ${intensity}`);
 
-      console.log('🔥 Savage Wit Enhancer: Sharpening text with devastating humor...');
-      console.log(`   📝 Original: "${text.substring(0, 100)}${text.length > 100 ? '...' : ''}"`);
-      console.log(`   💀 Intensity: ${selectedIntensity}`);
-      console.log(`   🎭 Style: ${selectedStyle}`);
+      const result = await enhanceWithWit(
+        text,
+        intensity || 'savage',
+        style || 'jimmyCarr',
+        context
+      );
 
-      const result = await enhanceWithWit(text, selectedIntensity, selectedStyle, context);
-
-      console.log(`   ✅ Enhanced with savagery rating: ${result.savageryRating}/10`);
+      console.log(`   ✅ Enhancement complete`);
+      console.log(`   📊 Savagery Rating: ${result.savageryRating}/10`);
 
       return {
+        success: true,
         original: text,
         enhanced: result.enhanced,
         wittyObservation: result.wittyObservation,
         savageryRating: result.savageryRating,
-        style: result.style,
-        intensity: result.intensity,
-        availableIntensities: Array.from(WIT_INTENSITIES),
+        style: style || 'jimmyCarr',
+        intensity: intensity || 'savage',
+        availableIntensities: Array.from(INTENSITY_LEVELS),
         availableStyles: Array.from(COMEDY_STYLES),
-        success: true,
       };
     } catch (error) {
       console.error('Error in savage wit enhancer:', error);
       return {
-        original: text,
-        error: error instanceof Error ? error.message : 'Failed to enhance with savage wit. Even comedy has its off days.',
         success: false,
+        original: text,
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to enhance text with savage wit',
       };
     }
   },

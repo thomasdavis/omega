@@ -2146,6 +2146,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'savageWitEnhancer',
+    name: 'Savage Wit Enhancer',
+    description: 'Rewrite text with savage wit, sarcasm, and biting humor',
+    keywords: ['savage', 'wit', 'sarcasm', 'roast', 'jimmy carr', 'humor', 'rewrite', 'enhance', 'cutting', 'vulgar'],
+    tags: ['specialized', 'humor', 'fun'],
+    examples: [
+      'make this more savage',
+      'rewrite with sarcasm',
+      'add savage wit',
+      'jimmy carr style',
+      'roast this text',
+      'make it more cutting'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'runBatchAnalysis',
     name: 'Run Batch Analysis',
     description: 'Run batch analysis on data',
@@ -2889,24 +2906,19 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
-  // ===== HUMOR AND PERSONALITY TOOLS =====
   {
     id: 'savageWitEnhancer',
     name: 'Savage Wit Enhancer',
-    description: 'Enhance text with savage wit, sarcasm, and biting humor inspired by Jimmy Carr. Rewrites messages to be sharper, more cutting, and entertainingly ruthless.',
-    keywords: ['savage', 'wit', 'sarcasm', 'humor', 'jimmy carr', 'roast', 'funny', 'burn', 'insult', 'comedy', 'rewrite', 'enhance', 'edgy', 'vulgar', 'cutting', 'deadpan', 'biting'],
-    tags: ['entertainment', 'humor', 'personality', 'writing'],
+    description: 'Rewrite text with savage wit, sharp sarcasm, and biting humor inspired by Jimmy Carr. Supports multiple intensity levels and comedy styles.',
+    keywords: ['savage', 'wit', 'sarcasm', 'humor', 'jimmy carr', 'roast', 'rewrite', 'enhance', 'cutting', 'biting', 'comedy', 'vulgar'],
+    tags: ['specialized', 'humor', 'fun', 'text'],
     examples: [
       'make this more savage',
-      'add some wit to this message',
-      'rewrite this with sarcasm',
-      'make my response more cutting',
-      'jimmy carr style this text',
-      'roast this message',
-      'enhance with savage humor',
-      'make this funnier and edgier',
-      'be more sarcastic',
-      'inject more savage wit',
+      'rewrite with savage wit',
+      'add sarcasm to this text',
+      'jimmy carr style roast',
+      'enhance with biting humor',
+      'make it more cutting and sarcastic'
     ],
     category: 'specialized'
   },
