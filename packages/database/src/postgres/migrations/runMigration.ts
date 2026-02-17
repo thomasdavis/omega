@@ -70,6 +70,7 @@ export async function initializePostgresSchema(): Promise<void> {
 
   try {
     await runMigration('001_initial_schema.sql');
+    await runMigration('002_conversations.sql');
     console.log('✅ PostgreSQL schema initialized successfully');
     console.log('   - messages table with GIN full-text search');
     console.log('   - queries table with execution tracking');
@@ -77,6 +78,7 @@ export async function initializePostgresSchema(): Promise<void> {
     console.log('   - document_collaborators table for access control');
     console.log('   - user_profiles table with PhD-level profiling');
     console.log('   - user_analysis_history table for temporal tracking');
+    console.log('   - conversations + conversation_messages tables');
   } catch (error) {
     console.error('❌ Failed to initialize PostgreSQL schema');
     throw error;
