@@ -17,38 +17,26 @@ export const setDefaultGuildTool = tool({
     guildId: z
       .string()
       .describe('The Discord guild ID to use as the default for guild-specific operations'),
-    guildName: z
-      .string()
-      .optional()
-      .describe('The name of the guild for display purposes'),
     userId: z
       .string()
       .optional()
-      .describe('The user ID of who set this default'),
-    username: z
-      .string()
-      .optional()
-      .describe('The username of who set this default'),
+      .describe('The user ID of who set this default (optional, for per-user defaults)'),
   }),
 
-  execute: async ({ serverId, guildId, guildName, userId, username }) => {
+  execute: async ({ serverId, guildId, userId }) => {
     try {
       const result = await setGuildDefault({
         serverId,
         guildId,
-        guildName,
-        setByUserId: userId,
-        setByUsername: username,
+        userId,
       });
 
       return {
         success: true,
-        message: `Default guild set to ${guildId}${guildName ? ` (${guildName})` : ''} for this server.`,
+        message: `Default guild set to ${guildId} for this server.`,
         data: {
           serverId: result.server_id,
           guildId: result.guild_id,
-          guildName: result.guild_name,
-          setBy: result.set_by_username,
           updatedAt: result.updated_at,
         },
       };

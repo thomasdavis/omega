@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { getGuildDefault } from '@repo/database';
 
 export const getDefaultGuildTool = tool({
-  description: `Get the currently configured default Discord guild ID for the current server. Returns the guild ID, name, and who set it. Useful for checking what guild ID is being used by default for Discord operations.`,
+  description: `Get the currently configured default Discord guild ID for the current server. Returns the guild ID and when it was set. Useful for checking what guild ID is being used by default for Discord operations.`,
 
   inputSchema: z.object({
     serverId: z
@@ -34,11 +34,9 @@ export const getDefaultGuildTool = tool({
         data: {
           serverId: result.server_id,
           guildId: result.guild_id,
-          guildName: result.guild_name,
-          setBy: result.set_by_username,
           updatedAt: result.updated_at,
         },
-        message: `Default guild: ${result.guild_id}${result.guild_name ? ` (${result.guild_name})` : ''}`,
+        message: `Default guild: ${result.guild_id}`,
       };
     } catch (error) {
       return {

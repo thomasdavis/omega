@@ -3,15 +3,13 @@
  * Manages default Discord guild IDs per server for channel listing and guild-specific commands
  */
 
-import { prisma } from './prismaClient.js';
+import { getPostgresPool } from './client.js';
 
 export interface GuildDefaultRecord {
   id: number;
-  server_id: string;
+  server_id: string | null;
+  user_id: string | null;
   guild_id: string;
-  guild_name: string | null;
-  set_by_user_id: string | null;
-  set_by_username: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -19,81 +17,109 @@ export interface GuildDefaultRecord {
 export interface SetGuildDefaultParams {
   serverId: string;
   guildId: string;
-  guildName?: string;
-  setByUserId?: string;
-  setByUsername?: string;
+  userId?: string;
 }
 
 /**
  * Set or update the default guild ID for a Discord server
  */
 export async function setGuildDefault(params: SetGuildDefaultParams): Promise<GuildDefaultRecord> {
-  const result = await prisma.$queryRaw<GuildDefaultRecord[]>`
-    INSERT INTO discord_guild_defaults (
-      server_id,
-      guild_id,
-      guild_name,
-      set_by_user_id,
-      set_by_username,
-      created_at,
-      updated_at
-    ) VALUES (
-      ${params.serverId},
-      ${params.guildId},
-      ${params.guildName || null},
-      ${params.setByUserId || null},
-      ${params.setByUsername || null},
-      NOW(),
-      NOW()
-    )
-    ON CONFLICT (server_id) DO UPDATE SET
-      guild_id = EXCLUDED.guild_id,
-      guild_name = EXCLUDED.guild_name,
-      set_by_user_id = EXCLUDED.set_by_user_id,
-      set_by_username = EXCLUDED.set_by_username,
-      updated_at = NOW()
-    RETURNING *
-  `;
+  const pool = await getPostgresPool();
 
-  return result[0];
+  // Delete existing default for this server/user combination, then insert
+  await pool.query(
+    `DELETE FROM discord_guild_defaults
+     WHERE (server_id = $1 OR (server_id IS NULL AND $1 IS NULL))
+     AND (user_id = $2 OR (user_id IS NULL AND $2 IS NULL))`,
+    [params.serverId || null, params.userId || null]
+  );
+
+  const result = await pool.query(
+    `INSERT INTO discord_guild_defaults (server_id, user_id, guild_id, created_at, updated_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
+     RETURNING *`,
+    [params.serverId || null, params.userId || null, params.guildId]
+  );
+
+  return result.rows[0];
 }
 
 /**
  * Get the default guild ID for a Discord server
  */
 export async function getGuildDefault(serverId: string): Promise<GuildDefaultRecord | null> {
-  const results = await prisma.$queryRaw<GuildDefaultRecord[]>`
-    SELECT *
-    FROM discord_guild_defaults
-    WHERE server_id = ${serverId}
-    LIMIT 1
-  `;
+  const pool = await getPostgresPool();
 
-  return results[0] || null;
+  const result = await pool.query(
+    `SELECT * FROM discord_guild_defaults
+     WHERE server_id = $1
+     ORDER BY updated_at DESC
+     LIMIT 1`,
+    [serverId]
+  );
+
+  return result.rows[0] || null;
 }
 
 /**
  * Remove the default guild ID for a Discord server
  */
 export async function removeGuildDefault(serverId: string): Promise<boolean> {
-  const result = await prisma.$queryRaw<Array<{ id: number }>>`
-    DELETE FROM discord_guild_defaults
-    WHERE server_id = ${serverId}
-    RETURNING id
-  `;
+  const pool = await getPostgresPool();
 
-  return result.length > 0;
+  const result = await pool.query(
+    `DELETE FROM discord_guild_defaults
+     WHERE server_id = $1
+     RETURNING id`,
+    [serverId]
+  );
+
+  return result.rows.length > 0;
 }
 
 /**
  * List all configured guild defaults
  */
 export async function listGuildDefaults(): Promise<GuildDefaultRecord[]> {
-  const results = await prisma.$queryRaw<GuildDefaultRecord[]>`
-    SELECT *
-    FROM discord_guild_defaults
-    ORDER BY updated_at DESC
-  `;
+  const pool = await getPostgresPool();
 
-  return results;
+  const result = await pool.query(
+    `SELECT * FROM discord_guild_defaults
+     ORDER BY updated_at DESC`
+  );
+
+  return result.rows;
+}
+
+/**
+ * Get the default guild ID for a given server and/or user.
+ * Returns the most specific match: user+server > server-wide > global.
+ * Returns null if no default is configured.
+ */
+export async function getDefaultGuildId(
+  serverId?: string | null,
+  userId?: string | null
+): Promise<string | null> {
+  try {
+    const pool = await getPostgresPool();
+
+    const result = await pool.query(
+      `SELECT guild_id
+       FROM discord_guild_defaults
+       WHERE (server_id = $1 OR server_id IS NULL)
+       AND (user_id = $2 OR user_id IS NULL)
+       ORDER BY
+         CASE WHEN user_id IS NOT NULL AND server_id IS NOT NULL THEN 1
+              WHEN server_id IS NOT NULL THEN 2
+              ELSE 3
+         END
+       LIMIT 1`,
+      [serverId || null, userId || null]
+    );
+
+    return result.rows.length > 0 ? result.rows[0].guild_id : null;
+  } catch (error) {
+    console.error(`[GuildDefaults] Failed to get default guild:`, error);
+    return null;
+  }
 }

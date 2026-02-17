@@ -4,26 +4,23 @@
 
 set -e
 
-echo "🔧 Creating discord_guild_defaults table..."
+echo "Creating discord_guild_defaults table..."
 
 psql "$DATABASE_URL" << 'EOF'
 -- Create discord_guild_defaults table
--- Stores default guild IDs per Discord server (guild context)
+-- Stores default guild IDs per Discord server (or per user within a server)
 CREATE TABLE IF NOT EXISTS discord_guild_defaults (
   id SERIAL PRIMARY KEY,
-  server_id VARCHAR(255) NOT NULL,
+  user_id VARCHAR(255),
+  server_id VARCHAR(255),
   guild_id VARCHAR(255) NOT NULL,
-  guild_name VARCHAR(255),
-  set_by_user_id VARCHAR(255),
-  set_by_username VARCHAR(255),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_discord_guild_defaults_server UNIQUE (server_id)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Create indexes for efficient querying
+CREATE INDEX IF NOT EXISTS idx_discord_guild_defaults_user_id ON discord_guild_defaults(user_id);
 CREATE INDEX IF NOT EXISTS idx_discord_guild_defaults_server_id ON discord_guild_defaults(server_id);
-CREATE INDEX IF NOT EXISTS idx_discord_guild_defaults_guild_id ON discord_guild_defaults(guild_id);
 
 -- Verify table creation
 SELECT column_name, data_type, is_nullable
@@ -33,4 +30,4 @@ ORDER BY ordinal_position;
 
 EOF
 
-echo "✅ discord_guild_defaults table created successfully!"
+echo "discord_guild_defaults table created successfully!"

@@ -114,6 +114,7 @@ import {
   pgListIndexesTool,
   pgDropIndexTool,
 } from '@repo/database';
+import { getDefaultGuildId } from '@repo/database';
 import { logError } from './utils/errorLogger.js';
 import { buildSystemPrompt } from './lib/systemPrompt.js';
 import { OMEGA_MODEL } from '@repo/shared';
@@ -121,7 +122,6 @@ import { feelingsService } from './lib/feelings/index.js';
 import { statusManager } from './lib/status/index.js';
 import { selectTools } from './toolRouter.js';
 import { loadTools } from './toolLoader.js';
-import { getGuildDefault } from '@repo/database';
 
 // Use openai.chat() for the Chat Completions API (/v1/chat/completions).
 // In @ai-sdk/openai v3, openai() defaults to the Responses API; .chat() keeps Chat Completions.
@@ -208,24 +208,16 @@ export async function runAgent(
 
     // ====== END DYNAMIC TOOL SELECTION ======
 
+    // Look up default guild ID for this server/user
+    let defaultGuildId: string | null = null;
+    try {
+      defaultGuildId = await getDefaultGuildId(context.guildId, context.userId);
+    } catch {
+      // Non-critical - continue without default guild
+    }
+
     // Get feelings context to include in system prompt
     const feelingsContext = feelingsService.getContextForPrompt();
-
-    // Look up default guild for this server
-    let guildContext: { guildId: string; guildName?: string } | undefined;
-    if (context.guildId) {
-      try {
-        const guildDefault = await getGuildDefault(context.guildId);
-        if (guildDefault) {
-          guildContext = {
-            guildId: guildDefault.guild_id,
-            guildName: guildDefault.guild_name || undefined,
-          };
-        }
-      } catch (error) {
-        console.warn('⚠️  Failed to look up default guild:', error);
-      }
-    }
 
     // Build attachment context for photo uploads
     let attachmentContext = '';
@@ -254,7 +246,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
 
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(context.username, context.userId, guildContext) + feelingsContext + attachmentContext,
+      system: buildSystemPrompt(context.username, context.userId, defaultGuildId) + feelingsContext + attachmentContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools, // ← Dynamic tools loaded via BM25 search
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling

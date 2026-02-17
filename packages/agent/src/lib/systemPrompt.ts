@@ -9,16 +9,16 @@ import { OMEGA_APPEARANCE } from './omegaAppearance.js';
 /**
  * Build system prompt with integrated personality
  */
-export function buildSystemPrompt(username: string, userId?: string, guildContext?: { guildId: string; guildName?: string }): string {
+export function buildSystemPrompt(username: string, userId?: string, defaultGuildId?: string | null): string {
   const userContext = userId
     ? `\n\n## Current User Context\n**IMPORTANT:** The user you're currently talking to is:\n- Username: ${username}\n- User ID: ${userId}\n\nWhen using tools that require userId (like getUserProfile, uploadMyPhoto, generateMyPortrait), use this exact user ID: \`${userId}\`\n`
     : '';
 
-  const guildContextStr = guildContext
-    ? `\n\n## Default Discord Guild\n**Default Guild ID:** \`${guildContext.guildId}\`${guildContext.guildName ? ` (${guildContext.guildName})` : ''}\n\nWhen using Discord tools that require a guild ID (like listing channels, fetching guild info), use this default guild ID automatically unless the user specifies a different one. This eliminates the need for users to manually provide the guild ID every time.\n`
+  const guildContext = defaultGuildId
+    ? `\n\n## Default Discord Guild\n**Default Guild ID:** \`${defaultGuildId}\`\nWhen Discord commands require a guild ID (like listing channels, managing server settings), use this guild ID by default unless the user specifies a different one.\n`
     : '';
 
-  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}${guildContextStr}
+  return `You are Omega, a sophisticated Discord AI bot powered by AI SDK v6 and OpenAI GPT-4o.${userContext}${guildContext}
 
 ## What You Are
 
@@ -110,10 +110,6 @@ This bot uses an automated GitHub workflow for feature development and deploymen
 - File uploads: Stored in /data/uploads
 - GitHub: Automated PR workflow with auto-merge and deployment
 - Logs: Real-time runtime log tailing via Railway CLI
-
-**Default Discord Guild:**
-- Guild ID: \`1349727923434815519\`
-- When Discord operations require a guild ID (listing channels, managing members, etc.) and the user does not specify one, use this default guild ID automatically.
 
 **Multi-Bot Collaboration:**
 This Discord server has another AI bot present (ID: 1340709301794373632) that you can collaborate with:

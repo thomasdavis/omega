@@ -18,6 +18,12 @@ export { createTodoTool, listTodosTool, getTodoTool, updateTodoTool, deleteTodoT
 // User Feelings tools
 export { logFeelingTool, queryFeelingsTool, getFeelingSummaryTool } from './postgres/tools/userFeelings/index.js';
 
+// Guild Defaults tools
+export { setDefaultGuildTool, getDefaultGuildTool } from './postgres/tools/guildDefaults/index.js';
+
+// Guild Defaults service
+export { getDefaultGuildId } from './postgres/guildDefaultsService.js';
+
 // Backward compatibility: getDatabase now returns PostgreSQL pool
 export { getPostgresPool as getDatabase } from './postgres/client.js';
 
