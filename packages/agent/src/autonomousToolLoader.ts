@@ -71,7 +71,7 @@ function createRuntimeTool(toolData: any): Tool {
   // Parse parameters if stored as JSON string
   const parsedParams = typeof parameters === 'string'
     ? JSON.parse(parameters)
-    : parameters;
+    : (Array.isArray(parameters) ? parameters : []);
 
   // Build Zod schema from parameters
   const inputSchema = buildZodSchema(parsedParams);
@@ -86,7 +86,7 @@ function createRuntimeTool(toolData: any): Tool {
         'params',
         `
         // Sandboxed execution environment
-        const ${parsedParams.map((p: any) => p.name).join(', ')} = params;
+        const { ${parsedParams.map((p: any) => p.name).join(', ')} } = params;
 
         // User implementation
         ${implementation}
