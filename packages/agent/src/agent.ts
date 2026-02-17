@@ -145,6 +145,7 @@ export interface ToolCallInfo {
   args: Record<string, any>;
   result: any;
   error?: string;
+  isExternalFailure?: boolean;
 }
 
 /**
@@ -284,6 +285,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
                 args,
                 result,
                 error: isSoftFailure ? (resultObj.error || resultObj.message || 'Tool returned success: false') : undefined,
+                isExternalFailure: isSoftFailure ? resultObj.isExternalToolFailure : undefined,
               });
             }
 

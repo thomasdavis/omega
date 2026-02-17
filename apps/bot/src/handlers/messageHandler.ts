@@ -1013,6 +1013,13 @@ export async function handleMessage(message: Message): Promise<void> {
     // Report tool errors to GitHub for automated fixing
     if (result.toolErrors && result.toolErrors.length > 0) {
       for (const toolErr of result.toolErrors) {
+        // Skip creating GitHub issues for external tool failures (e.g., TPMJS tools)
+        // These are third-party service failures we can't fix — just log them
+        if (toolErr.isExternalFailure) {
+          console.warn(`⚠️  External tool failure (not reporting to GitHub): ${toolErr.toolName} — ${toolErr.error}`);
+          continue;
+        }
+
         const errorDetail = [
           `Tool "${toolErr.toolName}" failed during execution.`,
           '',
