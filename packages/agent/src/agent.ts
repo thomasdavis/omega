@@ -122,8 +122,8 @@ import { statusManager } from './lib/status/index.js';
 import { selectTools } from './toolRouter.js';
 import { loadTools } from './toolLoader.js';
 
-// Use openai.chat() to force /v1/chat/completions instead of /v1/responses
-// This works around schema validation bugs in the Responses API with AI SDK v6 beta.99
+// Use openai.chat() for the Chat Completions API (/v1/chat/completions).
+// In @ai-sdk/openai v3, openai() defaults to the Responses API; .chat() keeps Chat Completions.
 const model = openai.chat(OMEGA_MODEL);
 
 export interface AgentContext {
