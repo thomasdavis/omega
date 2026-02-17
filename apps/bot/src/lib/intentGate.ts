@@ -8,7 +8,7 @@
  */
 
 import { Message } from 'discord.js';
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '../config/models.js';
@@ -177,9 +177,9 @@ export async function checkIntentGate(
       omegaPreviousMessage = `\n**Omega's previous message (being replied to):**\n"${repliedToContent}"\n`;
     }
 
-    const result = await generateObject({
+    const result = await generateText({
       model: openai.chat(OMEGA_MODEL),
-      schema: IntentGateSchema,
+      output: Output.object({ schema: IntentGateSchema }),
       prompt: `You are analyzing whether a user's reply to Omega (an AI bot) is **interactive** (requires bot action) or **non-interactive** (just commenting on previous work).
 
 ## CLASSIFICATION FRAMEWORK
@@ -252,9 +252,9 @@ ${omegaPreviousMessage}${historyContext}
 **Remember:** When uncertain, err on the side of INTERACTIVE to avoid missing legitimate requests.`,
     });
 
-    const classification = result.object.classification;
-    const confidence = result.object.confidence;
-    const reason = result.object.reason;
+    const classification = result.output!.classification;
+    const confidence = result.output!.confidence;
+    const reason = result.output!.reason;
 
     // Convert classification to shouldProceed decision
     // Interactive → proceed to agent
