@@ -342,19 +342,6 @@ export async function handleMessage(message: Message): Promise<void> {
     return; // Exit early, don't process message further
   }
 
-  // TEST TRIGGER: "kickflip" in #omega throws a deliberate error to test the
-  // error → GitHub issue → Claude fix → Discord notification pipeline.
-  // Remove this block once the pipeline is verified end-to-end.
-  if (lowerContent.includes('kickflip') && !message.channel.isDMBased()) {
-    const channelName = (message.channel as any).name;
-    if (channelName === 'omega') {
-      throw new Error(
-        'Test error triggered by kickflip command. Please fix and remove this test error. ' +
-        '(This was an intentional throw to verify the self-healing pipeline.)'
-      );
-    }
-  }
-
   // Fetch recent message history FIRST (for shouldRespond decision context)
   let messageHistory: Array<{ username: string; content: string; timestamp?: number }> = [];
 
