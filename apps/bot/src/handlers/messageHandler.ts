@@ -1013,12 +1013,44 @@ export async function handleMessage(message: Message): Promise<void> {
     // Report tool errors to GitHub for automated fixing
     if (result.toolErrors && result.toolErrors.length > 0) {
       for (const toolErr of result.toolErrors) {
-        const errorDetail = [
+        // Extract additional context from the tool result when available
+        const toolResult = toolErr.result as Record<string, any> | undefined;
+        const toolMetadata = toolResult?.toolMetadata;
+        const suggestions = toolResult?.suggestions;
+        const toolId = toolResult?.toolId;
+
+        const errorLines = [
           `Tool "${toolErr.toolName}" failed during execution.`,
           '',
           `**Error**: ${toolErr.error}`,
           `**Args passed**: ${JSON.stringify(toolErr.args, null, 2)}`,
           `**User message**: ${message.content.substring(0, 200)}`,
+        ];
+
+        // Include TPMJS tool ID if this was a registry execution
+        if (toolId) {
+          errorLines.push(`**TPMJS Tool ID**: ${toolId}`);
+        }
+
+        // Include tool metadata if available (helps with debugging)
+        if (toolMetadata) {
+          errorLines.push('', '**Tool Metadata**:');
+          if (toolMetadata.name) errorLines.push(`- Name: ${toolMetadata.name}`);
+          if (toolMetadata.description) errorLines.push(`- Description: ${toolMetadata.description}`);
+          if (toolMetadata.requiredEnvVars?.length) {
+            errorLines.push(`- Required Env Vars: ${toolMetadata.requiredEnvVars.join(', ')}`);
+          }
+        }
+
+        // Include suggestions if available
+        if (suggestions?.length) {
+          errorLines.push('', '**Suggestions**:');
+          for (const s of suggestions) {
+            errorLines.push(`- ${s}`);
+          }
+        }
+
+        errorLines.push(
           '',
           'This could be caused by:',
           '- A bug in the tool\'s execute function',
@@ -1026,8 +1058,9 @@ export async function handleMessage(message: Message): Promise<void> {
           '- The tool description misleading the AI into passing wrong args',
           '- A missing or misconfigured environment variable',
           '- An external API the tool depends on being down or changed',
-        ].join('\n');
-        captureError(new Error(errorDetail), {
+        );
+
+        captureError(new Error(errorLines.join('\n')), {
           railwayService: 'omega-bot',
           logContext: [
             `Tool: ${toolErr.toolName}`,
