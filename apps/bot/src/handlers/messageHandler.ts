@@ -1013,12 +1013,34 @@ export async function handleMessage(message: Message): Promise<void> {
     // Report tool errors to GitHub for automated fixing
     if (result.toolErrors && result.toolErrors.length > 0) {
       for (const toolErr of result.toolErrors) {
-        const errorDetail = [
+        // Include detailed diagnostics from the tool result if available
+        const resultObj = toolErr.result as Record<string, any> | undefined;
+        const diagnosticLines: string[] = [
           `Tool "${toolErr.toolName}" failed during execution.`,
           '',
           `**Error**: ${toolErr.error}`,
           `**Args passed**: ${JSON.stringify(toolErr.args, null, 2)}`,
           `**User message**: ${message.content.substring(0, 200)}`,
+        ];
+
+        // Add detailed error breakdown if available (from tpmjsRegistryExecute)
+        if (resultObj?.apiError) {
+          diagnosticLines.push(`**API Error**: ${resultObj.apiError}`);
+        }
+        if (resultObj?.fallbackError) {
+          diagnosticLines.push(`**Fallback Error**: ${resultObj.fallbackError}`);
+        }
+        if (resultObj?.message && resultObj.message !== toolErr.error) {
+          diagnosticLines.push(`**Detail**: ${resultObj.message}`);
+        }
+        if (resultObj?.toolMetadata) {
+          diagnosticLines.push(`**Tool Metadata**: ${JSON.stringify(resultObj.toolMetadata, null, 2)}`);
+        }
+        if (resultObj?.suggestions?.length) {
+          diagnosticLines.push(`**Suggestions**: ${resultObj.suggestions.join(', ')}`);
+        }
+
+        diagnosticLines.push(
           '',
           'This could be caused by:',
           '- A bug in the tool\'s execute function',
@@ -1026,7 +1048,9 @@ export async function handleMessage(message: Message): Promise<void> {
           '- The tool description misleading the AI into passing wrong args',
           '- A missing or misconfigured environment variable',
           '- An external API the tool depends on being down or changed',
-        ].join('\n');
+        );
+
+        const errorDetail = diagnosticLines.join('\n');
         captureError(new Error(errorDetail), {
           railwayService: 'omega-bot',
           logContext: [

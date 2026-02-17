@@ -232,14 +232,20 @@ export async function executeTpmjsTool(
   });
 
   if (apiResult.data && !apiResult.error) {
+    const isSuccess = apiResult.data.success !== false;
+    if (!isSuccess) {
+      console.warn(`⚠️  TPMJS API returned failure for ${toolId}: ${apiResult.data.error || 'no error detail'}`);
+    }
     return {
-      success: apiResult.data.success !== false,
+      success: isSuccess,
       result: apiResult.data.result,
       error: apiResult.data.error ?? undefined,
       executionTimeMs: Date.now() - startTime,
       toolId,
     };
   }
+
+  console.warn(`⚠️  TPMJS API endpoint failed for ${toolId}: ${apiResult.error || `HTTP ${apiResult.status}`}`);
 
   // Fallback: call executor directly
   // Parse toolId format: "package::exportName"
@@ -280,12 +286,27 @@ export async function executeTpmjsTool(
       signal: AbortSignal.timeout(60000),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Could not read response body');
+      console.error(`❌ TPMJS executor returned HTTP ${response.status} for ${toolId}: ${errorText.substring(0, 500)}`);
+      return {
+        success: false,
+        error: `Executor HTTP ${response.status}: ${errorText.substring(0, 300)}`,
+        executionTimeMs: Date.now() - startTime,
+        toolId,
+      };
+    }
+
     const result = await response.json() as {
       success?: boolean;
       result?: unknown;
       output?: unknown;
       error?: string;
     };
+
+    if (result.success === false) {
+      console.warn(`⚠️  TPMJS executor returned failure for ${toolId}: ${result.error || 'no error detail'}`);
+    }
 
     return {
       success: result.success !== false,
@@ -295,9 +316,15 @@ export async function executeTpmjsTool(
       toolId,
     };
   } catch (error) {
+    const errorMsg = error instanceof Error
+      ? (error.name === 'TimeoutError' ? 'Executor request timed out after 60s' : error.message)
+      : 'Unknown error';
+    console.error(`❌ TPMJS executor request failed for ${toolId}: ${errorMsg}`);
     return {
       success: false,
-      error: apiResult.error || `Executor request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      error: apiResult.error
+        ? `API: ${apiResult.error} | Executor: ${errorMsg}`
+        : `Executor request failed: ${errorMsg}`,
       executionTimeMs: Date.now() - startTime,
       toolId,
     };

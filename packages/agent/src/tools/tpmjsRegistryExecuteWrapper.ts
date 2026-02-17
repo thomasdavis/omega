@@ -109,7 +109,8 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
       }
 
       // If API execution failed, try npm package fallback
-      console.log('⚠️  API execution failed, trying npm package fallback...');
+      const apiErrorDetail = apiResult.error || 'unknown API error';
+      console.log(`⚠️  API execution failed (${apiErrorDetail}), trying npm package fallback...`);
       try {
         const { registryExecuteTool } = await import('@tpmjs/registry-execute');
         const executeFunc = registryExecuteTool.execute as (args: {
@@ -134,7 +135,10 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
         };
       } catch (fallbackError) {
         // Both API and npm package failed
-        console.error('❌ Both API and npm package execution failed');
+        const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        console.error(`❌ Both API and npm package execution failed`);
+        console.error(`   API error: ${apiErrorDetail}`);
+        console.error(`   Fallback error: ${fallbackErrorMsg}`);
 
         // Provide helpful error with tool metadata if available
         const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
@@ -146,8 +150,10 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
           success: false,
           authenticated: hasApiKey,
           error: 'execution_failed',
-          message: apiResult.error || 'Tool execution failed via both API and npm package',
+          message: `API: ${apiErrorDetail} | Fallback: ${fallbackErrorMsg}`,
           toolId,
+          apiError: apiErrorDetail,
+          fallbackError: fallbackErrorMsg,
           toolMetadata: metadataResult.metadata
             ? {
                 name: metadataResult.metadata.name,
@@ -160,17 +166,39 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
             'Check that required parameters are provided',
             !hasApiKey ? 'Configure TPMJS_API_KEY for authenticated access' : null,
             'Use tpmjsRegistrySearch to find the correct toolId',
+            'The TPMJS API or executor service may be temporarily unavailable',
           ].filter(Boolean),
         };
       }
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution';
       console.error('❌ TPMJS Registry Execute error:', error);
+
+      // Provide helpful error with tool metadata if available
+      const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
+        metadata: null,
+        error: null,
+      }));
+
       return {
         success: false,
         authenticated: hasApiKey,
         error: 'execution_failed',
-        message: error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution',
+        message: errorMsg,
         toolId,
+        toolMetadata: metadataResult.metadata
+          ? {
+              name: metadataResult.metadata.name,
+              description: metadataResult.metadata.description,
+              requiredEnvVars: metadataResult.metadata.envVars,
+            }
+          : undefined,
+        suggestions: [
+          'Verify the toolId is correct (format: "package::exportName")',
+          'Check that required parameters are provided',
+          !hasApiKey ? 'Configure TPMJS_API_KEY for authenticated access' : null,
+          'Use tpmjsRegistrySearch to find the correct toolId',
+        ].filter(Boolean),
       };
     }
   },
