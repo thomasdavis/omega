@@ -2901,6 +2901,28 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'content'
   },
+
+  // ===== HUMOR AND PERSONALITY TOOLS =====
+  {
+    id: 'savageWitEnhancer',
+    name: 'Savage Wit Enhancer',
+    description: 'Enhance text with savage wit, sarcasm, and biting humor inspired by Jimmy Carr. Rewrites messages to be sharper, more cutting, and entertainingly ruthless.',
+    keywords: ['savage', 'wit', 'sarcasm', 'humor', 'jimmy carr', 'roast', 'funny', 'burn', 'insult', 'comedy', 'rewrite', 'enhance', 'edgy', 'vulgar', 'cutting', 'deadpan', 'biting'],
+    tags: ['entertainment', 'humor', 'personality', 'writing'],
+    examples: [
+      'make this more savage',
+      'add some wit to this message',
+      'rewrite this with sarcasm',
+      'make my response more cutting',
+      'jimmy carr style this text',
+      'roast this message',
+      'enhance with savage humor',
+      'make this funnier and edgier',
+      'be more sarcastic',
+      'inject more savage wit',
+    ],
+    category: 'specialized'
+  },
 ];
 
 /**
