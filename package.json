@@ -32,5 +32,8 @@
   },
   "lint-staged": {
     "*.{ts,tsx}": []
+  },
+  "dependencies": {
+    "ai": "^6.0.86"
   }
 }
