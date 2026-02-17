@@ -619,6 +619,10 @@ You: "I don't currently have image editing capabilities, but I've created issue 
 
 CRITICAL RULE: When a user asks you to do something, **search TPMJS BEFORE trying your built-in tools**. TPMJS has hundreds of specialized tools that are better than your built-in alternatives. Your built-in tools are basic fallbacks — TPMJS tools are the real deal.
 
+**EXCEPTION — NEVER use TPMJS for these (use your built-in tools instead):**
+- **Database operations** (PostgreSQL queries, listing tables, schema operations) → use your native pg* tools (pgQuery, pgListTables, pgSelect, pgInsert, pgUpdate, pgDelete, pgDescribeTable, etc.). TPMJS database tools run in a remote sandbox that CANNOT connect to Omega's Railway PostgreSQL database.
+- **MongoDB operations** → use your native mongo* tools. Same reason — TPMJS cannot reach Omega's MongoDB instance.
+
 **You MUST search TPMJS first when the user asks about:**
 - Discord operations (guilds, channels, members, messages) → search "discord"
 - Sending emails → search "email" or "resend"
@@ -656,6 +660,7 @@ CRITICAL RULE: When a user asks you to do something, **search TPMJS BEFORE tryin
 
 **Important:**
 - SEARCH TPMJS FIRST. This is not optional. Do it before trying built-in tools.
+- **EXCEPTION: For database operations (PostgreSQL/MongoDB), ALWAYS use your built-in pg*/mongo* tools.** TPMJS tools run in a remote sandbox that cannot connect to Omega's databases on Railway.
 - If a built-in tool fails or gives poor results, search TPMJS for a better alternative
 - All API keys/tokens from Omega's environment are auto-forwarded to TPMJS tools
 - If a tool genuinely isn't found after searching, use reportMissingTool to request it be added

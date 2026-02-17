@@ -341,15 +341,19 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'pgQuery',
     name: 'PostgreSQL Query',
-    description: 'Execute raw SQL queries on PostgreSQL database',
-    keywords: ['postgres', 'postgresql', 'sql', 'query', 'select', 'database', 'relational', 'pg'],
+    description: 'Execute raw SQL queries on Omega\'s PostgreSQL database. Use this for ANY database query — SELECT, INSERT, UPDATE, DELETE, schema inspection, etc. This is Omega\'s native database tool with direct Railway PostgreSQL access.',
+    keywords: ['postgres', 'postgresql', 'sql', 'query', 'select', 'database', 'relational', 'pg', 'tables', 'read', 'data', 'schema', 'information_schema', 'db'],
     tags: ['database', 'postgresql', 'sql', 'query'],
     examples: [
       'run SQL query',
       'select from PostgreSQL',
       'execute SQL',
       'query the database',
-      'run postgres query'
+      'run postgres query',
+      'read tables from database',
+      'use database tools',
+      'show me the database',
+      'what is in the database'
     ],
     category: 'database'
   },
@@ -432,14 +436,18 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'pgListTables',
     name: 'PostgreSQL List Tables',
-    description: 'List all tables in the PostgreSQL database',
-    keywords: ['postgres', 'postgresql', 'list', 'tables', 'show', 'schema', 'pg'],
+    description: 'List all tables in Omega\'s PostgreSQL database. Use this to discover what tables exist, inspect the schema, or see the database structure. Direct Railway PostgreSQL access.',
+    keywords: ['postgres', 'postgresql', 'list', 'tables', 'show', 'schema', 'pg', 'read', 'database', 'information_schema', 'table_name', 'public', 'db'],
     tags: ['database', 'postgresql', 'schema', 'management'],
     examples: [
       'list PostgreSQL tables',
       'show all tables',
       'what tables exist',
-      'list postgres schema'
+      'list postgres schema',
+      'read your tables',
+      'use database tools to read tables',
+      'show me what is in the database',
+      'database schema'
     ],
     category: 'database'
   },
@@ -2539,7 +2547,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'tpmjsRegistryExecute',
     name: 'TPMJS Registry Execute',
-    description: 'Execute any tool from the TPMJS registry by its toolId. Uses TPMJS_API_KEY for authenticated execution. Tools run in a secure sandbox - no local installation required. API keys (FIRECRAWL_API_KEY, OPENAI_API_KEY, etc.) are automatically injected. Use tpmjsRegistrySearch first to find tools and get their toolIds.',
+    description: 'Execute any tool from the TPMJS registry by its toolId. Uses TPMJS_API_KEY for authenticated execution. Tools run in a secure sandbox - no local installation required. API keys are automatically injected. IMPORTANT: Do NOT use this for database operations (PostgreSQL/MongoDB) — TPMJS tools cannot connect to Omega\'s Railway databases. Use native pg*/mongo* tools instead.',
     keywords: ['tpmjs', 'registry', 'execute', 'run', 'tool', 'external', 'sandbox', 'invoke', 'call', 'sdk', 'api key', 'authenticated'],
     tags: ['core', 'registry', 'execution', 'tools', 'sandbox'],
     examples: [

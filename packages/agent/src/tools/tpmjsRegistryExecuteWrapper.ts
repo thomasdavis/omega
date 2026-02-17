@@ -43,7 +43,7 @@ function getInjectedEnvVars(): Record<string, string> {
  */
 export const tpmjsRegistryExecuteWrappedTool = tool({
   description:
-    'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. All of Omega\'s environment variables (API keys, tokens, secrets) are automatically forwarded to the tool execution.',
+    'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. All of Omega\'s environment variables (API keys, tokens, secrets) are automatically forwarded to the tool execution. IMPORTANT: Do NOT use this for database operations (PostgreSQL/MongoDB) — the remote sandbox cannot connect to Omega\'s Railway databases. Use the native pg* or mongo* tools instead.',
   inputSchema: z.object({
     toolId: z
       .string()
