@@ -114,6 +114,7 @@ import {
   pgListIndexesTool,
   pgDropIndexTool,
 } from '@repo/database';
+import { getDefaultGuildId } from '@repo/database';
 import { logError } from './utils/errorLogger.js';
 import { buildSystemPrompt } from './lib/systemPrompt.js';
 import { OMEGA_MODEL } from '@repo/shared';
@@ -130,6 +131,7 @@ export interface AgentContext {
   username: string;
   userId: string;
   channelName: string;
+  guildId?: string;
   messageHistory?: Array<{ username: string; content: string; timestamp?: number }>;
   attachments?: Array<{ id: string; url: string; filename: string; contentType: string; size: number }>;
 }
@@ -206,6 +208,14 @@ export async function runAgent(
 
     // ====== END DYNAMIC TOOL SELECTION ======
 
+    // Look up default guild ID for this server/user
+    let defaultGuildId: string | null = null;
+    try {
+      defaultGuildId = await getDefaultGuildId(context.guildId, context.userId);
+    } catch {
+      // Non-critical - continue without default guild
+    }
+
     // Get feelings context to include in system prompt
     const feelingsContext = feelingsService.getContextForPrompt();
 
@@ -236,7 +246,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
 
     const streamResult = streamText({
       model,
-      system: buildSystemPrompt(context.username, context.userId) + feelingsContext + attachmentContext,
+      system: buildSystemPrompt(context.username, context.userId, defaultGuildId) + feelingsContext + attachmentContext,
       prompt: `[User: ${context.username} in #${context.channelName}]${historyContext}\n${context.username}: ${userMessage}`,
       tools, // ← Dynamic tools loaded via BM25 search
       // AI SDK v6: Use stopWhen instead of maxSteps to enable multi-step tool calling
