@@ -185,6 +185,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   reportMissingTool: { path: './tools/reportMissingTool.js', exportName: 'reportMissingToolTool' },
   inspectTool: { path: './tools/inspectTool.js', exportName: 'inspectToolTool' },
   grammarInsult: { path: './tools/grammarInsult.js', exportName: 'grammarInsultTool' },
+  savageWitEnhancer: { path: './tools/savageWitEnhancer.js', exportName: 'savageWitEnhancerTool' },
   runBatchAnalysis: { path: './tools/runBatchAnalysis.js', exportName: 'runBatchAnalysisTool' },
   quantumComputing: { path: './tools/quantumComputing.js', exportName: 'quantumComputingTool' },
   queryDatabase: { path: './tools/queryDatabase.js', exportName: 'queryDatabaseTool' },
