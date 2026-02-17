@@ -142,11 +142,14 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
           error: null,
         }));
 
+        const apiError = apiResult.error || 'Unknown error';
+        const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+        const combinedError = `Tool execution failed. API: ${apiError}. Fallback: ${fallbackErrorMsg}`;
+
         return {
           success: false,
           authenticated: hasApiKey,
-          error: 'execution_failed',
-          message: apiResult.error || 'Tool execution failed via both API and npm package',
+          error: combinedError,
           toolId,
           toolMetadata: metadataResult.metadata
             ? {
@@ -168,8 +171,7 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
       return {
         success: false,
         authenticated: hasApiKey,
-        error: 'execution_failed',
-        message: error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution',
+        error: error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution',
         toolId,
       };
     }

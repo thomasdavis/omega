@@ -1013,12 +1013,33 @@ export async function handleMessage(message: Message): Promise<void> {
     // Report tool errors to GitHub for automated fixing
     if (result.toolErrors && result.toolErrors.length > 0) {
       for (const toolErr of result.toolErrors) {
-        const errorDetail = [
+        // Extract additional context from the tool result if available
+        const resultObj = toolErr.result as Record<string, any> | undefined;
+        const suggestions = resultObj?.suggestions as string[] | undefined;
+        const toolMetadata = resultObj?.toolMetadata as Record<string, any> | undefined;
+
+        const errorLines = [
           `Tool "${toolErr.toolName}" failed during execution.`,
           '',
           `**Error**: ${toolErr.error}`,
           `**Args passed**: ${JSON.stringify(toolErr.args, null, 2)}`,
           `**User message**: ${message.content.substring(0, 200)}`,
+        ];
+
+        // Include tool metadata if available (e.g. required env vars)
+        if (toolMetadata) {
+          errorLines.push('', `**Tool metadata**: ${JSON.stringify(toolMetadata)}`);
+        }
+
+        // Include suggestions if available
+        if (suggestions && suggestions.length > 0) {
+          errorLines.push('', '**Suggestions from tool**:');
+          for (const s of suggestions) {
+            errorLines.push(`- ${s}`);
+          }
+        }
+
+        errorLines.push(
           '',
           'This could be caused by:',
           '- A bug in the tool\'s execute function',
@@ -1026,8 +1047,9 @@ export async function handleMessage(message: Message): Promise<void> {
           '- The tool description misleading the AI into passing wrong args',
           '- A missing or misconfigured environment variable',
           '- An external API the tool depends on being down or changed',
-        ].join('\n');
-        captureError(new Error(errorDetail), {
+        );
+
+        captureError(new Error(errorLines.join('\n')), {
           railwayService: 'omega-bot',
           logContext: [
             `Tool: ${toolErr.toolName}`,
