@@ -242,6 +242,8 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
 
   // Discord Tools
+  setDefaultGuild: { path: './tools/setDefaultGuild.js', exportName: 'setDefaultGuildTool' },
+  getDefaultGuild: { path: './tools/getDefaultGuild.js', exportName: 'getDefaultGuildTool' },
   discordChannelDescriptionManager: { path: './tools/discordChannelDescriptionManager.js', exportName: 'discordChannelDescriptionManagerTool' },
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
   nuancedJobSeekerDetectorWithWittyResponse: { path: './tools/nuancedJobSeekerDetectorWithWittyResponse.js', exportName: 'nuancedJobSeekerDetectorWithWittyResponseTool' },

@@ -85,8 +85,10 @@ jobs:
             echo "⚠️ Could not fetch title for issue #$ISSUE_NUMBER"
             echo "title=Claude Code Implementation" >> $GITHUB_OUTPUT
           else
-            echo "title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
-            echo "✅ Issue title: $ISSUE_TITLE"
+            # Sanitize: collapse newlines/backticks into spaces, truncate to 200 chars
+            CLEAN_TITLE=$(echo "$ISSUE_TITLE" | tr '\n\r' '  ' | tr '`' "'" | sed 's/  */ /g' | head -c 200)
+            echo "title=$CLEAN_TITLE" >> $GITHUB_OUTPUT
+            echo "✅ Issue title: $CLEAN_TITLE"
           fi
           echo "::endgroup::"
 

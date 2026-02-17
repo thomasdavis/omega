@@ -42,6 +42,7 @@ export * as pgDecisionLogService from './postgres/decisionLogService.js';
 export * as pgBannedUsersService from './postgres/bannedUsersService.js';
 export * as pgAntigravityRoastsService from './postgres/antigravityRoastsService.js';
 export * as pgTweetLogService from './postgres/tweetLogService.js';
+export * as pgGuildDefaultsService from './postgres/guildDefaultsService.js';
 
 // Schema Registry
 export * from './postgres/schemaRegistry/index.js';
@@ -288,6 +289,20 @@ export type {
   TweetLogRecord,
   LogTweetParams,
 } from './postgres/tweetLogService.js';
+
+// Export guild defaults service functions
+export {
+  setGuildDefault,
+  getGuildDefault,
+  removeGuildDefault,
+  listGuildDefaults,
+} from './postgres/guildDefaultsService.js';
+
+// Export guild defaults service types
+export type {
+  GuildDefaultRecord,
+  SetGuildDefaultParams,
+} from './postgres/guildDefaultsService.js';
 
 // Database Adapter (PostgreSQL-only after migration)
 export {
