@@ -1,121 +1,228 @@
 /**
  * TPMJS SDK Integration Tool
- * Fetches and integrates tools from the TPMJS SDK into Omega
+ * Fetches and integrates tools from the TPMJS registry into Omega.
+ * Uses the TPMJS API with proper authentication and llms.txt spec parsing.
+ *
+ * API Reference: https://tpmjs.com/llms.txt
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import {
+  fetchTpmjsSpec,
+  searchTpmjsRegistry,
+  validateTpmjsApiKey,
+  hasTpmjsApiKey,
+  listTpmjsCategories,
+} from './tpmjsApiClient.js';
+import type { TpmjsToolMetadata } from './tpmjsApiClient.js';
 
 export const integrateTpmjsSdkTool = tool({
-  description: 'Fetch and integrate tools from the TPMJS SDK (https://tpmjs.com/sdk). This tool reads the SDK documentation, parses available tools, and prepares them for integration into Omega\'s tool system.',
+  description:
+    'Fetch and integrate tools from the TPMJS SDK (https://tpmjs.com). This tool reads the llms.txt specification, discovers available tools via the TPMJS API, and prepares them for integration into Omega\'s tool system. Supports modes: "fetch" retrieves the spec, "analyze" discovers tools, "integrate" generates an integration plan, "validate" checks API key.',
   inputSchema: z.object({
-    sdkUrl: z.string().url().default('https://tpmjs.com/sdk').describe('The TPMJS SDK documentation URL'),
-    mode: z.enum(['fetch', 'analyze', 'integrate']).default('fetch').describe('Mode: "fetch" retrieves SDK docs, "analyze" parses tool definitions, "integrate" adds tools to Omega'),
+    sdkUrl: z
+      .string()
+      .url()
+      .default('https://tpmjs.com/llms.txt')
+      .describe('The TPMJS SDK documentation URL (default: https://tpmjs.com/llms.txt)'),
+    mode: z
+      .enum(['fetch', 'analyze', 'integrate', 'validate'])
+      .default('fetch')
+      .describe(
+        'Mode: "fetch" retrieves llms.txt spec, "analyze" discovers tools via API, "integrate" generates integration plan, "validate" checks API key'
+      ),
+    category: z
+      .string()
+      .optional()
+      .describe('Optional category to filter tools when analyzing'),
+    searchQuery: z
+      .string()
+      .optional()
+      .describe('Optional search query to find specific tools when analyzing'),
   }),
-  execute: async ({ sdkUrl, mode }) => {
+  execute: async ({
+    sdkUrl,
+    mode,
+    category,
+    searchQuery,
+  }: {
+    sdkUrl: string;
+    mode: string;
+    category?: string;
+    searchQuery?: string;
+  }) => {
     console.log(`🔧 TPMJS SDK Integration - Mode: ${mode}`);
-    console.log(`📡 SDK URL: ${sdkUrl}`);
+    const hasApiKey = hasTpmjsApiKey();
 
     try {
+      if (mode === 'validate') {
+        console.log('🔑 Validating TPMJS API key...');
+        const validation = await validateTpmjsApiKey();
+        return {
+          success: validation.valid,
+          mode: 'validate',
+          authenticated: hasApiKey,
+          ...validation,
+        };
+      }
+
       if (mode === 'fetch') {
-        // Fetch the SDK documentation
-        console.log(`🌐 Fetching TPMJS SDK documentation...`);
+        console.log(`🌐 Fetching TPMJS spec from ${sdkUrl}...`);
 
-        const response = await fetch(sdkUrl, {
-          headers: {
-            'User-Agent': 'OmegaBot/1.0 (TPMJS SDK Integration)',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          },
-          signal: AbortSignal.timeout(15000), // 15 second timeout
-        });
+        const specResult = await fetchTpmjsSpec();
 
-        if (!response.ok) {
-          return {
-            success: false,
-            error: 'fetch_failed',
-            message: `Failed to fetch SDK documentation: ${response.status} ${response.statusText}`,
-            statusCode: response.status,
-          };
+        if (specResult.error && !specResult.rawContent) {
+          // Fallback: try fetching the URL directly
+          console.log('⚠️  API client failed, trying direct fetch...');
+          try {
+            const response = await fetch(sdkUrl, {
+              headers: {
+                'User-Agent': 'OmegaBot/1.0 (TPMJS SDK Integration)',
+                Accept: 'text/plain,text/html,application/json,*/*',
+                ...(hasApiKey
+                  ? {
+                      Authorization: `Bearer ${process.env.TPMJS_API_KEY}`,
+                      'X-API-Key': process.env.TPMJS_API_KEY!,
+                    }
+                  : {}),
+              },
+              signal: AbortSignal.timeout(15000),
+            });
+
+            if (!response.ok) {
+              return {
+                success: false,
+                mode: 'fetch',
+                authenticated: hasApiKey,
+                error: 'fetch_failed',
+                message: `Failed to fetch SDK documentation: ${response.status} ${response.statusText}`,
+                statusCode: response.status,
+              };
+            }
+
+            const content = await response.text();
+            console.log(`✅ Fetched SDK documentation (${content.length} characters)`);
+
+            return {
+              success: true,
+              mode: 'fetch',
+              authenticated: hasApiKey,
+              content,
+              contentLength: content.length,
+              url: sdkUrl,
+              message:
+                'Successfully fetched TPMJS SDK documentation. Use mode "analyze" to discover available tools.',
+            };
+          } catch (fetchError) {
+            return {
+              success: false,
+              mode: 'fetch',
+              authenticated: hasApiKey,
+              error: 'fetch_failed',
+              message: `Failed to fetch SDK documentation: ${fetchError instanceof Error ? fetchError.message : 'Unknown error'}`,
+            };
+          }
         }
 
-        const contentType = response.headers.get('content-type') || '';
-        const content = await response.text();
-
-        console.log(`✅ Successfully fetched SDK documentation (${content.length} characters)`);
-
+        console.log(`✅ Fetched TPMJS spec`);
         return {
           success: true,
           mode: 'fetch',
-          content,
-          contentType,
-          contentLength: content.length,
+          authenticated: hasApiKey,
+          spec: specResult.spec,
+          rawContentLength: specResult.rawContent?.length || 0,
           url: sdkUrl,
-          message: 'Successfully fetched TPMJS SDK documentation. Use mode "analyze" to parse available tools.',
+          message:
+            'Successfully fetched TPMJS specification. Use mode "analyze" to discover available tools.',
         };
       }
 
       if (mode === 'analyze') {
-        // Fetch and analyze the SDK documentation
-        console.log(`🔍 Analyzing TPMJS SDK documentation...`);
+        console.log('🔍 Analyzing TPMJS registry for available tools...');
 
-        const response = await fetch(sdkUrl, {
-          headers: {
-            'User-Agent': 'OmegaBot/1.0 (TPMJS SDK Integration)',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          },
-          signal: AbortSignal.timeout(15000),
+        const tools: TpmjsToolMetadata[] = [];
+
+        // Search via API
+        const query = searchQuery || category || 'tool';
+        const searchResult = await searchTpmjsRegistry(query, {
+          category,
+          limit: 50,
         });
 
-        if (!response.ok) {
-          return {
-            success: false,
-            error: 'fetch_failed',
-            message: `Failed to fetch SDK documentation: ${response.status} ${response.statusText}`,
-          };
+        if (searchResult.results.length > 0) {
+          tools.push(
+            ...searchResult.results.map(r => ({
+              toolId: r.toolId || `${r.package}::${r.exportName}`,
+              name: r.name,
+              description: r.description,
+              package: r.package,
+              exportName: r.exportName,
+              version: r.version || '',
+              category: r.category,
+              keywords: r.keywords,
+            }))
+          );
         }
 
-        const content = await response.text();
+        // Also try to parse llms.txt for additional info
+        const specResult = await fetchTpmjsSpec();
+        if (specResult.spec && specResult.spec.tools.length > 0) {
+          for (const specTool of specResult.spec.tools) {
+            if (!tools.find(t => t.toolId === specTool.toolId)) {
+              tools.push(specTool);
+            }
+          }
+        }
 
-        // Parse the content to extract tool information
-        // This is a basic parser - will be enhanced based on actual SDK structure
-        const tools = parseToolsFromContent(content);
+        // Get available categories
+        const categoriesResult = await listTpmjsCategories();
 
-        console.log(`✅ Parsed ${tools.length} tools from SDK documentation`);
+        console.log(`✅ Discovered ${tools.length} tools`);
 
         return {
           success: true,
           mode: 'analyze',
+          authenticated: hasApiKey,
           toolCount: tools.length,
-          tools,
+          tools: tools.map(t => ({
+            toolId: t.toolId,
+            name: t.name,
+            description: t.description,
+            package: t.package,
+            exportName: t.exportName,
+            category: t.category,
+            keywords: t.keywords,
+          })),
+          categories: categoriesResult.categories,
+          searchQuery: searchQuery || null,
+          categoryFilter: category || null,
           url: sdkUrl,
-          message: `Successfully analyzed TPMJS SDK. Found ${tools.length} tool(s). Use mode "integrate" to add them to Omega.`,
+          message: `Discovered ${tools.length} tool(s) from TPMJS registry. Use mode "integrate" to generate an integration plan.`,
         };
       }
 
       if (mode === 'integrate') {
-        // Fetch, analyze, and prepare integration
-        console.log(`🔗 Integrating TPMJS SDK tools into Omega...`);
+        console.log('🔗 Generating integration plan for TPMJS tools...');
 
-        const response = await fetch(sdkUrl, {
-          headers: {
-            'User-Agent': 'OmegaBot/1.0 (TPMJS SDK Integration)',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          },
-          signal: AbortSignal.timeout(15000),
+        // Discover tools first
+        const query = searchQuery || category || 'tool';
+        const searchResult = await searchTpmjsRegistry(query, {
+          category,
+          limit: 50,
         });
 
-        if (!response.ok) {
-          return {
-            success: false,
-            error: 'fetch_failed',
-            message: `Failed to fetch SDK documentation: ${response.status} ${response.statusText}`,
-          };
-        }
+        const tools = searchResult.results.map(r => ({
+          toolId: r.toolId || `${r.package}::${r.exportName}`,
+          name: r.name,
+          description: r.description,
+          package: r.package,
+          exportName: r.exportName,
+          category: r.category,
+          keywords: r.keywords,
+          parameters: r.parameters,
+        }));
 
-        const content = await response.text();
-        const tools = parseToolsFromContent(content);
-
-        // Store tool metadata in database for autonomous tool system
         const integrationPlan = generateIntegrationPlan(tools);
 
         console.log(`✅ Generated integration plan for ${tools.length} tools`);
@@ -123,17 +230,22 @@ export const integrateTpmjsSdkTool = tool({
         return {
           success: true,
           mode: 'integrate',
+          authenticated: hasApiKey,
           toolCount: tools.length,
-          tools,
+          tools: tools.map(t => ({
+            toolId: t.toolId,
+            name: t.name,
+            description: t.description,
+            category: t.category,
+          })),
           integrationPlan,
           url: sdkUrl,
-          message: `Integration plan generated for ${tools.length} TPMJS SDK tool(s). Ready for implementation.`,
+          message: `Integration plan generated for ${tools.length} TPMJS tool(s). Review and implement the plan.`,
           nextSteps: [
             'Review the integration plan',
-            'Create tool implementations in packages/agent/src/tools/tpmjs/',
-            'Register tools in toolLoader.ts',
-            'Add metadata to toolRegistry/metadata.ts',
-            'Test tool functionality',
+            'Tools can be executed directly via tpmjsRegistryExecute without integration',
+            'For permanent integration, create tool implementations in packages/agent/src/tools/',
+            'Register tools in toolLoader.ts and add metadata to toolRegistry/metadata.ts',
           ],
         };
       }
@@ -141,13 +253,13 @@ export const integrateTpmjsSdkTool = tool({
       return {
         success: false,
         error: 'invalid_mode',
-        message: `Invalid mode: ${mode}. Use "fetch", "analyze", or "integrate".`,
+        message: `Invalid mode: ${mode}. Use "fetch", "analyze", "integrate", or "validate".`,
       };
-
     } catch (error) {
-      console.error(`❌ Error in TPMJS SDK integration:`, error);
+      console.error('❌ Error in TPMJS SDK integration:', error);
       return {
         success: false,
+        authenticated: hasApiKey,
         error: 'exception',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         url: sdkUrl,
@@ -157,198 +269,64 @@ export const integrateTpmjsSdkTool = tool({
 });
 
 /**
- * Parse tools from SDK documentation content
- * This is a basic implementation that will be enhanced based on actual SDK structure
+ * Generate an integration plan for discovered tools
  */
-function parseToolsFromContent(content: string): Array<{
-  name: string;
-  description: string;
-  category?: string;
-  parameters?: Array<{ name: string; type: string; description: string }>;
-  examples?: string[];
-}> {
-  const tools: Array<{
+function generateIntegrationPlan(
+  tools: Array<{
+    toolId: string;
     name: string;
     description: string;
+    package?: string;
+    exportName?: string;
     category?: string;
+    keywords?: string[];
     parameters?: Array<{ name: string; type: string; description: string }>;
-    examples?: string[];
-  }> = [];
-
-  // Basic parsing logic - will be enhanced based on actual SDK structure
-  // This looks for common patterns in SDK documentation
-
-  // Pattern 1: Look for tool sections in HTML
-  const toolSectionRegex = /<(?:div|section)[^>]*(?:class|id)="tool[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/gi;
-  const toolMatches = content.matchAll(toolSectionRegex);
-
-  for (const match of toolMatches) {
-    const sectionContent = match[1];
-
-    // Extract tool name
-    const nameMatch = sectionContent.match(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/i);
-    const name = nameMatch ? nameMatch[1].replace(/<[^>]+>/g, '').trim() : 'Unknown Tool';
-
-    // Extract description
-    const descMatch = sectionContent.match(/<p[^>]*>(.*?)<\/p>/i);
-    const description = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : 'No description available';
-
-    tools.push({
-      name,
-      description,
-      category: 'tpmjs',
-    });
-  }
-
-  // Pattern 2: Look for JSON-LD structured data
-  const jsonLdRegex = /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi;
-  const jsonMatches = content.matchAll(jsonLdRegex);
-
-  for (const match of jsonMatches) {
-    try {
-      const jsonData = JSON.parse(match[1]);
-      if (jsonData.tools && Array.isArray(jsonData.tools)) {
-        tools.push(...jsonData.tools.map((tool: any) => ({
-          name: tool.name || 'Unknown Tool',
-          description: tool.description || 'No description',
-          category: tool.category || 'tpmjs',
-          parameters: tool.parameters,
-          examples: tool.examples,
-        })));
-      }
-    } catch (e) {
-      // Invalid JSON, skip
-    }
-  }
-
-  // Pattern 3: Look for code blocks with tool definitions
-  const codeBlockRegex = /```(?:json|javascript|typescript)?\s*([\s\S]*?)```/gi;
-  const codeMatches = content.matchAll(codeBlockRegex);
-
-  for (const match of codeMatches) {
-    try {
-      const code = match[1].trim();
-      // Try to parse as JSON
-      if (code.startsWith('{') || code.startsWith('[')) {
-        const jsonData = JSON.parse(code);
-        if (jsonData.name && jsonData.description) {
-          tools.push({
-            name: jsonData.name,
-            description: jsonData.description,
-            category: jsonData.category || 'tpmjs',
-            parameters: jsonData.parameters,
-            examples: jsonData.examples,
-          });
-        }
-      }
-    } catch (e) {
-      // Not valid JSON, skip
-    }
-  }
-
-  // If no tools found, extract the full content for manual review
-  if (tools.length === 0) {
-    // Return the raw content summary
-    const summary = content
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 2000);
-
-    tools.push({
-      name: 'TPMJS SDK Content',
-      description: `Raw content from SDK (requires manual parsing): ${summary}${summary.length >= 2000 ? '...' : ''}`,
-      category: 'tpmjs-raw',
-    });
-  }
-
-  return tools;
-}
-
-/**
- * Generate integration plan for parsed tools
- */
-function generateIntegrationPlan(tools: Array<{
-  name: string;
-  description: string;
-  category?: string;
-  parameters?: Array<{ name: string; type: string; description: string }>;
-  examples?: string[];
-}>) {
+  }>
+) {
   return {
     steps: [
       {
         step: 1,
-        action: 'Create tool directory',
-        path: 'packages/agent/src/tools/tpmjs/',
-        description: 'Create a dedicated directory for TPMJS SDK tools',
+        action: 'Direct execution (no integration needed)',
+        description:
+          'All discovered tools can be executed immediately via tpmjsRegistryExecute without any code changes',
+        example: {
+          tool: 'tpmjsRegistryExecute',
+          args: {
+            toolId: tools[0]?.toolId || 'package::exportName',
+            params: {},
+          },
+        },
       },
       {
         step: 2,
-        action: 'Implement tool files',
-        files: tools.map(tool => ({
-          name: tool.name,
-          path: `packages/agent/src/tools/tpmjs/${toCamelCase(tool.name)}.ts`,
-          description: tool.description,
-          parameters: tool.parameters || [],
+        action: 'Optional: Register as native tools',
+        description: `Create ${tools.length} tool wrapper files for direct access without tpmjsRegistryExecute`,
+        files: tools.slice(0, 10).map(t => ({
+          name: t.name,
+          toolId: t.toolId,
+          path: `packages/agent/src/tools/tpmjs/${toCamelCase(t.name)}.ts`,
+          description: t.description,
         })),
-        description: `Create ${tools.length} tool implementation files`,
       },
       {
         step: 3,
-        action: 'Register in toolLoader.ts',
-        path: 'packages/agent/src/toolLoader.ts',
-        description: 'Add tool entries to TOOL_IMPORT_MAP',
-        entries: tools.map(tool => ({
-          id: toCamelCase(tool.name),
-          path: `./tools/tpmjs/${toCamelCase(tool.name)}.js`,
-          exportName: `${toCamelCase(tool.name)}Tool`,
+        action: 'Optional: Add to toolLoader.ts',
+        description: 'Register tool entries in TOOL_IMPORT_MAP for the tool loader',
+        entries: tools.slice(0, 10).map(t => ({
+          id: toCamelCase(t.name),
+          path: `./tools/tpmjs/${toCamelCase(t.name)}.js`,
+          exportName: `${toCamelCase(t.name)}Tool`,
         })),
       },
       {
         step: 4,
-        action: 'Add metadata to registry',
+        action: 'Optional: Add metadata to registry',
+        description: 'Add tool metadata for BM25 search routing',
         path: 'packages/agent/src/toolRegistry/metadata.ts',
-        description: 'Add tool metadata for BM25 search',
-        entries: tools.map(tool => ({
-          id: toCamelCase(tool.name),
-          name: tool.name,
-          description: tool.description,
-          category: tool.category || 'tpmjs',
-          keywords: extractKeywords(tool.description),
-          tags: ['tpmjs', 'sdk', tool.category || 'specialized'],
-          examples: tool.examples || [],
-          isCore: false,
-        })),
-      },
-      {
-        step: 5,
-        action: 'Create database schema',
-        path: 'packages/database/scripts/create-tpmjs-integration-table.sh',
-        description: 'Create table to track TPMJS SDK tool usage and metadata',
-        sql: `
-CREATE TABLE IF NOT EXISTS tpmjs_sdk_tools (
-  id TEXT PRIMARY KEY,
-  tool_name TEXT NOT NULL,
-  tool_description TEXT,
-  sdk_version TEXT,
-  parameters JSONB,
-  usage_count INTEGER DEFAULT 0,
-  last_used_at TIMESTAMPTZ,
-  is_enabled BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_tpmjs_sdk_tools_enabled ON tpmjs_sdk_tools(is_enabled);
-CREATE INDEX IF NOT EXISTS idx_tpmjs_sdk_tools_usage ON tpmjs_sdk_tools(usage_count DESC);
-        `.trim(),
       },
     ],
-    summary: `Integration plan for ${tools.length} TPMJS SDK tools`,
-    estimatedFiles: tools.length + 3, // tool files + loader + metadata + migration
+    summary: `Integration plan for ${tools.length} TPMJS tools. Step 1 works immediately; steps 2-4 are optional for tighter integration.`,
   };
 }
 
@@ -357,20 +335,6 @@ CREATE INDEX IF NOT EXISTS idx_tpmjs_sdk_tools_usage ON tpmjs_sdk_tools(usage_co
  */
 function toCamelCase(str: string): string {
   return str
-    .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
+    .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr: string) => chr.toUpperCase())
     .replace(/^[A-Z]/, chr => chr.toLowerCase());
-}
-
-/**
- * Extract keywords from description
- */
-function extractKeywords(description: string): string[] {
-  const commonWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might', 'can', 'this', 'that', 'these', 'those']);
-
-  return description
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(word => word.length > 3 && !commonWords.has(word))
-    .slice(0, 10);
 }
