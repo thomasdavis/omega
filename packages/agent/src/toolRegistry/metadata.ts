@@ -2146,6 +2146,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'savageWitEnhancer',
+    name: 'Savage Wit Enhancer',
+    description: 'Rewrite text with savage wit, sarcasm, and biting humor',
+    keywords: ['savage', 'wit', 'sarcasm', 'humor', 'roast', 'jimmy carr', 'enhance', 'rewrite', 'funny', 'cutting', 'biting'],
+    tags: ['specialized', 'humor', 'fun', 'personality'],
+    examples: [
+      'make this more savage',
+      'add sarcasm to this',
+      'rewrite with jimmy carr style',
+      'roast this text',
+      'make my response more cutting',
+      'enhance with savage wit'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'runBatchAnalysis',
     name: 'Run Batch Analysis',
     description: 'Run batch analysis on data',
