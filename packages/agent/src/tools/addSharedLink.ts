@@ -2,9 +2,8 @@
  * Add Shared Link Tool - Automatically saves Discord links with AI-generated topic tags
  */
 
-import { tool } from 'ai';
+import { tool, generateText, Output } from 'ai';
 import { z } from 'zod';
-import { generateObject } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { getPostgresPool } from '@repo/database';
 import { randomUUID } from 'crypto';
@@ -30,14 +29,14 @@ function extractUrls(text: string): string[] {
  */
 async function generateLinkMetadata(url: string, messageContent: string): Promise<LinkMetadata> {
   try {
-    const result = await generateObject({
+    const result = await generateText({
       model: openai('gpt-4o-mini'),
-      schema: z.object({
+      output: Output.object({ schema: z.object({
         tags: z.array(z.string()).min(1).max(10).describe('Relevant topic tags (e.g., "AI", "programming", "tutorial")'),
         title: z.string().optional().describe('Short title for the link'),
         description: z.string().optional().describe('Brief description of the content'),
         category: z.enum(['article', 'video', 'documentation', 'tool', 'tutorial', 'research', 'social', 'other']).describe('Content category'),
-      }),
+      }) }),
       prompt: `Analyze this URL and the message context to generate relevant metadata:
 
 URL: ${url}
@@ -52,7 +51,7 @@ Generate:
 Be specific and use lowercase for tags (e.g., "typescript", "react", "machine-learning").`,
     });
 
-    return result.object;
+    return result.output!;
   } catch (error) {
     console.error('❌ Failed to generate link metadata:', error);
     // Fallback: basic tags from URL domain
