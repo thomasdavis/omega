@@ -22,6 +22,8 @@ const nextConfig = {
         'mongodb': 'commonjs mongodb',
         'pg': 'commonjs pg',
         'aws4': 'commonjs aws4', // MongoDB optional dependency
+        'discord.js': 'commonjs discord.js',
+        'zlib-sync': 'commonjs zlib-sync',
       });
 
       // Completely exclude Paper.js from server-side bundle
