@@ -242,6 +242,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
   nuancedJobSeekerDetectorWithWittyResponse: { path: './tools/nuancedJobSeekerDetectorWithWittyResponse.js', exportName: 'nuancedJobSeekerDetectorWithWittyResponseTool' },
   jobSeekerRoastAndShoo: { path: './tools/jobSeekerRoastAndShoo.js', exportName: 'jobSeekerRoastAndShooTool' },
+
+  // Humor and personality tools
+  savageWitEnhancer: { path: './tools/savageWitEnhancer.js', exportName: 'savageWitEnhancerTool' },
 };
 
 /**
