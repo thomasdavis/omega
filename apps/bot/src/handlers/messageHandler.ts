@@ -24,6 +24,7 @@ import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
 import { sendChunkedMessage } from '../utils/messageChunker.js';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
+import { captureError } from '../services/errorMonitoringService.js';
 import { analyzeSentiment } from '@repo/shared';
 import { processMessageForBookmarks } from '../utils/valTownBookmarks.js';
 
@@ -339,6 +340,19 @@ export async function handleMessage(message: Message): Promise<void> {
     }
 
     return; // Exit early, don't process message further
+  }
+
+  // TEST TRIGGER: "kickflip" in #omega throws a deliberate error to test the
+  // error → GitHub issue → Claude fix → Discord notification pipeline.
+  // Remove this block once the pipeline is verified end-to-end.
+  if (lowerContent.includes('kickflip') && !message.channel.isDMBased()) {
+    const channelName = (message.channel as any).name;
+    if (channelName === 'omega') {
+      throw new Error(
+        'Test error triggered by kickflip command. Please fix and remove this test error. ' +
+        '(This was an intentional throw to verify the self-healing pipeline.)'
+      );
+    }
   }
 
   // Fetch recent message history FIRST (for shouldRespond decision context)
@@ -1148,6 +1162,16 @@ export async function handleMessage(message: Message): Promise<void> {
       channelName: message.channel.isDMBased() ? 'DM' : (message.channel as any).name,
       messageContent: message.content,
     });
+
+    // Report to GitHub via error monitoring (creates/updates issue with @claude)
+    captureError(error instanceof Error ? error : new Error(String(error)), {
+      railwayService: 'omega-bot',
+      logContext: [
+        `User: ${message.author.username}`,
+        `Channel: ${message.channel.isDMBased() ? 'DM' : (message.channel as any).name}`,
+        `Message: ${message.content.substring(0, 200)}`,
+      ],
+    }).catch((captureErr) => console.error('Failed to capture error:', captureErr));
 
     // Generate a user-friendly error message
     const userErrorMessage = generateUserErrorMessage(error, {
