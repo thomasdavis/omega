@@ -111,6 +111,42 @@ jobs:
           echo "::notice::Auto-merged PR #$PR_NUMBER (closes #${{ steps.check_issue.outputs.issue_number }})"
           echo "::endgroup::"
 
+      - name: Notify Discord of fix
+        if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
+        continue-on-error: true
+        env:
+          DISCORD_DEPLOY_WEBHOOK_URL: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_DEPLOY_WEBHOOK_URL" ]; then
+            echo "⏭️ DISCORD_DEPLOY_WEBHOOK_URL not set — skipping notification"
+            exit 0
+          fi
+
+          PR_NUMBER="${{ steps.pr.outputs.number }}"
+          PR_TITLE="${{ steps.pr.outputs.title }}"
+          ISSUE_NUMBER="${{ steps.check_issue.outputs.issue_number }}"
+          PR_URL="https://github.com/${{ github.repository }}/pull/${PR_NUMBER}"
+          ISSUE_URL="https://github.com/${{ github.repository }}/issues/${ISSUE_NUMBER}"
+
+          curl -s -X POST "$DISCORD_DEPLOY_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "\u2705 Fix merged: ${PR_TITLE}",
+              "url": "${PR_URL}",
+              "color": 3066993,
+              "fields": [
+                { "name": "Pull Request", "value": "[#${PR_NUMBER}](${PR_URL})", "inline": true },
+                { "name": "Issue", "value": "[#${ISSUE_NUMBER}](${ISSUE_URL})", "inline": true }
+              ],
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            }]
+          }
+          EOF
+          )"
+          echo "✅ Discord notification sent"
+
       - name: Checkout repository
         if: steps.check_claude.outputs.is_claude == 'true' && steps.check_issue.outputs.linked == 'true'
         uses: actions/checkout@v4
