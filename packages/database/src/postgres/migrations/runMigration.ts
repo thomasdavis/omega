@@ -1,9 +1,13 @@
 /**
  * PostgreSQL Migration Runner
- * Executes SQL migration files against the Railway PostgreSQL database
+ * Auto-discovers and executes all *.sql migration files in sorted order.
+ *
+ * To add a new migration, just create a file like 003_description.sql in this
+ * directory. It will run automatically on the next server restart. Use
+ * IF NOT EXISTS / IF EXISTS for idempotency since all migrations run every boot.
  */
 
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -62,23 +66,31 @@ export async function runMigration(migrationFile: string): Promise<void> {
 }
 
 /**
+ * Discover all .sql migration files in this directory, sorted by name.
+ * Convention: NNN_description.sql (e.g., 001_initial_schema.sql)
+ */
+function discoverMigrations(): string[] {
+  const files = readdirSync(__dirname)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
+  return files;
+}
+
+/**
  * Initialize PostgreSQL schema
- * Runs the initial schema migration
+ * Auto-discovers and runs all SQL migrations in sorted order.
  */
 export async function initializePostgresSchema(): Promise<void> {
   console.log('🚀 Initializing PostgreSQL schema...');
 
+  const migrations = discoverMigrations();
+  console.log(`   Found ${migrations.length} migration(s): ${migrations.join(', ')}`);
+
   try {
-    await runMigration('001_initial_schema.sql');
-    await runMigration('002_conversations.sql');
-    console.log('✅ PostgreSQL schema initialized successfully');
-    console.log('   - messages table with GIN full-text search');
-    console.log('   - queries table with execution tracking');
-    console.log('   - documents table with collaborative editing');
-    console.log('   - document_collaborators table for access control');
-    console.log('   - user_profiles table with PhD-level profiling');
-    console.log('   - user_analysis_history table for temporal tracking');
-    console.log('   - conversations + conversation_messages tables');
+    for (const migration of migrations) {
+      await runMigration(migration);
+    }
+    console.log(`✅ PostgreSQL schema initialized (${migrations.length} migrations)`);
   } catch (error) {
     console.error('❌ Failed to initialize PostgreSQL schema');
     throw error;
