@@ -333,7 +333,7 @@ export default function ToolsPage() {
                           {tool.examples.map((example, idx) => (
                             <li key={idx} className="text-sm text-zinc-400 font-mono">
                               <span className="text-zinc-600 mr-2">•</span>
-                              "{example}"
+                              &quot;{example}&quot;
                             </li>
                           ))}
                         </ul>
