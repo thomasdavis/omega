@@ -232,10 +232,11 @@ export async function executeTpmjsTool(
   });
 
   if (apiResult.data && !apiResult.error) {
+    const apiSuccess = apiResult.data.success !== false;
     return {
-      success: apiResult.data.success !== false,
+      success: apiSuccess,
       result: apiResult.data.result,
-      error: apiResult.data.error ?? undefined,
+      error: apiResult.data.error ?? (apiSuccess ? undefined : `TPMJS API returned failure for "${toolId}" (no error details provided)`),
       executionTimeMs: Date.now() - startTime,
       toolId,
     };
@@ -280,6 +281,16 @@ export async function executeTpmjsTool(
       signal: AbortSignal.timeout(60000),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return {
+        success: false,
+        error: `TPMJS executor returned HTTP ${response.status} for "${toolId}": ${errorText}`,
+        executionTimeMs: Date.now() - startTime,
+        toolId,
+      };
+    }
+
     const result = await response.json() as {
       success?: boolean;
       result?: unknown;
@@ -287,17 +298,19 @@ export async function executeTpmjsTool(
       error?: string;
     };
 
+    const executorSuccess = result.success !== false;
     return {
-      success: result.success !== false,
+      success: executorSuccess,
       result: result.result || result.output,
-      error: result.error,
+      error: result.error ?? (executorSuccess ? undefined : `TPMJS executor returned failure for "${toolId}" (no error details provided)`),
       executionTimeMs: Date.now() - startTime,
       toolId,
     };
   } catch (error) {
+    const executorError = `Executor request failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
     return {
       success: false,
-      error: apiResult.error || `Executor request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      error: apiResult.error ? `API: ${apiResult.error}; Executor: ${executorError}` : executorError,
       executionTimeMs: Date.now() - startTime,
       toolId,
     };

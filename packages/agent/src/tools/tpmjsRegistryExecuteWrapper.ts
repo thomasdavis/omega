@@ -134,7 +134,10 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
         };
       } catch (fallbackError) {
         // Both API and npm package failed
+        const fallbackErrorMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
         console.error('❌ Both API and npm package execution failed');
+        console.error(`   API error: ${apiResult.error}`);
+        console.error(`   Fallback error: ${fallbackErrorMsg}`);
 
         // Provide helpful error with tool metadata if available
         const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
@@ -142,12 +145,18 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
           error: null,
         }));
 
+        // Build a descriptive error message instead of a generic status code
+        const errorDetails = apiResult.error || fallbackErrorMsg || 'Unknown execution error';
+        const descriptiveError = `Tool "${toolId}" execution failed: ${errorDetails}`;
+
         return {
           success: false,
           authenticated: hasApiKey,
-          error: 'execution_failed',
-          message: apiResult.error || 'Tool execution failed via both API and npm package',
+          error: descriptiveError,
+          errorCode: 'execution_failed',
           toolId,
+          apiError: apiResult.error || undefined,
+          fallbackError: fallbackErrorMsg || undefined,
           toolMetadata: metadataResult.metadata
             ? {
                 name: metadataResult.metadata.name,
@@ -165,11 +174,12 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
       }
     } catch (error) {
       console.error('❌ TPMJS Registry Execute error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution';
       return {
         success: false,
         authenticated: hasApiKey,
-        error: 'execution_failed',
-        message: error instanceof Error ? error.message : 'Unknown error during TPMJS tool execution',
+        error: `Tool "${toolId}" execution failed: ${errorMsg}`,
+        errorCode: 'execution_failed',
         toolId,
       };
     }
