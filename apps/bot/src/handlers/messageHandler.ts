@@ -471,7 +471,10 @@ export async function handleMessage(message: Message): Promise<void> {
     });
   } catch (dbError) {
     console.error('⚠️  Failed to persist message to database:', dbError);
-    // Continue execution even if database write fails
+    captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+      railwayService: 'omega-bot',
+      logContext: ['Operation: persist message to database', `User: ${message.author.username}`],
+    }).catch(() => {});
   }
 
   // Extract and send links to Val Town for bookmark tracking
@@ -505,7 +508,10 @@ export async function handleMessage(message: Message): Promise<void> {
     });
   } catch (conversationError) {
     console.error('⚠️  Failed to track conversation:', conversationError);
-    // Continue execution even if conversation tracking fails
+    captureError(conversationError instanceof Error ? conversationError : new Error(String(conversationError)), {
+      railwayService: 'omega-bot',
+      logContext: ['Operation: track conversation', `User: ${message.author.username}`],
+    }).catch(() => {});
   }
 
   // Monitor message for links and auto-save to shared collection
@@ -1118,7 +1124,10 @@ export async function handleMessage(message: Message): Promise<void> {
         });
       } catch (dbError) {
         console.error('⚠️  Failed to persist AI response to database:', dbError);
-        // Continue execution even if database write fails
+        captureError(dbError instanceof Error ? dbError : new Error(String(dbError)), {
+          railwayService: 'omega-bot',
+          logContext: ['Operation: persist AI response to database', `User: ${message.author.username}`],
+        }).catch(() => {});
       }
 
       // Track bot's response in conversation
@@ -1138,7 +1147,10 @@ export async function handleMessage(message: Message): Promise<void> {
         });
       } catch (conversationError) {
         console.error('⚠️  Failed to track bot response in conversation:', conversationError);
-        // Continue execution even if conversation tracking fails
+        captureError(conversationError instanceof Error ? conversationError : new Error(String(conversationError)), {
+          railwayService: 'omega-bot',
+          logContext: ['Operation: track bot response in conversation', `User: ${message.author.username}`],
+        }).catch(() => {});
       }
     }
   } catch (error) {
