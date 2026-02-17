@@ -2915,7 +2915,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
 export const CORE_TOOLS: string[] = [
   'search',
   'calculator',
-  'unsandbox',
   'webFetch',
   'fileUpload',
   'whoami',
