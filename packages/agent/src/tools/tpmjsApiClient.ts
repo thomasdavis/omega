@@ -232,10 +232,11 @@ export async function executeTpmjsTool(
   });
 
   if (apiResult.data && !apiResult.error) {
+    const isSuccess = apiResult.data.success !== false;
     return {
-      success: apiResult.data.success !== false,
+      success: isSuccess,
       result: apiResult.data.result,
-      error: apiResult.data.error ?? undefined,
+      error: isSuccess ? undefined : (apiResult.data.error || `TPMJS API returned success=false for ${toolId} (no error detail provided)`),
       executionTimeMs: Date.now() - startTime,
       toolId,
     };
@@ -280,6 +281,16 @@ export async function executeTpmjsTool(
       signal: AbortSignal.timeout(60000),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return {
+        success: false,
+        error: `Executor returned HTTP ${response.status}: ${errorText}`,
+        executionTimeMs: Date.now() - startTime,
+        toolId,
+      };
+    }
+
     const result = await response.json() as {
       success?: boolean;
       result?: unknown;
@@ -287,17 +298,21 @@ export async function executeTpmjsTool(
       error?: string;
     };
 
+    const isSuccess = result.success !== false;
     return {
-      success: result.success !== false,
+      success: isSuccess,
       result: result.result || result.output,
-      error: result.error,
+      error: isSuccess ? undefined : (result.error || `Executor returned success=false for ${toolId}`),
       executionTimeMs: Date.now() - startTime,
       toolId,
     };
   } catch (error) {
+    const executorError = error instanceof Error ? error.message : 'Unknown error';
     return {
       success: false,
-      error: apiResult.error || `Executor request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      error: apiResult.error
+        ? `API: ${apiResult.error}; Executor: ${executorError}`
+        : `Executor request failed: ${executorError}`,
       executionTimeMs: Date.now() - startTime,
       toolId,
     };

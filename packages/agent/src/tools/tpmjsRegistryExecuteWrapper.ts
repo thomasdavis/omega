@@ -108,8 +108,12 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
         };
       }
 
+      // Log the API error detail before trying fallback
+      const apiErrorDetail = apiResult.error || 'unknown API error (no error message returned)';
+      console.log(`⚠️  API execution failed: ${apiErrorDetail}. Trying npm package fallback...`);
+
       // If API execution failed, try npm package fallback
-      console.log('⚠️  API execution failed, trying npm package fallback...');
+      let fallbackError: Error | undefined;
       try {
         const { registryExecuteTool } = await import('@tpmjs/registry-execute');
         const executeFunc = registryExecuteTool.execute as (args: {
@@ -132,37 +136,48 @@ export const tpmjsRegistryExecuteWrappedTool = tool({
           source: 'npm-package-fallback',
           result: fallbackResult,
         };
-      } catch (fallbackError) {
-        // Both API and npm package failed
-        console.error('❌ Both API and npm package execution failed');
-
-        // Provide helpful error with tool metadata if available
-        const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
-          metadata: null,
-          error: null,
-        }));
-
-        return {
-          success: false,
-          authenticated: hasApiKey,
-          error: 'execution_failed',
-          message: apiResult.error || 'Tool execution failed via both API and npm package',
-          toolId,
-          toolMetadata: metadataResult.metadata
-            ? {
-                name: metadataResult.metadata.name,
-                description: metadataResult.metadata.description,
-                requiredEnvVars: metadataResult.metadata.envVars,
-              }
-            : undefined,
-          suggestions: [
-            'Verify the toolId is correct (format: "package::exportName")',
-            'Check that required parameters are provided',
-            !hasApiKey ? 'Configure TPMJS_API_KEY for authenticated access' : null,
-            'Use tpmjsRegistrySearch to find the correct toolId',
-          ].filter(Boolean),
-        };
+      } catch (err) {
+        fallbackError = err instanceof Error ? err : new Error(String(err));
+        console.error(`❌ npm package fallback also failed: ${fallbackError.message}`);
       }
+
+      // Both API and npm package failed — build detailed error response
+      console.error('❌ Both API and npm package execution failed');
+
+      // Provide helpful error with tool metadata if available
+      const metadataResult = await getTpmjsToolMetadata(toolId).catch(() => ({
+        metadata: null,
+        error: null,
+      }));
+
+      // Build a detailed error message combining both failure reasons
+      const errorParts: string[] = [];
+      errorParts.push(`API: ${apiErrorDetail}`);
+      if (fallbackError) {
+        errorParts.push(`Fallback: ${fallbackError.message}`);
+      }
+      const combinedMessage = `Tool execution failed. ${errorParts.join('; ')}`;
+
+      return {
+        success: false,
+        authenticated: hasApiKey,
+        error: 'execution_failed',
+        message: combinedMessage,
+        toolId,
+        toolMetadata: metadataResult.metadata
+          ? {
+              name: metadataResult.metadata.name,
+              description: metadataResult.metadata.description,
+              requiredEnvVars: metadataResult.metadata.envVars,
+            }
+          : undefined,
+        suggestions: [
+          'Verify the toolId is correct (format: "package::exportName")',
+          'Check that required parameters are provided',
+          !hasApiKey ? 'Configure TPMJS_API_KEY for authenticated access' : null,
+          'Use tpmjsRegistrySearch to find the correct toolId',
+        ].filter(Boolean),
+      };
     } catch (error) {
       console.error('❌ TPMJS Registry Execute error:', error);
       return {
