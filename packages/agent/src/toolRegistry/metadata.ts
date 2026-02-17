@@ -2146,6 +2146,23 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'savageWitEnhancer',
+    name: 'Savage Wit Enhancer',
+    description: 'Rewrite text with savage wit, sarcasm, and biting humor',
+    keywords: ['savage', 'wit', 'sarcasm', 'roast', 'jimmy carr', 'humor', 'rewrite', 'enhance', 'cutting', 'vulgar'],
+    tags: ['specialized', 'humor', 'fun'],
+    examples: [
+      'make this more savage',
+      'rewrite with sarcasm',
+      'add savage wit',
+      'jimmy carr style',
+      'roast this text',
+      'make it more cutting'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'runBatchAnalysis',
     name: 'Run Batch Analysis',
     description: 'Run batch analysis on data',
@@ -2482,15 +2499,17 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'integrateTpmjsSdk',
     name: 'Integrate TPMJS SDK',
-    description: 'Fetch and integrate tools from the TPMJS SDK (https://tpmjs.com/sdk). This tool reads the SDK documentation, parses available tools, and prepares them for integration into Omega\'s tool system. Supports multiple modes: fetch, analyze, and integrate.',
-    keywords: ['tpmjs', 'sdk', 'integration', 'fetch', 'tools', 'external', 'api', 'plugin', 'extend', 'import'],
+    description: 'Fetch and integrate tools from the TPMJS SDK (https://tpmjs.com). Reads the llms.txt specification, discovers available tools via the TPMJS API with API key authentication, and prepares them for integration. Supports modes: fetch (get spec), analyze (discover tools), integrate (generate plan), validate (check API key).',
+    keywords: ['tpmjs', 'sdk', 'integration', 'fetch', 'tools', 'external', 'api', 'plugin', 'extend', 'import', 'llms.txt', 'validate'],
     tags: ['development', 'integration', 'sdk', 'tools', 'admin'],
     examples: [
       'integrate tpmjs sdk',
       'fetch tpmjs tools',
       'analyze tpmjs sdk',
       'import tpmjs sdk',
-      'add tpmjs tools to omega'
+      'add tpmjs tools to omega',
+      'validate tpmjs api key',
+      'check tpmjs authentication'
     ],
     isCore: false,
     category: 'development'
@@ -2500,8 +2519,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'tpmjsRegistrySearch',
     name: 'TPMJS Registry Search',
-    description: 'Search the TPMJS registry to find tools for any task. Returns metadata including the toolId needed for execution with tpmjsRegistryExecute. Use this to discover external tools that can extend your capabilities.',
-    keywords: ['tpmjs', 'registry', 'search', 'find', 'tools', 'discover', 'external', 'plugin', 'capability', 'extend', 'sdk'],
+    description: 'Search the TPMJS registry to find tools for any task. Uses TPMJS_API_KEY for authenticated access to the full registry. Returns metadata including the toolId needed for execution with tpmjsRegistryExecute. Supports category filtering and keyword search.',
+    keywords: ['tpmjs', 'registry', 'search', 'find', 'tools', 'discover', 'external', 'plugin', 'capability', 'extend', 'sdk', 'api key', 'authenticated'],
     tags: ['core', 'registry', 'search', 'tools', 'discovery'],
     examples: [
       'search for image processing tools',
@@ -2510,7 +2529,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'search tpmjs registry',
       'find tools for automation',
       'what tools can do web scraping',
-      'search for api integration tools'
+      'search for api integration tools',
+      'find tpmjs tools for data analysis'
     ],
     isCore: true,
     category: 'research'
@@ -2519,8 +2539,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'tpmjsRegistryExecute',
     name: 'TPMJS Registry Execute',
-    description: 'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. Use tpmjsRegistrySearch first to find tools and get their toolIds.',
-    keywords: ['tpmjs', 'registry', 'execute', 'run', 'tool', 'external', 'sandbox', 'invoke', 'call', 'sdk'],
+    description: 'Execute any tool from the TPMJS registry by its toolId. Uses TPMJS_API_KEY for authenticated execution. Tools run in a secure sandbox - no local installation required. API keys (FIRECRAWL_API_KEY, OPENAI_API_KEY, etc.) are automatically injected. Use tpmjsRegistrySearch first to find tools and get their toolIds.',
+    keywords: ['tpmjs', 'registry', 'execute', 'run', 'tool', 'external', 'sandbox', 'invoke', 'call', 'sdk', 'api key', 'authenticated'],
     tags: ['core', 'registry', 'execution', 'tools', 'sandbox'],
     examples: [
       'execute tpmjs tool',
@@ -2528,7 +2548,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'invoke registry tool',
       'execute package::toolName',
       'run tpmjs registry tool',
-      'use external tool'
+      'use external tool',
+      'run tpmjs tool with api key'
     ],
     isCore: true,
     category: 'development'
@@ -2770,6 +2791,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'keywordMentionResponder',
+    name: 'Keyword Mention Responder',
+    description: 'Detect mentions of openclaw, clawbot, or moltbook in Discord conversations and respond with predefined, principle-based witty replies. Scans recent messages for keyword mentions with case-insensitive word boundary matching. Supports rate limiting per user to avoid spam and filtering to specific keywords.',
+    keywords: ['discord', 'keyword', 'mention', 'openclaw', 'clawbot', 'moltbook', 'respond', 'detect', 'monitor', 'witty', 'reply', 'trigger', 'automated'],
+    tags: ['discord', 'community', 'automation', 'keywords', 'moderation'],
+    examples: [
+      'respond when someone mentions openclaw',
+      'reply automatically to clawbot mentions',
+      'trigger witty response for moltbook keyword',
+      'monitor channel for openclaw mentions',
+      'detect keyword mentions in general',
+      'auto-respond to clawbot or moltbook',
+      'scan for openclaw clawbot moltbook keywords',
+      'keyword mention responder for discord'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
@@ -2865,6 +2905,7 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'content'
   },
+
 ];
 
 /**
