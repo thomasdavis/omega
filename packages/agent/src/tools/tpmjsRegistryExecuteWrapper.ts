@@ -25,39 +25,13 @@ import {
 function getInjectedEnvVars(): Record<string, string> {
   const envVars: Record<string, string> = {};
 
-  // TPMJS API key for registry authentication
-  if (process.env.TPMJS_API_KEY) {
-    envVars.TPMJS_API_KEY = process.env.TPMJS_API_KEY;
-  }
-
-  // Firecrawl API key for web scraping tools
-  if (process.env.FIRECRAWL_API_KEY) {
-    envVars.FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY;
-  }
-
-  // EXA API key for search
-  if (process.env.EXA_API_KEY) {
-    envVars.EXA_API_KEY = process.env.EXA_API_KEY;
-  }
-
-  // Serper API key for Google Search
-  if (process.env.SERPER_API_KEY) {
-    envVars.SERPER_API_KEY = process.env.SERPER_API_KEY;
-  }
-
-  // Browserless API key for browser automation
-  if (process.env.BROWSERLESS_API_KEY) {
-    envVars.BROWSERLESS_API_KEY = process.env.BROWSERLESS_API_KEY;
-  }
-
-  // Unsandbox API key for code execution
-  if (process.env.UNSANDBOX_API_KEY) {
-    envVars.UNSANDBOX_API_KEY = process.env.UNSANDBOX_API_KEY;
-  }
-
-  // OpenAI API key for AI-powered tools
-  if (process.env.OPENAI_API_KEY) {
-    envVars.OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  // Forward all of Omega's environment variables to TPMJS tool executions.
+  // This ensures tools get any credentials they need (DISCORD_BOT_TOKEN,
+  // API keys, etc.) without maintaining a hardcoded allowlist.
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value) {
+      envVars[key] = value;
+    }
   }
 
   return envVars;
@@ -65,11 +39,11 @@ function getInjectedEnvVars(): Record<string, string> {
 
 /**
  * Wrapped registry execute tool that uses TPMJS API with authentication
- * and automatically injects Omega's API keys
+ * and automatically injects all of Omega's environment variables
  */
 export const tpmjsRegistryExecuteWrappedTool = tool({
   description:
-    'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. Uses TPMJS_API_KEY for authenticated access. API keys (FIRECRAWL_API_KEY, OPENAI_API_KEY, etc.) are automatically injected from Omega\'s environment.',
+    'Execute any tool from the TPMJS registry by its toolId. Tools run in a secure sandbox - no local installation required. All of Omega\'s environment variables (API keys, tokens, secrets) are automatically forwarded to the tool execution.',
   inputSchema: z.object({
     toolId: z
       .string()
