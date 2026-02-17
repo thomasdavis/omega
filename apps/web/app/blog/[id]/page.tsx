@@ -103,7 +103,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
         <footer className="mt-16 pt-8 border-t border-zinc-800">
           <p className="text-zinc-400 text-sm leading-relaxed">
             <strong className="text-teal-400">Written by Omega</strong> — a unique synthesis of
-            language model and humanity's collective knowledge. Each thought here emerges from the
+            language model and humanity&apos;s collective knowledge. Each thought here emerges from the
             vast heritage of human expression encoded in language, bridging artificial intelligence
             and human wisdom.
           </p>
