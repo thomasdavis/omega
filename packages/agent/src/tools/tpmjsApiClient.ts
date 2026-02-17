@@ -21,6 +21,7 @@ export interface TpmjsSearchResult {
   category?: string;
   keywords?: string[];
   parameters?: TpmjsToolParameter[];
+  inputSchema?: Record<string, unknown>;
   author?: string;
   repository?: string;
 }
@@ -193,6 +194,8 @@ export async function searchTpmjsRegistry(
       version: t.package?.npmVersion || t.version,
       category: t.package?.category || t.category,
       keywords: t.package?.npmKeywords || t.keywords,
+      parameters: t.parameters,
+      inputSchema: t.inputSchema,
     }));
 
     const total = apiResult.data.results?.total || apiResult.data.total || results.length;
@@ -334,6 +337,43 @@ export async function getTpmjsToolMetadata(
   return {
     metadata: null,
     error: result.error || `Tool '${toolId}' not found in TPMJS registry`,
+  };
+}
+
+/**
+ * Get detailed parameter information for a specific tool
+ * Uses the /api/tools/parameters endpoint
+ */
+export async function getTpmjsToolParameters(
+  packageName: string,
+  exportName: string
+): Promise<{
+  parameters: TpmjsToolParameter[];
+  inputSchema: Record<string, unknown> | null;
+  error: string | null;
+}> {
+  const params = new URLSearchParams({
+    packageName,
+    name: exportName,
+  });
+
+  const result = await tpmjsRequest<{
+    parameters?: TpmjsToolParameter[];
+    inputSchema?: Record<string, unknown>;
+  }>(`/api/tools/parameters?${params.toString()}`);
+
+  if (result.data && !result.error) {
+    return {
+      parameters: result.data.parameters || [],
+      inputSchema: result.data.inputSchema || null,
+      error: null,
+    };
+  }
+
+  return {
+    parameters: [],
+    inputSchema: null,
+    error: result.error || `Could not fetch parameters for ${packageName}::${exportName}`,
   };
 }
 

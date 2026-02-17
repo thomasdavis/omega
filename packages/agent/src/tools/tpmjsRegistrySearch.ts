@@ -81,6 +81,8 @@ export const tpmjsRegistrySearchTool = tool({
             version: r.version,
             category: r.category,
             keywords: r.keywords,
+            parameters: r.parameters,
+            inputSchema: r.inputSchema,
           })),
           usage: 'Use tpmjsRegistryExecute with the toolId to run any of these tools',
         };

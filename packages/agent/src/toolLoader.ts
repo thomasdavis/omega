@@ -236,6 +236,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   // Execute uses TPMJS API with auth and auto-injects Omega's API keys (TPMJS_API_KEY, FIRECRAWL_API_KEY, etc.)
   tpmjsRegistrySearch: { path: './tools/tpmjsRegistrySearch.js', exportName: 'tpmjsRegistrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
+  tpmjsRegistryDescribe: { path: './tools/tpmjsRegistryDescribe.js', exportName: 'tpmjsRegistryDescribeTool' },
 
   // Discord Tools
   setDefaultGuild: { path: './tools/setDefaultGuild.js', exportName: 'setDefaultGuildTool' },

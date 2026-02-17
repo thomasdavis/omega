@@ -2537,6 +2537,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'tpmjsRegistryDescribe',
+    name: 'TPMJS Registry Describe',
+    description: 'Get full documentation for a TPMJS tool before executing it. Returns parameter details (name, type, required, description, default), JSON Schema, required env vars, and a ready-to-copy example call. Use before executing a tool for the first time.',
+    keywords: ['tpmjs', 'describe', 'parameters', 'schema', 'documentation', 'help', 'info', 'usage', 'registry', 'tool'],
+    tags: ['core', 'registry', 'documentation', 'tools', 'parameters'],
+    examples: [
+      'describe tpmjs tool',
+      'what parameters does this tool need',
+      'show tool documentation',
+      'get tool parameter info',
+      'how to use tpmjs tool',
+      'describe tool parameters',
+      'tool schema info'
+    ],
+    isCore: true,
+    category: 'research'
+  },
+
+  {
     id: 'tpmjsRegistryExecute',
     name: 'TPMJS Registry Execute',
     description: 'Execute any tool from the TPMJS registry by its toolId. Uses TPMJS_API_KEY for authenticated execution. Tools run in a secure sandbox - no local installation required. API keys (FIRECRAWL_API_KEY, OPENAI_API_KEY, etc.) are automatically injected. Use tpmjsRegistrySearch first to find tools and get their toolIds.',
@@ -2951,7 +2970,8 @@ export const CORE_TOOLS: string[] = [
   'webFetch',
   'fileUpload',
   'whoami',
-  // TPMJS Registry - Always available for discovering and executing external tools
+  // TPMJS Registry - Always available for discovering, describing, and executing external tools
   'tpmjsRegistrySearch',
+  'tpmjsRegistryDescribe',
   'tpmjsRegistryExecute',
 ];
