@@ -9,6 +9,23 @@ import { openai } from '@ai-sdk/openai';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 const GITHUB_API_BASE = 'https://api.github.com';
+const DISCORD_DEPLOY_WEBHOOK_URL = process.env.DISCORD_DEPLOY_WEBHOOK_URL;
+
+// In-flight lock: prevents concurrent issue creation for similar errors
+const inFlightIssues = new Map<string, Promise<{ issueNumber: number; issueUrl: string; wasNewIssue: boolean }>>();
+
+/**
+ * Normalize an error message for dedup comparison (strips dynamic content).
+ */
+function normalizeForComparison(text: string): string {
+  return text
+    .replace(/:\d+:\d+/g, '')
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '')
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
 
 export interface ErrorContext {
   errorMessage: string;
@@ -262,9 +279,108 @@ async function addIssueComment(
 }
 
 /**
- * Main function: Process Railway error and create/update GitHub issue
+ * Post a Discord notification when a GitHub issue is created or updated.
+ */
+async function notifyDiscord(
+  issueNumber: number,
+  issueUrl: string,
+  issueTitle: string,
+  wasNewIssue: boolean,
+  service: string
+): Promise<void> {
+  if (!DISCORD_DEPLOY_WEBHOOK_URL) {
+    console.log('⏭️  No DISCORD_DEPLOY_WEBHOOK_URL set, skipping Discord notification');
+    return;
+  }
+
+  try {
+    const embed = wasNewIssue
+      ? {
+          title: `🔧 Issue #${issueNumber} created — Claude is investigating`,
+          description: issueTitle,
+          url: issueUrl,
+          color: 0x9b59b6, // purple
+          fields: [
+            { name: 'Service', value: service, inline: true },
+            { name: 'Status', value: 'Claude triggered', inline: true },
+          ],
+          timestamp: new Date().toISOString(),
+        }
+      : {
+          title: `🔄 Issue #${issueNumber} updated — error recurred`,
+          description: issueTitle,
+          url: issueUrl,
+          color: 0xe67e22, // orange
+          fields: [
+            { name: 'Service', value: service, inline: true },
+            { name: 'Status', value: 'Comment added', inline: true },
+          ],
+          timestamp: new Date().toISOString(),
+        };
+
+    await fetch(DISCORD_DEPLOY_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+
+    console.log(`📢 Discord notification sent for issue #${issueNumber}`);
+  } catch (err) {
+    console.error('⚠️  Failed to send Discord notification:', err);
+    // Don't throw — notification failure shouldn't block issue creation
+  }
+}
+
+/**
+ * Fast title-based dedup: check if any open issue has a similar title.
+ * This catches obvious duplicates without needing AI.
+ */
+function findIssueByTitleMatch(
+  errorMessage: string,
+  existingIssues: GitHubIssue[]
+): GitHubIssue | null {
+  const normalizedError = normalizeForComparison(errorMessage);
+  // Extract first 60 chars of normalized error as the search key
+  const errorPrefix = normalizedError.substring(0, 60);
+
+  for (const issue of existingIssues) {
+    const normalizedTitle = normalizeForComparison(issue.title.replace(/^\[Railway Error\]\s*/i, ''));
+    if (normalizedTitle.includes(errorPrefix) || errorPrefix.includes(normalizedTitle.substring(0, 60))) {
+      console.log(`🔍 Title-based match found: issue #${issue.number}`);
+      return issue;
+    }
+  }
+  return null;
+}
+
+/**
+ * Main function: Process Railway error and create/update GitHub issue.
+ * Uses in-flight locking to prevent concurrent duplicate creation.
  */
 export async function processRailwayError(
+  errorContext: ErrorContext
+): Promise<{ issueNumber: number; issueUrl: string; wasNewIssue: boolean }> {
+  // In-flight lock: if we're already processing a similar error, wait for that result
+  const lockKey = normalizeForComparison(errorContext.errorMessage).substring(0, 100);
+  const existingFlight = inFlightIssues.get(lockKey);
+  if (existingFlight) {
+    console.log('⏳ In-flight issue creation for similar error, waiting for result...');
+    return existingFlight;
+  }
+
+  const processPromise = _processRailwayErrorInner(errorContext);
+  inFlightIssues.set(lockKey, processPromise);
+
+  try {
+    const result = await processPromise;
+    return result;
+  } finally {
+    // Keep lock for 2 minutes to prevent rapid re-creation
+    setTimeout(() => inFlightIssues.delete(lockKey), 2 * 60 * 1000);
+  }
+}
+
+async function _processRailwayErrorInner(
   errorContext: ErrorContext
 ): Promise<{ issueNumber: number; issueUrl: string; wasNewIssue: boolean }> {
   console.log('🔍 Processing Railway error for GitHub issue creation...');
@@ -273,8 +389,13 @@ export async function processRailwayError(
   const existingIssues = await fetchExistingIssues();
   console.log(`📋 Found ${existingIssues.length} existing railway-error issues`);
 
-  // Step 2: Check for duplicates
-  const duplicateIssue = await findSimilarIssue(errorContext, existingIssues);
+  // Step 2a: Fast title-based dedup (catches obvious duplicates instantly)
+  let duplicateIssue = findIssueByTitleMatch(errorContext.errorMessage, existingIssues);
+
+  // Step 2b: If no title match, try AI dedup
+  if (!duplicateIssue) {
+    duplicateIssue = await findSimilarIssue(errorContext, existingIssues);
+  }
 
   // Step 3: Generate AI summary and environment analysis
   const [summary, envAnalysis] = await Promise.all([
@@ -311,11 +432,22 @@ ${envAnalysis}
 
     await addIssueComment(duplicateIssue.number, updateComment);
 
-    return {
+    const result = {
       issueNumber: duplicateIssue.number,
       issueUrl: duplicateIssue.html_url,
       wasNewIssue: false,
     };
+
+    // Notify Discord about the update
+    await notifyDiscord(
+      result.issueNumber,
+      result.issueUrl,
+      duplicateIssue.title,
+      false,
+      errorContext.railwayService || 'unknown'
+    );
+
+    return result;
   } else {
     // Create new issue
     console.log('🆕 Creating new issue for Railway error');
@@ -358,10 +490,21 @@ ${envAnalysis}
 
     console.log(`✅ Created issue #${newIssue.number}: ${newIssue.html_url}`);
 
-    return {
+    const result = {
       issueNumber: newIssue.number,
       issueUrl: newIssue.html_url,
       wasNewIssue: true,
     };
+
+    // Notify Discord about the new issue
+    await notifyDiscord(
+      result.issueNumber,
+      result.issueUrl,
+      issueTitle,
+      true,
+      errorContext.railwayService || 'unknown'
+    );
+
+    return result;
   }
 }

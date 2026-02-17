@@ -1012,21 +1012,25 @@ export async function handleMessage(message: Message): Promise<void> {
     }
 
     // Report tool errors to GitHub for automated fixing
+    // Skip external tool failures (TPMJS) — those are external service issues, not omega bugs
     if (result.toolErrors && result.toolErrors.length > 0) {
-      for (const toolErr of result.toolErrors) {
+      const EXTERNAL_TOOLS = ['tpmjsRegistryExecute', 'tpmjsRegistrySearch'];
+      const internalErrors = result.toolErrors.filter(e => !EXTERNAL_TOOLS.includes(e.toolName));
+
+      if (internalErrors.length > 0) {
+        // Only report the first internal tool error to avoid spam
+        const toolErr = internalErrors[0];
         const errorDetail = [
-          `Tool "${toolErr.toolName}" failed during execution.`,
+          `Tool "${toolErr.toolName}" failed: ${toolErr.error}`,
           '',
-          `**Error**: ${toolErr.error}`,
-          `**Args passed**: ${JSON.stringify(toolErr.args, null, 2)}`,
-          `**User message**: ${message.content.substring(0, 200)}`,
+          `Args: ${JSON.stringify(toolErr.args, null, 2)}`,
+          `User message: ${message.content.substring(0, 200)}`,
           '',
-          'This could be caused by:',
-          '- A bug in the tool\'s execute function',
-          '- The tool\'s inputSchema allowing invalid parameters',
-          '- The tool description misleading the AI into passing wrong args',
-          '- A missing or misconfigured environment variable',
-          '- An external API the tool depends on being down or changed',
+          'Possible causes:',
+          '- Bug in the tool execute function',
+          '- inputSchema allowing invalid parameters',
+          '- Tool description misleading the AI into passing wrong args',
+          '- Missing or misconfigured environment variable',
         ].join('\n');
         captureError(new Error(errorDetail), {
           railwayService: 'omega-bot',
@@ -1037,6 +1041,12 @@ export async function handleMessage(message: Message): Promise<void> {
             `Channel: ${channelName}`,
           ],
         }).catch(() => {});
+      }
+
+      // Log external tool failures for visibility but don't create issues
+      const externalErrors = result.toolErrors.filter(e => EXTERNAL_TOOLS.includes(e.toolName));
+      for (const ext of externalErrors) {
+        console.warn(`⚠️ External tool failure (not reported): ${ext.toolName} — ${ext.error}`);
       }
     }
 

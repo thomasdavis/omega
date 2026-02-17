@@ -7,16 +7,23 @@ import { processRailwayError, type ErrorContext } from './githubIssueService.js'
 
 // In-memory error tracking to prevent spam
 const recentErrors = new Map<string, { count: number; lastSeen: number; issueNumber?: number }>();
-const ERROR_COOLDOWN = 5 * 60 * 1000; // 5 minutes cooldown before creating another issue
-const ERROR_DEDUP_WINDOW = 60 * 1000; // 1 minute window for deduplication
+const ERROR_COOLDOWN = 10 * 60 * 1000; // 10 minutes cooldown before creating another issue
+const ERROR_DEDUP_WINDOW = 5 * 60 * 1000; // 5 minute window for deduplication
 
 /**
- * Generate a hash key for error deduplication
+ * Generate a normalized hash key for error deduplication.
+ * Strips dynamic parts (line numbers, timestamps, specific IDs) to group similar errors.
  */
 function generateErrorKey(error: Error | string): string {
   const errorMessage = typeof error === 'string' ? error : error.message;
-  const stackFirstLine = typeof error === 'string' ? '' : error.stack?.split('\n')[1] || '';
-  return `${errorMessage}|${stackFirstLine}`.substring(0, 200);
+  // Normalize: strip line numbers, hex addresses, UUIDs, timestamps
+  const normalized = errorMessage
+    .replace(/:\d+:\d+/g, ':*:*')          // file:line:col → file:*:*
+    .replace(/0x[0-9a-f]+/gi, '0x*')       // hex addresses
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, '*uuid*') // UUIDs
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, '*timestamp*') // ISO timestamps
+    .trim();
+  return normalized.substring(0, 200);
 }
 
 /**
