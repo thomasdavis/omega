@@ -2770,6 +2770,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'keywordMentionResponder',
+    name: 'Keyword Mention Responder',
+    description: 'Detect mentions of openclaw, clawbot, or moltbook in Discord conversations and respond with predefined, principle-based witty replies. Scans recent messages for keyword mentions with case-insensitive word boundary matching. Supports rate limiting per user to avoid spam and filtering to specific keywords.',
+    keywords: ['discord', 'keyword', 'mention', 'openclaw', 'clawbot', 'moltbook', 'respond', 'detect', 'monitor', 'witty', 'reply', 'trigger', 'automated'],
+    tags: ['discord', 'community', 'automation', 'keywords', 'moderation'],
+    examples: [
+      'respond when someone mentions openclaw',
+      'reply automatically to clawbot mentions',
+      'trigger witty response for moltbook keyword',
+      'monitor channel for openclaw mentions',
+      'detect keyword mentions in general',
+      'auto-respond to clawbot or moltbook',
+      'scan for openclaw clawbot moltbook keywords',
+      'keyword mention responder for discord'
+    ],
+    category: 'specialized'
+  },
+
+  {
     id: 'antigravityConceptExplainer',
     name: 'Antigravity Concept Explainer',
     description: 'Educational tool that generates detailed explanations of antigravity concepts from physics, science fiction, and speculative technology. Provides clear summaries, potential applications, theoretical models, and discussions on the current scientific status and challenges.',
