@@ -233,9 +233,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   valTownRunVal: { path: './tools/valTownRunVal.js', exportName: 'valTownRunValTool' },
 
   // TPMJS Registry Tools (Core) - Always available for discovering and executing external tools
-  // Search imported directly from @tpmjs/registry-search
-  // Execute wrapped to auto-inject Omega's API keys (FIRECRAWL_API_KEY, etc.)
-  tpmjsRegistrySearch: { path: '@tpmjs/registry-search', exportName: 'registrySearchTool' },
+  // Search uses TPMJS API with API key authentication (falls back to @tpmjs/registry-search)
+  // Execute uses TPMJS API with auth and auto-injects Omega's API keys (TPMJS_API_KEY, FIRECRAWL_API_KEY, etc.)
+  tpmjsRegistrySearch: { path: './tools/tpmjsRegistrySearch.js', exportName: 'tpmjsRegistrySearchTool' },
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
 
   // Discord Tools
@@ -243,6 +243,8 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   spamBotMonitorAndResponse: { path: './tools/spamBotMonitorAndResponse.js', exportName: 'spamBotMonitorAndResponseTool' },
   nuancedJobSeekerDetectorWithWittyResponse: { path: './tools/nuancedJobSeekerDetectorWithWittyResponse.js', exportName: 'nuancedJobSeekerDetectorWithWittyResponseTool' },
   jobSeekerRoastAndShoo: { path: './tools/jobSeekerRoastAndShoo.js', exportName: 'jobSeekerRoastAndShooTool' },
+  keywordMentionResponder: { path: './tools/keywordMentionResponder.js', exportName: 'keywordMentionResponderTool' },
+  savageWitEnhancer: { path: './tools/savageWitEnhancer.js', exportName: 'savageWitEnhancerTool' },
 };
 
 /**
