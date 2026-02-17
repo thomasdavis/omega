@@ -76,10 +76,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   queryFeelings: { path: '@repo/database', exportName: 'queryFeelingsTool' },
   getFeelingSummary: { path: '@repo/database', exportName: 'getFeelingSummaryTool' },
 
-  // Guild Defaults tools (2) - imported from @repo/database
-  setDefaultGuild: { path: '@repo/database', exportName: 'setDefaultGuildTool' },
-  getDefaultGuild: { path: '@repo/database', exportName: 'getDefaultGuildTool' },
-
   // GitHub tools (10)
   githubCreateIssue: { path: './tools/github/createIssue.js', exportName: 'githubCreateIssueTool' },
   githubUpdateIssue: { path: './tools/github/updateIssue.js', exportName: 'githubUpdateIssueTool' },
