@@ -2941,6 +2941,48 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'specialized'
   },
 
+  // ===== MEMORY TOOLS (2) =====
+  {
+    id: 'autoMemory',
+    name: 'Auto Memory',
+    description: 'Save important memories with rich metadata for future recall. Archives solutions, milestones, patterns, insights, user preferences, workflows, and references to MongoDB for persistent knowledge management.',
+    keywords: ['memory', 'remember', 'save', 'store', 'archive', 'record', 'log', 'milestone', 'solution', 'pattern', 'insight', 'preference', 'learn', 'note'],
+    tags: ['memory', 'system', 'knowledge', 'persistence'],
+    examples: [
+      'remember this solution',
+      'save this as a memory',
+      'store this pattern for later',
+      'archive this milestone',
+      'record this user preference',
+      'remember how we fixed this',
+      'save this insight',
+      'log this important finding',
+      'note this workflow'
+    ],
+    category: 'specialized'
+  },
+
+  {
+    id: 'searchMemories',
+    name: 'Search Memories',
+    description: 'Search and recall previously saved memories with flexible criteria. Supports full-text search, category filtering, tag matching, importance levels, date ranges, and user-specific queries for contextual recall.',
+    keywords: ['memory', 'recall', 'search', 'remember', 'find', 'history', 'past', 'previous', 'context', 'lookup', 'review'],
+    tags: ['memory', 'system', 'knowledge', 'search'],
+    examples: [
+      'search memories about this problem',
+      'recall past solutions',
+      'find memories about TypeScript errors',
+      'what do I remember about this',
+      'check if we solved this before',
+      'search past insights',
+      'find memories from last week',
+      'recall user preferences',
+      'remember when we fixed this',
+      'look up past milestones'
+    ],
+    category: 'specialized'
+  },
+
   {
     id: 'renderGeojson',
     name: 'GeoJSON Renderer',
