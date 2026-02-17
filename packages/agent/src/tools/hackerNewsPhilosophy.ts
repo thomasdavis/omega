@@ -3,10 +3,9 @@
  * Uses the official Hacker News API to retrieve and filter articles based on philosophical relevance
  */
 
-import { tool } from 'ai';
+import { tool, generateText, Output } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
 import { OMEGA_MODEL } from '@repo/shared';
 
 interface HNItem {
@@ -95,15 +94,15 @@ export const hackerNewsPhilosophyTool = tool({
         const batch = stories.slice(i, i + batchSize);
 
         try {
-          const result = await generateObject({
+          const result = await generateText({
             model,
-            schema: z.object({
+            output: Output.object({ schema: z.object({
               articles: z.array(z.object({
                 id: z.number(),
                 philosophicalScore: z.number().min(0).max(10).describe('Score from 0-10 indicating philosophical relevance'),
                 reasoning: z.string().describe('Brief explanation of why this article is or isn\'t philosophically relevant'),
               })),
-            }),
+            }) }),
             prompt: `Analyze these Hacker News articles for philosophical relevance. Score each from 0-10 based on their connection to:
 - Philosophy, ethics, and moral questions
 - Technology's impact on society and human condition
@@ -122,7 +121,7 @@ For each article, provide its ID, a philosophical score (0-10), and brief reason
           });
 
           // Match scored articles with their full details
-          for (const scoredArticle of result.object.articles) {
+          for (const scoredArticle of result.output!.articles) {
             const story = batch.find(s => s.id === scoredArticle.id);
             if (story && scoredArticle.philosophicalScore >= 3) { // Only keep articles with score >= 3
               philosophicalArticles.push({
