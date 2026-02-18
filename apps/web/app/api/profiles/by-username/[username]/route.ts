@@ -1,21 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@repo/database';
+import { serializeProfile } from '@/lib/serializeProfile';
 
 export const dynamic = 'force-dynamic';
-
-// Helper to convert BigInt fields to numbers for JSON serialization
-function serializeProfile(profile: any) {
-  return {
-    ...profile,
-    firstSeenAt: profile.firstSeenAt ? Number(profile.firstSeenAt) : null,
-    lastInteractionAt: profile.lastInteractionAt ? Number(profile.lastInteractionAt) : null,
-    lastAnalyzedAt: profile.lastAnalyzedAt ? Number(profile.lastAnalyzedAt) : null,
-    lastPhotoAnalyzedAt: profile.lastPhotoAnalyzedAt ? Number(profile.lastPhotoAnalyzedAt) : null,
-    lastPredictionAt: profile.lastPredictionAt ? Number(profile.lastPredictionAt) : null,
-    createdAt: profile.createdAt ? Number(profile.createdAt) : null,
-    updatedAt: profile.updatedAt ? Number(profile.updatedAt) : null,
-  };
-}
 
 export async function GET(
   request: NextRequest,
@@ -27,7 +14,7 @@ export async function GET(
     // Find profile with most data (highest message count) to handle potential duplicates
     const profile = await prisma.userProfile.findFirst({
       where: { username },
-      orderBy: { messageCount: 'desc' }, // Return profile with most messages
+      orderBy: { messageCount: 'desc' },
     });
 
     if (!profile) {

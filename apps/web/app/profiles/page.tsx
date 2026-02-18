@@ -8,9 +8,9 @@ interface UserProfile {
   userId: string;
   username: string | null;
   uploadedPhotoUrl: string | null;
-  emotionalState: string | null;
+  overallSentiment: string | null;
   zodiacSign: string | null;
-  lastInteractionAt: Date;
+  lastInteractionAt: number;
   messageCount: number;
 }
 
@@ -18,21 +18,26 @@ export default function ProfilesPage() {
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const pageSize = 24;
 
   useEffect(() => {
-    fetch('/api/profiles')
+    setLoading(true);
+    fetch(`/api/profiles?limit=${pageSize}&offset=${page * pageSize}`)
       .then(res => res.json())
       .then(data => {
         setProfiles(data.profiles || []);
+        setTotal(data.total || 0);
         setLoading(false);
       })
-      .catch(err => {
+      .catch(() => {
         setError('Failed to load profiles');
         setLoading(false);
       });
-  }, []);
+  }, [page]);
 
-  if (loading) {
+  if (loading && profiles.length === 0) {
     return <LoadingSpinner message="Loading profiles..." />;
   }
 
@@ -44,6 +49,8 @@ export default function ProfilesPage() {
     );
   }
 
+  const totalPages = Math.ceil(total / pageSize);
+
   return (
     <>
       {/* Page Header */}
@@ -51,7 +58,7 @@ export default function ProfilesPage() {
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-baseline gap-4">
             <h1 className="text-5xl font-light text-white tracking-tight">Profiles</h1>
-            <div className="text-zinc-500 text-sm font-mono">{profiles.length} subjects</div>
+            <div className="text-zinc-500 text-sm font-mono">{total} subjects</div>
           </div>
           <p className="mt-3 text-zinc-400 font-light max-w-2xl">
             Comprehensive psychological and physical phenotype analysis database
@@ -103,20 +110,20 @@ export default function ProfilesPage() {
                   </div>
                 </div>
 
-                {profile.emotionalState && (
+                {profile.overallSentiment && (
                   <div className="pt-4 border-t border-zinc-800">
                     <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-2">
-                      Current State
+                      Overall Sentiment
                     </div>
                     <div className="text-sm text-zinc-300 font-light">
-                      {profile.emotionalState}
+                      {profile.overallSentiment}
                     </div>
                   </div>
                 )}
 
                 <div className="pt-4 border-t border-zinc-800">
                   <div className="text-xs font-mono text-zinc-500">
-                    Last seen: {new Date(profile.lastInteractionAt).toLocaleDateString('en-US', {
+                    Last seen: {new Date(profile.lastInteractionAt * 1000).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
@@ -143,6 +150,29 @@ export default function ProfilesPage() {
             <div className="mt-2 text-zinc-500 text-sm">
               Profiles are created when users interact with the bot
             </div>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-12 flex items-center justify-center gap-4">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm font-mono rounded hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            <span className="text-zinc-500 text-sm font-mono">
+              Page {page + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="px-4 py-2 bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm font-mono rounded hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
           </div>
         )}
       </div>

@@ -192,6 +192,13 @@ export type UserProfileRecord = {
   approachability_score: number | null;
   perceived_confidence_level: string | null;
   aesthetic_archetype: string | null;
+
+  // Analysis metrics (Phase 2F)
+  peak_activity_hours: any;
+  weekend_activity_ratio: number | null;
+  sentiment_trajectory: string | null;
+  vocabulary_growth_rate: number | null;
+  engagement_authenticity_score: number | null;
 };
 
 export type UserAnalysisHistoryRecord = {

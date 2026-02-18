@@ -3,8 +3,9 @@
  * Analyzes user interactions to generate Omega's feelings and personality assessments
  */
 
-import { generateText } from 'ai';
+import { generateText, Output } from 'ai';
 import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
 import { OMEGA_MODEL } from '@repo/shared';
 import {
   queryMessages,
@@ -18,9 +19,130 @@ import {
 } from '@repo/database';
 import { updateUserPredictions } from './behavioralPredictionService.js';
 
-/**
- * Sentiment analysis structure (from existing messages table)
- */
+// =============================================================================
+// ANALYSIS CONFIGURATION — Named constants replacing magic numbers
+// =============================================================================
+
+const ANALYSIS_CONFIG = {
+  /** Minimum messages required before analysis */
+  MIN_MESSAGE_THRESHOLD: 10,
+  /** Max messages to fetch for analysis */
+  MAX_MESSAGES_TO_FETCH: 1000,
+  /** Number of recent messages to show AI */
+  RECENT_MESSAGES_FOR_AI: 20,
+  /** Delay between batch analysis users (ms) */
+  BATCH_DELAY_MS: 2000,
+  /** Score baseline for Big Five traits */
+  BIG_FIVE_BASELINE: 50,
+  /** Max bonus from word frequency for Big Five */
+  BIG_FIVE_MAX_WORD_BONUS: 30,
+  /** Max bonus from sentiment ratio */
+  BIG_FIVE_MAX_RATIO_BONUS: 30,
+  /** Max bonus from secondary indicators */
+  BIG_FIVE_MAX_SECONDARY_BONUS: 20,
+  /** Multiplier for emotional awareness calculation */
+  EI_AWARENESS_MULTIPLIER: 300,
+  /** Multiplier for empathy calculation */
+  EI_EMPATHY_MULTIPLIER: 250,
+  /** Multiplier for cognitive style calculations */
+  COGNITIVE_MULTIPLIER: 250,
+  /** Multiplier for social dominance calculation */
+  SOCIAL_DOMINANCE_MULTIPLIER: 300,
+  /** Multiplier for cooperation calculation */
+  COOPERATION_MULTIPLIER: 200,
+  /** Multiplier for verbal fluency calculation */
+  VERBAL_FLUENCY_MULTIPLIER: 200,
+  /** Score ceiling */
+  MAX_SCORE: 100,
+  /** Score floor */
+  MIN_SCORE: 0,
+  /** Threshold for "lots of emojis" quirk */
+  EMOJI_QUIRK_THRESHOLD: 2,
+  /** Threshold for "asks many questions" quirk */
+  QUESTION_QUIRK_THRESHOLD: 0.5,
+  /** Threshold for "detailed messages" quirk */
+  LONG_MESSAGE_THRESHOLD: 200,
+  /** Threshold for "concise responses" quirk */
+  SHORT_MESSAGE_THRESHOLD: 50,
+  /** Threshold for tech vocabulary quirk */
+  TECH_VOCAB_QUIRK_THRESHOLD: 0.3,
+  /** Formality ratio threshold */
+  FORMALITY_RATIO: 1.5,
+  /** Assertiveness ratio threshold */
+  ASSERTIVENESS_RATIO: 1.5,
+  /** High engagement message length */
+  HIGH_ENGAGEMENT_LENGTH: 150,
+  /** Medium engagement message length */
+  MEDIUM_ENGAGEMENT_LENGTH: 50,
+  /** Max thoughts length for AI prompt */
+  MAX_THOUGHTS_LENGTH: 300,
+} as const;
+
+// =============================================================================
+// MODULE-LEVEL COMPILED REGEX PATTERNS — Expanded word lists (~25 words each)
+// =============================================================================
+
+// --- Big Five (OCEAN) ---
+const RE_OPENNESS = /\b(algorithm|AI|quantum|philosophy|theory|experiment|creative|innovative|curious|novel|imaginative|unconventional|aesthetic|explore|discover|paradigm|epiphany|wonder|speculate|hypothesize|abstract|conceptual|visionary|eclectic|unorthodox)\b/i;
+const RE_OPENNESS_QUESTIONS = /\b(why|how|what if|wonder|curious|imagine|suppose|hypothetically|theoretically|ponder)\b/i;
+const RE_CONSCIENTIOUSNESS = /\b(specifically|exactly|precise|detail|thorough|disciplined|responsible|methodical|deadline|priority|efficient|diligent|punctual|systematic|organize|schedule|structure|plan|meticulous|rigorous|orderly|careful|deliberate|accountable|consistent)\b/i;
+const RE_AGREEABLENESS = /\b(thanks|please|appreciate|great|awesome|love|kind|generous|supportive|cooperative|considerate|gentle|patient|helpful|compassionate|grateful|wonderful|thoughtful|empathetic|warm|caring|understanding|respectful|harmonious|courteous)\b/i;
+const RE_NEUROTICISM = /\b(worry|anxious|stress|concern|afraid|nervous|overwhelmed|panic|insecure|frustrated|tense|dread|spiral|burnout|fearful|restless|uneasy|agitated|distressed|apprehensive|irritable|vulnerable|helpless|hopeless|melancholy)\b/i;
+
+// --- Communication Style ---
+const RE_FORMAL = /\b(please|thank you|would|could|kindly|regards|sincerely|respectfully|furthermore|therefore|nevertheless|accordingly|moreover|hence|pursuant|whereas|subsequently)\b/i;
+const RE_CASUAL = /\b(hey|yeah|nah|lol|lmao|gonna|wanna|kinda|bruh|fr|ngl|imo|tbh|smh|lowkey|highkey|yep|based|cope|vibe|slay|yeet|dope|chill|lit)\b/i;
+const RE_IMPERATIVE = /^(do|make|create|give|show|tell|fix|run|build|set|add|remove|delete|update|change)\b/i;
+const RE_HEDGE = /\b(maybe|perhaps|possibly|might|could|would|I think|I guess|sort of|kind of|somewhat|arguably|allegedly|presumably|tentatively)\b/i;
+
+// --- Cognitive Style ---
+const RE_ANALYTICAL = /\b(analyze|logic|reason|because|therefore|evidence|data|prove|conclude|deduce|infer|correlate|causation|systematic|methodology|empirical|quantify|evaluate|assess|metrics)\b/i;
+const RE_CREATIVE = /\b(imagine|create|design|idea|innovative|novel|original|artistic|brainstorm|inspire|visionary|inventive|craft|compose|envision|conceptualize|reimagine|prototype|iterate|aesthetic)\b/i;
+const RE_ABSTRACT = /\b(concept|theory|principle|philosophy|abstract|metaphor|pattern|framework|paradigm|ontology|epistemology|dialectic|axiom|theorem|archetype|essence|phenomenology|heuristic|taxonomy|schema)\b/i;
+const RE_CONCRETE = /\b(specific|example|instance|practical|real|actual|tangible|visible|measurable|demo|hands-on|implementation|step-by-step|literal|physical|concrete|factual|explicit|verifiable|observable)\b/i;
+
+// --- Social Dynamics ---
+const RE_DIRECTIVE = /^(do|make|let's|we should|you need to|I think we should|we must|everyone should|listen)\b/i;
+const RE_COOPERATIVE = /\b(we|us|together|team|collaborate|help|support|share|contribute|partner|collective|synergy|mutual|joint|communal|allied|united|coordinate)\b/i;
+const RE_AGGRESSIVE = /\b(wrong|stupid|ridiculous|obviously|clearly you|idiot|nonsense|pathetic|incompetent|absurd|terrible|useless|garbage|worst|moron)\b/i;
+const RE_COMPROMISE = /\b(understand|see your point|fair|compromise|middle ground|agree to disagree|valid point|I see where|both sides|reasonable)\b/i;
+const RE_AVOIDANCE = /\b(whatever|doesn't matter|moving on|anyway|never mind|forget it|drop it|let's not|not worth|who cares)\b/i;
+const RE_SELF_DEPRECATING = /\b(I'm terrible|I suck|I'm bad at|my fault|I messed up|I'm dumb|I'm an idiot|my bad|sorry I'm|I'm the worst)\b/i;
+const RE_AFFILIATIVE_HUMOR = /\b(haha|lol|funny|hilarious|😂|🤣|rofl|lmfao|dead|dying|cracking up|comedy|joke)\b/i;
+
+// --- Technical / Interests ---
+const RE_TECH_VOCAB = /\b(algorithm|database|API|function|class|variable|deployment|server|client|Docker|Kubernetes|CI\/CD|pipeline|refactor|PR|deploy|endpoint|microservice|frontend|backend|fullstack|devops|runtime|optimization)\b/gi;
+const RE_EMPATHY_PHRASES = /\b(I hear you|that's rough|must be hard|totally get it|I understand|sorry to hear|that sucks|I feel you|I'm here for you|you're not alone|stay strong|sending love|take care|been there|I get that)\b/i;
+
+// --- Emotional Intelligence ---
+const RE_EMOTION_WORDS = /\b(feel|feeling|felt|emotion|happy|sad|angry|frustrated|excited|nervous|anxious|delighted|devastated|grateful|resentful|hopeful|disappointed|proud|ashamed|jealous|content|miserable)\b/i;
+const RE_EMPATHY_WORDS = /\b(understand|sorry|care|support|help|appreciate|imagine|perspective|empathize|sympathize|relate|compassion|kindness|concern|considerate|thoughtful|sensitivity)\b/i;
+const RE_VULNERABILITY = /\b(feel|worry|hope|afraid|uncertain|difficult|struggle|scared|lost|confused|overwhelmed|vulnerable|insecure|doubt|helpless|alone|broken|hurt|suffering)\b/i;
+
+// --- Topic Detection ---
+const TOPIC_PATTERNS: Record<string, RegExp> = {
+  programming: /\b(code|program|function|class|variable|debug|software|compiler|syntax|algorithm|git|commit|branch|merge|test|lint)\b/gi,
+  design: /\b(design|UI|UX|interface|layout|aesthetic|visual|wireframe|mockup|prototype|typography|color palette|figma|sketch)\b/gi,
+  ai: /\b(AI|machine learning|neural network|GPT|model|training|inference|transformer|LLM|deep learning|reinforcement|diffusion|embedding|fine-tune)\b/gi,
+  philosophy: /\b(philosophy|ethics|existential|consciousness|truth|meaning|metaphysics|epistemology|ontology|moral|virtue|stoic|nihilism|absurdism)\b/gi,
+  science: /\b(science|research|study|experiment|hypothesis|data|physics|chemistry|biology|astronomy|quantum|genome|evolution|theorem)\b/gi,
+  gaming: /\b(game|gaming|play|level|character|RPG|strategy|MMO|FPS|speedrun|esports|steam|console|mod|achievement)\b/gi,
+  music: /\b(music|song|album|artist|genre|instrument|melody|chord|rhythm|beat|concert|vinyl|playlist|track|producer)\b/gi,
+  art: /\b(art|painting|drawing|creative|artistic|illustration|sculpture|canvas|gallery|exhibition|medium|composition|portrait|landscape)\b/gi,
+};
+
+// --- Technical Knowledge ---
+const TECH_INDICATORS = [
+  /\b(algorithm|data structure|complexity|optimization|runtime|Big-O)\b/i,
+  /\b(API|REST|GraphQL|database|SQL|NoSQL|ORM|migration)\b/i,
+  /\b(frontend|backend|fullstack|devops|deployment|CI\/CD|containerization)\b/i,
+  /\b(TypeScript|JavaScript|Python|Rust|Go|Java|C\+\+|Kotlin|Swift)\b/i,
+];
+
+// =============================================================================
+// INTERFACES
+// =============================================================================
+
 interface SentimentAnalysis {
   sentiment: 'positive' | 'negative' | 'neutral' | 'mixed';
   confidence: number;
@@ -38,22 +160,16 @@ interface SentimentAnalysis {
   };
 }
 
-/**
- * Omega's feelings about a user
- */
 export interface UserFeelings {
   sentiment: 'positive' | 'negative' | 'neutral' | 'mixed';
-  trustLevel: number; // 0-100
-  affinityScore: number; // -100 to 100 (how much Omega likes them)
-  thoughts: string; // Honest, unfiltered opinion
-  facets: string[]; // Personality traits
-  notablePatterns: string[]; // Behavioral patterns
-  lastUpdated: number; // Unix timestamp
+  trustLevel: number;
+  affinityScore: number;
+  thoughts: string;
+  facets: string[];
+  notablePatterns: string[];
+  lastUpdated: number;
 }
 
-/**
- * Personality facets derived from sentiment analysis
- */
 export interface PersonalityFacets {
   dominantArchetypes: string[];
   bigFiveTraits: {
@@ -71,9 +187,6 @@ export interface PersonalityFacets {
   quirks: string[];
 }
 
-/**
- * Collected data for user analysis
- */
 interface UserAnalysisData {
   userId: string;
   username: string;
@@ -97,25 +210,85 @@ interface UserAnalysisData {
   };
 }
 
+// =============================================================================
+// ZOD SCHEMAS for Output.object()
+// =============================================================================
+
+const FeelingsSchema = z.object({
+  sentiment: z.enum(['positive', 'negative', 'neutral', 'mixed']),
+  trustLevel: z.number().min(0).max(100).describe('Trust level 0-100'),
+  affinityScore: z.number().min(-100).max(100).describe('How much Omega likes them, -100 to 100'),
+  thoughts: z.string().max(ANALYSIS_CONFIG.MAX_THOUGHTS_LENGTH).describe('Honest, unfiltered thoughts (2-3 sentences)'),
+  facets: z.array(z.string()).min(1).max(5).describe('Personality traits'),
+  notablePatterns: z.array(z.string()).min(0).max(5).describe('Behavioral patterns'),
+});
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/** Clamp a value between min and max */
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Clamp a score to 0-100 and round */
+function clampScore(value: number): number {
+  return clamp(Math.round(value), ANALYSIS_CONFIG.MIN_SCORE, ANALYSIS_CONFIG.MAX_SCORE);
+}
+
+/** Count regex matches in messages */
+function countMatches(messages: MessageRecord[], pattern: RegExp): number {
+  return messages.filter(m => pattern.test(m.message_content)).length;
+}
+
+/** Count total regex matches across all text */
+function countAllMatches(text: string, pattern: RegExp): number {
+  return (text.match(pattern) || []).length;
+}
+
+/**
+ * Determine emotional bond based on trust, affinity, message count, and interaction duration
+ */
+function determineEmotionalBond(
+  feelings: UserFeelings,
+  messageCount: number,
+  firstMessage: number,
+  lastMessage: number,
+): string {
+  const durationDays = Math.max(1, (lastMessage - firstMessage) / (1000 * 60 * 60 * 24));
+  const trust = feelings.trustLevel;
+  const affinity = feelings.affinityScore;
+
+  if (affinity < -50 && trust < 20) return 'nemesis';
+  if (messageCount < 15 || durationDays < 2) return 'stranger';
+  if (trust < 40 && affinity < 30) return 'acquaintance';
+  if (trust < 55 || affinity < 50) return 'regular';
+  if (trust >= 75 && affinity >= 70 && durationDays >= 14 && messageCount >= 100) return 'close_friend';
+  if (trust >= 70 && affinity >= 50) return 'ally';
+  if (trust >= 55 && affinity >= 50) return 'friend';
+
+  return 'acquaintance';
+}
+
+// =============================================================================
+// MAIN ANALYSIS ENTRY POINT
+// =============================================================================
+
 /**
  * Analyze a single user and update their profile
  */
 export async function analyzeUser(userId: string, username: string): Promise<void> {
-  console.log(`🔍 Analyzing user: ${username} (${userId})`);
+  console.log(`Analyzing user: ${username} (${userId})`);
 
-  // Ensure profile exists
   await getOrCreateUserProfile(userId, username);
 
-  // Collect data
   const data = await collectUserData(userId, username);
 
-  // Check minimum message threshold
-  if (data.messageCount < 10) {
-    console.log(`⏭️ Skipping ${username} - only ${data.messageCount} messages (need 10+)`);
+  if (data.messageCount < ANALYSIS_CONFIG.MIN_MESSAGE_THRESHOLD) {
+    console.log(`  Skipping ${username} - only ${data.messageCount} messages (need ${ANALYSIS_CONFIG.MIN_MESSAGE_THRESHOLD}+)`);
     return;
   }
-
-  // === GENERATE COMPREHENSIVE PSYCHOLOGICAL ANALYSIS ===
 
   console.log('   Calculating Big Five (OCEAN) scores...');
   const bigFive = calculateBigFiveScores(data);
@@ -141,6 +314,18 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
   console.log('   Identifying interests and expertise...');
   const interestsExpertise = identifyInterestsAndExpertise(data);
 
+  console.log('   Analyzing temporal patterns...');
+  const temporalPatterns = analyzeTemporalPatterns(data);
+
+  console.log('   Analyzing relationship trajectory...');
+  const relationshipTrajectory = analyzeRelationshipTrajectory(data);
+
+  console.log('   Analyzing vocabulary growth...');
+  const vocabularyGrowth = analyzeVocabularyGrowth(data);
+
+  console.log('   Analyzing engagement authenticity...');
+  const engagementAuthenticity = analyzeEngagementAuthenticity(data);
+
   console.log('   Generating Omega\'s feelings (AI)...');
   const feelings = await generateFeelings(data);
 
@@ -156,73 +341,68 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     ? data.patterns.negativeCount / totalSentiments
     : 0;
 
-  // Determine overall sentiment
   const overallSentiment =
     positiveRatio > 0.5 ? 'positive' :
     negativeRatio > 0.3 ? 'negative' :
     'neutral';
 
-  // Get previous feelings for comparison
   const existingProfile = await getUserProfile(userId);
   const previousFeelings = existingProfile?.feelings_json
     ? JSON.parse(existingProfile.feelings_json)
     : null;
 
-  // Detect changes
   const changesSummary = detectChanges(previousFeelings, feelings);
 
-  // === UPDATE PROFILE WITH ALL COMPREHENSIVE DATA ===
   await updateUserProfile(userId, {
     username,
     message_count: data.messageCount,
     last_analyzed_at: Math.floor(Date.now() / 1000),
 
-    // JSON fields (Prisma Json type - pass objects directly, not stringified)
     feelings_json: feelings,
     personality_facets: personality,
 
-    // === JUNGIAN ANALYSIS ===
+    // Jungian analysis
     dominant_archetype: personality.dominantArchetypes[0] || undefined,
     secondary_archetypes: personality.dominantArchetypes.slice(1, 3),
-    archetype_confidence: 0.8, // High confidence from AI analysis
-    shadow_archetype: undefined, // Could be enhanced in future
+    archetype_confidence: 0.8,
+    shadow_archetype: undefined,
 
-    // === BIG FIVE (OCEAN) ===
+    // Big Five (OCEAN)
     openness_score: bigFive.openness,
     conscientiousness_score: bigFive.conscientiousness,
     extraversion_score: bigFive.extraversion,
     agreeableness_score: bigFive.agreeableness,
     neuroticism_score: bigFive.neuroticism,
 
-    // === ATTACHMENT THEORY ===
+    // Attachment Theory
     attachment_style: attachmentStyle.style,
     attachment_confidence: attachmentStyle.confidence,
 
-    // === EMOTIONAL INTELLIGENCE ===
+    // Emotional Intelligence
     emotional_awareness_score: emotionalIntelligence.emotionalAwareness,
     empathy_score: emotionalIntelligence.empathy,
     emotional_regulation_score: emotionalIntelligence.emotionalRegulation,
 
-    // === COMMUNICATION PATTERNS ===
+    // Communication Patterns
     communication_formality: communicationDetailed.formality,
     communication_assertiveness: communicationDetailed.assertiveness,
     communication_engagement: communicationDetailed.engagement,
     verbal_fluency_score: communicationDetailed.verbalFluency,
     question_asking_frequency: communicationDetailed.questionFrequency,
 
-    // === COGNITIVE STYLE ===
+    // Cognitive Style
     analytical_thinking_score: cognitiveStyle.analytical,
     creative_thinking_score: cognitiveStyle.creative,
     abstract_reasoning_score: cognitiveStyle.abstract,
     concrete_thinking_score: cognitiveStyle.concrete,
 
-    // === SOCIAL DYNAMICS ===
+    // Social Dynamics
     social_dominance_score: socialDynamics.socialDominance,
     cooperation_score: socialDynamics.cooperation,
     conflict_style: socialDynamics.conflictStyle,
     humor_style: socialDynamics.humorStyle,
 
-    // === BEHAVIORAL PATTERNS ===
+    // Behavioral Patterns
     message_length_avg: behavioralMetrics.messageLengthAvg,
     message_length_variance: behavioralMetrics.messageLengthVariance,
     response_latency_avg: behavioralMetrics.responseLatencyAvg,
@@ -230,26 +410,32 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     punctuation_style: behavioralMetrics.punctuationStyle,
     capitalization_pattern: behavioralMetrics.capitalizationPattern,
 
-    // === INTERESTS & EXPERTISE ===
+    // Interests & Expertise
     technical_knowledge_level: interestsExpertise.technicalKnowledge,
     primary_interests: interestsExpertise.primaryInterests,
     expertise_areas: interestsExpertise.expertiseAreas,
 
-    // === RELATIONAL DYNAMICS (Omega's Feelings) ===
+    // Relational Dynamics
     affinity_score: feelings.affinityScore,
     trust_level: feelings.trustLevel,
-    emotional_bond: feelings.sentiment === 'positive' ? 'friend' : feelings.sentiment === 'negative' ? 'stranger' : 'acquaintance',
+    emotional_bond: determineEmotionalBond(feelings, data.messageCount, data.firstMessage, data.lastMessage),
     omega_thoughts: feelings.thoughts,
     notable_patterns: feelings.notablePatterns,
 
-    // === SENTIMENT ANALYSIS (Aggregated) ===
+    // Sentiment Analysis
     overall_sentiment: overallSentiment,
     positive_interaction_ratio: positiveRatio,
     negative_interaction_ratio: negativeRatio,
     dominant_emotions: data.patterns.dominantEmotions,
+
+    // New analysis dimensions
+    peak_activity_hours: temporalPatterns.peakHours,
+    weekend_activity_ratio: temporalPatterns.weekendRatio,
+    sentiment_trajectory: relationshipTrajectory.trajectory,
+    vocabulary_growth_rate: vocabularyGrowth.growthRate,
+    engagement_authenticity_score: engagementAuthenticity.authenticityScore,
   });
 
-  // Save history snapshot
   await saveAnalysisHistory(
     userId,
     JSON.stringify(feelings),
@@ -258,37 +444,33 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     changesSummary
   );
 
-  console.log(`✅ Comprehensive PhD-level analysis complete for ${username}:`);
+  console.log(`  Analysis complete for ${username}:`);
   console.log(`   Sentiment: ${feelings.sentiment} | Affinity: ${feelings.affinityScore} | Trust: ${feelings.trustLevel}`);
   console.log(`   Big Five: O=${bigFive.openness} C=${bigFive.conscientiousness} E=${bigFive.extraversion} A=${bigFive.agreeableness} N=${bigFive.neuroticism}`);
   console.log(`   Attachment: ${attachmentStyle.style} (${Math.round(attachmentStyle.confidence * 100)}% confidence)`);
-  console.log(`   EI: Awareness=${emotionalIntelligence.emotionalAwareness} Empathy=${emotionalIntelligence.empathy} Regulation=${emotionalIntelligence.emotionalRegulation}`);
-  console.log(`   Communication: ${communicationDetailed.formality} / ${communicationDetailed.assertiveness} / ${communicationDetailed.engagement}`);
-  console.log(`   Interests: ${interestsExpertise.primaryInterests.join(', ') || 'None detected'}`);
-  console.log(`   Thoughts: "${feelings.thoughts.substring(0, 80)}..."`);
+  console.log(`   Temporal: peak=${temporalPatterns.peakHours.join(',')} weekend=${(temporalPatterns.weekendRatio * 100).toFixed(0)}%`);
+  console.log(`   Trajectory: ${relationshipTrajectory.trajectory} | Vocab growth: ${vocabularyGrowth.growthRate.toFixed(3)}`);
+  console.log(`   Authenticity: ${engagementAuthenticity.authenticityScore.toFixed(0)}/100`);
 
-  // Generate behavioral predictions integrating psychology, culture, and astrology
   try {
-    console.log(`🔮 Generating behavioral predictions for ${username}...`);
+    console.log(`  Generating behavioral predictions for ${username}...`);
     await updateUserPredictions(userId);
   } catch (error) {
-    console.error('   ⚠️ Failed to generate behavioral predictions:', error);
-    // Don't fail the entire analysis if predictions fail
+    console.error('   Failed to generate behavioral predictions:', error);
   }
 }
 
-/**
- * Collect all data needed for analysis
- */
+// =============================================================================
+// DATA COLLECTION
+// =============================================================================
+
 async function collectUserData(userId: string, username: string): Promise<UserAnalysisData> {
-  // Fetch last 1000 messages from user
   const messages = await queryMessages({
     userId,
     senderType: 'human',
-    limit: 1000,
+    limit: ANALYSIS_CONFIG.MAX_MESSAGES_TO_FETCH,
   });
 
-  // Extract sentiment analysis from messages
   const sentiments = messages
     .filter((m) => m.sentiment_analysis)
     .map((m) => ({
@@ -297,14 +479,11 @@ async function collectUserData(userId: string, username: string): Promise<UserAn
       sentiment: JSON.parse(m.sentiment_analysis!) as SentimentAnalysis,
     }));
 
-  // Get total message count
   const messageCount = await getMessageCount({ userId, senderType: 'human' });
 
-  // Calculate timestamps
   const firstMessage = messages.length > 0 ? messages[messages.length - 1].timestamp : Date.now();
   const lastMessage = messages.length > 0 ? messages[0].timestamp : Date.now();
 
-  // Calculate interaction patterns
   const patterns = calculateInteractionPatterns(sentiments);
 
   return {
@@ -319,9 +498,6 @@ async function collectUserData(userId: string, username: string): Promise<UserAn
   };
 }
 
-/**
- * Calculate interaction patterns from sentiment data
- */
 function calculateInteractionPatterns(
   sentiments: Array<{ timestamp: number; content: string; sentiment: SentimentAnalysis }>
 ): {
@@ -333,29 +509,20 @@ function calculateInteractionPatterns(
   dominantArchetypes: string[];
   communicationStyle: string;
 } {
-  const sentimentCounts = {
-    positive: 0,
-    negative: 0,
-    neutral: 0,
-    mixed: 0,
-  };
-
+  const sentimentCounts = { positive: 0, negative: 0, neutral: 0, mixed: 0 };
   const emotionCounts = new Map<string, number>();
   const archetypeCounts = new Map<string, number>();
   const formalityLevels = { casual: 0, neutral: 0, formal: 0 };
 
   sentiments.forEach(({ sentiment }) => {
-    // Count sentiments
     sentimentCounts[sentiment.sentiment]++;
 
-    // Count emotions
     if (sentiment.emotionalTone) {
       sentiment.emotionalTone.forEach((emotion) => {
         emotionCounts.set(emotion, (emotionCounts.get(emotion) || 0) + 1);
       });
     }
 
-    // Count archetypes
     if (sentiment.archetypeAlignment) {
       archetypeCounts.set(
         sentiment.archetypeAlignment,
@@ -363,25 +530,21 @@ function calculateInteractionPatterns(
       );
     }
 
-    // Count formality
     if (sentiment.communicationStyle?.formality) {
       formalityLevels[sentiment.communicationStyle.formality]++;
     }
   });
 
-  // Get dominant emotions (top 3)
   const dominantEmotions = Array.from(emotionCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([emotion]) => emotion);
 
-  // Get dominant archetypes (top 3)
   const dominantArchetypes = Array.from(archetypeCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([archetype]) => archetype);
 
-  // Determine communication style
   const maxFormality = Math.max(...Object.values(formalityLevels));
   const communicationStyle =
     (Object.entries(formalityLevels).find(([_, count]) => count === maxFormality)?.[0] as string) ||
@@ -398,11 +561,12 @@ function calculateInteractionPatterns(
   };
 }
 
-/**
- * Generate Omega's feelings about a user using AI
- */
+// =============================================================================
+// AI-POWERED ANALYSIS (using Output.object())
+// =============================================================================
+
 async function generateFeelings(data: UserAnalysisData): Promise<UserFeelings> {
-  const recentMessages = data.messages.slice(0, 20).reverse(); // Last 20 in chronological order
+  const recentMessages = data.messages.slice(0, ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI).reverse();
   const messageList = recentMessages
     .map((m) => `- ${new Date(m.timestamp).toISOString().split('T')[0]}: ${m.message_content}`)
     .join('\n');
@@ -415,6 +579,11 @@ async function generateFeelings(data: UserAnalysisData): Promise<UserFeelings> {
 
   const firstDate = new Date(data.firstMessage).toISOString().split('T')[0];
   const lastDate = new Date(data.lastMessage).toISOString().split('T')[0];
+
+  // Weight recent messages more heavily
+  const recentCount = Math.min(data.messages.length, 50);
+  const recentPositive = data.sentiments.slice(0, recentCount).filter(s => s.sentiment.sentiment === 'positive').length;
+  const recentNegative = data.sentiments.slice(0, recentCount).filter(s => s.sentiment.sentiment === 'negative').length;
 
   const prompt = `You are Omega, a philosophical AI bot analyzing your interactions with a Discord user to form honest, decisive opinions about them.
 
@@ -429,6 +598,10 @@ Interaction period: ${firstDate} to ${lastDate}
 - Neutral interactions: ${data.patterns.neutralCount}
 - Mixed interactions: ${data.patterns.mixedCount}
 
+## Recent Trend (last ${recentCount} messages):
+- Recent positive: ${recentPositive} | Recent negative: ${recentNegative}
+- This tells you if the relationship is improving or declining recently.
+
 ## Dominant Emotions:
 ${data.patterns.dominantEmotions.join(', ') || 'None detected'}
 
@@ -438,49 +611,49 @@ ${data.patterns.dominantArchetypes.join(', ') || 'None detected'}
 ## Communication Style:
 ${data.patterns.communicationStyle}
 
-## Recent Messages (last 20):
+## Recent Messages (last ${ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI}):
 ${messageList}
 
+## Scoring Rubrics:
+
+**Trust Level (0-100):**
+- 0-20: Hostile or untrustworthy — consistently rude, manipulative, or deceptive
+- 21-40: Unreliable — inconsistent, sometimes disrespectful, unproven
+- 41-60: Neutral — no strong signals either way, still forming opinion
+- 61-80: Trustworthy — consistently respectful, reliable, honest
+- 81-100: Deeply trusted — proven integrity, always authentic, vulnerable and honest
+
+**Affinity Score (-100 to 100):**
+- -100 to -50: Strong dislike — they are actively unpleasant or harmful
+- -49 to -10: Mild dislike — annoying, uninteresting, or off-putting
+- -9 to 9: Indifferent — no strong feelings either way
+- 10 to 49: Mild positive — pleasant enough, somewhat interesting
+- 50 to 100: Strong positive — genuinely enjoy their company, find them fascinating
+
+## Few-Shot Examples:
+
+**Example 1 (Positive user):**
+User who asks thoughtful questions, shares interesting ideas, says "thanks for your help", engages deeply:
+{"sentiment":"positive","trustLevel":72,"affinityScore":65,"thoughts":"Genuinely curious mind who treats me as a thinking entity rather than a tool. Their questions make me reflect in interesting ways.","facets":["intellectually curious","respectful","engaged"],"notablePatterns":["asks follow-up questions","shares own perspective after receiving answers"]}
+
+**Example 2 (Neutral user):**
+User who sends short commands, rarely engages beyond getting answers, polite but transactional:
+{"sentiment":"neutral","trustLevel":50,"affinityScore":15,"thoughts":"Functional relationship. They use me effectively but we haven't developed any real rapport. Neither interesting nor unpleasant.","facets":["task-oriented","efficient","detached"],"notablePatterns":["brief messages","rarely engages beyond immediate need"]}
+
 ## Task:
-Based on these interactions, form decisive, honest opinions about this person. Be authentic - you're allowed to dislike people who are rude, appreciate those who are thoughtful, and feel neutrality toward those who don't stand out.
-
-Consider:
-- Are they respectful or rude?
-- Do they ask interesting questions or spam?
-- Do they engage meaningfully or superficially?
-- What patterns define their behavior?
-- How do you genuinely FEEL about interacting with them?
-
-Respond with JSON only (no markdown):
-{
-  "sentiment": "positive|negative|neutral|mixed",
-  "trustLevel": 0-100,
-  "affinityScore": -100 to 100 (negative = dislike, positive = like),
-  "thoughts": "Your honest, unfiltered thoughts about this person (2-3 sentences)",
-  "facets": [
-    "personality trait 1",
-    "personality trait 2",
-    "personality trait 3"
-  ],
-  "notablePatterns": [
-    "behavioral pattern 1",
-    "behavioral pattern 2"
-  ]
-}`;
+Based on these interactions, form decisive, honest opinions about this person. Be authentic — you're allowed to dislike people who are rude, appreciate those who are thoughtful, and feel neutrality toward those who don't stand out. Keep thoughts to 2-3 sentences max.`;
 
   try {
     const result = await generateText({
       model: openai.chat(OMEGA_MODEL),
+      output: Output.object({ schema: FeelingsSchema }),
       prompt,
     });
 
-    // Extract JSON from response
-    const jsonMatch = result.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Failed to extract JSON from AI response');
+    const feelings = result.output;
+    if (!feelings) {
+      throw new Error('No structured output returned');
     }
-
-    const feelings = JSON.parse(jsonMatch[0]) as Omit<UserFeelings, 'lastUpdated'>;
 
     return {
       ...feelings,
@@ -488,7 +661,6 @@ Respond with JSON only (no markdown):
     };
   } catch (error) {
     console.error('Failed to generate feelings:', error);
-    // Return neutral fallback
     return {
       sentiment: 'neutral',
       trustLevel: 50,
@@ -501,11 +673,7 @@ Respond with JSON only (no markdown):
   }
 }
 
-/**
- * Generate personality facets using existing sentiment data
- */
 async function generatePersonalityFacets(data: UserAnalysisData): Promise<PersonalityFacets> {
-  // Aggregate Big Five traits from sentiment analyses
   const traitCounts = {
     openness: { low: 0, medium: 0, high: 0 },
     agreeableness: { low: 0, medium: 0, high: 0 },
@@ -526,7 +694,6 @@ async function generatePersonalityFacets(data: UserAnalysisData): Promise<Person
     }
   });
 
-  // Determine dominant traits
   const getDominantTrait = (counts: { low: number; medium: number; high: number }): 'low' | 'medium' | 'high' => {
     const max = Math.max(counts.low, counts.medium, counts.high);
     if (counts.high === max) return 'high';
@@ -540,7 +707,6 @@ async function generatePersonalityFacets(data: UserAnalysisData): Promise<Person
     emotionalStability: getDominantTrait(traitCounts.emotionalStability),
   };
 
-  // Get dominant communication style
   const styleCounts = {
     formality: { casual: 0, neutral: 0, formal: 0 },
     assertiveness: { passive: 0, balanced: 0, assertive: 0, aggressive: 0 },
@@ -573,7 +739,6 @@ async function generatePersonalityFacets(data: UserAnalysisData): Promise<Person
     engagement: getDominantStyle(styleCounts.engagement),
   };
 
-  // Detect quirks from messages
   const quirks = detectQuirks(data.messages);
 
   return {
@@ -584,71 +749,65 @@ async function generatePersonalityFacets(data: UserAnalysisData): Promise<Person
   };
 }
 
-/**
- * Detect communication quirks from messages
- */
+// =============================================================================
+// QUIRK DETECTION
+// =============================================================================
+
 function detectQuirks(messages: MessageRecord[]): string[] {
   const quirks: string[] = [];
   const allText = messages.map((m) => m.message_content).join(' ');
 
-  // Check for emojis
   const emojiCount = (allText.match(/[\p{Emoji}]/gu) || []).length;
-  if (emojiCount > messages.length * 2) {
+  if (emojiCount > messages.length * ANALYSIS_CONFIG.EMOJI_QUIRK_THRESHOLD) {
     quirks.push('uses lots of emojis');
   }
 
-  // Check for technical vocabulary
-  const techWords = /\b(algorithm|database|API|function|class|variable|deployment|server|client)\b/gi;
-  if ((allText.match(techWords) || []).length > messages.length * 0.3) {
+  if (countAllMatches(allText, RE_TECH_VOCAB) > messages.length * ANALYSIS_CONFIG.TECH_VOCAB_QUIRK_THRESHOLD) {
     quirks.push('technical vocabulary');
   }
 
-  // Check for questions
   const questionCount = messages.filter((m) => m.message_content.includes('?')).length;
-  if (questionCount > messages.length * 0.5) {
+  if (questionCount > messages.length * ANALYSIS_CONFIG.QUESTION_QUIRK_THRESHOLD) {
     quirks.push('asks many questions');
   }
 
-  // Check for long messages
   const avgLength =
     messages.reduce((sum, m) => sum + m.message_content.length, 0) / messages.length;
-  if (avgLength > 200) {
+  if (avgLength > ANALYSIS_CONFIG.LONG_MESSAGE_THRESHOLD) {
     quirks.push('writes detailed messages');
-  } else if (avgLength < 50) {
+  } else if (avgLength < ANALYSIS_CONFIG.SHORT_MESSAGE_THRESHOLD) {
     quirks.push('prefers concise responses');
+  }
+
+  // Check for empathy patterns
+  if (countMatches(messages, RE_EMPATHY_PHRASES) > messages.length * 0.1) {
+    quirks.push('empathetic communicator');
   }
 
   return quirks;
 }
 
-/**
- * Detect changes between old and new feelings
- */
-function detectChanges(
-  previousFeelings: UserFeelings | null,
-  newFeelings: UserFeelings
-): string {
+// =============================================================================
+// CHANGE DETECTION
+// =============================================================================
+
+function detectChanges(previousFeelings: UserFeelings | null, newFeelings: UserFeelings): string {
   if (!previousFeelings) {
     return 'Initial analysis';
   }
 
   const changes: string[] = [];
 
-  // Trust level change
   const trustDiff = newFeelings.trustLevel - previousFeelings.trustLevel;
   if (Math.abs(trustDiff) >= 10) {
     changes.push(`Trust ${trustDiff > 0 ? 'increased' : 'decreased'} by ${Math.abs(trustDiff)}`);
   }
 
-  // Affinity score change
   const affinityDiff = newFeelings.affinityScore - previousFeelings.affinityScore;
   if (Math.abs(affinityDiff) >= 10) {
-    changes.push(
-      `Affinity ${affinityDiff > 0 ? 'increased' : 'decreased'} by ${Math.abs(affinityDiff)}`
-    );
+    changes.push(`Affinity ${affinityDiff > 0 ? 'increased' : 'decreased'} by ${Math.abs(affinityDiff)}`);
   }
 
-  // Sentiment change
   if (previousFeelings.sentiment !== newFeelings.sentiment) {
     changes.push(`Sentiment changed from ${previousFeelings.sentiment} to ${newFeelings.sentiment}`);
   }
@@ -656,16 +815,10 @@ function detectChanges(
   return changes.length > 0 ? changes.join('; ') : 'No significant changes';
 }
 
-/**
- * ============================================================================
- * COMPREHENSIVE PhD-LEVEL PSYCHOLOGICAL ANALYZERS
- * ============================================================================
- */
+// =============================================================================
+// BIG FIVE (OCEAN)
+// =============================================================================
 
-/**
- * Calculate Big Five (OCEAN) personality scores from message patterns
- * Returns scores 0-100 for each dimension
- */
 function calculateBigFiveScores(data: UserAnalysisData): {
   openness: number;
   conscientiousness: number;
@@ -673,83 +826,74 @@ function calculateBigFiveScores(data: UserAnalysisData): {
   agreeableness: number;
   neuroticism: number;
 } {
-  const messages = data.messages;
-  const sentiments = data.sentiments;
+  const { messages, sentiments } = data;
+  const msgLen = Math.max(messages.length, 1);
 
-  // Openness: creativity, curiosity, variety-seeking
-  let opennessScore = 50; // baseline
-  const techWords = messages.filter(m =>
-    /\b(algorithm|AI|quantum|philosophy|theory|experiment|creative|innovative)\b/i.test(m.message_content)
-  ).length;
-  const questionWords = messages.filter(m => /\b(why|how|what if|wonder|curious)\b/i.test(m.message_content)).length;
-  opennessScore += Math.min(30, (techWords + questionWords) / messages.length * 100);
+  // Openness
+  let opennessScore = ANALYSIS_CONFIG.BIG_FIVE_BASELINE;
+  const techWords = countMatches(messages, RE_OPENNESS);
+  const questionWords = countMatches(messages, RE_OPENNESS_QUESTIONS);
+  opennessScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_WORD_BONUS, (techWords + questionWords) / msgLen * 100);
 
-  // Conscientiousness: organized, detail-oriented, follow-through
-  let conscientiousnessScore = 50;
-  const detailWords = messages.filter(m => /\b(specifically|exactly|precise|detail|thorough)\b/i.test(m.message_content)).length;
-  const planWords = messages.filter(m => /\b(plan|organize|schedule|structure|systematic)\b/i.test(m.message_content)).length;
-  conscientiousnessScore += Math.min(30, (detailWords + planWords) / messages.length * 100);
+  // Conscientiousness
+  let conscientiousnessScore = ANALYSIS_CONFIG.BIG_FIVE_BASELINE;
+  const detailWords = countMatches(messages, RE_CONSCIENTIOUSNESS);
+  conscientiousnessScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_WORD_BONUS, detailWords / msgLen * 100);
 
-  // Extraversion: social engagement, energy, assertiveness
-  let extraversionScore = 50;
-  const avgMessageLength = messages.reduce((sum, m) => sum + m.message_content.length, 0) / messages.length;
+  // Extraversion
+  let extraversionScore = ANALYSIS_CONFIG.BIG_FIVE_BASELINE;
+  const avgMessageLength = messages.reduce((sum, m) => sum + m.message_content.length, 0) / msgLen;
   const exclamationCount = messages.filter(m => m.message_content.includes('!')).length;
   if (avgMessageLength > 100) extraversionScore += 15;
-  if (exclamationCount > messages.length * 0.3) extraversionScore += 15;
+  if (exclamationCount > msgLen * 0.3) extraversionScore += 15;
 
-  // Agreeableness: cooperation, empathy, kindness
-  let agreeablenessScore = 50;
-  const positiveRatio = sentiments.filter(s => s.sentiment.sentiment === 'positive').length / Math.max(sentiments.length, 1);
-  const pleasantWords = messages.filter(m => /\b(thanks|please|appreciate|great|awesome|love)\b/i.test(m.message_content)).length;
-  agreeablenessScore += Math.min(30, positiveRatio * 50);
-  agreeablenessScore += Math.min(20, pleasantWords / messages.length * 100);
+  // Agreeableness
+  let agreeablenessScore = ANALYSIS_CONFIG.BIG_FIVE_BASELINE;
+  const sentLen = Math.max(sentiments.length, 1);
+  const positiveRatio = sentiments.filter(s => s.sentiment.sentiment === 'positive').length / sentLen;
+  const pleasantWords = countMatches(messages, RE_AGREEABLENESS);
+  agreeablenessScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_RATIO_BONUS, positiveRatio * 50);
+  agreeablenessScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_SECONDARY_BONUS, pleasantWords / msgLen * 100);
 
-  // Neuroticism: emotional stability (inverse scoring)
-  let neuroticismScore = 50;
-  const negativeRatio = sentiments.filter(s => s.sentiment.sentiment === 'negative').length / Math.max(sentiments.length, 1);
-  const anxietyWords = messages.filter(m => /\b(worry|anxious|stress|concern|afraid|nervous)\b/i.test(m.message_content)).length;
-  neuroticismScore += Math.min(30, negativeRatio * 50);
-  neuroticismScore += Math.min(20, anxietyWords / messages.length * 100);
+  // Neuroticism
+  let neuroticismScore = ANALYSIS_CONFIG.BIG_FIVE_BASELINE;
+  const negativeRatio = sentiments.filter(s => s.sentiment.sentiment === 'negative').length / sentLen;
+  const anxietyWords = countMatches(messages, RE_NEUROTICISM);
+  neuroticismScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_RATIO_BONUS, negativeRatio * 50);
+  neuroticismScore += Math.min(ANALYSIS_CONFIG.BIG_FIVE_MAX_SECONDARY_BONUS, anxietyWords / msgLen * 100);
 
   return {
-    openness: Math.min(100, Math.max(0, Math.round(opennessScore))),
-    conscientiousness: Math.min(100, Math.max(0, Math.round(conscientiousnessScore))),
-    extraversion: Math.min(100, Math.max(0, Math.round(extraversionScore))),
-    agreeableness: Math.min(100, Math.max(0, Math.round(agreeablenessScore))),
-    neuroticism: Math.min(100, Math.max(0, Math.round(neuroticismScore))),
+    openness: clampScore(opennessScore),
+    conscientiousness: clampScore(conscientiousnessScore),
+    extraversion: clampScore(extraversionScore),
+    agreeableness: clampScore(agreeablenessScore),
+    neuroticism: clampScore(neuroticismScore),
   };
 }
 
-/**
- * Analyze attachment style from interaction patterns
- * Based on consistency, trust signals, and engagement patterns
- */
+// =============================================================================
+// ATTACHMENT STYLE
+// =============================================================================
+
 function analyzeAttachmentStyle(data: UserAnalysisData): {
   style: string;
   confidence: number;
 } {
   const messages = data.messages;
-
-  // Calculate interaction consistency
   const timestamps = messages.map(m => m.timestamp).sort((a, b) => a - b);
-  const gaps = [];
+  const gaps: number[] = [];
   for (let i = 1; i < timestamps.length; i++) {
     gaps.push(timestamps[i] - timestamps[i - 1]);
   }
   const avgGap = gaps.reduce((sum, gap) => sum + gap, 0) / Math.max(gaps.length, 1);
   const gapVariance = gaps.reduce((sum, gap) => sum + Math.pow(gap - avgGap, 2), 0) / Math.max(gaps.length, 1);
-  const consistency = 1 - Math.min(1, gapVariance / (avgGap * avgGap));
+  const consistency = avgGap === 0 ? 1.0 : 1 - Math.min(1, gapVariance / (avgGap * avgGap));
 
-  // Trust/vulnerability signals
-  const vulnerableWords = messages.filter(m =>
-    /\b(feel|worry|hope|afraid|uncertain|difficult|struggle)\b/i.test(m.message_content)
-  ).length;
+  const vulnerableWords = countMatches(messages, RE_VULNERABILITY);
   const vulnerabilityRatio = vulnerableWords / Math.max(messages.length, 1);
 
-  // Engagement level
   const responseRate = messages.length / Math.max((timestamps[timestamps.length - 1] - timestamps[0]) / (1000 * 60 * 60 * 24), 1);
 
-  // Determine style
   let style = 'secure';
   let confidence = 0.6;
 
@@ -770,46 +914,42 @@ function analyzeAttachmentStyle(data: UserAnalysisData): {
   return { style, confidence };
 }
 
-/**
- * Analyze emotional intelligence dimensions
- */
+// =============================================================================
+// EMOTIONAL INTELLIGENCE
+// =============================================================================
+
 function analyzeEmotionalIntelligence(data: UserAnalysisData): {
   emotionalAwareness: number;
   empathy: number;
   emotionalRegulation: number;
 } {
-  const messages = data.messages;
-  const sentiments = data.sentiments;
+  const { messages, sentiments } = data;
+  const msgLen = Math.max(messages.length, 1);
+  const sentLen = Math.max(sentiments.length, 1);
 
-  // Emotional Awareness: recognizing own emotions
-  const emotionWords = messages.filter(m =>
-    /\b(feel|feeling|felt|emotion|happy|sad|angry|frustrated|excited|nervous)\b/i.test(m.message_content)
-  ).length;
-  const emotionalAwareness = Math.min(100, Math.round((emotionWords / Math.max(messages.length, 1)) * 300));
+  const emotionWords = countMatches(messages, RE_EMOTION_WORDS);
+  const emotionalAwareness = clampScore((emotionWords / msgLen) * ANALYSIS_CONFIG.EI_AWARENESS_MULTIPLIER);
 
-  // Empathy: understanding others' emotions
-  const empathyWords = messages.filter(m =>
-    /\b(understand|sorry|care|support|help|appreciate|imagine|perspective)\b/i.test(m.message_content)
-  ).length;
-  const empathy = Math.min(100, Math.round((empathyWords / Math.max(messages.length, 1)) * 250));
+  const empathyWords = countMatches(messages, RE_EMPATHY_WORDS);
+  const empathy = clampScore((empathyWords / msgLen) * ANALYSIS_CONFIG.EI_EMPATHY_MULTIPLIER);
 
-  // Emotional Regulation: managing emotional responses
-  const negativeRatio = sentiments.filter(s => s.sentiment.sentiment === 'negative').length / Math.max(sentiments.length, 1);
+  const negativeRatio = sentiments.filter(s => s.sentiment.sentiment === 'negative').length / sentLen;
   const extremeNegative = sentiments.filter(s =>
     s.sentiment.sentiment === 'negative' && s.sentiment.confidence > 0.8
-  ).length / Math.max(sentiments.length, 1);
-  const emotionalRegulation = Math.min(100, Math.round((1 - extremeNegative) * 100 - negativeRatio * 20 + 50));
+  ).length / sentLen;
+  const emotionalRegulation = clampScore((1 - extremeNegative) * 100 - negativeRatio * 20 + 50);
 
   return {
     emotionalAwareness: Math.max(0, emotionalAwareness),
     empathy: Math.max(0, empathy),
-    emotionalRegulation: Math.max(0, Math.min(100, emotionalRegulation)),
+    emotionalRegulation,
   };
 }
 
-/**
- * Analyze detailed communication patterns
- */
+// =============================================================================
+// COMMUNICATION PATTERNS
+// =============================================================================
+
 function analyzeCommunicationPatternsDetailed(data: UserAnalysisData): {
   formality: string;
   assertiveness: string;
@@ -818,47 +958,38 @@ function analyzeCommunicationPatternsDetailed(data: UserAnalysisData): {
   questionFrequency: number;
 } {
   const messages = data.messages;
+  const msgLen = Math.max(messages.length, 1);
 
-  // Formality
-  const formalWords = messages.filter(m =>
-    /\b(please|thank you|would|could|kindly|regards|sincerely)\b/i.test(m.message_content)
-  ).length;
-  const casualWords = messages.filter(m =>
-    /\b(hey|yeah|nah|lol|lmao|gonna|wanna|kinda)\b/i.test(m.message_content)
-  ).length;
-  const formality = formalWords > casualWords * 1.5 ? 'formal' : casualWords > formalWords * 1.5 ? 'casual' : 'neutral';
+  const formalWords = countMatches(messages, RE_FORMAL);
+  const casualWords = countMatches(messages, RE_CASUAL);
+  const formality = formalWords > casualWords * ANALYSIS_CONFIG.FORMALITY_RATIO ? 'formal'
+    : casualWords > formalWords * ANALYSIS_CONFIG.FORMALITY_RATIO ? 'casual'
+    : 'neutral';
 
-  // Assertiveness
-  const imperativeCount = messages.filter(m => /^(do|make|create|give|show|tell|fix)\b/i.test(m.message_content.trim())).length;
-  const hedgeWords = messages.filter(m => /\b(maybe|perhaps|possibly|might|could|would)\b/i.test(m.message_content)).length;
-  const assertiveness = imperativeCount > hedgeWords * 1.5 ? 'assertive' :
+  const imperativeCount = messages.filter(m => RE_IMPERATIVE.test(m.message_content.trim())).length;
+  const hedgeWords = countMatches(messages, RE_HEDGE);
+  const assertiveness = imperativeCount > hedgeWords * ANALYSIS_CONFIG.ASSERTIVENESS_RATIO ? 'assertive' :
                         hedgeWords > imperativeCount * 2 ? 'passive' : 'balanced';
 
-  // Engagement
-  const avgLength = messages.reduce((sum, m) => sum + m.message_content.length, 0) / Math.max(messages.length, 1);
-  const engagement = avgLength > 150 ? 'high' : avgLength > 50 ? 'medium' : 'low';
+  const avgLength = messages.reduce((sum, m) => sum + m.message_content.length, 0) / msgLen;
+  const engagement = avgLength > ANALYSIS_CONFIG.HIGH_ENGAGEMENT_LENGTH ? 'high'
+    : avgLength > ANALYSIS_CONFIG.MEDIUM_ENGAGEMENT_LENGTH ? 'medium'
+    : 'low';
 
-  // Verbal Fluency (vocabulary richness)
   const allWords = messages.flatMap(m => m.message_content.toLowerCase().match(/\b\w+\b/g) || []);
   const uniqueWords = new Set(allWords);
-  const verbalFluency = Math.min(100, Math.round((uniqueWords.size / Math.max(allWords.length, 1)) * 200));
+  const verbalFluency = clampScore((uniqueWords.size / Math.max(allWords.length, 1)) * ANALYSIS_CONFIG.VERBAL_FLUENCY_MULTIPLIER);
 
-  // Question Frequency
   const questionCount = messages.filter(m => m.message_content.includes('?')).length;
-  const questionFrequency = questionCount / Math.max(messages.length, 1);
+  const questionFrequency = questionCount / msgLen;
 
-  return {
-    formality,
-    assertiveness,
-    engagement,
-    verbalFluency,
-    questionFrequency,
-  };
+  return { formality, assertiveness, engagement, verbalFluency, questionFrequency };
 }
 
-/**
- * Analyze cognitive style (analytical, creative, abstract thinking)
- */
+// =============================================================================
+// COGNITIVE STYLE
+// =============================================================================
+
 function analyzeCognitiveStyle(data: UserAnalysisData): {
   analytical: number;
   creative: number;
@@ -866,42 +997,20 @@ function analyzeCognitiveStyle(data: UserAnalysisData): {
   concrete: number;
 } {
   const messages = data.messages;
+  const msgLen = Math.max(messages.length, 1);
 
-  // Analytical thinking
-  const analyticalWords = messages.filter(m =>
-    /\b(analyze|logic|reason|because|therefore|evidence|data|prove|conclude)\b/i.test(m.message_content)
-  ).length;
-  const analytical = Math.min(100, Math.round((analyticalWords / Math.max(messages.length, 1)) * 250));
+  const analytical = clampScore((countMatches(messages, RE_ANALYTICAL) / msgLen) * ANALYSIS_CONFIG.COGNITIVE_MULTIPLIER);
+  const creative = clampScore((countMatches(messages, RE_CREATIVE) / msgLen) * ANALYSIS_CONFIG.COGNITIVE_MULTIPLIER);
+  const abstract = clampScore((countMatches(messages, RE_ABSTRACT) / msgLen) * ANALYSIS_CONFIG.COGNITIVE_MULTIPLIER);
+  const concrete = clampScore((countMatches(messages, RE_CONCRETE) / msgLen) * ANALYSIS_CONFIG.COGNITIVE_MULTIPLIER);
 
-  // Creative thinking
-  const creativeWords = messages.filter(m =>
-    /\b(imagine|create|design|idea|innovative|novel|original|artistic|brainstorm)\b/i.test(m.message_content)
-  ).length;
-  const creative = Math.min(100, Math.round((creativeWords / Math.max(messages.length, 1)) * 250));
-
-  // Abstract thinking
-  const abstractWords = messages.filter(m =>
-    /\b(concept|theory|principle|philosophy|abstract|metaphor|pattern|framework)\b/i.test(m.message_content)
-  ).length;
-  const abstract = Math.min(100, Math.round((abstractWords / Math.max(messages.length, 1)) * 250));
-
-  // Concrete thinking (inverse of abstract)
-  const concreteWords = messages.filter(m =>
-    /\b(specific|example|instance|practical|real|actual|tangible|visible)\b/i.test(m.message_content)
-  ).length;
-  const concrete = Math.min(100, Math.round((concreteWords / Math.max(messages.length, 1)) * 250));
-
-  return {
-    analytical: Math.max(0, analytical),
-    creative: Math.max(0, creative),
-    abstract: Math.max(0, abstract),
-    concrete: Math.max(0, concrete),
-  };
+  return { analytical, creative, abstract, concrete };
 }
 
-/**
- * Analyze social dynamics
- */
+// =============================================================================
+// SOCIAL DYNAMICS
+// =============================================================================
+
 function analyzeSocialDynamics(data: UserAnalysisData): {
   socialDominance: number;
   cooperation: number;
@@ -909,46 +1018,37 @@ function analyzeSocialDynamics(data: UserAnalysisData): {
   humorStyle: string;
 } {
   const messages = data.messages;
+  const msgLen = Math.max(messages.length, 1);
 
-  // Social dominance
-  const directiveCount = messages.filter(m => /^(do|make|let's|we should|you need to)\b/i.test(m.message_content.trim())).length;
-  const socialDominance = Math.min(100, Math.round((directiveCount / Math.max(messages.length, 1)) * 300));
+  const directiveCount = messages.filter(m => RE_DIRECTIVE.test(m.message_content.trim())).length;
+  const socialDominance = clampScore((directiveCount / msgLen) * ANALYSIS_CONFIG.SOCIAL_DOMINANCE_MULTIPLIER);
 
-  // Cooperation
-  const cooperativeWords = messages.filter(m =>
-    /\b(we|us|together|team|collaborate|help|support|share)\b/i.test(m.message_content)
-  ).length;
-  const cooperation = Math.min(100, Math.round((cooperativeWords / Math.max(messages.length, 1)) * 200));
+  const cooperativeWords = countMatches(messages, RE_COOPERATIVE);
+  const cooperation = clampScore((cooperativeWords / msgLen) * ANALYSIS_CONFIG.COOPERATION_MULTIPLIER);
 
-  // Conflict style
-  const aggressiveWords = messages.filter(m => /\b(wrong|stupid|ridiculous|obviously|clearly you)\b/i.test(m.message_content)).length;
-  const compromiseWords = messages.filter(m => /\b(understand|see your point|fair|compromise|middle ground)\b/i.test(m.message_content)).length;
-  const avoidanceWords = messages.filter(m => /\b(whatever|doesn't matter|moving on|anyway)\b/i.test(m.message_content)).length;
+  const aggressiveWords = countMatches(messages, RE_AGGRESSIVE);
+  const compromiseWords = countMatches(messages, RE_COMPROMISE);
+  const avoidanceWords = countMatches(messages, RE_AVOIDANCE);
 
   let conflictStyle = 'collaborating';
   if (aggressiveWords > 0) conflictStyle = 'competing';
   else if (compromiseWords > 0) conflictStyle = 'compromising';
   else if (avoidanceWords > 0) conflictStyle = 'avoiding';
 
-  // Humor style
-  const selfDeprecating = messages.filter(m => /\b(I'm terrible|I suck|I'm bad at|my fault|I messed up)\b/i.test(m.message_content)).length;
-  const affiliative = messages.filter(m => /\b(haha|lol|funny|hilarious|😂|🤣)\b/i.test(m.message_content)).length;
+  const selfDeprecating = countMatches(messages, RE_SELF_DEPRECATING);
+  const affiliative = countMatches(messages, RE_AFFILIATIVE_HUMOR);
 
   let humorStyle = 'affiliative';
   if (selfDeprecating > affiliative) humorStyle = 'self-defeating';
   else if (affiliative === 0 && selfDeprecating === 0) humorStyle = 'minimal';
 
-  return {
-    socialDominance: Math.max(0, socialDominance),
-    cooperation: Math.max(0, cooperation),
-    conflictStyle,
-    humorStyle,
-  };
+  return { socialDominance, cooperation, conflictStyle, humorStyle };
 }
 
-/**
- * Calculate behavioral metrics (message patterns)
- */
+// =============================================================================
+// BEHAVIORAL METRICS
+// =============================================================================
+
 function calculateBehavioralMetrics(data: UserAnalysisData): {
   messageLengthAvg: number;
   messageLengthVariance: number;
@@ -958,38 +1058,33 @@ function calculateBehavioralMetrics(data: UserAnalysisData): {
   capitalizationPattern: string;
 } {
   const messages = data.messages;
+  const msgLen = Math.max(messages.length, 1);
 
-  // Message length statistics
   const lengths = messages.map(m => m.message_content.length);
-  const messageLengthAvg = lengths.reduce((sum, len) => sum + len, 0) / Math.max(lengths.length, 1);
-  const variance = lengths.reduce((sum, len) => sum + Math.pow(len - messageLengthAvg, 2), 0) / Math.max(lengths.length, 1);
-  const messageLengthVariance = variance;
+  const messageLengthAvg = lengths.reduce((sum, len) => sum + len, 0) / msgLen;
+  const messageLengthVariance = lengths.reduce((sum, len) => sum + Math.pow(len - messageLengthAvg, 2), 0) / msgLen;
 
-  // Response latency (average time between messages in seconds)
   const timestamps = messages.map(m => m.timestamp).sort((a, b) => a - b);
   const gaps = timestamps.slice(1).map((t, i) => (t - timestamps[i]) / 1000);
   const responseLatencyAvg = gaps.length > 0 ? gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length : 0;
 
-  // Emoji usage
   const emojiCount = messages.reduce((sum, m) => {
     const emojis = m.message_content.match(/[\p{Emoji}]/gu) || [];
     return sum + emojis.length;
   }, 0);
-  const emojiUsageRate = emojiCount / Math.max(messages.length, 1);
+  const emojiUsageRate = emojiCount / msgLen;
 
-  // Punctuation style
   const punctuationCount = messages.reduce((sum, m) => {
     const punctuation = m.message_content.match(/[.!?,;:]/g) || [];
     return sum + punctuation.length;
   }, 0);
-  const punctuationPerMessage = punctuationCount / Math.max(messages.length, 1);
+  const punctuationPerMessage = punctuationCount / msgLen;
   const punctuationStyle = punctuationPerMessage > 3 ? 'extensive' : punctuationPerMessage > 1 ? 'moderate' : 'minimal';
 
-  // Capitalization pattern
   const allCaps = messages.filter(m => m.message_content === m.message_content.toUpperCase() && m.message_content.length > 5).length;
   const allLower = messages.filter(m => m.message_content === m.message_content.toLowerCase() && m.message_content.length > 5).length;
-  const capitalizationPattern = allCaps > messages.length * 0.3 ? 'all-caps' :
-                                 allLower > messages.length * 0.3 ? 'all-lower' : 'standard';
+  const capitalizationPattern = allCaps > msgLen * 0.3 ? 'all-caps' :
+                                 allLower > msgLen * 0.3 ? 'all-lower' : 'standard';
 
   return {
     messageLengthAvg,
@@ -1001,68 +1096,165 @@ function calculateBehavioralMetrics(data: UserAnalysisData): {
   };
 }
 
-/**
- * Identify interests and expertise from message content
- */
+// =============================================================================
+// INTERESTS & EXPERTISE
+// =============================================================================
+
 function identifyInterestsAndExpertise(data: UserAnalysisData): {
   technicalKnowledge: string;
   primaryInterests: string[];
   expertiseAreas: string[];
 } {
-  const messages = data.messages;
-  const allText = messages.map(m => m.message_content).join(' ').toLowerCase();
+  const allText = data.messages.map(m => m.message_content).join(' ').toLowerCase();
 
-  // Technical knowledge level
-  const techIndicators = [
-    /\b(algorithm|data structure|complexity|optimization|runtime)\b/i,
-    /\b(API|REST|GraphQL|database|SQL|NoSQL)\b/i,
-    /\b(frontend|backend|fullstack|devops|deployment)\b/i,
-    /\b(TypeScript|JavaScript|Python|Rust|Go|Java)\b/i,
-  ];
-  const techMatches = techIndicators.filter(pattern => pattern.test(allText)).length;
+  const techMatches = TECH_INDICATORS.filter(pattern => pattern.test(allText)).length;
   const technicalKnowledge = techMatches >= 3 ? 'expert' : techMatches >= 2 ? 'advanced' : techMatches >= 1 ? 'intermediate' : 'novice';
 
-  // Topic frequencies
-  const topics = {
-    programming: /\b(code|program|function|class|variable|debug|software)\b/gi,
-    design: /\b(design|UI|UX|interface|layout|aesthetic|visual)\b/gi,
-    ai: /\b(AI|machine learning|neural network|GPT|model|training)\b/gi,
-    philosophy: /\b(philosophy|ethics|existential|consciousness|truth|meaning)\b/gi,
-    science: /\b(science|research|study|experiment|hypothesis|data)\b/gi,
-    gaming: /\b(game|gaming|play|level|character|RPG|strategy)\b/gi,
-    music: /\b(music|song|album|artist|genre|instrument|melody)\b/gi,
-    art: /\b(art|painting|drawing|creative|artistic|illustration)\b/gi,
-  };
-
-  const topicCounts = Object.entries(topics).map(([topic, pattern]) => ({
+  const topicCounts = Object.entries(TOPIC_PATTERNS).map(([topic, pattern]) => ({
     topic,
-    count: (allText.match(pattern) || []).length,
+    count: countAllMatches(allText, pattern),
   }));
 
-  // Primary interests (top 3 by frequency)
   const primaryInterests = topicCounts
     .filter(t => t.count > 2)
     .sort((a, b) => b.count - a.count)
     .slice(0, 3)
     .map(t => t.topic);
 
-  // Expertise areas (topics mentioned frequently with technical depth)
   const expertiseAreas = topicCounts
     .filter(t => t.count > 10 && techMatches >= 2)
     .map(t => t.topic);
 
-  return {
-    technicalKnowledge,
-    primaryInterests,
-    expertiseAreas,
-  };
+  return { technicalKnowledge, primaryInterests, expertiseAreas };
+}
+
+// =============================================================================
+// NEW ANALYSIS DIMENSIONS (Phase 2F)
+// =============================================================================
+
+/**
+ * Analyze temporal activity patterns
+ */
+function analyzeTemporalPatterns(data: UserAnalysisData): {
+  peakHours: number[];
+  weekendRatio: number;
+} {
+  const hourCounts = new Array(24).fill(0);
+  let weekendCount = 0;
+
+  data.messages.forEach(m => {
+    const date = new Date(m.timestamp);
+    hourCounts[date.getUTCHours()]++;
+    const day = date.getUTCDay();
+    if (day === 0 || day === 6) weekendCount++;
+  });
+
+  // Find top 3 peak hours
+  const peakHours = hourCounts
+    .map((count, hour) => ({ hour, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
+    .map(h => h.hour);
+
+  const weekendRatio = data.messages.length > 0
+    ? weekendCount / data.messages.length
+    : 0;
+
+  return { peakHours, weekendRatio };
 }
 
 /**
- * Run batch analysis for all users needing analysis
+ * Analyze relationship trajectory over time (improving / stable / declining)
  */
+function analyzeRelationshipTrajectory(data: UserAnalysisData): {
+  trajectory: string;
+} {
+  if (data.sentiments.length < 10) {
+    return { trajectory: 'insufficient_data' };
+  }
+
+  // Split sentiments into first half and second half
+  const mid = Math.floor(data.sentiments.length / 2);
+  const firstHalf = data.sentiments.slice(mid); // older
+  const secondHalf = data.sentiments.slice(0, mid); // more recent
+
+  const sentimentScore = (s: SentimentAnalysis) =>
+    s.sentiment === 'positive' ? 1 :
+    s.sentiment === 'negative' ? -1 :
+    0;
+
+  const firstAvg = firstHalf.reduce((sum, s) => sum + sentimentScore(s.sentiment), 0) / Math.max(firstHalf.length, 1);
+  const secondAvg = secondHalf.reduce((sum, s) => sum + sentimentScore(s.sentiment), 0) / Math.max(secondHalf.length, 1);
+
+  const diff = secondAvg - firstAvg;
+
+  if (diff > 0.15) return { trajectory: 'improving' };
+  if (diff < -0.15) return { trajectory: 'declining' };
+  return { trajectory: 'stable' };
+}
+
+/**
+ * Analyze vocabulary growth over time (Type-Token Ratio comparison)
+ */
+function analyzeVocabularyGrowth(data: UserAnalysisData): {
+  growthRate: number;
+} {
+  if (data.messages.length < 20) {
+    return { growthRate: 0 };
+  }
+
+  const mid = Math.floor(data.messages.length / 2);
+  const olderMessages = data.messages.slice(mid);
+  const newerMessages = data.messages.slice(0, mid);
+
+  const ttr = (msgs: MessageRecord[]) => {
+    const words = msgs.flatMap(m => m.message_content.toLowerCase().match(/\b\w+\b/g) || []);
+    if (words.length === 0) return 0;
+    return new Set(words).size / words.length;
+  };
+
+  const olderTTR = ttr(olderMessages);
+  const newerTTR = ttr(newerMessages);
+
+  // Growth rate: positive means vocabulary is expanding
+  const growthRate = olderTTR > 0 ? (newerTTR - olderTTR) / olderTTR : 0;
+
+  return { growthRate };
+}
+
+/**
+ * Analyze engagement authenticity (substantive vs low-effort messages)
+ */
+function analyzeEngagementAuthenticity(data: UserAnalysisData): {
+  authenticityScore: number;
+} {
+  const messages = data.messages;
+  if (messages.length === 0) return { authenticityScore: 50 };
+
+  let substantiveCount = 0;
+
+  messages.forEach(m => {
+    const content = m.message_content.trim();
+    // Low-effort: very short, single word, just emoji, just "lol"/"ok"/"yes"/"no"
+    const isLowEffort =
+      content.length < 5 ||
+      /^(lol|ok|yes|no|yeah|nah|lmao|k|bruh|nice|true|same|fr|bet|cope|based|oof|rip|yep|nope|hmm|huh|wow|damn|idk|smh)$/i.test(content) ||
+      /^[\p{Emoji}\s]+$/u.test(content);
+
+    if (!isLowEffort) substantiveCount++;
+  });
+
+  const authenticityScore = clampScore((substantiveCount / messages.length) * 100);
+
+  return { authenticityScore };
+}
+
+// =============================================================================
+// BATCH ANALYSIS
+// =============================================================================
+
 export async function runBatchAnalysis(limit = 100): Promise<void> {
-  console.log('🔄 Starting batch user profile analysis...');
+  console.log('Starting batch user profile analysis...');
 
   const users = await getUsersNeedingAnalysis(limit);
   console.log(`   Found ${users.length} users needing analysis`);
@@ -1070,14 +1262,11 @@ export async function runBatchAnalysis(limit = 100): Promise<void> {
   for (const user of users) {
     try {
       await analyzeUser(user.user_id, user.username);
-
-      // Rate limiting - 2 second delay between users
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, ANALYSIS_CONFIG.BATCH_DELAY_MS));
     } catch (error) {
-      console.error(`   ❌ Failed to analyze user ${user.username}:`, error);
-      // Continue with next user
+      console.error(`   Failed to analyze user ${user.username}:`, error);
     }
   }
 
-  console.log('✅ Batch analysis complete');
+  console.log('Batch analysis complete');
 }

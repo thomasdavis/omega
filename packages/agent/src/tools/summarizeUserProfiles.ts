@@ -7,6 +7,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { getDatabase } from '@repo/database';
 import { openai } from '@ai-sdk/openai';
+import { OMEGA_MODEL } from '@repo/shared';
 import { generateText } from 'ai';
 
 export const summarizeUserProfilesTool = tool({
@@ -111,7 +112,7 @@ Format your response in a clear, readable way with:
 Note: Null values indicate data not yet collected for that user.`;
 
       const aiResult = await generateText({
-        model: openai.chat('gpt-4.1-mini'),
+        model: openai.chat(OMEGA_MODEL),
         prompt: prompt,
       });
 

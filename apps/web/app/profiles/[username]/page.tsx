@@ -5,6 +5,32 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
+// Typed sub-interfaces
+interface FeelingsJson {
+  sentiment?: string;
+  trustLevel?: number;
+  affinityScore?: number;
+  thoughts?: string;
+  facets?: string[];
+  notablePatterns?: string[];
+  lastUpdated?: number;
+}
+
+interface PersonalityFacetsJson {
+  dominantArchetypes?: string[];
+  bigFiveTraits?: Record<string, string>;
+  communicationStyle?: Record<string, string>;
+  quirks?: string[];
+}
+
+interface BehavioralPrediction {
+  behavior: string;
+  confidence: number;
+  timeframe: string;
+  category: string;
+  influencingFactors: string[];
+}
+
 interface UserProfile {
   // Core
   id: string;
@@ -13,7 +39,7 @@ interface UserProfile {
 
   // Archetypes
   dominant_archetype: string | null;
-  secondary_archetypes: any;
+  secondary_archetypes: string[] | null;
   archetype_confidence: number | null;
   shadow_archetype: string | null;
 
@@ -62,8 +88,8 @@ interface UserProfile {
 
   // Knowledge & Interests
   technical_knowledge_level: string | null;
-  primary_interests: any;
-  expertise_areas: any;
+  primary_interests: string[] | null;
+  expertise_areas: string[] | null;
 
   // Relationship with Omega
   affinity_score: number | null;
@@ -72,17 +98,17 @@ interface UserProfile {
   omega_thoughts: string | null;
 
   // Patterns & Sentiment
-  notable_patterns: any;
+  notable_patterns: string[] | null;
   overall_sentiment: string | null;
   positive_interaction_ratio: number | null;
   negative_interaction_ratio: number | null;
-  dominant_emotions: any;
-  feelings_json: any;
-  personality_facets: any;
+  dominant_emotions: string[] | null;
+  feelings_json: FeelingsJson | null;
+  personality_facets: PersonalityFacetsJson | null;
 
   // Cultural Background
   culturalBackground: string | null;
-  culturalValues: any;
+  culturalValues: string[] | null;
   culturalCommunicationStyle: string | null;
   culturalConfidence: number | null;
 
@@ -94,7 +120,7 @@ interface UserProfile {
   astrologicalConfidence: number | null;
 
   // Behavioral Predictions
-  predictedBehaviors: any;
+  predictedBehaviors: BehavioralPrediction[] | null;
   predictionConfidence: number | null;
   predictionTimeframe: string | null;
   lastPredictionAt: number | null;
@@ -103,12 +129,19 @@ interface UserProfile {
   // Integration
   integratedProfileSummary: string | null;
   profileIntegrationConfidence: number | null;
-  worldModelAdjustments: any;
-  personalModelAdjustments: any;
+  worldModelAdjustments: Record<string, unknown> | null;
+  personalModelAdjustments: Record<string, unknown> | null;
+
+  // New analysis dimensions
+  peakActivityHours: number[] | null;
+  weekendActivityRatio: number | null;
+  sentimentTrajectory: string | null;
+  vocabularyGrowthRate: number | null;
+  engagementAuthenticityScore: number | null;
 
   // Physical Appearance
   uploadedPhotoUrl: string | null;
-  uploadedPhotoMetadata: any;
+  uploadedPhotoMetadata: Record<string, unknown> | null;
   aiAppearanceDescription: string | null;
   appearanceConfidence: number | null;
   aiDetectedGender: string | null;
@@ -153,11 +186,11 @@ interface UserProfile {
   buildDescription: string | null;
   heightEstimate: string | null;
   posture: string | null;
-  distinctiveFeatures: any;
+  distinctiveFeatures: string[] | null;
 
   // Style & Presentation
   clothingStyle: string | null;
-  accessories: any;
+  accessories: string[] | null;
   attractivenessAssessment: string | null;
   approachabilityScore: number | null;
   perceivedConfidenceLevel: string | null;
@@ -171,6 +204,12 @@ interface UserProfile {
   lastPhotoAnalyzedAt: number | null;
   createdAt: number;
   updatedAt: number;
+}
+
+/** Normalize confidence: if >1 display as-is (already percentage), if 0-1 multiply by 100 */
+function normalizeConfidence(value: number | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  return value > 1 ? value : Math.round(value * 100);
 }
 
 // Progress bar component for scores
@@ -224,7 +263,7 @@ const Badge = ({ value, label, confidence }: { value: string; label: string; con
           {value}
         </span>
         {confidence !== null && confidence !== undefined && (
-          <span className="text-xs text-teal-400 font-mono">{(confidence * 100).toFixed(0)}%</span>
+          <span className="text-xs text-teal-400 font-mono">{normalizeConfidence(confidence)}%</span>
         )}
       </div>
     </div>
@@ -244,7 +283,7 @@ const TextField = ({ value, label }: { value: string | number; label: string }) 
 };
 
 // Prediction card component
-const PredictionCard = ({ prediction }: { prediction: any }) => {
+const PredictionCard = ({ prediction }: { prediction: BehavioralPrediction }) => {
   return (
     <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg space-y-3">
       <div className="flex items-start justify-between gap-4">
@@ -257,7 +296,7 @@ const PredictionCard = ({ prediction }: { prediction: any }) => {
         </div>
         <div className="text-right">
           <div className="text-xs text-zinc-500">Confidence</div>
-          <div className="text-lg text-teal-400 font-mono">{(prediction.confidence * 100).toFixed(0)}%</div>
+          <div className="text-lg text-teal-400 font-mono">{normalizeConfidence(prediction.confidence)}%</div>
         </div>
       </div>
       {prediction.influencingFactors && prediction.influencingFactors.length > 0 && (
@@ -559,7 +598,7 @@ export default function ProfileDetailPage() {
             {profile.culturalBackground && <DataField label="Cultural Background" value={profile.culturalBackground} />}
             {profile.culturalValues && <DataField label="Cultural Values" value={profile.culturalValues} />}
             {profile.culturalCommunicationStyle && <DataField label="Communication Style" value={profile.culturalCommunicationStyle} />}
-            {profile.culturalConfidence !== null && <ScoreBar score={Math.round(profile.culturalConfidence * 100)} label="Cultural Analysis Confidence" />}
+            {profile.culturalConfidence !== null && <ScoreBar score={normalizeConfidence(profile.culturalConfidence) ?? 0} label="Cultural Analysis Confidence" />}
           </div>
         </Section>
 
@@ -570,7 +609,7 @@ export default function ProfileDetailPage() {
             {profile.zodiacElement && <DataField label="Element" value={profile.zodiacElement} />}
             {profile.zodiacModality && <DataField label="Modality" value={profile.zodiacModality} />}
             {profile.birthDate && <TextField value={profile.birthDate} label="Birth Date" />}
-            {profile.astrologicalConfidence !== null && <ScoreBar score={Math.round(profile.astrologicalConfidence * 100)} label="Astrological Confidence" />}
+            {profile.astrologicalConfidence !== null && <ScoreBar score={normalizeConfidence(profile.astrologicalConfidence) ?? 0} label="Astrological Confidence" />}
           </div>
         </Section>
 
@@ -592,7 +631,13 @@ export default function ProfileDetailPage() {
                   {profile.predictionConfidence !== null && (
                     <div>
                       <span className="text-zinc-500">Overall Confidence: </span>
-                      <span className="text-teal-400 font-mono">{(profile.predictionConfidence * 100).toFixed(0)}%</span>
+                      <span className="text-teal-400 font-mono">{normalizeConfidence(profile.predictionConfidence)}%</span>
+                    </div>
+                  )}
+                  {profile.predictionAccuracyScore !== null && (
+                    <div>
+                      <span className="text-zinc-500">Accuracy Score: </span>
+                      <span className="text-teal-400 font-mono">{normalizeConfidence(profile.predictionAccuracyScore)}%</span>
                     </div>
                   )}
                 </div>
@@ -605,7 +650,7 @@ export default function ProfileDetailPage() {
         {profile.profileIntegrationConfidence !== null && (
           <Section title="Profile Integration">
             <div className="grid grid-cols-1 gap-6">
-              <ScoreBar score={Math.round(profile.profileIntegrationConfidence * 100)} label="Integration Confidence" />
+              <ScoreBar score={normalizeConfidence(profile.profileIntegrationConfidence) ?? 0} label="Integration Confidence" />
             </div>
           </Section>
         )}
@@ -724,6 +769,29 @@ export default function ProfileDetailPage() {
             </div>
           </div>
         </Section>
+
+        {/* Analysis Metrics */}
+        {(profile.peakActivityHours || profile.weekendActivityRatio !== null || profile.sentimentTrajectory || profile.vocabularyGrowthRate !== null || profile.engagementAuthenticityScore !== null) && (
+          <Section title="Analysis Metrics">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {profile.peakActivityHours && profile.peakActivityHours.length > 0 && (
+                <TextField value={profile.peakActivityHours.map(h => `${h}:00 UTC`).join(', ')} label="Peak Activity Hours" />
+              )}
+              {profile.weekendActivityRatio !== null && (
+                <ScoreBar score={Math.round(profile.weekendActivityRatio * 100)} label="Weekend Activity Ratio" />
+              )}
+              {profile.sentimentTrajectory && (
+                <DataField label="Sentiment Trajectory" value={profile.sentimentTrajectory} />
+              )}
+              {profile.vocabularyGrowthRate !== null && (
+                <TextField value={`${(profile.vocabularyGrowthRate * 100).toFixed(1)}%`} label="Vocabulary Growth Rate" />
+              )}
+              {profile.engagementAuthenticityScore !== null && (
+                <ScoreBar score={Math.round(profile.engagementAuthenticityScore)} label="Engagement Authenticity" />
+              )}
+            </div>
+          </Section>
+        )}
 
         {/* Tracking & Metadata */}
         <Section title="Tracking & Metadata">

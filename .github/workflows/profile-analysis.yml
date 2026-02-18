@@ -1,0 +1,63 @@
+name: Profile Analysis (Scheduled)
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # 2 AM UTC daily
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max users to analyze (default: 100)'
+        required: false
+        default: '100'
+
+jobs:
+  analyze-profiles:
+    name: Run Profile Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js and pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build agent package
+        run: pnpm build --filter=@repo/agent
+
+      - name: Run profile analysis
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_PUBLIC_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          LIMIT="${{ github.event.inputs.limit || '100' }}"
+          echo "Running profile analysis with limit: $LIMIT"
+          node packages/agent/dist/scripts/runProfileAnalysis.js --limit "$LIMIT"
+
+      - name: Notify Discord - Success
+        if: success()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "Profile Analysis Complete"
+          embed-description: |
+            Daily profile analysis finished successfully.
+            **Trigger:** ${{ github.event_name == 'schedule' && 'Scheduled (2 AM UTC)' || 'Manual dispatch' }}
+            **Limit:** ${{ github.event.inputs.limit || '100' }}
+          embed-color: 5814783
+
+      - name: Notify Discord - Failure
+        if: failure()
+        uses: tsickert/discord-webhook@v6.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "Profile Analysis Failed"
+          embed-description: |
+            Daily profile analysis encountered an error.
+            **Trigger:** ${{ github.event_name == 'schedule' && 'Scheduled (2 AM UTC)' || 'Manual dispatch' }}
+            Check logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          embed-color: 15158332

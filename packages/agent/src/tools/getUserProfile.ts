@@ -38,9 +38,19 @@ export const getUserProfileTool = tool({
     console.log(`🔍 Getting comprehensive profile for ${username} (${userId})`);
 
     try {
-      // 1. ALWAYS run fresh analysis to get up-to-date feelings
-      console.log('   Running fresh user analysis...');
-      await analyzeUser(userId, username);
+      // 1. Check if profile needs re-analysis (skip if analyzed within 6 hours)
+      const existingProfile = await getUserProfile(userId);
+      const SIX_HOURS = 6 * 60 * 60;
+      const now = Math.floor(Date.now() / 1000);
+      const isStale = !existingProfile?.last_analyzed_at
+        || (now - existingProfile.last_analyzed_at) > SIX_HOURS;
+
+      if (isStale) {
+        console.log('   Running fresh user analysis (profile is stale)...');
+        await analyzeUser(userId, username);
+      } else {
+        console.log('   Skipping analysis (profile analyzed within last 6 hours)');
+      }
 
       // 2. Get updated profile
       const profile = await getUserProfile(userId);
