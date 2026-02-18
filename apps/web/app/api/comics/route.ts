@@ -35,19 +35,22 @@ function getComicsDir(): string {
 export async function GET() {
   try {
     // First, try to fetch comics from database
+    // Include all comic tool types and avoid fetching binary image data for listing
     const dbComics = await prisma.generatedImage.findMany({
       where: {
-        toolName: 'generateComic',
+        toolName: {
+          in: ['generateComic', 'generateDilbertComic', 'generateXkcdComic'],
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
       select: {
         id: true,
+        toolName: true,
         metadata: true,
         createdAt: true,
         bytes: true,
-        imageData: true,
       },
     });
 
@@ -56,16 +59,17 @@ export async function GET() {
       const metadata = comic.metadata as any;
       const issueNumber = metadata?.githubIssueNumber || metadata?.githubPrNumber;
       const filename = metadata?.filename || `comic_${comic.id}.png`;
+      const description = metadata?.description;
 
       return {
         id: Number(comic.id),
         number: issueNumber || Number(comic.id),
         filename,
-        // Serve from database by ID
+        description,
+        toolName: comic.toolName,
         url: `/api/comics/${comic.id}`,
         createdAt: comic.createdAt.toISOString(),
         size: comic.bytes || 0,
-        hasImageData: !!comic.imageData,
       };
     });
 
