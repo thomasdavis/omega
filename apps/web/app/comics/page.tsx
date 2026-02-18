@@ -9,6 +9,8 @@ interface Comic {
   id: number;
   number: number;
   filename: string;
+  description?: string;
+  toolName?: string;
   url: string;
   createdAt: string;
   size: number;
@@ -19,23 +21,24 @@ export default function ComicsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchComics = () => {
+    setLoading(true);
+    setError(null);
     fetch('/api/comics')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Server error (${res.status})`);
-        }
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          setComics(data.comics || []);
+          setComics(data.comics);
         } else {
           setError(data.error || 'Failed to load comics');
         }
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchComics();
   }, []);
 
   if (loading) {
@@ -49,29 +52,10 @@ export default function ComicsPage() {
           <p className="text-red-400 text-xl mb-4">Error: {error}</p>
           <p className="text-zinc-500 mb-6">Failed to load comics</p>
           <button
-            onClick={() => {
-              setError(null);
-              setLoading(true);
-              fetch('/api/comics')
-                .then((res) => {
-                  if (!res.ok) {
-                    throw new Error(`Server error (${res.status})`);
-                  }
-                  return res.json();
-                })
-                .then((data) => {
-                  if (data.success) {
-                    setComics(data.comics || []);
-                  } else {
-                    setError(data.error || 'Failed to load comics');
-                  }
-                })
-                .catch((err) => setError(err.message))
-                .finally(() => setLoading(false));
-            }}
-            className="px-4 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors border border-zinc-700 text-sm font-mono"
+            onClick={fetchComics}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-colors text-sm font-mono"
           >
-            Retry
+            Try Again
           </button>
         </div>
       </div>
@@ -118,10 +102,11 @@ export default function ComicsPage() {
                 <div className="p-6">
                   <div className="flex justify-between items-start gap-3 mb-4">
                     <h2 className="text-xl font-light text-white flex-1 line-clamp-2">
-                      {comic.filename.replace('.html', '').replace(/-comic/gi, '')}
+                      {comic.description || comic.filename.replace('.html', '').replace(/-comic/gi, '')}
                     </h2>
                     <Badge variant="accent" className="shrink-0">
-                      COMIC
+                      {comic.toolName === 'generateDilbertComic' ? 'DILBERT' :
+                       comic.toolName === 'generateXkcdComic' ? 'XKCD' : 'COMIC'}
                     </Badge>
                   </div>
 
