@@ -42,6 +42,7 @@ export * as pgDecisionLogService from './postgres/decisionLogService.js';
 export * as pgBannedUsersService from './postgres/bannedUsersService.js';
 export * as pgAntigravityRoastsService from './postgres/antigravityRoastsService.js';
 export * as pgTweetLogService from './postgres/tweetLogService.js';
+export * as pgApiUsageLogService from './postgres/apiUsageLogService.js';
 export * as pgGuildDefaultsService from './postgres/guildDefaultsService.js';
 
 // Schema Registry
@@ -289,6 +290,21 @@ export type {
   TweetLogRecord,
   LogTweetParams,
 } from './postgres/tweetLogService.js';
+
+// Export API usage log service functions
+export {
+  logApiUsage,
+  getRecentApiUsageLogs,
+  getApiUsageByKeyPrefix,
+  getApiUsageStats,
+  countApiUsageLogs,
+} from './postgres/apiUsageLogService.js';
+
+// Export API usage log service types
+export type {
+  ApiUsageLogRecord,
+  LogApiUsageParams,
+} from './postgres/apiUsageLogService.js';
 
 // Export guild defaults service functions
 export {
