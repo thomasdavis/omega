@@ -81,7 +81,6 @@ import { generateFilmSceneTool } from './tools/generateFilmScene.js';
 import { csvToChartTool } from './tools/csvToChart.js';
 import { bullshitDetectorTool } from './tools/bullshitDetector.js';
 import { tweetTool } from './tools/tweet.js';
-import { generateStarSignTool } from './tools/generateStarSign.js';
 import { detectBiasTool } from './tools/detectBias.js';
 import { psychoAnalysisTool } from './tools/psychoAnalysis.js';
 import { psychoHistoryTool } from './tools/psychoHistory.js';

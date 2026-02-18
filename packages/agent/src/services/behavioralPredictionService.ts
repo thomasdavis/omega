@@ -1,7 +1,7 @@
 /**
  * Behavioral Prediction Service
- * Generates behavioral predictions by combining psychological profiling,
- * communication orientation, and astrological influences
+ * Generates behavioral predictions by combining psychological profiling
+ * and communication orientation
  */
 
 import { generateText, Output } from 'ai';
@@ -24,27 +24,6 @@ const PREDICTION_MODEL = 'gpt-5';
 const PREDICTION_STALENESS_DAYS = 7;
 const BATCH_DELAY_MS = 2000;
 const MAX_USER_STRING_LENGTH = 500;
-
-// =============================================================================
-// ZODIAC MAPPINGS
-// =============================================================================
-
-const ZODIAC_SIGNS = {
-  Aries: { element: 'Fire', modality: 'Cardinal', dates: '03-21 to 04-19' },
-  Taurus: { element: 'Earth', modality: 'Fixed', dates: '04-20 to 05-20' },
-  Gemini: { element: 'Air', modality: 'Mutable', dates: '05-21 to 06-20' },
-  Cancer: { element: 'Water', modality: 'Cardinal', dates: '06-21 to 07-22' },
-  Leo: { element: 'Fire', modality: 'Fixed', dates: '07-23 to 08-22' },
-  Virgo: { element: 'Earth', modality: 'Mutable', dates: '08-23 to 09-22' },
-  Libra: { element: 'Air', modality: 'Cardinal', dates: '09-23 to 10-22' },
-  Scorpio: { element: 'Water', modality: 'Fixed', dates: '10-23 to 11-21' },
-  Sagittarius: { element: 'Fire', modality: 'Mutable', dates: '11-22 to 12-21' },
-  Capricorn: { element: 'Earth', modality: 'Cardinal', dates: '12-22 to 01-19' },
-  Aquarius: { element: 'Air', modality: 'Fixed', dates: '01-20 to 02-18' },
-  Pisces: { element: 'Water', modality: 'Mutable', dates: '02-19 to 03-20' },
-} as const;
-
-type ZodiacSign = keyof typeof ZODIAC_SIGNS;
 
 // =============================================================================
 // SCHEMAS
@@ -170,97 +149,13 @@ function inferCommunicationOrientation(profile: UserProfileRecord): {
 }
 
 // =============================================================================
-// ZODIAC INFERENCE
-// =============================================================================
-
-function inferZodiacSign(profile: UserProfileRecord): {
-  sign: ZodiacSign;
-  confidence: number;
-} {
-  const scores = new Map<ZodiacSign, number>();
-
-  Object.keys(ZODIAC_SIGNS).forEach((sign) => {
-    scores.set(sign as ZodiacSign, 0);
-  });
-
-  if (profile.extraversion_score && profile.extraversion_score > 70) {
-    scores.set('Aries', (scores.get('Aries') || 0) + 2);
-    scores.set('Leo', (scores.get('Leo') || 0) + 2);
-    scores.set('Sagittarius', (scores.get('Sagittarius') || 0) + 2);
-  }
-
-  if (profile.conscientiousness_score && profile.conscientiousness_score > 70) {
-    scores.set('Taurus', (scores.get('Taurus') || 0) + 2);
-    scores.set('Virgo', (scores.get('Virgo') || 0) + 2);
-    scores.set('Capricorn', (scores.get('Capricorn') || 0) + 2);
-  }
-
-  if (profile.openness_score && profile.openness_score > 70) {
-    scores.set('Gemini', (scores.get('Gemini') || 0) + 2);
-    scores.set('Libra', (scores.get('Libra') || 0) + 2);
-    scores.set('Aquarius', (scores.get('Aquarius') || 0) + 2);
-  }
-
-  if (profile.emotional_awareness_score && profile.emotional_awareness_score > 70) {
-    scores.set('Cancer', (scores.get('Cancer') || 0) + 2);
-    scores.set('Scorpio', (scores.get('Scorpio') || 0) + 2);
-    scores.set('Pisces', (scores.get('Pisces') || 0) + 2);
-  }
-
-  if (profile.communication_assertiveness === 'assertive' || profile.communication_assertiveness === 'aggressive') {
-    scores.set('Aries', (scores.get('Aries') || 0) + 1);
-    scores.set('Scorpio', (scores.get('Scorpio') || 0) + 1);
-  }
-
-  if (profile.agreeableness_score && profile.agreeableness_score > 75) {
-    scores.set('Libra', (scores.get('Libra') || 0) + 1);
-    scores.set('Pisces', (scores.get('Pisces') || 0) + 1);
-  }
-
-  if (profile.analytical_thinking_score && profile.analytical_thinking_score > 70) {
-    scores.set('Virgo', (scores.get('Virgo') || 0) + 1);
-    scores.set('Aquarius', (scores.get('Aquarius') || 0) + 1);
-  }
-
-  let maxScore = 0;
-  let predictedSign: ZodiacSign = 'Gemini';
-
-  scores.forEach((score, sign) => {
-    if (score > maxScore) {
-      maxScore = score;
-      predictedSign = sign;
-    }
-  });
-
-  const confidence = Math.min(0.6, maxScore / 10);
-
-  return { sign: predictedSign, confidence };
-}
-
-// =============================================================================
 // PREDICTION GENERATION
 // =============================================================================
 
 async function generatePredictions(profile: UserProfileRecord): Promise<BehavioralPrediction[]> {
   const orientation = inferCommunicationOrientation(profile);
 
-  const astroData = profile.zodiac_sign
-    ? {
-        sign: profile.zodiac_sign,
-        element: profile.zodiac_element,
-        modality: profile.zodiac_modality,
-      }
-    : (() => {
-        const inferred = inferZodiacSign(profile);
-        const zodiacInfo = ZODIAC_SIGNS[inferred.sign];
-        return {
-          sign: inferred.sign,
-          element: zodiacInfo.element,
-          modality: zodiacInfo.modality,
-        };
-      })();
-
-  const prompt = `You are Omega, an AI analyzing a user's future behavior by integrating psychology, communication orientation, and astrological influences.
+  const prompt = `You are Omega, an AI analyzing a user's future behavior by integrating psychology and communication orientation.
 
 ## User Profile: ${sanitize(profile.username)}
 
@@ -287,18 +182,12 @@ async function generatePredictions(profile: UserProfileRecord): Promise<Behavior
 - Individualism: ${orientation.individualism}/100 (0=collectivist, 100=individualist)
 - Core Values: ${orientation.values.join(', ')}
 
-### Astrological Profile (creative flavor — weight at ~10%):
-- Zodiac Sign: ${astroData.sign}
-- Element: ${astroData.element}
-- Modality: ${astroData.modality}
-
 ### Current Interests:
 ${sanitizeArray(profile.primary_interests)}
 
 ## Weighting Guidance:
-- **Psychology (70%):** Base predictions primarily on OCEAN traits, EI scores, and communication patterns
+- **Psychology (80%):** Base predictions primarily on OCEAN traits, EI scores, and communication patterns
 - **Communication orientation (20%):** Use orientation dimensions to calibrate HOW behaviors manifest
-- **Astrology (10%):** Use as creative thematic flavor only — do NOT make this the primary driver
 
 ## Examples of Good vs Bad Predictions:
 
@@ -362,50 +251,24 @@ export async function updateUserPredictions(userId: string): Promise<void> {
   // Infer communication orientation
   const orientation = inferCommunicationOrientation(profile);
 
-  // Infer or retrieve astrological sign
-  let astroData;
-  if (!profile.zodiac_sign) {
-    const inferred = inferZodiacSign(profile);
-    const zodiacInfo = ZODIAC_SIGNS[inferred.sign];
-    astroData = {
-      sign: inferred.sign,
-      element: zodiacInfo.element,
-      modality: zodiacInfo.modality,
-      confidence: inferred.confidence,
-    };
-  } else {
-    astroData = {
-      sign: profile.zodiac_sign,
-      element: profile.zodiac_element,
-      modality: profile.zodiac_modality,
-      confidence: profile.astrological_confidence || 0.5,
-    };
-  }
-
   // Generate predictions
   const predictions = await generatePredictions(profile);
 
   const avgConfidence = predictions.reduce((sum, p) => sum + p.confidence, 0) / Math.max(predictions.length, 1);
 
-  // Create integrated summary using communication orientation instead of cultural labels
+  // Create integrated summary using communication orientation
   const directnessLabel = orientation.directness > 65 ? 'direct' : orientation.directness < 35 ? 'indirect' : 'balanced';
-  const integratedSummary = `${sanitize(profile.username)} is a ${astroData.element} sign (${astroData.sign}) with a ${directnessLabel} communication style. ` +
+  const integratedSummary = `${sanitize(profile.username)} has a ${directnessLabel} communication style. ` +
     `Psychologically, they exhibit ${profile.openness_score ?? 'moderate'} openness, ${profile.extraversion_score ?? 'moderate'} extraversion, ` +
     `and ${profile.agreeableness_score ?? 'moderate'} agreeableness. Their communication orientation ` +
-    `combined with ${astroData.modality} modality suggests they are likely to ${predictions[0]?.behavior || 'continue current patterns'}.`;
+    `suggests they are likely to ${predictions[0]?.behavior || 'continue current patterns'}.`;
 
   await updateUserProfile(userId, {
-    // Communication orientation (replaces cultural_background binary)
+    // Communication orientation
     cultural_background: `directness:${orientation.directness} formality:${orientation.formality} individualism:${orientation.individualism}`,
     cultural_values: orientation.values,
     cultural_communication_style: directnessLabel,
     cultural_confidence: orientation.confidence,
-
-    // Astrological data
-    zodiac_sign: astroData.sign,
-    zodiac_element: astroData.element,
-    zodiac_modality: astroData.modality,
-    astrological_confidence: astroData.confidence,
 
     // Predictions
     predicted_behaviors: predictions,
@@ -415,12 +278,11 @@ export async function updateUserPredictions(userId: string): Promise<void> {
 
     // Integration
     integrated_profile_summary: integratedSummary,
-    profile_integration_confidence: (orientation.confidence + astroData.confidence) / 2,
+    profile_integration_confidence: orientation.confidence,
   });
 
   console.log(`   Predictions updated for ${profile.username}`);
   console.log(`      Orientation: direct=${orientation.directness} formal=${orientation.formality} indiv=${orientation.individualism} (${Math.round(orientation.confidence * 100)}%)`);
-  console.log(`      Zodiac: ${astroData.sign} - ${astroData.element} ${astroData.modality} (${Math.round(astroData.confidence * 100)}%)`);
   console.log(`      Predictions: ${predictions.length} behaviors predicted (avg confidence: ${Math.round(avgConfidence * 100)}%)`);
 }
 

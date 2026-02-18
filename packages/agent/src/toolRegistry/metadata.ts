@@ -1334,21 +1334,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
-  {
-    id: 'generateStarSign',
-    name: 'Generate Star Sign',
-    description: 'Generate astrological readings and horoscopes',
-    keywords: ['astrology', 'horoscope', 'star sign', 'zodiac', 'generate'],
-    tags: ['content', 'astrology', 'fun'],
-    examples: [
-      'generate horoscope',
-      'create star sign reading',
-      'astrology reading',
-      'zodiac prediction'
-    ],
-    category: 'specialized'
-  },
-
   // ===== IMAGE GENERATION TOOLS =====
   {
     id: 'generateUserImage',

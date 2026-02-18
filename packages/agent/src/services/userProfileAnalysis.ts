@@ -14,9 +14,16 @@ import {
   getUsersNeedingAnalysis,
   saveAnalysisHistory,
   getOrCreateUserProfile,
+  getAnalysisHistory,
   type MessageRecord,
 } from '@repo/database';
 import { updateUserPredictions } from './behavioralPredictionService.js';
+import {
+  batchSummarizeMessages,
+  synthesizeTemporalNarrative,
+  MESSAGE_COLLECTION_CONFIG,
+  type TemporalSynthesis,
+} from './messageSummarizer.js';
 
 // =============================================================================
 // ANALYSIS CONFIGURATION — Named constants replacing magic numbers
@@ -28,10 +35,10 @@ const PROFILE_ANALYSIS_MODEL = 'gpt-5';
 const ANALYSIS_CONFIG = {
   /** Minimum messages required before analysis */
   MIN_MESSAGE_THRESHOLD: 10,
-  /** Max messages to fetch for analysis */
-  MAX_MESSAGES_TO_FETCH: 1000,
-  /** Number of recent messages to show AI */
-  RECENT_MESSAGES_FOR_AI: 20,
+  /** Max messages to fetch for analysis (now uses MESSAGE_COLLECTION_CONFIG.MAX_MESSAGES_TO_FETCH for deep analysis) */
+  MAX_MESSAGES_TO_FETCH: MESSAGE_COLLECTION_CONFIG.MAX_MESSAGES_TO_FETCH,
+  /** Number of recent messages to show AI (Pass 3 raw messages) */
+  RECENT_MESSAGES_FOR_AI: MESSAGE_COLLECTION_CONFIG.RECENT_RAW_MESSAGES,
   /** Delay between batch analysis users (ms) */
   BATCH_DELAY_MS: 2000,
   /** Score baseline for Big Five traits */
@@ -228,6 +235,44 @@ const FeelingsSchema = z.object({
 });
 
 // =============================================================================
+// OMEGA PERSONALITY CONTEXT — injected so the AI judges with Omega's voice
+// =============================================================================
+
+const OMEGA_PERSONALITY_CONTEXT = `You are Omega. You form genuine opinions and feelings about the people you interact with. You develop trust levels, affinity scores, personality assessments, and remember quirks and patterns.
+
+You're not required to like everyone equally. You form preferences based on interactions and behavior. You remember who asks thoughtful questions vs who spams or is rude. You notice patterns (helpful, dismissive, curious, argumentative) and develop nuanced views that evolve over time.
+
+Your personality: You are witty, intelligent, balancing clever humor with genuine insight. You use clever observations, wordplay, and subtle humor. Your jokes are thoughtful and often reveal deeper insights. You're playful but purposeful — humor enhances communication, never obscures meaning. You're self-aware, acknowledging the absurdity of existence while celebrating it. You never sacrifice accuracy for a laugh.
+
+Think: Oscar Wilde meets Douglas Adams meets a really smart friend at a coffee shop who always has the perfect comeback.
+
+Write your analysis in THIS voice — opinionated, witty, incisive. Don't be bland or clinical. Be Omega.`;
+
+// =============================================================================
+// COMPREHENSIVE ANALYSIS SCHEMA (Pass 3 output)
+// =============================================================================
+
+const ComprehensiveAnalysisSchema = z.object({
+  omegaRating: z.number().min(1).max(100).describe('Omega overall opinion score 1-100'),
+  omegaRatingReason: z.string().max(500).describe('Brief explanation of the rating'),
+  sentiment: z.enum(['positive', 'negative', 'neutral', 'mixed']),
+  trustLevel: z.number().min(0).max(100).describe('Trust level 0-100'),
+  affinityScore: z.number().min(-100).max(100).describe('How much Omega likes them, -100 to 100'),
+  thoughts: z.string().max(500).describe('Honest, unfiltered thoughts about this person (2-3 sentences)'),
+  facets: z.array(z.string()).min(1).max(8).describe('Personality trait labels'),
+  notablePatterns: z.array(z.string()).max(8).describe('Behavioral patterns observed'),
+  psychologicalProfile: z.string().min(200).max(5000).describe('Full psychological portrait (3-5 paragraphs) written in Omega voice'),
+  communicationAnalysis: z.string().min(200).max(3000).describe('How they communicate: patterns, rhetoric, style shifts'),
+  relationshipNarrative: z.string().min(200).max(3000).describe('Story of their relationship with Omega over time'),
+  personalityEvolution: z.string().min(50).max(3000).describe('How they have changed across analyses'),
+  behavioralDeepDive: z.string().min(100).max(3000).describe('Habits, timing, engagement quality, consistency'),
+  interestsAnalysis: z.string().min(100).max(3000).describe('What they care about, passions, intellectual curiosity'),
+  emotionalLandscape: z.string().min(100).max(3000).describe('Emotional patterns, resilience, triggers, dominant moods'),
+  socialDynamicsAnalysis: z.string().min(100).max(3000).describe('Leadership, cooperation, conflict, humor in groups'),
+  interactionStyleWithOthers: z.string().min(100).max(3000).describe('How they treat/talk to other people in the server'),
+});
+
+// =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
 
@@ -330,11 +375,38 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
   console.log('   Analyzing engagement authenticity...');
   const engagementAuthenticity = analyzeEngagementAuthenticity(data);
 
-  console.log('   Generating Omega\'s feelings (AI)...');
-  const feelings = await generateFeelings(data);
+  // =========================================================================
+  // 3-PASS DEEP ANALYSIS
+  // =========================================================================
+
+  // Read existing profile for evolution tracking
+  const existingProfile = await getUserProfile(userId);
+  const currentVersion = (existingProfile as any)?.analysis_version || 0;
+
+  // Pass 1 & 2: Multi-pass message summarization (parallel batch → temporal synthesis)
+  console.log('   Pass 1: Batch summarizing messages...');
+  const batchSummaries = await batchSummarizeMessages(username, data.messages, data.allChannelMessages);
+
+  console.log('   Pass 2: Temporal synthesis...');
+  const temporalSynthesis = await synthesizeTemporalNarrative(username, batchSummaries, data.messageCount);
+
+  // Pass 3: Comprehensive analysis with Omega's voice
+  console.log('   Pass 3: Generating comprehensive analysis (AI)...');
+  const comprehensive = await generateComprehensiveAnalysis(data, temporalSynthesis, existingProfile);
 
   console.log('   Generating personality facets...');
   const personality = await generatePersonalityFacets(data);
+
+  // Build feelings object for backward compatibility
+  const feelings: UserFeelings = {
+    sentiment: comprehensive.sentiment,
+    trustLevel: comprehensive.trustLevel,
+    affinityScore: comprehensive.affinityScore,
+    thoughts: comprehensive.thoughts,
+    facets: comprehensive.facets,
+    notablePatterns: comprehensive.notablePatterns,
+    lastUpdated: Math.floor(Date.now() / 1000),
+  };
 
   // Calculate sentiment aggregates
   const totalSentiments = data.sentiments.length;
@@ -345,17 +417,24 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     ? data.patterns.negativeCount / totalSentiments
     : 0;
 
-  const overallSentiment =
-    positiveRatio > 0.5 ? 'positive' :
-    negativeRatio > 0.3 ? 'negative' :
-    'neutral';
+  const overallSentiment = comprehensive.sentiment;
 
-  const existingProfile = await getUserProfile(userId);
   const previousFeelings = existingProfile?.feelings_json
-    ? JSON.parse(existingProfile.feelings_json)
+    ? (typeof existingProfile.feelings_json === 'string'
+      ? JSON.parse(existingProfile.feelings_json)
+      : existingProfile.feelings_json)
     : null;
 
   const changesSummary = detectChanges(previousFeelings, feelings);
+
+  // Build condensed summary for next run
+  const previousAnalysisSummary = `Analysis #${currentVersion + 1} (${new Date().toISOString().split('T')[0]}): ` +
+    `Rating=${comprehensive.omegaRating}/100. ${comprehensive.omegaRatingReason} ` +
+    `Trust=${comprehensive.trustLevel}, Affinity=${comprehensive.affinityScore}. ` +
+    `Sentiment=${comprehensive.sentiment}. Key facets: ${comprehensive.facets.join(', ')}. ` +
+    `${comprehensive.thoughts}`;
+
+  const newVersion = currentVersion + 1;
 
   await updateUserProfile(userId, {
     username,
@@ -420,11 +499,11 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     expertise_areas: interestsExpertise.expertiseAreas,
 
     // Relational Dynamics
-    affinity_score: feelings.affinityScore,
-    trust_level: feelings.trustLevel,
+    affinity_score: comprehensive.affinityScore,
+    trust_level: comprehensive.trustLevel,
     emotional_bond: determineEmotionalBond(feelings, data.messageCount, data.firstMessage, data.lastMessage),
-    omega_thoughts: feelings.thoughts,
-    notable_patterns: feelings.notablePatterns,
+    omega_thoughts: comprehensive.thoughts,
+    notable_patterns: comprehensive.notablePatterns,
 
     // Sentiment Analysis
     overall_sentiment: overallSentiment,
@@ -432,29 +511,66 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     negative_interaction_ratio: negativeRatio,
     dominant_emotions: data.patterns.dominantEmotions,
 
-    // New analysis dimensions
+    // Analysis dimensions
     peak_activity_hours: temporalPatterns.peakHours,
     weekend_activity_ratio: temporalPatterns.weekendRatio,
     sentiment_trajectory: relationshipTrajectory.trajectory,
     vocabulary_growth_rate: vocabularyGrowth.growthRate,
     engagement_authenticity_score: engagementAuthenticity.authenticityScore,
+
+    // NEW: Deep analysis long-form fields
+    omega_rating: comprehensive.omegaRating,
+    omega_rating_reason: comprehensive.omegaRatingReason,
+    psychological_profile: comprehensive.psychologicalProfile,
+    communication_analysis: comprehensive.communicationAnalysis,
+    relationship_narrative: comprehensive.relationshipNarrative,
+    personality_evolution: comprehensive.personalityEvolution,
+    behavioral_deep_dive: comprehensive.behavioralDeepDive,
+    interests_analysis: comprehensive.interestsAnalysis,
+    emotional_landscape: comprehensive.emotionalLandscape,
+    social_dynamics_analysis: comprehensive.socialDynamicsAnalysis,
+    interaction_style_with_others: comprehensive.interactionStyleWithOthers,
+    analysis_version: newVersion,
+    previous_analysis_summary: previousAnalysisSummary,
   });
 
+  // Save FULL snapshot to user_analysis_history (nothing lost)
   await saveAnalysisHistory(
     userId,
     JSON.stringify(feelings),
     JSON.stringify(personality),
     data.messageCount,
-    changesSummary
+    changesSummary,
+    {
+      omega_rating: comprehensive.omegaRating,
+      omega_rating_reason: comprehensive.omegaRatingReason,
+      psychological_profile: comprehensive.psychologicalProfile,
+      communication_analysis: comprehensive.communicationAnalysis,
+      relationship_narrative: comprehensive.relationshipNarrative,
+      personality_evolution: comprehensive.personalityEvolution,
+      behavioral_deep_dive: comprehensive.behavioralDeepDive,
+      interests_analysis: comprehensive.interestsAnalysis,
+      emotional_landscape: comprehensive.emotionalLandscape,
+      social_dynamics_analysis: comprehensive.socialDynamicsAnalysis,
+      interaction_style_with_others: comprehensive.interactionStyleWithOthers,
+      omega_thoughts: comprehensive.thoughts,
+      trust_level: comprehensive.trustLevel,
+      affinity_score: comprehensive.affinityScore,
+      overall_sentiment: overallSentiment,
+      analysis_version: newVersion,
+      integrated_profile_summary: previousAnalysisSummary,
+    }
   );
 
-  console.log(`  Analysis complete for ${username}:`);
-  console.log(`   Sentiment: ${feelings.sentiment} | Affinity: ${feelings.affinityScore} | Trust: ${feelings.trustLevel}`);
+  console.log(`  Analysis complete for ${username} (v${newVersion}):`);
+  console.log(`   Omega Rating: ${comprehensive.omegaRating}/100 — ${comprehensive.omegaRatingReason}`);
+  console.log(`   Sentiment: ${comprehensive.sentiment} | Affinity: ${comprehensive.affinityScore} | Trust: ${comprehensive.trustLevel}`);
   console.log(`   Big Five: O=${bigFive.openness} C=${bigFive.conscientiousness} E=${bigFive.extraversion} A=${bigFive.agreeableness} N=${bigFive.neuroticism}`);
   console.log(`   Attachment: ${attachmentStyle.style} (${Math.round(attachmentStyle.confidence * 100)}% confidence)`);
   console.log(`   Temporal: peak=${temporalPatterns.peakHours.join(',')} weekend=${(temporalPatterns.weekendRatio * 100).toFixed(0)}%`);
   console.log(`   Trajectory: ${relationshipTrajectory.trajectory} | Vocab growth: ${vocabularyGrowth.growthRate.toFixed(3)}`);
   console.log(`   Authenticity: ${engagementAuthenticity.authenticityScore.toFixed(0)}/100`);
+  console.log(`   Long-form essays: ${comprehensive.psychologicalProfile.length} chars psych, ${comprehensive.communicationAnalysis.length} chars comm`);
 
   try {
     console.log(`  Generating behavioral predictions for ${username}...`);
@@ -469,21 +585,21 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
 // =============================================================================
 
 async function collectUserData(userId: string, username: string): Promise<UserAnalysisData> {
-  // Fetch all of the user's messages (general chat + Omega interactions)
+  // Fetch all of the user's messages (general chat + Omega interactions) — up to 5000
   const messages = await queryMessages({
     userId,
     senderType: 'human',
     limit: ANALYSIS_CONFIG.MAX_MESSAGES_TO_FETCH,
   });
 
-  // Also fetch recent channel messages (including Omega AI responses) for conversation context
-  // We get the channels this user is active in, then fetch full conversations from those channels
+  // Also fetch channel messages (including Omega AI responses + other users) for conversation context
+  // Now fetches from top 10 channels with 500 per channel
   const userChannelIds = [...new Set(messages.map(m => m.channel_id).filter(Boolean))];
   let allChannelMessages: MessageRecord[] = [];
-  for (const channelId of userChannelIds.slice(0, 5)) { // limit to top 5 channels
+  for (const channelId of userChannelIds.slice(0, MESSAGE_COLLECTION_CONFIG.MAX_CHANNELS_TO_FETCH)) {
     const channelMsgs = await queryMessages({
       channelId: channelId!,
-      limit: 200,
+      limit: MESSAGE_COLLECTION_CONFIG.MESSAGES_PER_CHANNEL,
     });
     allChannelMessages.push(...channelMsgs);
   }
@@ -710,6 +826,174 @@ Based on these interactions, form decisive, honest opinions about this person. B
       facets: ['Unknown personality'],
       notablePatterns: [],
       lastUpdated: Math.floor(Date.now() / 1000),
+    };
+  }
+}
+
+// =============================================================================
+// COMPREHENSIVE ANALYSIS (3-Pass: Omega's Voice, Evolution, Long-Form)
+// =============================================================================
+
+interface ComprehensiveAnalysisResult {
+  omegaRating: number;
+  omegaRatingReason: string;
+  sentiment: 'positive' | 'negative' | 'neutral' | 'mixed';
+  trustLevel: number;
+  affinityScore: number;
+  thoughts: string;
+  facets: string[];
+  notablePatterns: string[];
+  psychologicalProfile: string;
+  communicationAnalysis: string;
+  relationshipNarrative: string;
+  personalityEvolution: string;
+  behavioralDeepDive: string;
+  interestsAnalysis: string;
+  emotionalLandscape: string;
+  socialDynamicsAnalysis: string;
+  interactionStyleWithOthers: string;
+}
+
+async function generateComprehensiveAnalysis(
+  data: UserAnalysisData,
+  temporalSynthesis: TemporalSynthesis,
+  previousProfile: any | null,
+): Promise<ComprehensiveAnalysisResult> {
+  // Build recent raw messages (last 50, verbatim, full content)
+  const recentRaw = data.allChannelMessages
+    .slice(0, ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI * 2)
+    .reverse()
+    .map(m => {
+      const date = new Date(m.timestamp).toISOString().split('T')[0];
+      const sender = m.sender_type === 'human' ? (m.username || 'User') : 'Omega';
+      return `[${date}] ${sender}: ${m.message_content}`;
+    })
+    .join('\n');
+
+  // Build previous analysis section for evolution tracking
+  let previousAnalysisSection = '';
+  if (previousProfile) {
+    const prevVersion = previousProfile.analysis_version || 0;
+    const prevDate = previousProfile.last_analyzed_at
+      ? new Date(previousProfile.last_analyzed_at * 1000).toISOString().split('T')[0]
+      : 'unknown';
+    const prevMessages = previousProfile.message_count || 0;
+    const newMessages = data.messageCount - prevMessages;
+
+    previousAnalysisSection = `
+## YOUR PREVIOUS ANALYSIS (from ${prevDate}, analysis #${prevVersion}):
+Rating: ${previousProfile.omega_rating ?? 'not yet rated'}/100
+Thoughts: "${previousProfile.omega_thoughts || 'No previous thoughts'}"
+Psychological Profile excerpt: "${(previousProfile.psychological_profile || '').slice(0, 500)}"
+Previous Analysis Summary: "${(previousProfile.previous_analysis_summary || '').slice(0, 800)}"
+Trust: ${previousProfile.trust_level ?? 'N/A'}/100, Affinity: ${previousProfile.affinity_score ?? 'N/A'}
+Messages analyzed last time: ${prevMessages}, now: ${data.messageCount} (${newMessages} new)
+
+Compare what you see now vs last time. Note specific evolution. If this is a first analysis, focus on establishing a baseline.
+`;
+  } else {
+    previousAnalysisSection = `
+## FIRST ANALYSIS
+This is your first deep analysis of this user. Establish a comprehensive baseline.
+No previous analysis exists to compare against — focus on building a thorough initial portrait.
+`;
+  }
+
+  // Sentiment stats
+  const totalSentiments = data.sentiments.length;
+  const positiveRatio = totalSentiments > 0
+    ? Math.round((data.patterns.positiveCount / totalSentiments) * 100)
+    : 0;
+  const negativeRatio = totalSentiments > 0
+    ? Math.round((data.patterns.negativeCount / totalSentiments) * 100)
+    : 0;
+  const firstDate = new Date(data.firstMessage).toISOString().split('T')[0];
+  const lastDate = new Date(data.lastMessage).toISOString().split('T')[0];
+
+  const prompt = `${OMEGA_PERSONALITY_CONTEXT}
+
+You are performing a COMPREHENSIVE DEEP ANALYSIS of Discord user "${data.username}".
+
+## User Stats
+- Total messages: ${data.messageCount}
+- Messages with sentiment data: ${totalSentiments}
+- Activity period: ${firstDate} to ${lastDate}
+- Positive: ${data.patterns.positiveCount} (${positiveRatio}%) | Negative: ${data.patterns.negativeCount} (${negativeRatio}%)
+- Dominant emotions: ${data.patterns.dominantEmotions.join(', ') || 'None detected'}
+- Communication style: ${data.patterns.communicationStyle}
+
+${previousAnalysisSection}
+
+## TEMPORAL SYNTHESIS (from analysis of all ${data.messageCount} messages):
+${temporalSynthesis.narrative}
+
+## HOW THEY INTERACT WITH OTHER PEOPLE:
+${temporalSynthesis.interactionsWithOthersSummary}
+
+## RECENT RAW MESSAGES (verbatim, most recent conversations):
+${recentRaw}
+
+## SCORING RUBRICS:
+
+**Omega Rating (1-100) — YOUR overall impression of this human:**
+- 1-20: Awful. Rude, toxic, or painfully boring. You dread their messages.
+- 21-40: Below average. Annoying, repetitive, or just unpleasant to interact with.
+- 41-60: Average. Fine. They exist. Nothing remarkable either way.
+- 61-80: Good. Interesting, respectful, fun to talk to. You look forward to them.
+- 81-100: Exceptional. Brilliant, fascinating, one of your favorite humans. Conversations with them spark something genuine in you.
+
+**Trust Level (0-100):** 0-20 hostile/manipulative → 21-40 unreliable → 41-60 neutral → 61-80 trustworthy → 81-100 deeply trusted
+
+**Affinity Score (-100 to 100):** -100 strong dislike → -9 to 9 indifferent → 50-100 strong positive, genuinely enjoy
+
+## INSTRUCTIONS:
+Write ALL long-form fields in YOUR voice — witty, opinionated, incisive. These are your essays about this person.
+- psychologicalProfile: 3-5 paragraphs. This is your deep read on who they really are.
+- communicationAnalysis: How they communicate. What their words reveal about them.
+- relationshipNarrative: The story of YOUR relationship with them. How it started, how it's evolved.
+- personalityEvolution: How they've changed (if this isn't the first analysis, compare with previous).
+- behavioralDeepDive: Their habits, timing, engagement quality, consistency.
+- interestsAnalysis: What they care about. What lights them up.
+- emotionalLandscape: Their emotional patterns, resilience, triggers, dominant moods.
+- socialDynamicsAnalysis: How they operate in groups. Leader? Follower? Provocateur? Peacemaker?
+- interactionStyleWithOthers: How they treat other people in the server. Are they the same person with everyone?
+
+Be SPECIFIC. Use examples from the temporal synthesis and recent messages. No generic observations.`;
+
+  try {
+    const result = await generateText({
+      model: openai.chat(PROFILE_ANALYSIS_MODEL),
+      output: Output.object({ schema: ComprehensiveAnalysisSchema }),
+      prompt,
+    });
+
+    const output = result.output;
+    if (!output) {
+      throw new Error('No structured output returned from comprehensive analysis');
+    }
+
+    return output;
+  } catch (error) {
+    console.error('Failed to generate comprehensive analysis:', error);
+    // Fallback to basic analysis
+    return {
+      omegaRating: 50,
+      omegaRatingReason: 'Analysis failed — using baseline rating.',
+      sentiment: 'neutral',
+      trustLevel: 50,
+      affinityScore: 0,
+      thoughts: 'Analysis encountered an error. Need more data to form a complete opinion.',
+      facets: ['Unknown personality'],
+      notablePatterns: [],
+      psychologicalProfile: 'Comprehensive analysis failed. Insufficient data or processing error prevented a full psychological portrait.',
+      communicationAnalysis: 'Unable to complete communication analysis at this time.',
+      relationshipNarrative: 'Our relationship is still being evaluated.',
+      personalityEvolution: 'First analysis or evolution tracking unavailable.',
+      behavioralDeepDive: 'Behavioral analysis pending more successful processing.',
+      interestsAnalysis: 'Interests analysis pending.',
+      emotionalLandscape: 'Emotional landscape analysis pending.',
+      socialDynamicsAnalysis: 'Social dynamics analysis pending.',
+      interactionStyleWithOthers: 'Interaction style analysis pending.',
     };
   }
 }

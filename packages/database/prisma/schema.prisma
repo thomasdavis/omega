@@ -151,11 +151,20 @@ model UserProfile {
   culturalValues               Json?                 @map("cultural_values")
   culturalCommunicationStyle   String?               @map("cultural_communication_style")
   culturalConfidence           Float?                @map("cultural_confidence") @db.Real
-  zodiacSign                   String?               @map("zodiac_sign")
-  zodiacElement                String?               @map("zodiac_element")
-  zodiacModality               String?               @map("zodiac_modality")
-  birthDate                    String?               @map("birth_date")
-  astrologicalConfidence       Float?                @map("astrological_confidence") @db.Real
+  // Deep analysis long-form fields
+  omega_rating                 Int?
+  omega_rating_reason          String?
+  psychological_profile        String?
+  communication_analysis       String?
+  relationship_narrative       String?
+  personality_evolution        String?
+  behavioral_deep_dive         String?
+  interests_analysis           String?
+  emotional_landscape          String?
+  social_dynamics_analysis     String?
+  interaction_style_with_others String?
+  analysis_version             Int?                  @default(0)
+  previous_analysis_summary    String?
   predictedBehaviors           Json?                 @map("predicted_behaviors")
   predictionConfidence         Float?                @map("prediction_confidence") @db.Real
   predictionTimeframe          String?               @map("prediction_timeframe")
@@ -226,15 +235,32 @@ model UserProfile {
 }
 
 model UserAnalysisHistory {
-  id                     String      @id
-  userId                 String      @map("user_id")
-  analysisTimestamp      BigInt      @map("analysis_timestamp")
-  feelingsSnapshot       Json?       @map("feelings_snapshot")
-  personalitySnapshot    Json?       @map("personality_snapshot")
-  messageCountAtAnalysis Int?        @map("message_count_at_analysis")
-  changesSummary         String?     @map("changes_summary")
-  createdAt              BigInt?     @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
-  userProfile            UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
+  id                            String      @id
+  userId                        String      @map("user_id")
+  analysisTimestamp             BigInt      @map("analysis_timestamp")
+  feelingsSnapshot             Json?       @map("feelings_snapshot")
+  personalitySnapshot          Json?       @map("personality_snapshot")
+  messageCountAtAnalysis       Int?        @map("message_count_at_analysis")
+  changesSummary               String?     @map("changes_summary")
+  omega_rating                  Int?
+  omega_rating_reason           String?
+  psychological_profile         String?
+  communication_analysis        String?
+  relationship_narrative        String?
+  personality_evolution         String?
+  behavioral_deep_dive          String?
+  interests_analysis            String?
+  emotional_landscape           String?
+  social_dynamics_analysis      String?
+  interaction_style_with_others String?
+  omega_thoughts                String?
+  trust_level                   Int?
+  affinity_score                Int?
+  overall_sentiment             String?
+  analysis_version              Int?
+  integrated_profile_summary    String?
+  createdAt                    BigInt?     @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+  userProfile                  UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([analysisTimestamp(sort: Desc)], map: "idx_analysis_history_timestamp")
   @@index([userId], map: "idx_analysis_history_user_id")

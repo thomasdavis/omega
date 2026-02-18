@@ -177,14 +177,33 @@ export async function getUsersNeedingAnalysis(limit = 100): Promise<UserProfileR
 }
 
 /**
- * Save analysis history snapshot
+ * Save analysis history snapshot — stores FULL snapshot of all long-form fields
  */
 export async function saveAnalysisHistory(
   userId: string,
   feelingsSnapshot: string,
   personalitySnapshot: string,
   messageCount: number,
-  changesSummary?: string
+  changesSummary?: string,
+  fullSnapshot?: {
+    omega_rating?: number | null;
+    omega_rating_reason?: string | null;
+    psychological_profile?: string | null;
+    communication_analysis?: string | null;
+    relationship_narrative?: string | null;
+    personality_evolution?: string | null;
+    behavioral_deep_dive?: string | null;
+    interests_analysis?: string | null;
+    emotional_landscape?: string | null;
+    social_dynamics_analysis?: string | null;
+    interaction_style_with_others?: string | null;
+    omega_thoughts?: string | null;
+    trust_level?: number | null;
+    affinity_score?: number | null;
+    overall_sentiment?: string | null;
+    analysis_version?: number | null;
+    integrated_profile_summary?: string | null;
+  }
 ): Promise<string> {
   const id = randomUUID();
   const now = BigInt(Math.floor(Date.now() / 1000));
@@ -214,6 +233,24 @@ export async function saveAnalysisHistory(
       personalitySnapshot: personalityJsonb,
       messageCountAtAnalysis: messageCount,
       changesSummary: changesSummary || null,
+      // Full snapshot fields
+      omega_rating: fullSnapshot?.omega_rating ?? null,
+      omega_rating_reason: fullSnapshot?.omega_rating_reason ?? null,
+      psychological_profile: fullSnapshot?.psychological_profile ?? null,
+      communication_analysis: fullSnapshot?.communication_analysis ?? null,
+      relationship_narrative: fullSnapshot?.relationship_narrative ?? null,
+      personality_evolution: fullSnapshot?.personality_evolution ?? null,
+      behavioral_deep_dive: fullSnapshot?.behavioral_deep_dive ?? null,
+      interests_analysis: fullSnapshot?.interests_analysis ?? null,
+      emotional_landscape: fullSnapshot?.emotional_landscape ?? null,
+      social_dynamics_analysis: fullSnapshot?.social_dynamics_analysis ?? null,
+      interaction_style_with_others: fullSnapshot?.interaction_style_with_others ?? null,
+      omega_thoughts: fullSnapshot?.omega_thoughts ?? null,
+      trust_level: fullSnapshot?.trust_level ?? null,
+      affinity_score: fullSnapshot?.affinity_score ?? null,
+      overall_sentiment: fullSnapshot?.overall_sentiment ?? null,
+      analysis_version: fullSnapshot?.analysis_version ?? null,
+      integrated_profile_summary: fullSnapshot?.integrated_profile_summary ?? null,
     },
   });
 

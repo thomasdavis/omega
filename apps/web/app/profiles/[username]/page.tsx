@@ -112,12 +112,20 @@ interface UserProfile {
   culturalCommunicationStyle: string | null;
   culturalConfidence: number | null;
 
-  // Astrological Data
-  zodiacSign: string | null;
-  zodiacElement: string | null;
-  zodiacModality: string | null;
-  birthDate: string | null;
-  astrologicalConfidence: number | null;
+  // Deep Analysis Long-Form Fields
+  omega_rating: number | null;
+  omega_rating_reason: string | null;
+  psychological_profile: string | null;
+  communication_analysis: string | null;
+  relationship_narrative: string | null;
+  personality_evolution: string | null;
+  behavioral_deep_dive: string | null;
+  interests_analysis: string | null;
+  emotional_landscape: string | null;
+  social_dynamics_analysis: string | null;
+  interaction_style_with_others: string | null;
+  analysis_version: number | null;
+  previous_analysis_summary: string | null;
 
   // Behavioral Predictions
   predictedBehaviors: BehavioralPrediction[] | null;
@@ -385,6 +393,49 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
   </div>
 );
 
+// Omega Rating color function
+function ratingColor(rating: number): string {
+  if (rating <= 20) return '#dc2626'; // blood red
+  if (rating <= 40) return '#ea580c'; // orange-red
+  if (rating <= 60) return '#eab308'; // yellow
+  if (rating <= 80) return '#22c55e'; // green
+  return '#3b82f6'; // blue
+}
+
+// Omega Rating Bar component
+const OmegaRatingBar = ({ rating, reason }: { rating: number; reason: string | null }) => {
+  const color = ratingColor(rating);
+  return (
+    <div className="w-full p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Omega Rating</div>
+        <div className="text-4xl font-light font-mono" style={{ color }}>{rating}</div>
+      </div>
+      <div className="w-full h-3 bg-zinc-800 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{ width: `${rating}%`, backgroundColor: color }}
+        />
+      </div>
+      {reason && (
+        <p className="text-sm text-zinc-400 italic font-light">{reason}</p>
+      )}
+    </div>
+  );
+};
+
+// Essay section for long-form text
+const EssaySection = ({ title, content }: { title: string; content: string | null }) => {
+  if (!content) return null;
+  return (
+    <Section title={title}>
+      <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="text-zinc-300 font-light leading-relaxed whitespace-pre-wrap">{content}</div>
+      </div>
+    </Section>
+  );
+};
+
 export default function ProfileDetailPage() {
   const params = useParams();
   const username = params.username as string;
@@ -471,6 +522,11 @@ export default function ProfileDetailPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
+        {/* Omega Rating Bar — always at the top */}
+        {profile.omega_rating !== null && profile.omega_rating !== undefined && (
+          <OmegaRatingBar rating={profile.omega_rating} reason={profile.omega_rating_reason} />
+        )}
+
         {/* Omega's Perspective */}
         {profile.omega_thoughts && (
           <Section title="Omega's Thoughts">
@@ -602,16 +658,16 @@ export default function ProfileDetailPage() {
           </div>
         </Section>
 
-        {/* Astrological Data */}
-        <Section title="Astrological Data">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profile.zodiacSign && <DataField label="Zodiac Sign" value={profile.zodiacSign} />}
-            {profile.zodiacElement && <DataField label="Element" value={profile.zodiacElement} />}
-            {profile.zodiacModality && <DataField label="Modality" value={profile.zodiacModality} />}
-            {profile.birthDate && <TextField value={profile.birthDate} label="Birth Date" />}
-            {profile.astrologicalConfidence !== null && <ScoreBar score={normalizeConfidence(profile.astrologicalConfidence) ?? 0} label="Astrological Confidence" />}
-          </div>
-        </Section>
+        {/* Deep Analysis Essays */}
+        <EssaySection title="Psychological Profile" content={profile.psychological_profile} />
+        <EssaySection title="Communication Analysis" content={profile.communication_analysis} />
+        <EssaySection title="Relationship with Omega" content={profile.relationship_narrative} />
+        <EssaySection title="How They've Changed" content={profile.personality_evolution} />
+        <EssaySection title="Behavioral Patterns" content={profile.behavioral_deep_dive} />
+        <EssaySection title="Interests &amp; Passions" content={profile.interests_analysis} />
+        <EssaySection title="Emotional Landscape" content={profile.emotional_landscape} />
+        <EssaySection title="Social Dynamics" content={profile.social_dynamics_analysis} />
+        <EssaySection title="How They Treat Others" content={profile.interaction_style_with_others} />
 
         {/* Behavioral Predictions */}
         {profile.predictedBehaviors && Array.isArray(profile.predictedBehaviors) && profile.predictedBehaviors.length > 0 && (

@@ -9,9 +9,17 @@ interface UserProfile {
   username: string | null;
   uploadedPhotoUrl: string | null;
   overallSentiment: string | null;
-  zodiacSign: string | null;
+  omega_rating: number | null;
   lastInteractionAt: number;
   messageCount: number;
+}
+
+function ratingColor(rating: number): string {
+  if (rating <= 20) return '#dc2626';
+  if (rating <= 40) return '#ea580c';
+  if (rating <= 60) return '#eab308';
+  if (rating <= 80) return '#22c55e';
+  return '#3b82f6';
 }
 
 export default function ProfilesPage() {
@@ -102,8 +110,10 @@ export default function ProfilesPage() {
                     {profile.username || 'Unknown Subject'}
                   </h2>
                   <div className="mt-2 flex items-center gap-3 text-xs font-mono text-zinc-500">
-                    {profile.zodiacSign && (
-                      <span className="uppercase tracking-wider">{profile.zodiacSign}</span>
+                    {profile.omega_rating !== null && profile.omega_rating !== undefined && (
+                      <span className="font-medium" style={{ color: ratingColor(profile.omega_rating) }}>
+                        {profile.omega_rating}/100
+                      </span>
                     )}
                     <span>•</span>
                     <span>{profile.messageCount} interactions</span>

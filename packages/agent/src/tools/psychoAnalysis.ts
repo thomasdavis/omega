@@ -176,7 +176,6 @@ It uses multiple psychological frameworks for comprehensive analysis.`,
             emotional: !!profile.emotional_awareness_score,
             communication: !!profile.communication_formality,
             cultural: !!profile.cultural_background,
-            astrological: !!profile.zodiac_sign,
           },
         },
       };
@@ -337,17 +336,16 @@ Analyze ${username}'s communication style and what it reveals about their person
 **Technical Knowledge:** ${profile.technical_knowledge_level || 'N/A'}
 `);
 
-  // === CULTURAL & ASTROLOGICAL (if available) ===
-  if (profile.cultural_background || profile.zodiac_sign) {
+  // === CULTURAL CONTEXT (if available) ===
+  if (profile.cultural_background) {
     sections.push(`
-### Cultural & Astrological Context
+### Cultural Context
 
 **Cultural Background:** ${profile.cultural_background || 'N/A'}
 **Cultural Values:** ${profile.cultural_values ? JSON.parse(profile.cultural_values).join(', ') : 'N/A'}
-**Zodiac Sign:** ${profile.zodiac_sign || 'N/A'} (${profile.zodiac_element || 'N/A'} ${profile.zodiac_modality || 'N/A'})
 
 **TASK:**
-Integrate cultural and astrological factors into the psychological understanding.
+Integrate cultural context into the psychological understanding.
 `);
   }
 
