@@ -402,6 +402,7 @@ model GeneratedImage {
   @@index([storageUrl], map: "idx_generated_images_storage_url")
   @@index([metadata], type: Gin, map: "idx_generated_images_metadata_gin")
   @@index([tags], type: Gin, map: "idx_generated_images_tags_gin")
+  @@index([toolName], map: "idx_generated_images_tool_name")
   @@map("generated_images")
 }
 
