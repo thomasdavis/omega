@@ -753,3 +753,27 @@ model ShellmatesUserChallenge {
   @@index([solvedAt(sort: Desc)], map: "idx_shellmates_user_challenges_solved_at")
   @@map("shellmates_user_challenges")
 }
+
+model ApiUsageLog {
+  id              String  @id @default(dbgenerated("gen_random_uuid()::text"))
+  requestId       String  @map("request_id")
+  apiKeyPrefix    String? @map("api_key_prefix")
+  apiKeyHash      String? @map("api_key_hash")
+  modelRequested  String? @map("model_requested")
+  endpoint        String
+  httpStatus      Int     @map("http_status")
+  durationMs      Int?    @map("duration_ms")
+  messageCount    Int?    @map("message_count")
+  responseLength  Int?    @map("response_length")
+  errorType       String? @map("error_type")
+  errorMessage    String? @map("error_message")
+  metadata        Json?
+  createdAt       BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()) * 1000)::bigint")) @map("created_at")
+
+  @@index([requestId], map: "idx_api_usage_logs_request_id")
+  @@index([createdAt(sort: Desc)], map: "idx_api_usage_logs_created_at")
+  @@index([apiKeyPrefix], map: "idx_api_usage_logs_api_key_prefix")
+  @@index([httpStatus], map: "idx_api_usage_logs_http_status")
+  @@index([endpoint], map: "idx_api_usage_logs_endpoint")
+  @@map("api_usage_logs")
+}

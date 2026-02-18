@@ -4,7 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
 
   // Transpile workspace packages
-  transpilePackages: ['@repo/database', '@repo/shared', '@repo/ui'],
+  transpilePackages: ['@repo/database', '@repo/shared', '@repo/ui', '@repo/agent'],
 
   // Environment variables to expose to the client
   env: {
@@ -24,6 +24,9 @@ const nextConfig = {
         'aws4': 'commonjs aws4', // MongoDB optional dependency
         'discord.js': 'commonjs discord.js',
         'zlib-sync': 'commonjs zlib-sync',
+        'playwright-chromium': 'commonjs playwright-chromium',
+        '@slidev/cli': 'commonjs @slidev/cli',
+        'twitter-api-v2': 'commonjs twitter-api-v2',
       });
 
       // Completely exclude Paper.js from server-side bundle
