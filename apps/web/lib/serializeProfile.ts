@@ -2,7 +2,6 @@
  * Shared utility for serializing profile data from Prisma (BigInt → number)
  */
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function serializeProfile(profile: any) {
   return {
     ...profile,
