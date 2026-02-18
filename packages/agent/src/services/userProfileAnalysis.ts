@@ -501,7 +501,9 @@ async function collectUserData(userId: string, username: string): Promise<UserAn
     .map((m) => ({
       timestamp: m.timestamp,
       content: m.message_content,
-      sentiment: JSON.parse(m.sentiment_analysis!) as SentimentAnalysis,
+      sentiment: (typeof m.sentiment_analysis === 'string'
+        ? JSON.parse(m.sentiment_analysis)
+        : m.sentiment_analysis) as SentimentAnalysis,
     }));
 
   // Count ALL human messages, not just Omega interactions
