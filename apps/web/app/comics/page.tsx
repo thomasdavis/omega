@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
@@ -22,10 +21,15 @@ export default function ComicsPage() {
 
   useEffect(() => {
     fetch('/api/comics')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Server error (${res.status})`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data.success) {
-          setComics(data.comics);
+          setComics(data.comics || []);
         } else {
           setError(data.error || 'Failed to load comics');
         }
@@ -43,7 +47,32 @@ export default function ComicsPage() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 text-xl mb-4">Error: {error}</p>
-          <p className="text-zinc-500">Failed to load comics</p>
+          <p className="text-zinc-500 mb-6">Failed to load comics</p>
+          <button
+            onClick={() => {
+              setError(null);
+              setLoading(true);
+              fetch('/api/comics')
+                .then((res) => {
+                  if (!res.ok) {
+                    throw new Error(`Server error (${res.status})`);
+                  }
+                  return res.json();
+                })
+                .then((data) => {
+                  if (data.success) {
+                    setComics(data.comics || []);
+                  } else {
+                    setError(data.error || 'Failed to load comics');
+                  }
+                })
+                .catch((err) => setError(err.message))
+                .finally(() => setLoading(false));
+            }}
+            className="px-4 py-2 bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-colors border border-zinc-700 text-sm font-mono"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );

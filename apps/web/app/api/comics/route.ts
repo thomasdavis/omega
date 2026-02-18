@@ -34,7 +34,7 @@ function getComicsDir(): string {
 
 export async function GET() {
   try {
-    // First, try to fetch comics from database
+    // First, try to fetch comics from database (without binary imageData)
     const dbComics = await prisma.generatedImage.findMany({
       where: {
         toolName: 'generateComic',
@@ -47,25 +47,23 @@ export async function GET() {
         metadata: true,
         createdAt: true,
         bytes: true,
-        imageData: true,
       },
     });
 
     // Transform DB comics to the expected format
     const comics = dbComics.map((comic) => {
-      const metadata = comic.metadata as any;
+      const metadata = comic.metadata as Record<string, unknown> | null;
       const issueNumber = metadata?.githubIssueNumber || metadata?.githubPrNumber;
-      const filename = metadata?.filename || `comic_${comic.id}.png`;
+      const filename = (metadata?.filename as string) || `comic_${comic.id}.png`;
 
       return {
         id: Number(comic.id),
-        number: issueNumber || Number(comic.id),
+        number: (issueNumber as number) || Number(comic.id),
         filename,
         // Serve from database by ID
         url: `/api/comics/${comic.id}`,
         createdAt: comic.createdAt.toISOString(),
         size: comic.bytes || 0,
-        hasImageData: !!comic.imageData,
       };
     });
 
@@ -76,11 +74,11 @@ export async function GET() {
 
       if (!existsSync(comicsDir)) {
         return NextResponse.json({
-          success: false,
-          error: 'No comics found in database or filesystem',
-          path: comicsDir,
-          env: process.env.NODE_ENV,
-        }, { status: 404 });
+          success: true,
+          comics: [],
+          count: 0,
+          source: 'none',
+        });
       }
 
       const files = readdirSync(comicsDir);
@@ -107,7 +105,6 @@ export async function GET() {
             url: `/api/comics/${file}`,
             createdAt: stats.birthtime.toISOString(),
             size: stats.size,
-            hasImageData: false,
           };
         })
         .sort((a, b) => b.number - a.number);
