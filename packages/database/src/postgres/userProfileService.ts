@@ -5,8 +5,19 @@
  */
 
 import { prisma } from './prismaClient.js';
+import { Prisma } from '@prisma/client';
 import { UserProfileRecord, UserAnalysisHistoryRecord } from './schema.js';
 import { randomUUID } from 'crypto'; // Still used for analysis history
+
+/**
+ * Set of valid Prisma field names for UserProfile.
+ * The schema has mixed naming: some fields are snake_case (e.g. feelings_json),
+ * some are camelCase with @map (e.g. attachmentStyle @map("attachment_style")).
+ * We use this set to resolve the correct Prisma field name when writing updates.
+ */
+const VALID_PROFILE_FIELDS = new Set(
+  Object.values(Prisma.UserProfileScalarFieldEnum)
+);
 
 /**
  * Convert Prisma camelCase object to snake_case record
@@ -84,7 +95,6 @@ export async function updateUserProfile(
 ): Promise<void> {
   const now = BigInt(Math.floor(Date.now() / 1000));
 
-  // Convert snake_case keys to camelCase for Prisma
   const prismaUpdates: any = {
     updatedAt: now,
   };
@@ -94,11 +104,23 @@ export async function updateUserProfile(
     return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
   };
 
-  // Map all update fields dynamically, converting keys to camelCase
+  // Resolve update keys to valid Prisma field names.
+  // The schema has mixed naming: some fields are snake_case (feelings_json),
+  // some are camelCase with @map (attachmentStyle). We check the key as-is first,
+  // then try camelCase conversion.
   for (const [key, value] of Object.entries(updates)) {
-    if (value !== undefined && key !== 'id' && key !== 'userId') {
-      const camelKey = snakeToCamel(key);
-      prismaUpdates[camelKey] = value;
+    if (value !== undefined && key !== 'id' && key !== 'user_id') {
+      if (VALID_PROFILE_FIELDS.has(key as any)) {
+        // Key is already a valid Prisma field name (e.g. feelings_json, openness_score)
+        prismaUpdates[key] = value;
+      } else {
+        // Try camelCase conversion (e.g. attachment_style → attachmentStyle)
+        const camelKey = snakeToCamel(key);
+        if (VALID_PROFILE_FIELDS.has(camelKey as any)) {
+          prismaUpdates[camelKey] = value;
+        }
+        // Skip unknown fields silently
+      }
     }
   }
 
