@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -436,6 +436,337 @@ const EssaySection = ({ title, content }: { title: string; content: string | nul
   );
 };
 
+// =============================================================================
+// ANALYSIS HISTORY DIFF
+// =============================================================================
+
+interface AnalysisHistoryEntry {
+  id: string;
+  analysisTimestamp: number;
+  messageCountAtAnalysis: number | null;
+  analysisVersion: number | null;
+  omegaRating: number | null;
+  omegaRatingReason: string | null;
+  omegaThoughts: string | null;
+  trustLevel: number | null;
+  affinityScore: number | null;
+  overallSentiment: string | null;
+  psychologicalProfile: string | null;
+  communicationAnalysis: string | null;
+  relationshipNarrative: string | null;
+  personalityEvolution: string | null;
+  behavioralDeepDive: string | null;
+  interestsAnalysis: string | null;
+  emotionalLandscape: string | null;
+  socialDynamicsAnalysis: string | null;
+  interactionStyleWithOthers: string | null;
+  integratedProfileSummary: string | null;
+}
+
+// Which fields to compare (label + key pairs)
+const DIFF_FIELDS: { key: keyof AnalysisHistoryEntry; label: string; type: 'text' | 'number' | 'essay' }[] = [
+  { key: 'omegaRating', label: 'Omega Rating', type: 'number' },
+  { key: 'omegaRatingReason', label: 'Rating Reason', type: 'text' },
+  { key: 'trustLevel', label: 'Trust Level', type: 'number' },
+  { key: 'affinityScore', label: 'Affinity Score', type: 'number' },
+  { key: 'overallSentiment', label: 'Overall Sentiment', type: 'text' },
+  { key: 'omegaThoughts', label: "Omega's Thoughts", type: 'text' },
+  { key: 'psychologicalProfile', label: 'Psychological Profile', type: 'essay' },
+  { key: 'communicationAnalysis', label: 'Communication Analysis', type: 'essay' },
+  { key: 'relationshipNarrative', label: 'Relationship with Omega', type: 'essay' },
+  { key: 'personalityEvolution', label: 'How They\'ve Changed', type: 'essay' },
+  { key: 'behavioralDeepDive', label: 'Behavioral Patterns', type: 'essay' },
+  { key: 'interestsAnalysis', label: 'Interests & Passions', type: 'essay' },
+  { key: 'emotionalLandscape', label: 'Emotional Landscape', type: 'essay' },
+  { key: 'socialDynamicsAnalysis', label: 'Social Dynamics', type: 'essay' },
+  { key: 'interactionStyleWithOthers', label: 'How They Treat Others', type: 'essay' },
+];
+
+function formatHistoryDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+// Number diff indicator
+const NumberDiff = ({ label, oldVal, newVal }: { label: string; oldVal: number | null; newVal: number | null }) => {
+  if (oldVal === null && newVal === null) return null;
+  const diff = (newVal ?? 0) - (oldVal ?? 0);
+  const diffColor = diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-red-400' : 'text-zinc-500';
+  const diffSign = diff > 0 ? '+' : '';
+
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-zinc-800/50">
+      <span className="text-sm text-zinc-400 font-mono">{label}</span>
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-zinc-600 font-mono">{oldVal ?? '—'}</span>
+        <svg className="w-4 h-4 text-zinc-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+        <span className="text-sm text-zinc-200 font-mono font-medium">{newVal ?? '—'}</span>
+        {diff !== 0 && (
+          <span className={`text-xs font-mono ${diffColor}`}>({diffSign}{diff})</span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Text diff: shows old/new side by side with change highlighting
+const TextDiff = ({ label, oldVal, newVal }: { label: string; oldVal: string | null; newVal: string | null }) => {
+  if (!oldVal && !newVal) return null;
+  const changed = oldVal !== newVal;
+  if (!changed) return null;
+
+  return (
+    <div className="space-y-3 py-4 border-b border-zinc-800/50">
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-mono text-zinc-400">{label}</span>
+        <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-400 font-mono">changed</span>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className="p-4 bg-red-950/20 border border-red-900/30 rounded-lg">
+          <div className="text-[10px] font-mono text-red-400/60 uppercase tracking-wider mb-2">Previous</div>
+          <div className="text-sm text-red-200/70 font-light leading-relaxed whitespace-pre-wrap">
+            {oldVal || <span className="italic text-zinc-600">empty</span>}
+          </div>
+        </div>
+        <div className="p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-lg">
+          <div className="text-[10px] font-mono text-emerald-400/60 uppercase tracking-wider mb-2">Current</div>
+          <div className="text-sm text-emerald-200/80 font-light leading-relaxed whitespace-pre-wrap">
+            {newVal || <span className="italic text-zinc-600">empty</span>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// History timeline + diff viewer component
+const AnalysisHistoryViewer = ({ username }: { username: string }) => {
+  const [history, setHistory] = useState<AnalysisHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const loadHistory = useCallback(() => {
+    if (history.length > 0) return;
+    setLoading(true);
+    fetch(`/api/profiles/by-username/${username}/history`)
+      .then(res => res.json())
+      .then(data => {
+        setHistory(data.history || []);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [username, history.length]);
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => { setExpanded(true); loadHistory(); }}
+        className="w-full p-4 bg-zinc-900 border border-zinc-800 hover:border-teal-500/40 rounded-lg transition-all group"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-mono text-zinc-300 group-hover:text-teal-400 transition-colors">
+              View Analysis History & Evolution
+            </span>
+          </div>
+          <svg className="w-4 h-4 text-zinc-500 group-hover:text-teal-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="flex items-center justify-center gap-3">
+          <div className="w-4 h-4 border-2 border-teal-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-sm text-zinc-400 font-mono">Loading analysis history...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (history.length < 2) {
+    return (
+      <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Analysis History</div>
+          <button onClick={() => setExpanded(false)} className="text-xs text-zinc-500 hover:text-zinc-300">
+            Collapse
+          </button>
+        </div>
+        <div className="text-center py-8">
+          <div className="text-zinc-600 text-sm font-light">
+            {history.length === 0 ? 'No analysis history yet' : 'Need at least 2 analyses to show evolution'}
+          </div>
+          <div className="text-zinc-700 text-xs mt-1">
+            History is recorded each time the profile analysis runs
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // The current (most recent) entry is index 0
+  const currentEntry = history[0];
+  // The comparison entry (defaults to the second most recent)
+  const compareEntry = selectedIndex !== null ? history[selectedIndex] : history[1];
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Analysis Evolution</div>
+          </div>
+          <button onClick={() => setExpanded(false)} className="text-xs text-zinc-500 hover:text-zinc-300 font-mono">
+            Collapse
+          </button>
+        </div>
+
+        {/* Timeline selector */}
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-xs text-zinc-500 font-mono">Compare current with:</span>
+          <select
+            value={selectedIndex ?? 1}
+            onChange={(e) => setSelectedIndex(Number(e.target.value))}
+            className="bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-zinc-300 font-mono focus:border-teal-500 focus:outline-none"
+          >
+            {history.slice(1).map((entry, idx) => (
+              <option key={entry.id} value={idx + 1}>
+                {formatHistoryDate(entry.analysisTimestamp)}
+                {entry.analysisVersion ? ` (v${entry.analysisVersion})` : ''}
+                {entry.messageCountAtAnalysis ? ` — ${entry.messageCountAtAnalysis} msgs` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Date labels */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="p-3 bg-red-950/10 border border-red-900/20 rounded">
+            <div className="text-[10px] font-mono text-red-400/60 uppercase tracking-wider">Previous</div>
+            <div className="text-sm text-zinc-300 font-mono">{formatHistoryDate(compareEntry.analysisTimestamp)}</div>
+            {compareEntry.messageCountAtAnalysis && (
+              <div className="text-xs text-zinc-600 font-mono">{compareEntry.messageCountAtAnalysis} messages analyzed</div>
+            )}
+          </div>
+          <div className="p-3 bg-emerald-950/10 border border-emerald-900/20 rounded">
+            <div className="text-[10px] font-mono text-emerald-400/60 uppercase tracking-wider">Current</div>
+            <div className="text-sm text-zinc-300 font-mono">{formatHistoryDate(currentEntry.analysisTimestamp)}</div>
+            {currentEntry.messageCountAtAnalysis && (
+              <div className="text-xs text-zinc-600 font-mono">{currentEntry.messageCountAtAnalysis} messages analyzed</div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Diff content */}
+      <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg space-y-1">
+        {/* Number diffs first */}
+        {DIFF_FIELDS.filter(f => f.type === 'number').map(field => (
+          <NumberDiff
+            key={field.key}
+            label={field.label}
+            oldVal={compareEntry[field.key] as number | null}
+            newVal={currentEntry[field.key] as number | null}
+          />
+        ))}
+
+        {/* Short text diffs */}
+        {DIFF_FIELDS.filter(f => f.type === 'text').map(field => (
+          <TextDiff
+            key={field.key}
+            label={field.label}
+            oldVal={compareEntry[field.key] as string | null}
+            newVal={currentEntry[field.key] as string | null}
+          />
+        ))}
+
+        {/* Essay diffs */}
+        {DIFF_FIELDS.filter(f => f.type === 'essay').map(field => (
+          <TextDiff
+            key={field.key}
+            label={field.label}
+            oldVal={compareEntry[field.key] as string | null}
+            newVal={currentEntry[field.key] as string | null}
+          />
+        ))}
+
+        {/* No changes indicator */}
+        {DIFF_FIELDS.every(f => compareEntry[f.key] === currentEntry[f.key]) && (
+          <div className="text-center py-8">
+            <div className="text-zinc-600 text-sm font-light">No changes detected between these analyses</div>
+          </div>
+        )}
+      </div>
+
+      {/* Full timeline */}
+      <div className="p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider mb-3">Timeline ({history.length} analyses)</div>
+        <div className="relative">
+          <div className="absolute left-[7px] top-2 bottom-2 w-px bg-zinc-800" />
+          <div className="space-y-2">
+            {history.map((entry, idx) => {
+              const isSelected = idx === (selectedIndex ?? 1);
+              const isCurrent = idx === 0;
+              return (
+                <button
+                  key={entry.id}
+                  onClick={() => { if (idx > 0) setSelectedIndex(idx); }}
+                  disabled={idx === 0}
+                  className={`relative flex items-center gap-3 w-full text-left pl-6 py-1.5 rounded transition-colors ${
+                    isCurrent ? 'cursor-default' : 'hover:bg-zinc-800/50 cursor-pointer'
+                  } ${isSelected ? 'bg-zinc-800/30' : ''}`}
+                >
+                  <div className={`absolute left-0 w-[15px] h-[15px] rounded-full border-2 ${
+                    isCurrent
+                      ? 'border-teal-400 bg-teal-400/20'
+                      : isSelected
+                        ? 'border-amber-400 bg-amber-400/20'
+                        : 'border-zinc-700 bg-zinc-900'
+                  }`} />
+                  <div className="flex-1 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {formatHistoryDate(entry.analysisTimestamp)}
+                      </span>
+                      {isCurrent && (
+                        <span className="ml-2 text-[10px] font-mono text-teal-400 uppercase">current</span>
+                      )}
+                      {isSelected && !isCurrent && (
+                        <span className="ml-2 text-[10px] font-mono text-amber-400 uppercase">comparing</span>
+                      )}
+                    </div>
+                    {entry.omegaRating !== null && (
+                      <span className="text-xs font-mono" style={{ color: ratingColor(entry.omegaRating) }}>
+                        {entry.omegaRating}/100
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function ProfileDetailPage() {
   const params = useParams();
   const username = params.username as string;
@@ -526,6 +857,9 @@ export default function ProfileDetailPage() {
         {profile.omega_rating !== null && profile.omega_rating !== undefined && (
           <OmegaRatingBar rating={profile.omega_rating} reason={profile.omega_rating_reason} />
         )}
+
+        {/* Analysis History & Evolution Diff */}
+        <AnalysisHistoryViewer username={username} />
 
         {/* Omega's Perspective */}
         {profile.omega_thoughts && (
