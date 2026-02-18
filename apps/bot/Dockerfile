@@ -4,8 +4,8 @@
 
 FROM node:22-alpine AS base
 
-# Install pnpm
-RUN npm install -g pnpm@9.0.0
+# Install pnpm + OpenSSL for Prisma engine detection
+RUN apk add --no-cache openssl && npm install -g pnpm@9.0.0
 
 WORKDIR /app
 
