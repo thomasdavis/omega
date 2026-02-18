@@ -9,6 +9,38 @@ import { randomUUID } from 'crypto';
 import { analyzeMessage } from '@repo/shared';
 
 /**
+ * Convert Prisma camelCase message to snake_case MessageRecord
+ * Prisma returns camelCase (e.g. messageContent) but MessageRecord uses snake_case (message_content)
+ */
+function toMessageRecord(m: any): MessageRecord {
+  return {
+    id: m.id,
+    timestamp: typeof m.timestamp === 'bigint' ? Number(m.timestamp) : m.timestamp,
+    sender_type: m.senderType ?? m.sender_type,
+    user_id: m.userId ?? m.user_id ?? null,
+    username: m.username ?? null,
+    channel_id: m.channelId ?? m.channel_id ?? null,
+    channel_name: m.channelName ?? m.channel_name ?? null,
+    guild_id: m.guildId ?? m.guild_id ?? null,
+    message_content: m.messageContent ?? m.message_content ?? '',
+    tool_name: m.toolName ?? m.tool_name ?? null,
+    tool_args: m.toolArgs ?? m.tool_args ?? null,
+    tool_result: m.toolResult ?? m.tool_result ?? null,
+    session_id: m.sessionId ?? m.session_id ?? null,
+    parent_message_id: m.parentMessageId ?? m.parent_message_id ?? null,
+    metadata: m.metadata ?? null,
+    ai_summary: m.aiSummary ?? m.ai_summary ?? null,
+    sentiment_analysis: m.sentimentAnalysis ?? m.sentiment_analysis ?? null,
+    response_decision: m.responseDecision ?? m.response_decision ?? null,
+    interaction_type: m.interactionType ?? m.interaction_type ?? null,
+    user_intent: m.userIntent ?? m.user_intent ?? null,
+    bot_perception: m.botPerception ?? m.bot_perception ?? null,
+    conversation_quality: m.conversationQuality ?? m.conversation_quality ?? null,
+    created_at: m.createdAt != null ? (typeof m.createdAt === 'bigint' ? Number(m.createdAt) : m.createdAt) : m.created_at ?? null,
+  };
+}
+
+/**
  * Save a human message to the database
  * Automatically generates AI summary and sentiment analysis
  */
@@ -267,7 +299,7 @@ export async function queryMessages(params: {
     skip: offset,
   });
 
-  return messages as any as MessageRecord[];
+  return messages.map(toMessageRecord);
 }
 
 /**
@@ -282,7 +314,7 @@ export async function getMessageById(id: string): Promise<MessageRecord | null> 
     return null;
   }
 
-  return message as any as MessageRecord;
+  return toMessageRecord(message);
 }
 
 /**

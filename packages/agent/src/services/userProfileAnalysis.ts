@@ -6,7 +6,6 @@
 import { generateText, Output } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { OMEGA_MODEL } from '@repo/shared';
 import {
   queryMessages,
   getMessageCount,
@@ -22,6 +21,9 @@ import { updateUserPredictions } from './behavioralPredictionService.js';
 // =============================================================================
 // ANALYSIS CONFIGURATION — Named constants replacing magic numbers
 // =============================================================================
+
+/** Model used for profile analysis — GPT-5 for deeper psychological insight */
+const PROFILE_ANALYSIS_MODEL = 'gpt-5';
 
 const ANALYSIS_CONFIG = {
   /** Minimum messages required before analysis */
@@ -191,6 +193,8 @@ interface UserAnalysisData {
   userId: string;
   username: string;
   messages: MessageRecord[];
+  /** All messages in the user's channels (including Omega's responses) for conversation context */
+  allChannelMessages: MessageRecord[];
   sentiments: Array<{
     timestamp: number;
     content: string;
@@ -465,10 +469,31 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
 // =============================================================================
 
 async function collectUserData(userId: string, username: string): Promise<UserAnalysisData> {
+  // Fetch all of the user's messages (general chat + Omega interactions)
   const messages = await queryMessages({
     userId,
     senderType: 'human',
     limit: ANALYSIS_CONFIG.MAX_MESSAGES_TO_FETCH,
+  });
+
+  // Also fetch recent channel messages (including Omega AI responses) for conversation context
+  // We get the channels this user is active in, then fetch full conversations from those channels
+  const userChannelIds = [...new Set(messages.map(m => m.channel_id).filter(Boolean))];
+  let allChannelMessages: MessageRecord[] = [];
+  for (const channelId of userChannelIds.slice(0, 5)) { // limit to top 5 channels
+    const channelMsgs = await queryMessages({
+      channelId: channelId!,
+      limit: 200,
+    });
+    allChannelMessages.push(...channelMsgs);
+  }
+  // Sort by timestamp descending and deduplicate
+  allChannelMessages.sort((a, b) => b.timestamp - a.timestamp);
+  const seenIds = new Set<string>();
+  allChannelMessages = allChannelMessages.filter(m => {
+    if (seenIds.has(m.id)) return false;
+    seenIds.add(m.id);
+    return true;
   });
 
   const sentiments = messages
@@ -479,6 +504,7 @@ async function collectUserData(userId: string, username: string): Promise<UserAn
       sentiment: JSON.parse(m.sentiment_analysis!) as SentimentAnalysis,
     }));
 
+  // Count ALL human messages, not just Omega interactions
   const messageCount = await getMessageCount({ userId, senderType: 'human' });
 
   const firstMessage = messages.length > 0 ? messages[messages.length - 1].timestamp : Date.now();
@@ -490,6 +516,7 @@ async function collectUserData(userId: string, username: string): Promise<UserAn
     userId,
     username,
     messages,
+    allChannelMessages,
     sentiments,
     messageCount,
     firstMessage,
@@ -566,9 +593,20 @@ function calculateInteractionPatterns(
 // =============================================================================
 
 async function generateFeelings(data: UserAnalysisData): Promise<UserFeelings> {
-  const recentMessages = data.messages.slice(0, ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI).reverse();
-  const messageList = recentMessages
-    .map((m) => `- ${new Date(m.timestamp).toISOString().split('T')[0]}: ${m.message_content}`)
+  // Build conversation view: show user messages with Omega's responses for context
+  const recentUserMessages = data.messages.slice(0, ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI).reverse();
+  const recentAllMessages = data.allChannelMessages
+    .slice(0, ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI * 3) // fetch more to include AI responses
+    .reverse();
+
+  // Build threaded message list showing both user and Omega messages
+  const messageList = recentAllMessages
+    .map((m) => {
+      const date = new Date(m.timestamp).toISOString().split('T')[0];
+      const sender = m.sender_type === 'human' ? (m.username || 'User') : 'Omega';
+      const content = (m.message_content || '').slice(0, 300);
+      return `- [${date}] ${sender}: ${content}`;
+    })
     .join('\n');
 
   const totalInteractions = data.sentiments.length;
@@ -585,12 +623,12 @@ async function generateFeelings(data: UserAnalysisData): Promise<UserFeelings> {
   const recentPositive = data.sentiments.slice(0, recentCount).filter(s => s.sentiment.sentiment === 'positive').length;
   const recentNegative = data.sentiments.slice(0, recentCount).filter(s => s.sentiment.sentiment === 'negative').length;
 
-  const prompt = `You are Omega, a philosophical AI bot analyzing your interactions with a Discord user to form honest, decisive opinions about them.
+  const prompt = `You are Omega, a philosophical AI bot analyzing a Discord user based on ALL their activity — both their conversations with you AND their general chat with other users.
 
 User: ${data.username}
-Total messages: ${data.messageCount}
-Analyzed interactions: ${totalInteractions}
-Interaction period: ${firstDate} to ${lastDate}
+Total messages (all channels): ${data.messageCount}
+Messages with sentiment data: ${totalInteractions}
+Activity period: ${firstDate} to ${lastDate}
 
 ## Sentiment Breakdown:
 - Positive interactions: ${data.patterns.positiveCount} (${positiveRatio}%)
@@ -611,7 +649,8 @@ ${data.patterns.dominantArchetypes.join(', ') || 'None detected'}
 ## Communication Style:
 ${data.patterns.communicationStyle}
 
-## Recent Messages (last ${ANALYSIS_CONFIG.RECENT_MESSAGES_FOR_AI}):
+## Recent Conversation History (user messages AND your responses):
+Note: This includes both their messages to you AND their general chat messages to other users. "Omega" = your responses. Other names = the user's messages.
 ${messageList}
 
 ## Scoring Rubrics:
@@ -645,7 +684,7 @@ Based on these interactions, form decisive, honest opinions about this person. B
 
   try {
     const result = await generateText({
-      model: openai.chat(OMEGA_MODEL),
+      model: openai.chat(PROFILE_ANALYSIS_MODEL),
       output: Output.object({ schema: FeelingsSchema }),
       prompt,
     });

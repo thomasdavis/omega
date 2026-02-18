@@ -9,6 +9,21 @@ import { UserProfileRecord, UserAnalysisHistoryRecord } from './schema.js';
 import { randomUUID } from 'crypto'; // Still used for analysis history
 
 /**
+ * Convert Prisma camelCase object to snake_case record
+ * Prisma returns camelCase (e.g. userId) but record types use snake_case (user_id)
+ */
+function toSnakeCase(obj: any): any {
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return obj;
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+    // Convert BigInt to number for timestamp fields
+    result[snakeKey] = typeof value === 'bigint' ? Number(value) : value;
+  }
+  return result;
+}
+
+/**
  * Get user profile by Discord user ID
  */
 export async function getUserProfile(userId: string): Promise<UserProfileRecord | null> {
@@ -20,7 +35,7 @@ export async function getUserProfile(userId: string): Promise<UserProfileRecord 
     return null;
   }
 
-  return profile as any as UserProfileRecord;
+  return toSnakeCase(profile) as UserProfileRecord;
 }
 
 /**
@@ -136,7 +151,7 @@ export async function getUsersNeedingAnalysis(limit = 100): Promise<UserProfileR
     take: limit,
   });
 
-  return profiles as any as UserProfileRecord[];
+  return profiles.map(p => toSnakeCase(p) as UserProfileRecord);
 }
 
 /**
@@ -224,5 +239,5 @@ export async function getAllUserProfiles(limit = 1000): Promise<UserProfileRecor
     take: limit,
   });
 
-  return profiles as any as UserProfileRecord[];
+  return profiles.map(p => toSnakeCase(p) as UserProfileRecord);
 }

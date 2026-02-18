@@ -7,7 +7,6 @@
 import { generateText, Output } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
-import { OMEGA_MODEL } from '@repo/shared';
 import {
   getUserProfile,
   updateUserProfile,
@@ -18,6 +17,9 @@ import {
 // =============================================================================
 // CONSTANTS
 // =============================================================================
+
+/** Model used for behavioral predictions — GPT-5 for deeper insight */
+const PREDICTION_MODEL = 'gpt-5';
 
 const PREDICTION_STALENESS_DAYS = 7;
 const BATCH_DELAY_MS = 2000;
@@ -315,7 +317,7 @@ Generate 3-5 specific, observable behavioral predictions for the next 7-30 days.
 
   try {
     const result = await generateText({
-      model: openai.chat(OMEGA_MODEL),
+      model: openai.chat(PREDICTION_MODEL),
       output: Output.object({ schema: PredictionsSchema }),
       prompt,
     });
