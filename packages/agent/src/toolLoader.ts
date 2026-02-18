@@ -238,9 +238,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   tpmjsRegistryExecute: { path: './tools/tpmjsRegistryExecuteWrapper.js', exportName: 'tpmjsRegistryExecuteWrappedTool' },
   tpmjsRegistryDescribe: { path: './tools/tpmjsRegistryDescribe.js', exportName: 'tpmjsRegistryDescribeTool' },
 
-  // Memory Tools
-  autoMemory: { path: './tools/autoMemory.js', exportName: 'autoMemoryTool' },
-  searchMemories: { path: './tools/searchMemories.js', exportName: 'searchMemoriesTool' },
 
   // Discord Tools
   setDefaultGuild: { path: './tools/setDefaultGuild.js', exportName: 'setDefaultGuildTool' },
