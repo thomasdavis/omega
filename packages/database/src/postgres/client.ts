@@ -12,8 +12,46 @@ let pgPool: Pool | null = null;
 let isClosing = false;
 
 /**
+ * Get the connection string from environment variables
+ */
+function getConnectionString(): string {
+  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('POSTGRES_URL, DATABASE_PUBLIC_URL, or DATABASE_URL environment variable not set');
+  }
+  return connectionString;
+}
+
+/**
+ * Create a new pool with error handling attached
+ */
+function createPool(connectionString: string): Pool {
+  const pool = new Pool({
+    connectionString,
+    max: 20,                        // Max connections in pool
+    min: 2,                         // Min connections in pool
+    idleTimeoutMillis: 30000,       // 30s idle timeout
+    connectionTimeoutMillis: 10000, // 10s connection timeout
+    statement_timeout: 30000,       // 30s query timeout
+  });
+
+  // Handle errors on idle clients in the pool.
+  // Without this handler, idle client errors become uncaught exceptions
+  // that crash the process (e.g., when Railway restarts the database or
+  // a network blip drops a connection).
+  pool.on('error', (err) => {
+    console.error('⚠️  PostgreSQL pool idle client error:', err.message);
+    // The pool will automatically remove the errored client and create
+    // a new one on the next query. No manual intervention needed.
+  });
+
+  return pool;
+}
+
+/**
  * Get PostgreSQL connection pool
- * Uses singleton pattern - returns existing pool if available
+ * Uses singleton pattern - returns existing pool if available.
+ * If the pool exists but is unhealthy, it will be replaced.
  *
  * @returns Promise<Pool> PostgreSQL connection pool
  */
@@ -24,21 +62,9 @@ export async function getPostgresPool(): Promise<Pool> {
 
   console.log('🔌 Connecting to PostgreSQL...');
 
-  // Use POSTGRES_URL, DATABASE_PUBLIC_URL (for external connections), or DATABASE_URL (Railway internal)
-  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
-
-  if (!connectionString) {
-    throw new Error('POSTGRES_URL, DATABASE_PUBLIC_URL, or DATABASE_URL environment variable not set');
-  }
-
-  pgPool = new Pool({
-    connectionString,
-    max: 20,                        // Max connections in pool
-    min: 2,                         // Min connections in pool
-    idleTimeoutMillis: 30000,       // 30s idle timeout
-    connectionTimeoutMillis: 10000, // 10s connection timeout
-    statement_timeout: 30000,       // 30s query timeout
-  });
+  const connectionString = getConnectionString();
+  pgPool = createPool(connectionString);
+  isClosing = false;
 
   // Test connection
   const client = await pgPool.connect();
@@ -48,6 +74,7 @@ export async function getPostgresPool(): Promise<Pool> {
     console.log(`   Server time: ${result.rows[0].now}`);
   } catch (error) {
     console.error('❌ PostgreSQL connection test failed:', error);
+    pgPool = null;
     throw error;
   } finally {
     client.release();
@@ -74,6 +101,7 @@ export async function closePostgresPool(): Promise<void> {
       console.error('❌ Error closing PostgreSQL pool:', error);
     } finally {
       pgPool = null;
+      isClosing = false;
     }
   }
 }
