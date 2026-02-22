@@ -2260,24 +2260,6 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
-    id: 'deleteMyProfile',
-    name: 'Delete My Profile',
-    description: 'Permanently delete a user profile and all associated data. Implements the right to be forgotten — removes profile, messages, documents, images, feelings, and all other user data from Omega.',
-    keywords: ['delete', 'profile', 'remove', 'forget', 'erase', 'gdpr', 'privacy', 'right to be forgotten', 'data deletion', 'user data'],
-    tags: ['admin', 'user', 'profile', 'delete', 'privacy'],
-    examples: [
-      'delete my profile',
-      'forget me',
-      'remove my data',
-      'erase my profile',
-      'right to be forgotten',
-      'delete all my data',
-      'remove everything about me'
-    ],
-    category: 'admin'
-  },
-
-  {
     id: 'repairUserProfileSchema',
     name: 'Repair User Profile Schema',
     description: 'Fix database schema issues in user_profiles table by adding missing columns (avatar_url, bio, preferences) and ensuring schema compatibility',
