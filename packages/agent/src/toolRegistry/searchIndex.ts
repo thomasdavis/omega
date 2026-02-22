@@ -43,9 +43,17 @@ export async function getSearchIndex(): Promise<MiniSearch<ToolMetadata>> {
       }
     });
 
+    // Deduplicate tool metadata by ID (last entry wins)
+    const deduped = Array.from(
+      new Map(TOOL_METADATA.map(t => [t.id, t])).values()
+    );
+    if (deduped.length < TOOL_METADATA.length) {
+      console.warn(`⚠️  Removed ${TOOL_METADATA.length - deduped.length} duplicate tool metadata entries`);
+    }
+
     // Index all core tool metadata
-    searchIndex.addAll(TOOL_METADATA);
-    console.log(`✅ Indexed ${TOOL_METADATA.length} core tools`);
+    searchIndex.addAll(deduped);
+    console.log(`✅ Indexed ${deduped.length} core tools`);
   }
 
   // Load autonomous tool metadata
@@ -55,8 +63,20 @@ export async function getSearchIndex(): Promise<MiniSearch<ToolMetadata>> {
       const autonomousMetadata = await getAutonomousToolMetadata();
 
       if (autonomousMetadata.length > 0) {
-        searchIndex.addAll(autonomousMetadata);
-        console.log(`✅ Indexed ${autonomousMetadata.length} autonomous tools`);
+        // Filter out any autonomous tools that duplicate core tool IDs
+        const coreIds = new Set(TOOL_METADATA.map(t => t.id));
+        const uniqueAutonomous = autonomousMetadata.filter(t => {
+          if (coreIds.has(t.id)) {
+            console.warn(`⚠️  Skipping duplicate autonomous tool ID: ${t.id}`);
+            return false;
+          }
+          coreIds.add(t.id);
+          return true;
+        });
+        if (uniqueAutonomous.length > 0) {
+          searchIndex.addAll(uniqueAutonomous);
+          console.log(`✅ Indexed ${uniqueAutonomous.length} autonomous tools`);
+        }
       }
 
       autonomousToolsLoaded = true;
