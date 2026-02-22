@@ -194,7 +194,6 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
   deleteMyProfile: { path: './tools/deleteMyProfile.js', exportName: 'deleteMyProfileTool' },
   repairUserProfileSchema: { path: './tools/repairUserProfileSchema.js', exportName: 'repairUserProfileSchemaTool' },
-  deleteMyProfile: { path: './tools/deleteMyProfile.js', exportName: 'deleteMyProfileTool' },
   bullshitDetector: { path: './tools/bullshitDetector.js', exportName: 'bullshitDetectorTool' },
   tweet: { path: './tools/tweet.js', exportName: 'tweetTool' },
   detectBias: { path: './tools/detectBias.js', exportName: 'detectBiasTool' },
