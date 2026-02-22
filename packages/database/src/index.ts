@@ -90,6 +90,9 @@ export {
   deleteUserProfile,
 } from './postgres/userProfileService.js';
 
+// Export user profile deletion types
+export type { ProfileDeletionResult } from './postgres/userProfileService.js';
+
 // Export message service functions for backward compatibility
 export {
   saveHumanMessage,
