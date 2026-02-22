@@ -777,3 +777,22 @@ model ApiUsageLog {
   @@index([endpoint], map: "idx_api_usage_logs_endpoint")
   @@map("api_usage_logs")
 }
+
+model ProfileDeletionLog {
+  id             String  @id @default(dbgenerated("gen_random_uuid()::text"))
+  userId         String  @map("user_id")
+  username       String
+  requestedBy    String  @map("requested_by")
+  status         String  @default("completed")
+  tablesAffected Json?   @map("tables_affected")
+  recordsDeleted Json?   @map("records_deleted")
+  metadata       Json?
+  requestedAt    BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("requested_at")
+  completedAt    BigInt? @map("completed_at")
+  createdAt      BigInt  @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
+
+  @@index([userId], map: "idx_profile_deletion_log_user_id")
+  @@index([requestedAt(sort: Desc)], map: "idx_profile_deletion_log_requested_at")
+  @@index([status], map: "idx_profile_deletion_log_status")
+  @@map("profile_deletion_log")
+}

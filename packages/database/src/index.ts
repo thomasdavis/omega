@@ -87,6 +87,7 @@ export {
   getAnalysisHistory,
   incrementMessageCount,
   getAllUserProfiles,
+  deleteUserProfile,
 } from './postgres/userProfileService.js';
 
 // Export message service functions for backward compatibility
