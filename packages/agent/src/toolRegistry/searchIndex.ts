@@ -43,9 +43,13 @@ export async function getSearchIndex(): Promise<MiniSearch<ToolMetadata>> {
       }
     });
 
-    // Index all core tool metadata
-    searchIndex.addAll(TOOL_METADATA);
-    console.log(`✅ Indexed ${TOOL_METADATA.length} core tools`);
+    // Deduplicate metadata by ID (last entry wins) to prevent MiniSearch duplicate ID errors
+    const deduped = [...new Map(TOOL_METADATA.map(t => [t.id, t])).values()];
+    searchIndex.addAll(deduped);
+    if (deduped.length < TOOL_METADATA.length) {
+      console.warn(`⚠️  Removed ${TOOL_METADATA.length - deduped.length} duplicate tool metadata entries`);
+    }
+    console.log(`✅ Indexed ${deduped.length} core tools`);
   }
 
   // Load autonomous tool metadata
