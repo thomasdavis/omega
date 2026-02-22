@@ -2277,6 +2277,24 @@ export const TOOL_METADATA: ToolMetadata[] = [
   },
 
   {
+    id: 'deleteMyProfile',
+    name: 'Delete My Profile',
+    description: 'Permanently delete your own profile and all associated data from the system. Implements the "right to be forgotten" for privacy compliance. Removes profile, analysis history, feelings, affinities, images, scripts, documents, conversations, and messages.',
+    keywords: ['delete', 'profile', 'forget', 'remove', 'privacy', 'right to be forgotten', 'gdpr', 'erase', 'purge', 'data deletion', 'personal data', 'user data'],
+    tags: ['admin', 'user', 'profile', 'privacy', 'deletion'],
+    examples: [
+      'delete my profile',
+      'forget me',
+      'remove my data',
+      'right to be forgotten',
+      'erase my profile',
+      'delete all my data',
+      'remove my account'
+    ],
+    category: 'admin'
+  },
+
+  {
     id: 'bullshitDetector',
     name: 'Bullshit Detector',
     description: 'Detect and analyze misleading information',

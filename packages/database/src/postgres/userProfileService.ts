@@ -300,3 +300,189 @@ export async function getAllUserProfiles(limit = 1000): Promise<UserProfileRecor
 
   return profiles.map(p => toSnakeCase(p) as UserProfileRecord);
 }
+
+/**
+ * Delete user profile and all associated data ("Right to be Forgotten")
+ * Removes data from all tables that reference the user, then deletes the profile.
+ * Logs the deletion to profile_deletion_log for audit purposes.
+ *
+ * @param userId - Discord user ID of the profile to delete
+ * @param requestedBy - Discord user ID of the person requesting deletion
+ * @returns Object with deletion results including affected tables and record counts
+ */
+export async function deleteUserProfile(
+  userId: string,
+  requestedBy: string
+): Promise<{
+  success: boolean;
+  deletedRecords: Record<string, number>;
+  error?: string;
+}> {
+  // Verify the profile exists
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!profile) {
+    return {
+      success: false,
+      deletedRecords: {},
+      error: 'No profile found for this user',
+    };
+  }
+
+  // Access control: only the profile owner can delete their own profile
+  if (userId !== requestedBy) {
+    return {
+      success: false,
+      deletedRecords: {},
+      error: 'Access denied: you can only delete your own profile',
+    };
+  }
+
+  const deletedRecords: Record<string, number> = {};
+
+  try {
+    // Delete from all user-related tables in dependency order
+    // Tables without cascade relationships are deleted first
+
+    // 1. User feelings
+    const feelings = await prisma.userFeeling.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['user_feelings'] = feelings.count;
+
+    // 2. User affinities (user can be in either position)
+    const affinities = await prisma.userAffinity.deleteMany({
+      where: {
+        OR: [{ userId1: userId }, { userId2: userId }],
+      },
+    });
+    deletedRecords['user_affinities'] = affinities.count;
+
+    // 3. Collaboration history (user can be in either position)
+    const collabHistory = await prisma.collaborationHistory.deleteMany({
+      where: {
+        OR: [{ userId1: userId }, { userId2: userId }],
+      },
+    });
+    deletedRecords['collaboration_history'] = collabHistory.count;
+
+    // 4. Collaboration predictions (user can be in either position)
+    const collabPredictions = await prisma.collaborationPrediction.deleteMany({
+      where: {
+        OR: [{ userId1: userId }, { userId2: userId }],
+      },
+    });
+    deletedRecords['collaboration_predictions'] = collabPredictions.count;
+
+    // 5. Generated images
+    const images = await prisma.generatedImage.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['generated_images'] = images.count;
+
+    // 6. Agent synthesis
+    const synthesis = await prisma.agentSynthesis.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['agent_syntheses'] = synthesis.count;
+
+    // 7. Script storage
+    const scripts = await prisma.scriptStorage.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['script_storage'] = scripts.count;
+
+    // 8. Todo list
+    const todos = await prisma.todoList.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['todo_list'] = todos.count;
+
+    // 9. Document collaborators (remove user from collaborations)
+    const docCollabs = await prisma.documentCollaborator.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['document_collaborators'] = docCollabs.count;
+
+    // 10. Documents created by user (cascades to remaining collaborators)
+    const documents = await prisma.document.deleteMany({
+      where: { createdBy: userId },
+    });
+    deletedRecords['documents'] = documents.count;
+
+    // 11. Conversations (cascades to conversation_messages)
+    const conversations = await prisma.conversation.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['conversations'] = conversations.count;
+
+    // 12. Messages
+    const messages = await prisma.message.deleteMany({
+      where: { userId },
+    });
+    deletedRecords['messages'] = messages.count;
+
+    // 13. Delete the user profile itself (cascades to user_analysis_history)
+    await prisma.userProfile.delete({
+      where: { userId },
+    });
+    deletedRecords['user_profiles'] = 1;
+    deletedRecords['user_analysis_history'] = -1; // Cascaded, exact count unknown
+
+    // Log the deletion for audit purposes
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    await prisma.$executeRaw`
+      INSERT INTO profile_deletion_log (id, user_id, username, requested_by, status, tables_affected, records_deleted, requested_at, completed_at, created_at)
+      VALUES (
+        gen_random_uuid()::text,
+        ${userId},
+        ${profile.username},
+        ${requestedBy},
+        'completed',
+        ${JSON.stringify(Object.keys(deletedRecords))}::jsonb,
+        ${JSON.stringify(deletedRecords)}::jsonb,
+        ${now}::bigint,
+        ${now}::bigint,
+        ${now}::bigint
+      )
+    `;
+
+    return {
+      success: true,
+      deletedRecords,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error during profile deletion';
+    console.error(`Failed to delete profile for ${userId}:`, error);
+
+    // Attempt to log the failed deletion
+    try {
+      const now = BigInt(Math.floor(Date.now() / 1000));
+      await prisma.$executeRaw`
+        INSERT INTO profile_deletion_log (id, user_id, username, requested_by, status, tables_affected, records_deleted, metadata, requested_at, created_at)
+        VALUES (
+          gen_random_uuid()::text,
+          ${userId},
+          ${profile.username},
+          ${requestedBy},
+          'failed',
+          ${JSON.stringify(Object.keys(deletedRecords))}::jsonb,
+          ${JSON.stringify(deletedRecords)}::jsonb,
+          ${JSON.stringify({ error: errorMessage })}::jsonb,
+          ${now}::bigint,
+          ${now}::bigint
+        )
+      `;
+    } catch {
+      // Audit logging failure should not mask the original error
+    }
+
+    return {
+      success: false,
+      deletedRecords,
+      error: errorMessage,
+    };
+  }
+}
