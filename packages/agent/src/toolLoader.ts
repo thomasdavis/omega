@@ -192,6 +192,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   antigravityConceptExplainer: { path: './tools/antigravityConceptExplainer.js', exportName: 'antigravityConceptExplainerTool' },
   getUserProfile: { path: './tools/getUserProfile.js', exportName: 'getUserProfileTool' },
   updateMyProfile: { path: './tools/updateMyProfile.js', exportName: 'updateMyProfileTool' },
+  deleteMyProfile: { path: './tools/deleteMyProfile.js', exportName: 'deleteMyProfileTool' },
   repairUserProfileSchema: { path: './tools/repairUserProfileSchema.js', exportName: 'repairUserProfileSchemaTool' },
   bullshitDetector: { path: './tools/bullshitDetector.js', exportName: 'bullshitDetectorTool' },
   tweet: { path: './tools/tweet.js', exportName: 'tweetTool' },

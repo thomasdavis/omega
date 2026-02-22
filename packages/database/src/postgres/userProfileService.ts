@@ -300,3 +300,265 @@ export async function getAllUserProfiles(limit = 1000): Promise<UserProfileRecor
 
   return profiles.map(p => toSnakeCase(p) as UserProfileRecord);
 }
+
+/**
+ * Result of a profile deletion operation
+ */
+export interface ProfileDeletionResult {
+  success: boolean;
+  userId: string;
+  username: string;
+  tablesAffected: string[];
+  recordsDeleted: Record<string, number>;
+  auditId: string;
+}
+
+/**
+ * Delete a user profile and all associated data across all tables.
+ * Implements "right to be forgotten" — comprehensive data removal.
+ *
+ * Access control: requestingUserId must match the profile's userId.
+ *
+ * Deletes from (in order):
+ * - user_analysis_history (CASCADE from user_profiles, but explicit for counting)
+ * - document_collaborators (user's collaborations)
+ * - documents (created by user)
+ * - user_feelings
+ * - generated_images
+ * - user_affinities (both sides)
+ * - collaboration_history (both sides)
+ * - collaboration_predictions (both sides)
+ * - script_storage
+ * - todo_list
+ * - conversation_messages + conversations
+ * - agent_syntheses
+ * - abc_sheet_music, midi_files, mp3_files, video_files (created by user)
+ * - queries
+ * - messages (user's messages)
+ * - user_profiles (triggers CASCADE for user_analysis_history)
+ */
+export async function deleteUserProfile(
+  userId: string,
+  requestingUserId: string,
+): Promise<ProfileDeletionResult> {
+  // Access control: only the profile owner can delete their profile
+  if (userId !== requestingUserId) {
+    throw new Error(
+      'Access denied: You can only delete your own profile. ' +
+      `Requested deletion of ${userId} by ${requestingUserId}.`
+    );
+  }
+
+  // Verify profile exists
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+  });
+
+  if (!profile) {
+    throw new Error(`Profile not found for user ID: ${userId}`);
+  }
+
+  const username = profile.username;
+  const now = BigInt(Math.floor(Date.now() / 1000));
+  const recordsDeleted: Record<string, number> = {};
+  const tablesAffected: string[] = [];
+
+  // Use a transaction for atomicity
+  await prisma.$transaction(async (tx) => {
+    // 1. Delete user_analysis_history (also CASCADE'd, but count explicitly)
+    const analysisDeleted = await tx.userAnalysisHistory.deleteMany({
+      where: { userId },
+    });
+    if (analysisDeleted.count > 0) {
+      recordsDeleted['user_analysis_history'] = analysisDeleted.count;
+      tablesAffected.push('user_analysis_history');
+    }
+
+    // 2. Delete document_collaborators for this user
+    const collabsDeleted = await tx.documentCollaborator.deleteMany({
+      where: { userId },
+    });
+    if (collabsDeleted.count > 0) {
+      recordsDeleted['document_collaborators'] = collabsDeleted.count;
+      tablesAffected.push('document_collaborators');
+    }
+
+    // 3. Delete documents created by this user (CASCADE deletes their collaborators)
+    const docsDeleted = await tx.document.deleteMany({
+      where: { createdBy: userId },
+    });
+    if (docsDeleted.count > 0) {
+      recordsDeleted['documents'] = docsDeleted.count;
+      tablesAffected.push('documents');
+    }
+
+    // 4. Delete user_feelings
+    const feelingsDeleted = await tx.userFeeling.deleteMany({
+      where: { userId },
+    });
+    if (feelingsDeleted.count > 0) {
+      recordsDeleted['user_feelings'] = feelingsDeleted.count;
+      tablesAffected.push('user_feelings');
+    }
+
+    // 5. Delete generated_images
+    const imagesDeleted = await tx.generatedImage.deleteMany({
+      where: { userId },
+    });
+    if (imagesDeleted.count > 0) {
+      recordsDeleted['generated_images'] = Number(imagesDeleted.count);
+      tablesAffected.push('generated_images');
+    }
+
+    // 6. Delete user_affinities (both sides)
+    const affinities1 = await tx.userAffinity.deleteMany({
+      where: { userId1: userId },
+    });
+    const affinities2 = await tx.userAffinity.deleteMany({
+      where: { userId2: userId },
+    });
+    const totalAffinities = affinities1.count + affinities2.count;
+    if (totalAffinities > 0) {
+      recordsDeleted['user_affinities'] = totalAffinities;
+      tablesAffected.push('user_affinities');
+    }
+
+    // 7. Delete collaboration_history (both sides)
+    const collabHist1 = await tx.collaborationHistory.deleteMany({
+      where: { userId1: userId },
+    });
+    const collabHist2 = await tx.collaborationHistory.deleteMany({
+      where: { userId2: userId },
+    });
+    const totalCollabHist = collabHist1.count + collabHist2.count;
+    if (totalCollabHist > 0) {
+      recordsDeleted['collaboration_history'] = totalCollabHist;
+      tablesAffected.push('collaboration_history');
+    }
+
+    // 8. Delete collaboration_predictions (both sides)
+    const collabPred1 = await tx.collaborationPrediction.deleteMany({
+      where: { userId1: userId },
+    });
+    const collabPred2 = await tx.collaborationPrediction.deleteMany({
+      where: { userId2: userId },
+    });
+    const totalCollabPred = collabPred1.count + collabPred2.count;
+    if (totalCollabPred > 0) {
+      recordsDeleted['collaboration_predictions'] = totalCollabPred;
+      tablesAffected.push('collaboration_predictions');
+    }
+
+    // 9. Delete script_storage
+    const scriptsDeleted = await tx.scriptStorage.deleteMany({
+      where: { userId },
+    });
+    if (scriptsDeleted.count > 0) {
+      recordsDeleted['script_storage'] = scriptsDeleted.count;
+      tablesAffected.push('script_storage');
+    }
+
+    // 10. Delete todo_list
+    const todosDeleted = await tx.todoList.deleteMany({
+      where: { userId },
+    });
+    if (todosDeleted.count > 0) {
+      recordsDeleted['todo_list'] = todosDeleted.count;
+      tablesAffected.push('todo_list');
+    }
+
+    // 11. Delete conversations (CASCADE deletes conversation_messages)
+    const conversationsDeleted = await tx.conversation.deleteMany({
+      where: { userId },
+    });
+    if (conversationsDeleted.count > 0) {
+      recordsDeleted['conversations'] = conversationsDeleted.count;
+      tablesAffected.push('conversations');
+    }
+
+    // 12. Delete agent_syntheses
+    const synthesisDeleted = await tx.agentSynthesis.deleteMany({
+      where: { userId },
+    });
+    if (synthesisDeleted.count > 0) {
+      recordsDeleted['agent_syntheses'] = synthesisDeleted.count;
+      tablesAffected.push('agent_syntheses');
+    }
+
+    // 13. Delete music/media created by this user
+    const abcDeleted = await tx.abcSheetMusic.deleteMany({
+      where: { createdBy: userId },
+    });
+    if (abcDeleted.count > 0) {
+      recordsDeleted['abc_sheet_music'] = abcDeleted.count;
+      tablesAffected.push('abc_sheet_music');
+    }
+
+    const midiDeleted = await tx.midiFile.deleteMany({
+      where: { createdBy: userId },
+    });
+    if (midiDeleted.count > 0) {
+      recordsDeleted['midi_files'] = midiDeleted.count;
+      tablesAffected.push('midi_files');
+    }
+
+    const mp3Deleted = await tx.mp3File.deleteMany({
+      where: { createdBy: userId },
+    });
+    if (mp3Deleted.count > 0) {
+      recordsDeleted['mp3_files'] = mp3Deleted.count;
+      tablesAffected.push('mp3_files');
+    }
+
+    const videoDeleted = await tx.videoFile.deleteMany({
+      where: { createdBy: userId },
+    });
+    if (videoDeleted.count > 0) {
+      recordsDeleted['video_files'] = videoDeleted.count;
+      tablesAffected.push('video_files');
+    }
+
+    // 14. Delete queries
+    const queriesDeleted = await tx.query.deleteMany({
+      where: { userId },
+    });
+    if (queriesDeleted.count > 0) {
+      recordsDeleted['queries'] = queriesDeleted.count;
+      tablesAffected.push('queries');
+    }
+
+    // 15. Delete messages
+    const messagesDeleted = await tx.message.deleteMany({
+      where: { userId },
+    });
+    if (messagesDeleted.count > 0) {
+      recordsDeleted['messages'] = messagesDeleted.count;
+      tablesAffected.push('messages');
+    }
+
+    // 16. Finally, delete the user profile (CASCADE handles analysis_history)
+    await tx.userProfile.delete({
+      where: { userId },
+    });
+    recordsDeleted['user_profiles'] = 1;
+    tablesAffected.push('user_profiles');
+  });
+
+  // Log the deletion to the audit table (outside transaction, using raw SQL
+  // since profile_deletion_audit is not yet in Prisma schema)
+  const auditId = randomUUID();
+  const nowNum = Number(now);
+  await prisma.$executeRaw`
+    INSERT INTO profile_deletion_audit (id, user_id, username, requested_at, completed_at, status, tables_affected, records_deleted, requested_by, created_at)
+    VALUES (${auditId}, ${userId}, ${username}, ${nowNum}, ${nowNum}, 'completed', ${JSON.stringify(tablesAffected)}::jsonb, ${JSON.stringify(recordsDeleted)}::jsonb, ${requestingUserId}, ${nowNum})
+  `;
+
+  return {
+    success: true,
+    userId,
+    username,
+    tablesAffected,
+    recordsDeleted,
+    auditId,
+  };
+}
