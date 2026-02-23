@@ -146,6 +146,8 @@ export interface ToolCallInfo {
   args: Record<string, any>;
   result: any;
   error?: string;
+  /** True if the tool threw an exception (real bug). False/undefined if the tool returned { success: false } (soft failure). */
+  thrown?: boolean;
 }
 
 /**
@@ -280,7 +282,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
             if (errorItem) {
               const errorMsg = (errorItem as any).error?.message || String((errorItem as any).error);
               console.error(`   ❌ Tool threw: ${toolName} — ${errorMsg}`);
-              toolCalls.push({ toolName, args, result: undefined, error: errorMsg });
+              toolCalls.push({ toolName, args, result: undefined, error: errorMsg, thrown: true });
             } else {
               const result = resultItem?.output;
               console.log(`   🔧 Tool called: ${toolName} with args:`, args);
@@ -293,6 +295,7 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
                 args,
                 result,
                 error: isSoftFailure ? (resultObj.error || resultObj.message || 'Tool returned success: false') : undefined,
+                thrown: false,
               });
             }
 

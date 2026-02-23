@@ -284,10 +284,28 @@ export const webFetchTool = tool({
       };
     } catch (error) {
       console.error(`❌ Error fetching URL ${url}:`, error);
+
+      // Categorize the error for better diagnostics
+      let errorCode = 'network_error';
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      if (error instanceof Error) {
+        const msg = error.message.toLowerCase();
+        if (msg.includes('getaddrinfo') || msg.includes('dns') || msg.includes('enotfound')) {
+          errorCode = 'dns_error';
+        } else if (msg.includes('timeout') || msg.includes('abort') || error.name === 'TimeoutError' || error.name === 'AbortError') {
+          errorCode = 'timeout';
+        } else if (msg.includes('ssl') || msg.includes('tls') || msg.includes('cert') || msg.includes('unable to verify')) {
+          errorCode = 'tls_error';
+        } else if (msg.includes('econnrefused') || msg.includes('econnreset') || msg.includes('epipe')) {
+          errorCode = 'connection_error';
+        }
+      }
+
       return {
         success: false,
-        error: 'exception',
-        message: `Error fetching URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: errorCode,
+        message: `Error fetching URL: ${errorMessage}`,
         metadata: {
           requestedUrl: url,
         },

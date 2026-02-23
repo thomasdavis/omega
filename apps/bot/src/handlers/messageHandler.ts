@@ -1012,16 +1012,26 @@ export async function handleMessage(message: Message): Promise<void> {
     }
 
     // Report tool errors to GitHub for automated fixing
+    // Only report THROWN errors (real bugs) — not soft failures (tools returning { success: false })
     // Skip external tool failures (TPMJS) — those are external service issues, not omega bugs
     if (result.toolErrors && result.toolErrors.length > 0) {
       const EXTERNAL_TOOLS = ['tpmjsRegistryExecute', 'tpmjsRegistrySearch'];
       const internalErrors = result.toolErrors.filter(e => !EXTERNAL_TOOLS.includes(e.toolName));
 
-      if (internalErrors.length > 0) {
-        // Only report the first internal tool error to avoid spam
-        const toolErr = internalErrors[0];
+      // Separate thrown errors (real bugs) from soft failures (expected conditions)
+      const thrownErrors = internalErrors.filter(e => e.thrown === true);
+      const softFailures = internalErrors.filter(e => e.thrown !== true);
+
+      // Log soft failures for visibility but don't create GitHub issues
+      for (const sf of softFailures) {
+        console.warn(`⚠️ Tool soft failure (not reported): ${sf.toolName} — ${sf.error}`);
+      }
+
+      if (thrownErrors.length > 0) {
+        // Only report the first thrown error to avoid spam
+        const toolErr = thrownErrors[0];
         const errorDetail = [
-          `Tool "${toolErr.toolName}" failed: ${toolErr.error}`,
+          `Tool "${toolErr.toolName}" threw an exception: ${toolErr.error}`,
           '',
           `Args: ${JSON.stringify(toolErr.args, null, 2)}`,
           `User message: ${message.content.substring(0, 200)}`,
