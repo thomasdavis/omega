@@ -11,7 +11,7 @@
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { generateText } from 'ai';
+import { generateText, Output } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { OMEGA_MODEL } from '@repo/shared';
 import { getUserProfile } from '@repo/database';
@@ -91,19 +91,32 @@ ${styleGuidance}
 
 **CRITICAL:** This poem should feel like it was written specifically for ${username}, not just any person. Use their specific traits and characteristics.
 
-Respond in JSON format:
-{
-  "title": "A creative title for the poem (include their name or a reference to them)",
-  "poem": "The complete personalized poem (use \\n for line breaks)",
-  "analysis": "A brief 1-2 sentence explanation of how the poem reflects their unique profile"
-}`;
+Create a creative title for the poem (include their name or a reference to them), the complete personalized poem (use \\n for line breaks), and a brief 1-2 sentence explanation of how the poem reflects their unique profile.`;
+
+    const poemSchema = z.object({
+      title: z.string().describe('A creative title for the poem'),
+      poem: z.string().describe('The complete personalized poem with \\n for line breaks'),
+      analysis: z.string().describe('A brief 1-2 sentence explanation of how the poem reflects their unique profile'),
+    });
 
     const result = await generateText({
-      model: openai(OMEGA_MODEL),
+      model: openai.chat(OMEGA_MODEL),
+      output: Output.object({ schema: poemSchema }),
       prompt,
     });
 
-    const parsed = JSON.parse(result.text.trim());
+    const parsed = result.output;
+
+    if (!parsed) {
+      return {
+        title: 'Generation Error',
+        poem: '',
+        style,
+        analysis: '',
+        success: false,
+        error: 'Failed to generate structured poem output',
+      };
+    }
 
     return {
       title: parsed.title,
