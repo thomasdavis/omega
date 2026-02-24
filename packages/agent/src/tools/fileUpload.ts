@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { writeFileSync, statSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
-import { getUploadsDir } from '@repo/shared';
+import { getUploadsDir, getCachedAttachment, extractAttachmentId } from '@repo/shared';
 
 // Public uploads directory - use centralized storage utility (fallback)
 const UPLOADS_DIR = getUploadsDir();
@@ -520,15 +520,30 @@ function saveUploadedFile(
 }
 
 /**
- * Download file from URL
+ * Download file from URL with retry for transient failures
  */
 async function downloadFile(url: string): Promise<Buffer> {
-  const response = await fetch(url);
-  if (!response.ok) {
+  const maxAttempts = 2;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const response = await fetch(url);
+    if (response.ok) {
+      const arrayBuffer = await response.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+    if (response.status === 404 && url.includes('cdn.discordapp.com')) {
+      throw new Error(
+        `Failed to download file: HTTP 404. Discord CDN URL has expired. ` +
+        `The attachment cache did not contain this file — it may have been evicted or the message was not processed recently.`
+      );
+    }
+    if (attempt < maxAttempts && response.status >= 500) {
+      // Retry on server errors
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      continue;
+    }
     throw new Error(`Failed to download file: HTTP ${response.status}`);
   }
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  throw new Error('Failed to download file: max attempts reached');
 }
 
 export const fileUploadTool = tool({
@@ -607,9 +622,20 @@ export const fileUploadTool = tool({
       // Download file if URL is provided, otherwise decode base64
       let dataBuffer: Buffer;
       if (fileUrl) {
-        console.log(`📥 Downloading file from: ${fileUrl}`);
-        dataBuffer = await downloadFile(fileUrl);
-        console.log(`✅ Downloaded ${dataBuffer.length} bytes`);
+        // Check attachment cache first — Discord CDN URLs are often ephemeral
+        // and expire before the tool executes. The message handler pre-downloads
+        // attachments via REST API and caches them by attachment ID.
+        const attachmentId = extractAttachmentId(fileUrl);
+        const cached = attachmentId ? getCachedAttachment(attachmentId) : null;
+
+        if (cached) {
+          console.log(`✅ Found attachment in cache (ID: ${attachmentId}), skipping download`);
+          dataBuffer = cached.buffer;
+        } else {
+          console.log(`📥 Downloading file from: ${fileUrl}`);
+          dataBuffer = await downloadFile(fileUrl);
+          console.log(`✅ Downloaded ${dataBuffer.length} bytes`);
+        }
       } else {
         dataBuffer = Buffer.from(fileData!, 'base64');
       }
