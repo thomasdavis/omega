@@ -185,6 +185,7 @@ export async function shouldRespond(
 
     const result = await generateText({
       model: openai.chat(OMEGA_MODEL), // Use centralized model config, force Chat Completions API
+      maxRetries: 0, // Don't retry — shouldRespond is non-critical and quota errors won't resolve with retries
       output: Output.object({ schema: DecisionSchema }),
       prompt: `You are analyzing whether Omega (an AI Discord bot) should respond to this message.
 
@@ -319,8 +320,25 @@ Analyze this message through the 4-level framework:
       return { shouldRespond: false, confidence, reason: `AI: ${reason}` };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Detect unrecoverable API errors (quota, billing, auth) and gracefully degrade
+    const isQuotaOrBillingError = /quota|billing|rate.limit|insufficient_quota|exceeded.*quota/i.test(errorMessage);
+    const isAuthError = /invalid.*api.key|unauthorized|authentication/i.test(errorMessage);
+
+    if (isQuotaOrBillingError || isAuthError) {
+      console.warn(`⚠️  shouldRespond AI call failed (${isQuotaOrBillingError ? 'quota/billing' : 'auth'}): ${errorMessage}`);
+      console.warn('   Defaulting to NOT responding — this is a non-critical decision path');
+      return {
+        shouldRespond: false,
+        confidence: 0,
+        reason: `AI decision unavailable (${isQuotaOrBillingError ? 'API quota exceeded' : 'auth error'}) — defaulting to skip`,
+      };
+    }
+
+    // For other unexpected errors, still throw so they get surfaced
     console.error('❌ Error in AI decision making:', error);
-    throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Failed to make response decision: ${errorMessage}`);
   }
 }
 
