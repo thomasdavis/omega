@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { writeFileSync, statSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
-import { getUploadsDir } from '@repo/shared';
+import { getUploadsDir, getCachedAttachment, extractAttachmentId } from '@repo/shared';
 
 // Public uploads directory - use centralized storage utility (fallback)
 const UPLOADS_DIR = getUploadsDir();
@@ -520,11 +520,35 @@ function saveUploadedFile(
 }
 
 /**
- * Download file from URL
+ * Download file from URL, checking the attachment cache first for Discord CDN URLs.
+ * Discord CDN URLs are ephemeral and can expire before this tool executes,
+ * so we check the in-memory cache (populated by messageHandler) first.
  */
 async function downloadFile(url: string): Promise<Buffer> {
+  // Check attachment cache first for Discord CDN URLs
+  if (url.includes('cdn.discordapp.com')) {
+    const attachmentId = extractAttachmentId(url);
+    if (attachmentId) {
+      const cached = getCachedAttachment(attachmentId);
+      if (cached) {
+        console.log(`   ✅ Using cached attachment buffer [ID: ${attachmentId}] (${(cached.size / 1024).toFixed(2)} KB)`);
+        return cached.buffer;
+      }
+      console.log(`   ⚠️  Attachment ${attachmentId} not found in cache, attempting direct download...`);
+    }
+  }
+
+  // Fallback to direct URL download
   const response = await fetch(url);
   if (!response.ok) {
+    // Provide a more helpful error for Discord CDN 404s
+    if (response.status === 404 && url.includes('cdn.discordapp.com')) {
+      throw new Error(
+        `Failed to download file: Discord CDN URL returned HTTP 404 (expired). ` +
+        `The attachment was not found in the cache either. ` +
+        `This happens when Discord CDN URLs expire before the tool can download them.`
+      );
+    }
     throw new Error(`Failed to download file: HTTP ${response.status}`);
   }
   const arrayBuffer = await response.arrayBuffer();
