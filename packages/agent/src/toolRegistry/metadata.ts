@@ -2246,15 +2246,16 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'updateMyProfile',
     name: 'Update My Profile',
-    description: 'Update user profile information including username, avatar URL, bio, and preferences',
-    keywords: ['update', 'profile', 'edit', 'modify', 'avatar', 'bio', 'preferences', 'user'],
+    description: 'Update user profile information including username, bio (free-text description), and avatar URL',
+    keywords: ['update', 'profile', 'edit', 'modify', 'avatar', 'bio', 'description', 'username', 'add to profile', 'tattoo', 'put on profile'],
     tags: ['admin', 'user', 'profile', 'update'],
     examples: [
       'update my profile',
       'change my avatar',
       'set my bio',
-      'edit my preferences',
-      'update user profile'
+      'add this to my profile',
+      'change my username',
+      'put this on my profile'
     ],
     category: 'admin'
   },

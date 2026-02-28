@@ -101,6 +101,9 @@ model UserProfile {
   id                           String                @id @default(dbgenerated("gen_random_uuid()::text"))
   userId                       String                @unique @map("user_id")
   username                     String
+  bio                          String?
+  avatarUrl                    String?               @map("avatar_url")
+  preferences                  Json?
   dominant_archetype           String?
   secondary_archetypes         Json?
   archetype_confidence         Float?                @db.Real
