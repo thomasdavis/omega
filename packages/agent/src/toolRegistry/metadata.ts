@@ -1605,6 +1605,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
+  {
+    id: 'singleCountdownBlogPostCreator',
+    name: 'Countdown Blog Post Creator',
+    description: 'Create a blog post with a live countdown timer, background image, and personal note',
+    keywords: ['blog', 'countdown', 'timer', 'date', 'reminder', 'post', 'background', 'image'],
+    tags: ['content', 'blog', 'countdown'],
+    examples: [
+      'make a blog post with a countdown to September 1st',
+      'create a countdown post with background for a personal reminder',
+      'publish a blog post featuring a countdown timer',
+      'countdown blog post to my anniversary'
+    ],
+    category: 'content'
+  },
+
   // ===== CONVERSATION AND MESSAGING TOOLS =====
   {
     id: 'exportConversation',

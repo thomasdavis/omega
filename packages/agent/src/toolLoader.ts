@@ -142,6 +142,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   updateBlogPost: { path: './tools/updateBlogPost.js', exportName: 'updateBlogPostTool' },
   listBlogPosts: { path: './tools/listBlogPosts.js', exportName: 'listBlogPostsTool' },
   triggerDailyBlog: { path: './tools/triggerDailyBlog.js', exportName: 'triggerDailyBlogTool' },
+  singleCountdownBlogPostCreator: { path: './tools/singleCountdownBlogPostCreator.js', exportName: 'singleCountdownBlogPostCreatorTool' },
 
   // Conversation and messaging tools
   exportConversation: { path: './tools/exportConversation.js', exportName: 'exportConversationTool' },
