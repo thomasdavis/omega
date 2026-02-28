@@ -13,10 +13,12 @@ export const webFetchTool = tool({
   inputSchema: z.object({
     url: z.string().url().describe('The URL to fetch content from'),
     userAgent: z.string().default('OmegaBot/1.0').describe('User agent string to use (default: OmegaBot/1.0)'),
-    mode: z.enum(['parsed', 'raw']).default('parsed').describe('Mode: "parsed" strips HTML tags and extracts text (default), "raw" returns unmodified HTML for debugging/linting'),
+    mode: z.enum(['parsed', 'raw', 'text']).default('parsed').describe('Mode: "parsed" (or "text") strips HTML tags and extracts text (default), "raw" returns unmodified HTML for debugging/linting'),
     maxRedirects: z.number().min(0).max(20).default(10).describe('Maximum number of redirects to follow (default: 10)'),
   }),
-  execute: async ({ url, userAgent, mode, maxRedirects }) => {
+  execute: async ({ url, userAgent, mode: rawMode, maxRedirects }) => {
+    // Normalize mode: treat "text" as an alias for "parsed"
+    const mode = rawMode === 'text' ? 'parsed' : rawMode;
     console.log(`🌐 Fetching URL: ${url} (mode: ${mode}, maxRedirects: ${maxRedirects})`);
 
     try {
