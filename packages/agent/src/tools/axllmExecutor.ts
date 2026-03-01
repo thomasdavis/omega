@@ -57,8 +57,8 @@ export const axllmExecutorTool = tool({
         };
       }
 
-      // Generate dynamic DSL signature based on task and output format
-      const dslSignature = generateDSLSignature(task, outputFormat);
+      // Generate dynamic DSL signature based on task, output format, and whether context was provided
+      const dslSignature = generateDSLSignature(task, outputFormat, !!context);
       console.log(`   Generated DSL: ${dslSignature}`);
 
       // Initialize AI client with OpenAI
@@ -127,11 +127,14 @@ export const axllmExecutorTool = tool({
  *
  * @param task - The task description
  * @param outputFormat - The desired output format
+ * @param hasContext - Whether context was actually provided by the caller
  * @returns A valid AxLLM DSL signature string
  */
-function generateDSLSignature(task: string, outputFormat: string): string {
-  // Determine if context is needed based on task keywords
-  const needsContext = /\b(this|above|context|conversation|following|given|provided)\b/i.test(task);
+function generateDSLSignature(task: string, outputFormat: string, hasContext: boolean): string {
+  // Only include context in DSL when context was actually provided
+  // Previously this used keyword heuristics which caused errors when the DSL
+  // required context but none was passed (see issue #1040)
+  const needsContext = hasContext;
 
   // Build input part of signature
   const inputs: string[] = ['task:string'];
