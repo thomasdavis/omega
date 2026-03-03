@@ -185,6 +185,7 @@ export async function shouldRespond(
 
     const result = await generateText({
       model: openai.chat(OMEGA_MODEL), // Use centralized model config, force Chat Completions API
+      maxRetries: 0, // Don't retry - shouldRespond is non-critical, and quota errors won't recover with retries
       output: Output.object({ schema: DecisionSchema }),
       prompt: `You are analyzing whether Omega (an AI Discord bot) should respond to this message.
 
@@ -319,8 +320,23 @@ Analyze this message through the 4-level framework:
       return { shouldRespond: false, confidence, reason: `AI: ${reason}` };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    // Detect quota/billing/auth errors that won't recover with retries
+    const isQuotaOrBillingError = /quota|billing|exceeded|rate.?limit|insufficient.?funds|payment|delinquent/i.test(errorMessage);
+
+    if (isQuotaOrBillingError) {
+      console.warn(`⚠️ OpenAI quota/billing error in shouldRespond — defaulting to not responding: ${errorMessage}`);
+      return {
+        shouldRespond: false,
+        confidence: 0,
+        reason: `AI decision unavailable (quota/billing error) — defaulting to silent`,
+      };
+    }
+
+    // For other unexpected errors, still throw so monitoring captures them
     console.error('❌ Error in AI decision making:', error);
-    throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(`Failed to make response decision: ${errorMessage}`);
   }
 }
 
