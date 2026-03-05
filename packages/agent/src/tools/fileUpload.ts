@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { writeFileSync, statSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join, extname } from 'path';
 import { randomUUID } from 'crypto';
-import { getUploadsDir } from '@repo/shared';
+import { getUploadsDir, getCachedAttachment, extractAttachmentId } from '@repo/shared';
 
 // Public uploads directory - use centralized storage utility (fallback)
 const UPLOADS_DIR = getUploadsDir();
@@ -520,11 +520,31 @@ function saveUploadedFile(
 }
 
 /**
- * Download file from URL
+ * Download file from URL, checking attachment cache first for Discord CDN URLs
  */
 async function downloadFile(url: string): Promise<Buffer> {
+  // Check attachment cache first for Discord CDN URLs
+  if (url.includes('cdn.discordapp.com')) {
+    const attachmentId = extractAttachmentId(url);
+    if (attachmentId) {
+      const cached = getCachedAttachment(attachmentId);
+      if (cached) {
+        console.log(`   ✅ Using cached attachment buffer [ID: ${attachmentId}]`);
+        return cached.buffer;
+      }
+      console.log(`   ⚠️ Attachment ${attachmentId} not found in cache, attempting direct download...`);
+    }
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
+    if (response.status === 404 && url.includes('cdn.discordapp.com')) {
+      throw new Error(
+        `Failed to download file: Discord CDN URL returned 404 (file likely expired). ` +
+        `The attachment was not found in the cache either. This can happen when the bot ` +
+        `takes too long to process the message or the cache has been cleared.`
+      );
+    }
     throw new Error(`Failed to download file: HTTP ${response.status}`);
   }
   const arrayBuffer = await response.arrayBuffer();
