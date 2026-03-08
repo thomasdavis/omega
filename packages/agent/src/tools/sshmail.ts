@@ -160,16 +160,38 @@ export const sshmailTool = tool({
       };
     }
 
-    // Decode base64-encoded private key, or use raw if it starts with the PEM header
+    // Parse the private key from env var - handles multiple formats:
+    // 1. Base64-encoded full key (recommended for Railway)
+    // 2. Raw PEM with literal \n characters
+    // 3. Raw PEM with actual newlines
+    // 4. Raw PEM on a single line (newlines stripped by env var storage)
     let normalizedKey: string;
-    if (privateKeyEnv.startsWith('-----BEGIN')) {
-      normalizedKey = privateKeyEnv.includes('\\n')
-        ? privateKeyEnv.replace(/\\n/g, '\n')
-        : privateKeyEnv;
+    const trimmed = privateKeyEnv.trim();
+
+    if (!trimmed.startsWith('-----')) {
+      // Base64-encoded key - decode it
+      normalizedKey = Buffer.from(trimmed, 'base64').toString('utf-8');
+    } else if (trimmed.includes('\\n')) {
+      // Literal \n escape sequences
+      normalizedKey = trimmed.replace(/\\n/g, '\n');
+    } else if (!trimmed.includes('\n')) {
+      // Single-line PEM - reconstruct newlines
+      // Format: -----BEGIN OPENSSH PRIVATE KEY-----<base64data>-----END OPENSSH PRIVATE KEY-----
+      const match = trimmed.match(/^(-----BEGIN [^-]+-----)(.+)(-----END [^-]+-----)$/);
+      if (match) {
+        const body = match[2].replace(/\s/g, '');
+        // Split body into 70-char lines (standard PEM line length)
+        const lines = body.match(/.{1,70}/g) || [];
+        normalizedKey = `${match[1]}\n${lines.join('\n')}\n${match[3]}\n`;
+      } else {
+        normalizedKey = trimmed;
+      }
     } else {
-      // Base64-encoded key
-      normalizedKey = Buffer.from(privateKeyEnv, 'base64').toString('utf-8');
+      // Already properly formatted
+      normalizedKey = trimmed;
     }
+
+    console.log(`📧 SSHMail: key format detected, length=${normalizedKey.length}, starts=${normalizedKey.substring(0, 30)}`);
 
     try {
       let command: string;
