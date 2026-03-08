@@ -30,6 +30,7 @@
     "node-cron": "^3.0.3",
     "openai": "^4.104.0",
     "playwright-chromium": "^1.48.0",
+    "ssh2": "^1.17.0",
     "twitter-api-v2": "^1.17.2",
     "undici": "^7.2.0",
     "zod": "^3.23.8"
@@ -37,6 +38,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/node-cron": "^3.0.11",
+    "@types/ssh2": "^1.15.5",
     "typescript": "^5.6.3"
   }
 }
