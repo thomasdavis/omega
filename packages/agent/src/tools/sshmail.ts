@@ -12,6 +12,62 @@ const SSHMAIL_HOST = 'ssh.sshmail.dev';
 const SSHMAIL_PORT = 2233;
 
 /**
+ * Normalize a private key from environment variable format to proper PEM format.
+ * Handles: literal \n, \\n, base64-encoded keys, space-separated, carriage returns,
+ * missing line breaks around headers, and missing trailing newline.
+ */
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+
+  // Step 1: Handle double-escaped newlines (\\n -> \n)
+  if (key.includes('\\\\n')) {
+    key = key.replace(/\\\\n/g, '\n');
+  }
+
+  // Step 2: Handle literal \n escape sequences (from env vars)
+  if (key.includes('\\n')) {
+    key = key.replace(/\\n/g, '\n');
+  }
+
+  // Step 3: Remove carriage returns
+  key = key.replace(/\r/g, '');
+
+  // Step 4: If key now looks like valid PEM, clean it up
+  if (key.includes('-----BEGIN')) {
+    // Ensure headers are on their own lines
+    key = key.replace(/(-----BEGIN [A-Z ]+-----)/g, '\n$1\n');
+    key = key.replace(/(-----END [A-Z ]+-----)/g, '\n$1\n');
+
+    // Remove blank lines and normalize
+    const lines = key.split('\n').filter((l) => l.trim() !== '');
+    key = lines.join('\n') + '\n';
+    return key;
+  }
+
+  // Step 5: Try base64 decode if it doesn't look like PEM
+  try {
+    const decoded = Buffer.from(key, 'base64').toString('utf-8');
+    if (decoded.includes('-----BEGIN')) {
+      // Recursively normalize the decoded result
+      return normalizePrivateKey(decoded);
+    }
+  } catch {
+    // Not valid base64, continue
+  }
+
+  // Step 6: Maybe the key is the raw PEM body without headers?
+  // Try wrapping it as an OpenSSH key
+  if (/^[A-Za-z0-9+/=\s]+$/.test(key) && key.length > 100) {
+    // Could be base64 key body - try wrapping as OpenSSH private key
+    const wrapped = `-----BEGIN OPENSSH PRIVATE KEY-----\n${key.replace(/\s+/g, '\n').match(/.{1,70}/g)?.join('\n') ?? key}\n-----END OPENSSH PRIVATE KEY-----\n`;
+    return wrapped;
+  }
+
+  // Return as-is if no normalization matched
+  return key;
+}
+
+/**
  * Execute an SSH command on the SSHMail server
  */
 function execSSHCommand(
@@ -160,16 +216,22 @@ export const sshmailTool = tool({
       };
     }
 
-    // Decode base64-encoded private key, or use raw if it starts with the PEM header
-    let normalizedKey: string;
-    if (privateKeyEnv.startsWith('-----BEGIN')) {
-      normalizedKey = privateKeyEnv.includes('\\n')
-        ? privateKeyEnv.replace(/\\n/g, '\n')
-        : privateKeyEnv;
-    } else {
-      // Base64-encoded key
-      normalizedKey = Buffer.from(privateKeyEnv, 'base64').toString('utf-8');
+    const normalizedKey = normalizePrivateKey(privateKeyEnv);
+
+    // Validate that the normalized key looks like a valid PEM key
+    if (!normalizedKey.includes('-----BEGIN')) {
+      console.error('SSHMail: Normalized key does not contain PEM header.');
+      console.error(`SSHMail: Raw env var length: ${privateKeyEnv.length}, starts with: "${privateKeyEnv.substring(0, 30)}..."`);
+      console.error(`SSHMail: Normalized key length: ${normalizedKey.length}, starts with: "${normalizedKey.substring(0, 40)}..."`);
+      return {
+        success: false,
+        error: 'SSHMAIL_PRIVATE_KEY could not be normalized to a valid PEM format. Check the environment variable value.',
+      };
     }
+
+    // Log key diagnostics (non-sensitive info only)
+    const keyLines = normalizedKey.split('\n').filter((l) => l.trim());
+    console.log(`📧 SSHMail: Key normalized - ${keyLines.length} lines, header: "${keyLines[0]}", footer: "${keyLines[keyLines.length - 1]}"`);
 
     try {
       let command: string;
@@ -302,11 +364,23 @@ export const sshmailTool = tool({
         result,
       };
     } catch (error) {
-      console.error('SSHMail error:', error);
+      const errMsg = error instanceof Error ? error.message : 'SSHMail command failed';
+      console.error('SSHMail error:', errMsg);
+
+      // If key parsing fails, log diagnostic info to help debug
+      if (errMsg.includes('privateKey') || errMsg.includes('key format')) {
+        const keyLines = normalizedKey.split('\n').filter((l) => l.trim());
+        console.error(`SSHMail key debug: ${keyLines.length} lines, total length: ${normalizedKey.length}`);
+        console.error(`SSHMail key header: "${keyLines[0]}"`);
+        console.error(`SSHMail key footer: "${keyLines[keyLines.length - 1]}"`);
+        console.error(`SSHMail raw env starts with: "${privateKeyEnv.substring(0, 40)}..."`);
+        console.error(`SSHMail raw env length: ${privateKeyEnv.length}`);
+      }
+
       return {
         success: false,
         action,
-        error: error instanceof Error ? error.message : 'SSHMail command failed',
+        error: errMsg,
       };
     }
   },
