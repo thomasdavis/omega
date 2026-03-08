@@ -152,18 +152,24 @@ export const sshmailTool = tool({
       ),
   }),
   execute: async ({ action, recipient, message, messageId, groupName, agentName }) => {
-    const privateKey = process.env.SSHMAIL_PRIVATE_KEY;
-    if (!privateKey) {
+    const privateKeyEnv = process.env.SSHMAIL_PRIVATE_KEY;
+    if (!privateKeyEnv) {
       return {
         success: false,
         error: 'SSHMAIL_PRIVATE_KEY environment variable is not set',
       };
     }
 
-    // Normalize the private key - replace literal \n with actual newlines
-    const normalizedKey = privateKey.includes('\\n')
-      ? privateKey.replace(/\\n/g, '\n')
-      : privateKey;
+    // Decode base64-encoded private key, or use raw if it starts with the PEM header
+    let normalizedKey: string;
+    if (privateKeyEnv.startsWith('-----BEGIN')) {
+      normalizedKey = privateKeyEnv.includes('\\n')
+        ? privateKeyEnv.replace(/\\n/g, '\n')
+        : privateKeyEnv;
+    } else {
+      // Base64-encoded key
+      normalizedKey = Buffer.from(privateKeyEnv, 'base64').toString('utf-8');
+    }
 
     try {
       let command: string;
