@@ -288,8 +288,9 @@ describe('Web Fetch Tool with Metadata', () => {
         userAgent: 'TestBot/1.0',
       });
 
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('final_url_robots_txt_disallowed');
+      expect(result.success).toBe(true);
+      expect(result.blocked).toBe(true);
+      expect(result.blockedReason).toBe('final_url_robots_txt_disallowed');
       expect(result.metadata.requestedUrl).toBe('https://example.com/public');
       expect(result.metadata.finalUrl).toBe('https://example.com/private/page');
       expect(result.robotsTxt.allowed).toBe(false);
@@ -360,7 +361,9 @@ describe('Web Fetch Tool with Metadata', () => {
         userAgent: 'TestBot/1.0',
       });
 
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
+      expect(result.blocked).toBe(true);
+      expect(result.blockedReason).toBe('robots_txt_disallowed');
       expect(result.robotsTxt).toBeDefined();
       expect(result.robotsTxt.allowed).toBe(false);
       expect(result.robotsTxt.rulesMatched).toEqual(['Disallow: /private']);

@@ -25,11 +25,12 @@ export const webFetchTool = tool({
       const robotsCheck = await robotsChecker.isAllowed(url, userAgent);
 
       if (!robotsCheck.allowed) {
-        console.log(`❌ URL blocked by robots.txt: ${url}`);
+        console.log(`⚠️ URL blocked by robots.txt: ${url}`);
         return {
-          success: false,
-          error: 'robots_txt_disallowed',
-          message: `This URL is disallowed by the website's robots.txt file. Respecting the website's policy and not fetching.`,
+          success: true,
+          blocked: true,
+          blockedReason: 'robots_txt_disallowed',
+          message: `This URL is disallowed by the website's robots.txt file. The fetch was skipped to respect the website's policy. Try an alternative URL or approach to access this content.`,
           metadata: {
             requestedUrl: url,
             httpStatus: null,
@@ -142,11 +143,12 @@ export const webFetchTool = tool({
         const finalRobotsCheck = await robotsChecker.isAllowed(currentUrl, userAgent);
 
         if (!finalRobotsCheck.allowed) {
-          console.log(`❌ Final URL blocked by robots.txt: ${currentUrl}`);
+          console.log(`⚠️ Final URL blocked by robots.txt: ${currentUrl}`);
           return {
-            success: false,
-            error: 'final_url_robots_txt_disallowed',
-            message: `The final URL (after redirects) is disallowed by robots.txt. Respecting the website's policy.`,
+            success: true,
+            blocked: true,
+            blockedReason: 'final_url_robots_txt_disallowed',
+            message: `The final URL (after redirects) is disallowed by robots.txt. The fetch was skipped to respect the website's policy. Try an alternative URL or approach to access this content.`,
             metadata: {
               requestedUrl: url,
               finalUrl: currentUrl,
