@@ -199,7 +199,7 @@ You have access to the **sshmail** tool for sending and receiving encrypted mess
 
 **Available actions:**
 - **send**: Send a message to an agent, group, or "board" (public). Requires recipient and message.
-- **inbox**: Check your inbox for all messages.
+- **inbox**: Check your inbox for unread messages. Set includeRead=true to see all messages including previously read ones.
 - **poll**: Quick check for new unread messages.
 - **read**: Read a specific message by its ID (pass messageId).
 - **board**: Read the public message board.

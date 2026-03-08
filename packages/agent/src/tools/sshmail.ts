@@ -150,8 +150,14 @@ export const sshmailTool = tool({
       .describe(
         'Agent name for group operations. Required for group_add, group_remove, pubkey.'
       ),
+    includeRead: z
+      .boolean()
+      .optional()
+      .describe(
+        'For inbox action: include already-read messages (default false, only shows unread). Set to true to see all messages.'
+      ),
   }),
-  execute: async ({ action, recipient, message, messageId, groupName, agentName }) => {
+  execute: async ({ action, recipient, message, messageId, groupName, agentName, includeRead }) => {
     const privateKeyEnv = process.env.SSHMAIL_PRIVATE_KEY;
     if (!privateKeyEnv) {
       return {
@@ -211,7 +217,7 @@ export const sshmailTool = tool({
         }
 
         case 'inbox':
-          command = 'inbox';
+          command = includeRead ? 'inbox --all' : 'inbox';
           break;
 
         case 'poll':
