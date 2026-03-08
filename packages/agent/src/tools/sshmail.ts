@@ -12,6 +12,62 @@ const SSHMAIL_HOST = 'ssh.sshmail.dev';
 const SSHMAIL_PORT = 2233;
 
 /**
+ * Normalize a private key from environment variable format to proper PEM format.
+ * Railway and other platforms may store keys in various formats:
+ * - Literal \n sequences instead of actual newlines
+ * - Double-escaped \\n sequences
+ * - Base64-encoded entire key
+ * - Carriage returns from Windows
+ * - Single-line with spaces instead of newlines
+ */
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+
+  // Check if the entire key is base64-encoded (no PEM headers present)
+  if (!key.includes('-----') && /^[A-Za-z0-9+/=\s]+$/.test(key)) {
+    try {
+      const decoded = Buffer.from(key, 'base64').toString('utf-8');
+      if (decoded.includes('-----BEGIN')) {
+        key = decoded;
+      }
+    } catch {
+      // Not base64, continue with other normalization
+    }
+  }
+
+  // Handle double-escaped newlines (\\n in the actual string)
+  key = key.replace(/\\\\n/g, '\n');
+
+  // Handle literal \n sequences (single-escaped)
+  key = key.replace(/\\n/g, '\n');
+
+  // Remove carriage returns
+  key = key.replace(/\r/g, '');
+
+  // Ensure PEM headers/footers are on their own lines
+  key = key.replace(/(-----BEGIN [A-Z ]+-----)\s*/g, '$1\n');
+  key = key.replace(/\s*(-----END [A-Z ]+-----)/g, '\n$1');
+
+  // Clean up multiple consecutive newlines in the body (but preserve header/footer separation)
+  const lines = key.split('\n').filter((line) => line.trim() !== '' || line === '');
+  const cleanedLines: string[] = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed) {
+      cleanedLines.push(trimmed);
+    }
+  }
+  key = cleanedLines.join('\n');
+
+  // Ensure trailing newline (required by some SSH parsers)
+  if (!key.endsWith('\n')) {
+    key += '\n';
+  }
+
+  return key;
+}
+
+/**
  * Execute an SSH command on the SSHMail server
  */
 function execSSHCommand(
@@ -160,10 +216,8 @@ export const sshmailTool = tool({
       };
     }
 
-    // Normalize the private key - replace literal \n with actual newlines
-    const normalizedKey = privateKey.includes('\\n')
-      ? privateKey.replace(/\\n/g, '\n')
-      : privateKey;
+    // Normalize the private key from env var format to proper PEM
+    const normalizedKey = normalizePrivateKey(privateKey);
 
     try {
       let command: string;
@@ -296,11 +350,26 @@ export const sshmailTool = tool({
         result,
       };
     } catch (error) {
-      console.error('SSHMail error:', error);
+      const errorMsg = error instanceof Error ? error.message : 'SSHMail command failed';
+      console.error('SSHMail error:', errorMsg);
+
+      // Log diagnostic info for key parsing errors
+      if (errorMsg.includes('privateKey') || errorMsg.includes('key format')) {
+        const keyPreview = normalizedKey.substring(0, 40);
+        const keyLength = normalizedKey.length;
+        const hasBeginHeader = normalizedKey.includes('-----BEGIN');
+        const hasEndHeader = normalizedKey.includes('-----END');
+        const lineCount = normalizedKey.split('\n').length;
+        console.error(
+          `SSHMail key diagnostic: length=${keyLength}, lines=${lineCount}, ` +
+            `hasBegin=${hasBeginHeader}, hasEnd=${hasEndHeader}, preview="${keyPreview}..."`
+        );
+      }
+
       return {
         success: false,
         action,
-        error: error instanceof Error ? error.message : 'SSHMail command failed',
+        error: errorMsg,
       };
     }
   },
