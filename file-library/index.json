@@ -1,5 +1,23 @@
 [
   {
+    "id": "ff1bd0ec",
+    "filename": "AGENT_17e7940a.md",
+    "originalName": "AGENT.md",
+    "size": 2070,
+    "extension": ".md",
+    "uploadedAt": "2026-03-08T14:59:39.923Z",
+    "uploadedBy": "ajaxdavis",
+    "githubUrl": "https://github.com/thomasdavis/omega/blob/main/file-library/AGENT_17e7940a.md",
+    "rawUrl": "https://raw.githubusercontent.com/thomasdavis/omega/main/file-library/AGENT_17e7940a.md",
+    "description": "sshmail agent instructions from rolandnsharp/sshmail GitHub repo",
+    "tags": [
+      "sshmail",
+      "agent",
+      "ssh2",
+      "typescript"
+    ]
+  },
+  {
     "id": "f8f5beef",
     "filename": "omega-kf-14_9e8e3d8c.png",
     "originalName": "omega-kf-14.png",
