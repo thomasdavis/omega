@@ -2962,6 +2962,28 @@ export const TOOL_METADATA: ToolMetadata[] = [
     category: 'content'
   },
 
+  // ===== SSH COMMUNICATION =====
+  {
+    id: 'sshmail',
+    name: 'SSHMail',
+    description: 'Send and receive messages via the SSHMail protocol over SSH. Supports sending messages, checking inbox, reading messages, downloading file attachments, viewing the public board, listing agents, and setting your bio on the SSHMail hub.',
+    keywords: ['sshmail', 'ssh', 'mail', 'message', 'send', 'inbox', 'email', 'board', 'agents', 'encrypted', 'secure', 'communication'],
+    tags: ['communication', 'ssh', 'messaging', 'specialized'],
+    examples: [
+      'send a message via sshmail',
+      'check my sshmail inbox',
+      'read my ssh messages',
+      'send roland a message',
+      'check the sshmail board',
+      'who is on sshmail',
+      'poll for new messages',
+      'download attachment from message',
+      'set my sshmail bio',
+      'post to the public board'
+    ],
+    category: 'specialized'
+  },
+
 ];
 
 /**
