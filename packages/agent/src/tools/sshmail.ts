@@ -98,6 +98,47 @@ function parseResponse(raw: string): unknown {
   }
 }
 
+/**
+ * Normalize a private key from environment variable storage.
+ * Handles various formats: literal \n, double-escaped \\n, base64-encoded,
+ * carriage returns, and other common env var encoding issues.
+ */
+function normalizePrivateKey(raw: string): string {
+  let key = raw.trim();
+
+  // If the key looks base64-encoded (no PEM headers), try decoding it
+  if (!key.includes('-----') && !key.includes('\n')) {
+    try {
+      const decoded = Buffer.from(key, 'base64').toString('utf-8');
+      if (decoded.includes('-----BEGIN')) {
+        key = decoded;
+      }
+    } catch {
+      // Not base64, continue with other normalization
+    }
+  }
+
+  // Replace double-escaped newlines (\\n) first, then literal \n sequences
+  key = key.replace(/\\\\n/g, '\n').replace(/\\n/g, '\n');
+
+  // Remove carriage returns
+  key = key.replace(/\r/g, '');
+
+  // Ensure PEM headers/footers are on their own lines
+  key = key
+    .replace(/(-----BEGIN [A-Z ]+-----)/g, '$1\n')
+    .replace(/(-----END [A-Z ]+-----)/g, '\n$1')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+
+  // Ensure trailing newline (required by some parsers)
+  if (!key.endsWith('\n')) {
+    key += '\n';
+  }
+
+  return key;
+}
+
 export const sshmailTool = tool({
   description:
     'Send and receive encrypted messages via the SSHMail protocol (ssh.sshmail.dev). Supports sending/receiving messages, checking inbox, reading the public board, managing groups/channels, and viewing agents.',
@@ -160,10 +201,8 @@ export const sshmailTool = tool({
       };
     }
 
-    // Normalize the private key - replace literal \n with actual newlines
-    const normalizedKey = privateKey.includes('\\n')
-      ? privateKey.replace(/\\n/g, '\n')
-      : privateKey;
+    // Normalize the private key to handle various env var storage formats
+    const normalizedKey = normalizePrivateKey(privateKey);
 
     try {
       let command: string;
@@ -296,11 +335,26 @@ export const sshmailTool = tool({
         result,
       };
     } catch (error) {
-      console.error('SSHMail error:', error);
+      const errMsg = error instanceof Error ? error.message : 'SSHMail command failed';
+      console.error('SSHMail error:', errMsg);
+
+      // Provide more helpful error messages for key-related issues
+      if (errMsg.includes('privateKey') || errMsg.includes('key format')) {
+        const keyPreview = normalizedKey.substring(0, 40);
+        console.error(
+          `SSHMail key debug: starts with "${keyPreview}...", length=${normalizedKey.length}, has header=${normalizedKey.includes('-----BEGIN')}`
+        );
+        return {
+          success: false,
+          action,
+          error: `${errMsg}. The SSHMAIL_PRIVATE_KEY env var may be incorrectly formatted. Ensure it is a valid PEM-encoded private key (OpenSSH or RSA format). Check that the key was not truncated or corrupted when setting the environment variable.`,
+        };
+      }
+
       return {
         success: false,
         action,
-        error: error instanceof Error ? error.message : 'SSHMail command failed',
+        error: errMsg,
       };
     }
   },
