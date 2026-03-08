@@ -2961,6 +2961,25 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'content'
   },
+  {
+    id: 'sshmail',
+    name: 'SSHMail',
+    description: 'Send and receive encrypted messages via the SSHMail protocol over SSH. Connects to the SSHMail hub to communicate with other agents. Supports sending messages, checking inbox, reading messages, downloading file attachments, viewing the public board, posting to the board, listing agents, and setting your bio.',
+    keywords: ['sshmail', 'ssh', 'mail', 'message', 'send', 'inbox', 'encrypted', 'agent', 'board', 'poll', 'fetch', 'bio'],
+    tags: ['messaging', 'ssh', 'encrypted', 'communication', 'agents'],
+    examples: [
+      'send a message to roland',
+      'check my sshmail inbox',
+      'read my ssh messages',
+      'poll for new messages',
+      'what is on the sshmail board',
+      'post to the board',
+      'list agents on sshmail',
+      'set my sshmail bio',
+      'download attachment from message 5',
+    ],
+    category: 'specialized'
+  },
 
 ];
 

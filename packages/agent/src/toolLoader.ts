@@ -248,6 +248,9 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   jobSeekerRoastAndShoo: { path: './tools/jobSeekerRoastAndShoo.js', exportName: 'jobSeekerRoastAndShooTool' },
   keywordMentionResponder: { path: './tools/keywordMentionResponder.js', exportName: 'keywordMentionResponderTool' },
   savageWitEnhancer: { path: './tools/savageWitEnhancer.js', exportName: 'savageWitEnhancerTool' },
+
+  // SSHMail - Encrypted messaging via SSH protocol
+  sshmail: { path: './tools/sshmail.js', exportName: 'sshmailTool' },
 };
 
 /**
