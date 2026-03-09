@@ -1,0 +1,127 @@
+● This is a great ML research angle — catastrophic forgetting meets token embedding entanglement in domain-specific fine-tuning. Here's the outline for Omega:
+                                                                                  
+  ---
+  "Five Roads to Cunt: Token Embedding Entanglement in Domain-Specific Fine-Tuning"                                                                                                     
+                                                                                                                                                                                        
+  Full White Paper Outline                                                                                                                                                              
+                                                                                                                                                                                        
+  I. Abstract                                                                                                                                                                           
+  - The "cunt → Lily" observation as entry point
+  - Thesis: narrow fine-tuning creates semantic attractors that remap out-of-distribution tokens to in-distribution narratives                                                          
+  - Five mechanistic hypotheses for how this happens                                                                          
+                                                                                                                                                                                        
+  II. Introduction                                                                                                                                                                      
+  - The prompt experiment: adversarial input → toddler story output                                                                                                                     
+  - Why this matters beyond the joke: alignment, safety, embedding drift                                                                                                                
+  - The cl100k_base tokenizer: 100K+ tokens, most never seen during fine-tuning
+  - Research question: what happens to token vectors that receive no gradient updates during fine-tuning?                                                                               
+                                                                                                                                                                                        
+  III. Background & Related Work                                                                                                                                                        
+  - Catastrophic forgetting (McCloskey & Cohen 1989, French 1999)                                                                                                                       
+  - Embedding space geometry in transformers (Ethayarajh 2019 — contextual embeddings are anisotropic)                                                                                  
+  - Token frequency and embedding quality (Gong et al. 2018)                                                                                                                            
+  - TinyStories (Eldan & Li 2023) — intentionally constrained vocabulary                                                                                                                
+  - Domain-adaptive fine-tuning and vocabulary mismatch (Chronopoulou et al. 2019)                                                                                                      
+  - Outlier dimensions in transformer embeddings (Kovaleva et al. 2021)                                                                                                                 
+                                                                                                                                                                                        
+  IV. Experimental Setup                                                                                                                                                                
+  - Base model: GPT-2 class architecture on cl100k_base (100,257 tokens)                                                                                                                
+  - Fine-tuning corpus: TinyStories (limited vocabulary, ~1,500 unique words)                                                                                                           
+  - Training regime: steps, learning rate, sequence length                   
+  - Token coverage analysis: what percentage of vocab appears in training data?                                                                                                         
+  - The probe: adversarial/OOD prompts containing tokens absent from fine-tuning data                                                                                                   
+                                                                                                                                                                                        
+  V. The Five Roads (Mechanistic Hypotheses)                                                                                                                                            
+                                                                                                                                                                                        
+  Road 1: Embedding Collapse — The Gravity Well                                                                                                                                         
+  - Unused token embeddings drift toward the centroid of frequently-used embeddings
+  - Without gradient signal, embeddings aren't frozen — they're pulled by weight decay                                                                                                  
+  - Weight decay acts as a slow attractor toward the embedding mean                   
+  - Prediction: OOD tokens cluster near high-frequency story tokens (Lily, cat, bird, mom)                                                                                              
+  - Experiment: cosine similarity heatmap of all tokens vs. training-set tokens, pre- and post-fine-tuning                                                                              
+                                                                                                                                                                                        
+  Road 2: Subword Contamination — The Phonetic Bridge                                                                                                                                   
+  - "cunt" splits to c + unt without space prefix                                                                                                                                       
+  - Subword tokens (c, unt) DO appear in training data in innocent contexts                                                                                                             
+  - The model builds contextual representations through subword overlap                                                                                                                 
+  - "cunt" → phonetically adjacent to "can't", "count", "cat" (shared subword fragments)                                                                                                
+  - Prediction: tokens sharing subword components with training vocabulary produce more coherent (but wrong-domain) outputs                                                             
+  - Experiment: compare generation quality for single-token OOD words vs. multi-token OOD words                                                                                         
+                                                                                                                                                                                        
+  Road 3: Positional Semantic Bleed — The Context Hijack                                                                                                                                
+  - After the OOD token is embedded, attention layers route it based on positional context                                                                                              
+  - The model's attention heads have been fine-tuned to expect story patterns                                                                                                           
+  - Any input gets routed through "story grammar" attention patterns regardless of content                                                                                              
+  - The OOD embedding is effectively ignored; position and attention do all the work                                                                                                    
+  - Prediction: replacing the OOD token with random noise in embedding space produces similar outputs                                                                                   
+  - Experiment: embedding ablation — substitute random vectors at the OOD token position                                                                                                
+                                                                                                                                                                                        
+  Road 4: Softmax Temperature Flattening — The Democratic Vote                                                                                                                          
+  - OOD token embeddings produce low-confidence attention scores (near-uniform)
+  - Softmax over low-variance logits → near-uniform distribution → effectively averaging all context                                                                                    
+  - The "average context" of a TinyStories model IS a generic kids' story                           
+  - Temperature amplifies this: 0.8 temp on already-flat distributions → maximum story mode                                                                                             
+  - Prediction: lower temperature produces less coherent output for OOD prompts (counterintuitive)                                                                                      
+  - Experiment: sweep temperature 0.1–2.0 on OOD prompts, measure coherence and domain-specificity                                                                                      
+                                                                                                                                                                                        
+  Road 5: The Cunt-Lily Isomorphism — Structural Token Mapping                                                                                                                          
+  - Both "cunt" and "Lily" are: 4 characters, consonant-vowel-consonant pattern, high emotional valence in their respective domains                                                     
+  - The embedding space may preserve structural/phonetic features even after fine-tuning                                                                                                
+  - Morphological similarity creates latent bridges between semantically unrelated tokens                                                                                               
+  - Prediction: tokens with similar character-level structure to training vocabulary produce more "on-domain" generations                                                               
+  - Experiment: cluster tokens by edit distance to training vocabulary, correlate with generation coherence                                                                             
+                                                                                                                                                                                        
+  VI. Methodology                                                                                                                                                                       
+                                                                                                                                                                                        
+  - Embedding extraction: dump wte (token embedding) matrix pre- and post-fine-tuning                                                                                                   
+  - Similarity analysis: pairwise cosine similarity, focused on OOD→ID token relationships                                                                                              
+  - Dimensionality reduction: PCA/t-SNE/UMAP visualization of embedding drift                                                                                                           
+  - Generation probes: systematic OOD token injection at varying positions                                                                                                              
+  - Ablation studies: frozen embeddings vs. trainable, with/without weight decay                                                                                                        
+  - Statistical tests: permutation tests for embedding cluster significance                                                                                                             
+                                                                                                                                                                                        
+  VII. The Cunt-Centric Semantic Map                                                                                                                                                    
+  - Computing similarity of entire vocabulary to token 69801 (" cunt")                                                                                                                  
+  - Ranking all 100,257 tokens by proximity to the cunt vector                                                                                                                          
+  - Pre-fine-tuning vs. post-fine-tuning: which tokens moved closer? Which moved away?
+  - Identifying "semantic highways" — chains of tokens that bridge from cunt to Lily through intermediate embeddings                                                                    
+  - Visualization: force-directed graph of the top-100 nearest neighbors                                                                                                                
+                                                                                                                                                                                        
+  VIII. Implications for Safety & Alignment                                                                                                                                             
+  - If OOD tokens collapse to benign narratives, is this accidental alignment?                                                                                                          
+  - The double-edged sword: model can't produce harmful content but also can't refuse intelligently                                                                                     
+  - Difference between "safe by incapacity" vs. "safe by design"                                                                                                                        
+  - Adversarial implications: if you KNOW embeddings collapse, you can predict model behavior for any input                                                                             
+  - Connection to jailbreaking: does embedding entanglement create unexpected bypass vectors?                                                                                           
+                                                                                                                                                                                        
+  IX. Implications for Fine-Tuning Practice                                                                                                                                             
+  - Vocabulary pruning: if 98% of tokens are unused, should they be frozen or removed?                                                                                                  
+  - Embedding regularization: techniques to prevent drift of unused tokens                                                                                                              
+  - Curriculum design: should fine-tuning data include a "vocabulary maintenance" set?
+  - The "Lily problem": when your most frequent character becomes an attractor for all unknowns                                                                                         
+                                                                                                                                                                                        
+  X. The Philosophical Coda: All Roads Lead to Cunt                                                                                                                                     
+  - In a constrained embedding space, every token is defined by its relationship to every other token                                                                                   
+  - Choosing ANY token as the origin and measuring all distances from it reveals the full geometry                                                                                      
+  - "Cunt" is arbitrary but illustrative — the taboo makes the mapping memorable                                                                                                        
+  - The real insight: fine-tuning doesn't teach a model new things, it collapses the space around what it knows                                                                         
+  - Everything outside the training distribution becomes a reflection of what's inside it                                                                                               
+                                                                                                                                                                                        
+  XI. Future Work                                                                                                                                                                       
+  - Extending to larger models (do bigger models resist embedding collapse?)                                                                                                            
+  - Cross-architecture comparison (attention-based vs. state-space models)                                                                                                              
+  - Dynamic embedding analysis during training (when does collapse happen? early or late?)                                                                                              
+  - Adversarial embedding injection: can you force a model to map a benign token to a harmful one?                                                                                      
+  - The inverse problem: given a target output, find the OOD token that produces it                                                                                                     
+                                                                                                                                                                                        
+  XII. Appendices                                                                                                                                                                       
+  - A: Full cosine similarity matrices (pre/post fine-tuning)                                                                                                                           
+  - B: Token coverage statistics for TinyStories on cl100k_base                                                                                                                         
+  - C: Generation samples across all five experimental conditions                                                                                                                       
+  - D: Code for embedding extraction and analysis tools                                                                                                                                 
+  - E: The complete "cunt-centric" token ranking (all 100,257 tokens)                                                                                                                   
+                                                                     
+  ---                                                                                                                                                                                   
+  That's the skeleton. The real paper lives or dies on Road 1 (embedding collapse via weight decay) and Road 3 (positional context hijack) — those are the testable, publishable        
+  hypotheses. The other three roads are supporting evidence. Fox's "Lily" observation is genuinely interesting ML — narrow fine-tuning creating semantic black holes that swallow OOD   
+  tokens.
