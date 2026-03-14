@@ -14,6 +14,7 @@ interface Comic {
   url: string;
   createdAt: string;
   size: number;
+  mimeType?: string;
 }
 
 export default function ComicsPage() {
@@ -91,11 +92,20 @@ export default function ComicsPage() {
               >
                 {/* Comic Preview */}
                 <div className="w-full h-96 bg-zinc-800 border-b border-zinc-800 flex items-center justify-center overflow-hidden">
-                  <img
-                    src={comic.url}
-                    alt={comic.filename}
-                    className="w-full h-full object-contain"
-                  />
+                  {comic.mimeType === 'text/html' ? (
+                    <iframe
+                      src={comic.url}
+                      title={comic.filename}
+                      className="w-full h-full border-0"
+                      sandbox="allow-scripts"
+                    />
+                  ) : (
+                    <img
+                      src={comic.url}
+                      alt={comic.filename}
+                      className="w-full h-full object-contain"
+                    />
+                  )}
                 </div>
 
                 {/* Comic Info */}
@@ -122,7 +132,7 @@ export default function ComicsPage() {
                   </time>
 
                   <a
-                    href={`/api/artifacts/${comic.id}`}
+                    href={comic.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-teal-400 hover:text-teal-300 transition-colors text-sm font-mono flex items-center gap-2"

@@ -22,10 +22,11 @@ export async function GET() {
 
         if (frontmatterMatch) {
           const frontmatter = frontmatterMatch[1];
-          const titleMatch = frontmatter.match(/title:\s*"(.+)"/);
-          const dateMatch = frontmatter.match(/date:\s*"(.+)"/);
-          if (titleMatch) title = titleMatch[1];
-          if (dateMatch) date = dateMatch[1];
+          // Match title with double quotes, single quotes, or unquoted
+          const titleMatch = frontmatter.match(/title:\s*(?:"([^"]+)"|'([^']+)'|(.+))/);
+          const dateMatch = frontmatter.match(/date:\s*(?:"([^"]+)"|'([^']+)'|(\S+))/);
+          if (titleMatch) title = (titleMatch[1] || titleMatch[2] || titleMatch[3]).trim();
+          if (dateMatch) date = (dateMatch[1] || dateMatch[2] || dateMatch[3]).trim();
         }
 
         return {
