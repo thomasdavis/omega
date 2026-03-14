@@ -520,15 +520,75 @@ function saveUploadedFile(
 }
 
 /**
- * Download file from URL
+ * Download file from URL with retry logic and descriptive errors
  */
 async function downloadFile(url: string): Promise<Buffer> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download file: HTTP ${response.status}`);
+  // Validate URL format
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error(
+      `Invalid file URL: "${url}". Please provide a valid URL. ` +
+      `If the user pasted a link in chat, the original file may need to be shared as a Discord attachment instead.`
+    );
   }
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+
+  // Only allow http/https
+  if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+    throw new Error(`Unsupported URL protocol: ${parsedUrl.protocol}. Only http and https are supported.`);
+  }
+
+  const maxRetries = 2;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      // Wait before retrying (500ms, 1500ms)
+      await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+      const response = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      }
+
+      // Don't retry client errors (except 429)
+      if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+        const statusMessages: Record<number, string> = {
+          401: 'Unauthorized — the URL requires authentication.',
+          403: 'Forbidden — access to this file is denied. Discord CDN links can expire; try re-uploading the file as a Discord attachment.',
+          404: 'Not Found — the file no longer exists at this URL. Discord CDN links expire over time. Please ask the user to re-upload the file as a new Discord attachment.',
+          410: 'Gone — the file has been permanently removed from this URL.',
+        };
+        const detail = statusMessages[response.status] || `HTTP ${response.status} error.`;
+        throw new Error(`Failed to download file: ${detail} (URL: ${url})`);
+      }
+
+      lastError = new Error(`HTTP ${response.status} from ${parsedUrl.hostname}`);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        lastError = new Error(`Download timed out after 30 seconds (URL: ${url})`);
+      } else if (error.message?.startsWith('Failed to download file:')) {
+        // Re-throw descriptive errors without wrapping
+        throw error;
+      } else {
+        lastError = error;
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to download file after ${maxRetries + 1} attempts: ${lastError?.message || 'Unknown error'}. ` +
+    `If this is a Discord CDN link, it may have expired. Ask the user to re-upload the file.`
+  );
 }
 
 export const fileUploadTool = tool({
@@ -557,6 +617,11 @@ export const fileUploadTool = tool({
   2. Extract the attachment URL and filename from the message
   3. Use this tool with the fileUrl parameter to download and save the file
   4. Return the shareable GitHub URL to the user
+
+  CRITICAL: Only use URLs from Discord's **[ATTACHMENTS]** section — these are real CDN links.
+  Do NOT use URLs that users paste as text in their messages. Those are external links that may be
+  inaccessible, expired, or require authentication. If a user pastes a URL in chat and wants it
+  uploaded, ask them to download the file first and share it as a Discord attachment.
 
   You can use this tool in two ways:
   - With fileUrl: Provide a Discord attachment URL to download and save
