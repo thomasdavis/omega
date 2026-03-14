@@ -406,10 +406,17 @@ const ScoreBar = ({ score, label, max = 100, ciLow, ciHigh, color }: { score: nu
             style={{ left: `${(ciLow / max) * 100}%`, width: `${((ciHigh - ciLow) / max) * 100}%`, backgroundColor: color || '#2dd4bf' }}
           />
         )}
-        <div
-          className={color ? 'h-full rounded-full transition-all duration-500' : 'h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-500'}
-          style={{ width: `${Math.min(percentage, 100)}%`, ...(color ? { backgroundColor: color } : {}) }}
-        />
+        {color ? (
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${Math.min(percentage, 100)}%`, backgroundColor: color }}
+          />
+        ) : (
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-500"
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          />
+        )}
       </div>
     </div>
   );
@@ -858,13 +865,14 @@ export default function ProfileDetailPage() {
 
       {/* Tab Navigation */}
       <div className="sticky top-0 z-10 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur-sm">
+        <style>{`.no-scrollbar::-webkit-scrollbar { display: none } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-0 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-0 overflow-x-auto no-scrollbar">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-3.5 text-sm font-mono whitespace-nowrap border-b-2 transition-all ${
+                className={`px-3 py-3 text-xs font-mono whitespace-nowrap border-b-2 transition-all ${
                   activeTab === tab.id
                     ? 'text-teal-400 border-teal-400'
                     : 'text-zinc-500 border-transparent hover:text-zinc-300 hover:border-zinc-700'
@@ -1300,7 +1308,7 @@ export default function ProfileDetailPage() {
         {activeTab === 'behavior' && (
           <>
             {/* Predictions */}
-            {profile.predictedBehaviors && Array.isArray(profile.predictedBehaviors) && profile.predictedBehaviors.length > 0 && (
+            {profile.predictedBehaviors && Array.isArray(profile.predictedBehaviors) && profile.predictedBehaviors.length > 0 ? (
               <Section title="Behavioral Predictions">
                 <div className="grid grid-cols-1 gap-4">
                   {profile.predictedBehaviors.map((p: BehavioralPrediction, idx: number) => <PredictionCard key={idx} prediction={p} />)}
@@ -1313,53 +1321,115 @@ export default function ProfileDetailPage() {
                   </div>
                 </div>
               </Section>
+            ) : (
+              <Section title="Behavioral Predictions">
+                <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg text-center">
+                  <p className="text-zinc-500 text-sm font-light">No behavioral predictions generated yet. Predictions are created as Omega observes more interactions over time.</p>
+                </div>
+              </Section>
             )}
 
             {/* Growth Trajectory */}
             {profile.growth_trajectory && <EssaySection title="Growth Trajectory" content={profile.growth_trajectory} />}
 
             {/* Sapolsky Neurobiological */}
-            {(profile.stress_response_pattern || profile.neurobiological_profile) && (
-              <Section title="Neurobiological Profile (Sapolsky)" color={EXPERT_COLORS.Sapolsky}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {profile.stress_response_pattern && <Badge value={profile.stress_response_pattern} label="Stress Response" color={EXPERT_COLORS.Sapolsky} />}
-                  {profile.behavioral_ecology_strategy && <Badge value={profile.behavioral_ecology_strategy} label="Behavioral Ecology" color={EXPERT_COLORS.Sapolsky} />}
-                  {profile.recovery_speed && <Badge value={profile.recovery_speed} label="Recovery Speed" color={EXPERT_COLORS.Sapolsky} />}
-                  {profile.dopamine_seeking_score != null && <ScoreBar score={profile.dopamine_seeking_score} label="Dopamine Seeking" color={EXPERT_COLORS.Sapolsky} />}
-                  {profile.serotonin_stability_score != null && <ScoreBar score={profile.serotonin_stability_score} label="Serotonin Stability" color={EXPERT_COLORS.Sapolsky} />}
-                </div>
-                {profile.stress_chronotype && <TextField value={profile.stress_chronotype} label="Stress Chronotype" />}
-              </Section>
-            )}
+            {(() => {
+              const hasSapolskyData = profile.stress_response_pattern || profile.neurobiological_profile ||
+                profile.behavioral_ecology_strategy || profile.recovery_speed ||
+                profile.dopamine_seeking_score != null || profile.serotonin_stability_score != null ||
+                profile.stress_chronotype;
+              return hasSapolskyData ? (
+                <Section title="Neurobiological Profile (Sapolsky)" color={EXPERT_COLORS.Sapolsky}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {profile.stress_response_pattern && <Badge value={profile.stress_response_pattern} label="Stress Response" color={EXPERT_COLORS.Sapolsky} />}
+                    {profile.behavioral_ecology_strategy && <Badge value={profile.behavioral_ecology_strategy} label="Behavioral Ecology" color={EXPERT_COLORS.Sapolsky} />}
+                    {profile.recovery_speed && <Badge value={profile.recovery_speed} label="Recovery Speed" color={EXPERT_COLORS.Sapolsky} />}
+                    {profile.dopamine_seeking_score != null && <ScoreBar score={profile.dopamine_seeking_score} label="Dopamine Seeking" color={EXPERT_COLORS.Sapolsky} />}
+                    {profile.serotonin_stability_score != null && <ScoreBar score={profile.serotonin_stability_score} label="Serotonin Stability" color={EXPERT_COLORS.Sapolsky} />}
+                  </div>
+                  {profile.stress_chronotype && <TextField value={profile.stress_chronotype} label="Stress Chronotype" />}
+                </Section>
+              ) : (
+                <Section title="Neurobiological Profile (Sapolsky)" color={EXPERT_COLORS.Sapolsky}>
+                  <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg text-center">
+                    <p className="text-zinc-500 text-sm font-light">Neurobiological data not yet available. This section populates after the expert panel analysis runs.</p>
+                  </div>
+                </Section>
+              );
+            })()}
 
             {profile.neurobiological_profile && <EssaySection title="Neurobiological Analysis" content={profile.neurobiological_profile} color={EXPERT_COLORS.Sapolsky} />}
 
             <EssaySection title="Behavioral Patterns" content={profile.behavioral_deep_dive} />
 
             {/* Temporal Patterns */}
-            {(profile.peakActivityHours || profile.weekendActivityRatio != null) && (
-              <Section title="Temporal Patterns">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {profile.peakActivityHours && profile.peakActivityHours.length > 0 && <TextField value={profile.peakActivityHours.map(h => `${h}:00 UTC`).join(', ')} label="Peak Activity Hours" />}
-                  {profile.weekendActivityRatio != null && <ScoreBar score={Math.round(profile.weekendActivityRatio * 100)} label="Weekend Activity Ratio" />}
-                  {profile.sentimentTrajectory && <Badge value={profile.sentimentTrajectory} label="Sentiment Trajectory" />}
-                  {profile.vocabularyGrowthRate != null && <TextField value={`${(profile.vocabularyGrowthRate * 100).toFixed(1)}%`} label="Vocabulary Growth Rate" />}
-                  {profile.engagementAuthenticityScore != null && <ScoreBar score={Math.round(profile.engagementAuthenticityScore)} label="Engagement Authenticity" />}
-                </div>
-              </Section>
-            )}
+            {(() => {
+              const hasTemporalData = (profile.peakActivityHours && profile.peakActivityHours.length > 0) ||
+                profile.weekendActivityRatio != null || profile.sentimentTrajectory ||
+                profile.vocabularyGrowthRate != null || profile.engagementAuthenticityScore != null;
+              return (
+                <Section title="Temporal Patterns">
+                  {hasTemporalData ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {profile.peakActivityHours && profile.peakActivityHours.length > 0 && <TextField value={profile.peakActivityHours.map((h: number) => `${h}:00 UTC`).join(', ')} label="Peak Activity Hours" />}
+                      {profile.weekendActivityRatio != null && <ScoreBar score={Math.round(profile.weekendActivityRatio * 100)} label="Weekend Activity Ratio" />}
+                      {profile.sentimentTrajectory && <Badge value={profile.sentimentTrajectory} label="Sentiment Trajectory" />}
+                      {profile.vocabularyGrowthRate != null && <TextField value={`${(profile.vocabularyGrowthRate * 100).toFixed(1)}%`} label="Vocabulary Growth Rate" />}
+                      {profile.engagementAuthenticityScore != null && <ScoreBar score={Math.round(profile.engagementAuthenticityScore)} label="Engagement Authenticity" />}
+                    </div>
+                  ) : (
+                    <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg text-center">
+                      <p className="text-zinc-500 text-sm font-light">Temporal patterns have not been computed yet. More message data is needed to detect activity patterns.</p>
+                    </div>
+                  )}
+                </Section>
+              );
+            })()}
 
             {/* Linguistic Patterns */}
-            <Section title="Linguistic Patterns">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {profile.messageLengthAvg != null && <TextField value={profile.messageLengthAvg.toFixed(2)} label="Avg Message Length" />}
-                {profile.message_length_variance != null && <TextField value={profile.message_length_variance.toFixed(2)} label="Message Length Variance" />}
-                {profile.response_latency_avg != null && <TextField value={profile.response_latency_avg.toFixed(2) + 'ms'} label="Response Latency (avg)" />}
-                {profile.emoji_usage_rate != null && <TextField value={profile.emoji_usage_rate.toFixed(2) + '%'} label="Emoji Usage Rate" />}
-                {profile.punctuation_style && <Badge value={profile.punctuation_style} label="Punctuation Style" />}
-                {profile.capitalization_pattern && <Badge value={profile.capitalization_pattern} label="Capitalization" />}
-              </div>
-            </Section>
+            {(() => {
+              const hasLinguisticData = profile.messageLengthAvg != null || profile.message_length_variance != null ||
+                profile.response_latency_avg != null || profile.emoji_usage_rate != null ||
+                profile.punctuation_style || profile.capitalization_pattern;
+              return (
+                <Section title="Linguistic Patterns">
+                  {hasLinguisticData ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {profile.messageLengthAvg != null && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Avg Message Length</div>
+                          <div className="text-2xl font-light font-mono text-teal-400">{profile.messageLengthAvg.toFixed(0)}<span className="text-sm text-zinc-500 ml-1">chars</span></div>
+                        </div>
+                      )}
+                      {profile.message_length_variance != null && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Length Variance</div>
+                          <div className="text-2xl font-light font-mono text-teal-400">{profile.message_length_variance.toFixed(1)}</div>
+                        </div>
+                      )}
+                      {profile.response_latency_avg != null && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Response Latency</div>
+                          <div className="text-2xl font-light font-mono text-teal-400">{profile.response_latency_avg.toFixed(0)}<span className="text-sm text-zinc-500 ml-1">ms</span></div>
+                        </div>
+                      )}
+                      {profile.emoji_usage_rate != null && (
+                        <div className="space-y-2">
+                          <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Emoji Usage Rate</div>
+                          <div className="text-2xl font-light font-mono text-teal-400">{profile.emoji_usage_rate.toFixed(1)}<span className="text-sm text-zinc-500 ml-1">%</span></div>
+                        </div>
+                      )}
+                      {profile.punctuation_style && <Badge value={profile.punctuation_style} label="Punctuation Style" />}
+                      {profile.capitalization_pattern && <Badge value={profile.capitalization_pattern} label="Capitalization" />}
+                    </div>
+                  ) : (
+                    <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg text-center">
+                      <p className="text-zinc-500 text-sm font-light">Linguistic pattern data is not yet available. This section populates after enough messages have been analyzed.</p>
+                    </div>
+                  )}
+                </Section>
+              );
+            })()}
           </>
         )}
 

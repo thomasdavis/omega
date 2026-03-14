@@ -1,13 +1,13 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const BigFiveRadar = dynamic(
-  () => import('@/components/charts/BigFiveRadar').then(mod => mod.BigFiveRadar),
+  () => import('@/components/charts/BigFiveRadar').then(mod => ({ default: mod.BigFiveRadar })),
   { ssr: false }
 );
 
@@ -132,6 +132,20 @@ function ComparePageContent() {
   const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [dropdownOpen]);
 
   // Load list of all profiles for the selector
   useEffect(() => {
@@ -290,7 +304,7 @@ function ComparePageContent() {
           <div className="text-xs font-mono text-zinc-500 uppercase tracking-wider">Select 2-3 Profiles to Compare</div>
 
           {/* Multi-select dropdown */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="w-full md:w-96 px-4 py-3 bg-zinc-800 border border-zinc-700 text-left text-sm font-mono text-zinc-300 hover:border-zinc-600 transition-colors flex items-center justify-between"
@@ -364,6 +378,15 @@ function ComparePageContent() {
         {loading && <LoadingSpinner message="Loading comparison..." />}
         {error && (
           <div className="bg-red-950/30 border border-red-800 p-4 text-red-400 text-sm font-mono">{error}</div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && profiles.length < 2 && selectedUsers.length < 2 && (
+          <div className="bg-zinc-900 border border-zinc-800 p-12 text-center space-y-3">
+            <div className="text-zinc-500 text-4xl">&#x2194;</div>
+            <div className="text-zinc-400 font-light">Select at least 2 profiles above to see a side-by-side comparison</div>
+            <div className="text-xs font-mono text-zinc-600">Includes Big Five overlay, expert panel scores, and compatibility analysis</div>
+          </div>
         )}
 
         {/* Results */}
