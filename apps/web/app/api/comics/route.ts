@@ -48,6 +48,7 @@ export async function GET() {
       select: {
         id: true,
         toolName: true,
+        mimeType: true,
         metadata: true,
         createdAt: true,
         bytes: true,
@@ -67,6 +68,7 @@ export async function GET() {
         filename,
         description,
         toolName: comic.toolName,
+        mimeType: comic.mimeType || 'image/png',
         url: `/api/comics/${comic.id}`,
         createdAt: comic.createdAt.toISOString(),
         size: comic.bytes || 0,

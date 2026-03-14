@@ -55,8 +55,24 @@ export async function GET(
         });
       }
 
-      // If not found in DB, continue to filesystem fallback
-      console.log(`Comic ID ${numericId} not found in database or has no image data`);
+      // If not found in DB, try filesystem with constructed filename
+      console.log(`Comic ID ${numericId} not found in database or has no image data, trying filesystem`);
+      const comicsDir = getComicsDir();
+      const constructedPath = join(comicsDir, `comic_${numericId}.png`);
+      if (existsSync(constructedPath)) {
+        const fileBuffer = readFileSync(constructedPath);
+        return new NextResponse(new Uint8Array(fileBuffer), {
+          headers: {
+            'Content-Type': 'image/png',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+          },
+        });
+      }
+
+      return NextResponse.json(
+        { success: false, error: 'Comic not found' },
+        { status: 404 }
+      );
     }
 
     // Security: Only allow PNG files with comic_ prefix for filesystem access

@@ -22,6 +22,9 @@ COPY packages ./packages
 # Copy web app
 COPY apps/web ./apps/web
 
+# Copy content directory (blog posts bundled with the image)
+COPY content ./content
+
 # Copy assets directory (includes SoundFont for MP3 generation)
 COPY assets ./assets
 
@@ -67,6 +70,9 @@ COPY --from=base /app/packages/agent/dist ./packages/agent/dist
 COPY --from=base /app/apps/web/.next ./apps/web/.next
 COPY --from=base /app/apps/web/public ./apps/web/public
 COPY --from=base /app/apps/web/next.config.js ./apps/web/
+
+# Copy bundled content (blog posts)
+COPY --from=base /app/content ./content
 
 # Start Next.js
 WORKDIR /app/apps/web

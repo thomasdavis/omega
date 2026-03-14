@@ -1,17 +1,37 @@
 import { NextResponse } from 'next/server';
-import { readdirSync, statSync, readFileSync } from 'fs';
+import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getBlogDir } from '@repo/shared';
 
-export async function GET() {
-  try {
-    const blogDir = getBlogDir();
-    const files = readdirSync(blogDir);
+/**
+ * Parse a frontmatter value that may be double-quoted, single-quoted, or unquoted
+ */
+function parseFrontmatterValue(frontmatter: string, key: string): string | null {
+  const regex = new RegExp(`${key}:\\s*(?:"([^"]+)"|'([^']+)'|(.+))`, 'm');
+  const match = frontmatter.match(regex);
+  if (!match) return null;
+  return (match[1] || match[2] || match[3])?.trim() || null;
+}
 
-    const posts = files
+/**
+ * Read blog posts from a directory
+ */
+function readPostsFromDir(dir: string): Array<{
+  id: string;
+  filename: string;
+  title: string;
+  date: string;
+  createdAt: string;
+  size: number;
+}> {
+  if (!existsSync(dir)) return [];
+
+  try {
+    const files = readdirSync(dir);
+    return files
       .filter((file) => file.endsWith('.md'))
       .map((file) => {
-        const filePath = join(blogDir, file);
+        const filePath = join(dir, file);
         const stats = statSync(filePath);
         const content = readFileSync(filePath, 'utf-8');
 
@@ -22,10 +42,10 @@ export async function GET() {
 
         if (frontmatterMatch) {
           const frontmatter = frontmatterMatch[1];
-          const titleMatch = frontmatter.match(/title:\s*"(.+)"/);
-          const dateMatch = frontmatter.match(/date:\s*"(.+)"/);
-          if (titleMatch) title = titleMatch[1];
-          if (dateMatch) date = dateMatch[1];
+          const parsedTitle = parseFrontmatterValue(frontmatter, 'title');
+          const parsedDate = parseFrontmatterValue(frontmatter, 'date');
+          if (parsedTitle) title = parsedTitle;
+          if (parsedDate) date = parsedDate;
         }
 
         return {
@@ -36,8 +56,38 @@ export async function GET() {
           createdAt: stats.birthtime.toISOString(),
           size: stats.size,
         };
-      })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      });
+  } catch {
+    return [];
+  }
+}
+
+export async function GET() {
+  try {
+    const blogDir = getBlogDir();
+
+    // Read posts from the primary blog directory (persistent volume in production)
+    const primaryPosts = readPostsFromDir(blogDir);
+
+    // Also read bundled content/blog posts (shipped with the Docker image)
+    // These serve as fallback content when the persistent volume is empty or missing posts
+    const bundledDir = join(process.cwd(), 'content/blog');
+    const bundledPosts = blogDir !== bundledDir ? readPostsFromDir(bundledDir) : [];
+
+    // Merge: primary posts take priority (by id), then add bundled posts not already present
+    const postMap = new Map<string, (typeof primaryPosts)[0]>();
+    for (const post of primaryPosts) {
+      postMap.set(post.id, post);
+    }
+    for (const post of bundledPosts) {
+      if (!postMap.has(post.id)) {
+        postMap.set(post.id, post);
+      }
+    }
+
+    const posts = Array.from(postMap.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return NextResponse.json({
       success: true,

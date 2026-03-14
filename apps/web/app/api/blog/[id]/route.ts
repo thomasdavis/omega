@@ -3,16 +3,30 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { getBlogDir } from '@repo/shared';
 
+/**
+ * Find the blog post file, checking primary blog dir and bundled content
+ */
+function findPostFile(id: string): string | null {
+  const blogDir = getBlogDir();
+  const primaryPath = join(blogDir, `${id}.md`);
+  if (existsSync(primaryPath)) return primaryPath;
+
+  // Fallback: check bundled content/blog directory
+  const bundledPath = join(process.cwd(), 'content/blog', `${id}.md`);
+  if (blogDir !== bundledPath && existsSync(bundledPath)) return bundledPath;
+
+  return null;
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const blogDir = getBlogDir();
-    const filePath = join(blogDir, `${id}.md`);
+    const filePath = findPostFile(id);
 
-    if (!existsSync(filePath)) {
+    if (!filePath) {
       return NextResponse.json(
         {
           success: false,
@@ -27,14 +41,20 @@ export async function GET(
     // Parse frontmatter
     const frontmatterMatch = content.match(/^---\n([\s\S]+?)\n---\n([\s\S]*)$/);
 
+    // Handle posts without frontmatter gracefully
     if (!frontmatterMatch) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid blog post format',
+      return NextResponse.json({
+        success: true,
+        post: {
+          id,
+          title: id,
+          date: new Date().toISOString(),
+          content: content,
+          tts: false,
+          ttsVoice: 'bm_fable',
+          frontmatter: {},
         },
-        { status: 500 }
-      );
+      });
     }
 
     const [, frontmatterText, body] = frontmatterMatch;
