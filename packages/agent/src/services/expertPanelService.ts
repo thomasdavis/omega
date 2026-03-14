@@ -273,12 +273,13 @@ const MetaSynthesisSchema = z.object({
     significance: z.enum(['low', 'medium', 'high']),
   })).max(8),
   dissentSummary: z.string().min(200).max(1500),
-  confidenceIntervals: z.record(z.string(), z.object({
+  confidenceIntervals: z.array(z.object({
+    dimension: z.string().describe('Trait or score name'),
     mean: z.number(),
     low: z.number(),
     high: z.number(),
     expertVariance: z.number(),
-  })),
+  })).min(3).max(15).describe('Confidence intervals for key dimensions'),
   interRaterReliability: z.number().min(0).max(1),
   bayesianBigFive: z.object({
     openness: z.object({ score: z.number(), ci: z.object({ low: z.number(), high: z.number() }) }),
