@@ -226,6 +226,123 @@ model UserProfile {
   lastAnalyzedAt               BigInt?               @map("last_analyzed_at")
   lastPhotoAnalyzedAt          BigInt?               @map("last_photo_analyzed_at")
   messageCount                 Int?                  @default(0) @map("message_count")
+  // ─── Expert Panel Core ───
+  expert_panel_json             Json?
+  expert_panel_version          Int?     @default(0)
+  expert_panel_timestamp        BigInt?
+
+  // ─── IO Psychologist ───
+  leadership_potential          Int?
+  leadership_potential_ci_low   Int?
+  leadership_potential_ci_high  Int?
+  team_role                     String?
+  motivational_hierarchy        Json?
+  organizational_citizenship    Int?
+  productivity_pattern          String?
+  initiative_taking_score       Int?
+  feedback_orientation          String?
+
+  // ─── Peterson ───
+  order_chaos_balance           Int?
+  responsibility_index          Int?
+  meaning_orientation           String?
+  competence_trajectory         String?
+  narrative_coherence_score     Int?
+  big_five_deep_interpretation  String?  @db.Text
+  big_five_interaction_effects  Json?
+
+  // ─── Jung ───
+  individuation_stage           String?
+  shadow_integration_score      Int?
+  persona_authenticity_gap      Int?
+  anima_animus_balance          Int?
+  collective_unconscious_themes Json?
+  projection_patterns           Json?
+  archetype_constellation_essay String?  @db.Text
+  shadow_profile_essay          String?  @db.Text
+
+  // ─── Sapolsky ───
+  stress_response_pattern       String?
+  dopamine_seeking_score        Int?
+  serotonin_stability_score     Int?
+  social_hierarchy_position     String?
+  behavioral_ecology_strategy   String?
+  stress_chronotype             String?
+  recovery_speed                String?
+  neurobiological_profile       String?  @db.Text
+
+  // ─── Bernays ───
+  persuadability_index          Int?
+  influence_susceptibility      Json?
+  memetic_role                  String?
+  group_psychology_type         String?
+  propaganda_vulnerability      Int?
+  influence_network_role        String?
+
+  // ─── Freud ───
+  defense_mechanism_primary     String?
+  defense_mechanism_secondary   String?
+  id_ego_superego_balance       Json?
+  repression_index              Int?
+  transference_pattern          String?
+  sublimation_score             Int?
+  avoided_topics                Json?
+  unconscious_drives_essay      String?  @db.Text
+
+  // ─── Kahneman ───
+  system1_dominance             Int?
+  cognitive_bias_profile        Json?
+  loss_aversion_score           Int?
+  anchoring_susceptibility      Int?
+  overconfidence_index          Int?
+  decision_quality_score        Int?
+  cognitive_reflection_score    Int?
+  decision_making_essay         String?  @db.Text
+
+  // ─── Nietzsche ───
+  will_to_power_score           Int?
+  master_slave_morality         String?
+  eternal_recurrence_embrace    Int?
+  ubermensch_alignment          Int?
+  ressentiment_score            Int?
+  value_creation_orientation    String?
+  amor_fati_score               Int?
+  existential_philosophy_essay  String?  @db.Text
+
+  // ─── Caesar ───
+  strategic_value_score         Int?
+  loyalty_reliability_index     Int?
+  caesar_classification         String?
+  courage_score                 Int?
+  decisiveness_score            Int?
+  caesar_verdict_essay          String?  @db.Text
+
+  // ─── Genghis Khan ───
+  meritocratic_worth_score      Int?
+  adaptability_score            Int?
+  resilience_score              Int?
+  correction_acceptance_rate    String?
+  practical_intelligence_score  Int?
+  khan_verdict_essay            String?  @db.Text
+
+  // ─── Machiavelli ───
+  political_intelligence_score  Int?
+  virtu_score                   Int?
+  fox_lion_profile              String?
+  performed_virtue_index        Int?
+  behavioral_flexibility_score  Int?
+  machiavelli_verdict_essay     String?  @db.Text
+
+  // ─── Meta-Synthesis ───
+  expert_consensus_score        Float?   @db.Real
+  expert_dissent_summary        String?  @db.Text
+  inter_rater_reliability       Float?   @db.Real
+  confidence_intervals_json     Json?
+  bayesian_big_five             Json?
+  growth_trajectory             String?  @db.Text
+  expert_integrated_verdict     String?  @db.Text
+  compatibility_vector          Json?
+
   createdAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
   updatedAt                    BigInt?               @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("updated_at")
   analysisHistory              UserAnalysisHistory[]
@@ -260,6 +377,7 @@ model UserAnalysisHistory {
   overall_sentiment             String?
   analysis_version              Int?
   integrated_profile_summary    String?
+  expert_panel_snapshot         Json?
   createdAt                    BigInt?     @default(dbgenerated("(EXTRACT(epoch FROM now()))::bigint")) @map("created_at")
   userProfile                  UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade, onUpdate: NoAction)
 

@@ -18,6 +18,7 @@ export { setSlidevMessageContext, clearSlidevMessageContext } from './tools/conv
 
 // Services (re-export for bot to use)
 export * from './services/userProfileAnalysis.js';
+export * from './services/expertPanelService.js';
 export * from './services/geminiImageService.js';
 export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';

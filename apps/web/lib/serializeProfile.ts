@@ -10,6 +10,7 @@ export function serializeProfile(profile: any) {
     lastAnalyzedAt: profile.lastAnalyzedAt ? Number(profile.lastAnalyzedAt) : null,
     lastPhotoAnalyzedAt: profile.lastPhotoAnalyzedAt ? Number(profile.lastPhotoAnalyzedAt) : null,
     lastPredictionAt: profile.lastPredictionAt ? Number(profile.lastPredictionAt) : null,
+    expert_panel_timestamp: profile.expert_panel_timestamp ? Number(profile.expert_panel_timestamp) : null,
     createdAt: profile.createdAt ? Number(profile.createdAt) : null,
     updatedAt: profile.updatedAt ? Number(profile.updatedAt) : null,
   };

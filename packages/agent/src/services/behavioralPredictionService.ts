@@ -11,6 +11,7 @@ import {
   getUserProfile,
   updateUserProfile,
   getAllUserProfiles,
+  queryMessages,
   type UserProfileRecord,
 } from '@repo/database';
 
@@ -40,7 +41,7 @@ export interface BehavioralPrediction {
 const PredictionsSchema = z.object({
   predictions: z.array(z.object({
     behavior: z.string().describe('Specific predicted behavior'),
-    confidence: z.number().min(0.3).max(0.8).describe('Confidence level 0.3-0.8'),
+    confidence: z.number().min(0.05).max(0.95).describe('Confidence level 0.05-0.95'),
     timeframe: z.enum(['next 7 days', 'next 14 days', 'next 30 days']),
     category: z.enum(['communication', 'emotional', 'social', 'cognitive', 'interests']),
     influencingFactors: z.array(z.string()).min(1).max(4).describe('Contributing factors'),
@@ -152,11 +153,21 @@ function inferCommunicationOrientation(profile: UserProfileRecord): {
 // PREDICTION GENERATION
 // =============================================================================
 
-async function generatePredictions(profile: UserProfileRecord): Promise<BehavioralPrediction[]> {
+async function generatePredictions(
+  profile: UserProfileRecord,
+  evaluationResult?: { evaluated: number; accurate: number; brierScore: number } | null,
+): Promise<BehavioralPrediction[]> {
   const orientation = inferCommunicationOrientation(profile);
 
-  const prompt = `You are Omega, an AI analyzing a user's future behavior by integrating psychology and communication orientation.
+  const calibrationContext = evaluationResult
+    ? `\n## Calibration Context:
+- Prior prediction accuracy (Brier score): ${evaluationResult.brierScore.toFixed(3)}
+- Previous accuracy: ${evaluationResult.evaluated} predictions evaluated, ${evaluationResult.accurate} were correct
+- Adjust your confidence levels based on your track record. If past accuracy was low, be less confident.\n`
+    : '';
 
+  const prompt = `You are Omega, an AI analyzing a user's future behavior by integrating psychology and communication orientation.
+${calibrationContext}
 ## User Profile: ${sanitize(profile.username)}
 
 ### Psychological Profile (Big Five OCEAN):
@@ -231,6 +242,120 @@ Generate 3-5 specific, observable behavioral predictions for the next 7-30 days.
 }
 
 // =============================================================================
+// PREDICTION EVALUATION (FEEDBACK LOOP)
+// =============================================================================
+
+const PredictionEvaluationSchema = z.object({
+  evaluations: z.array(z.object({
+    behavior: z.string(),
+    occurred: z.boolean(),
+    evidence: z.string().max(200),
+    confidence: z.number().min(0).max(1),
+  })),
+});
+
+/**
+ * Evaluate past predictions against actual behavior to compute accuracy.
+ * Uses Brier score: BS = (1/N) * Σ(confidence - outcome)²
+ */
+async function evaluatePredictions(userId: string): Promise<{
+  evaluated: number;
+  accurate: number;
+  brierScore: number;
+} | null> {
+  try {
+    const profile = await getUserProfile(userId);
+    if (!profile) return null;
+
+    const predictions = profile.predicted_behaviors as BehavioralPrediction[] | null;
+    const lastPredictionAt = profile.last_prediction_at;
+
+    if (!predictions || predictions.length === 0 || !lastPredictionAt) {
+      return null;
+    }
+
+    // Check if enough time has passed (at least 7 days since predictions were made)
+    const now = Math.floor(Date.now() / 1000);
+    const daysSincePrediction = (now - lastPredictionAt) / (24 * 60 * 60);
+    if (daysSincePrediction < 7) {
+      return null;
+    }
+
+    // Fetch recent messages to evaluate predictions against
+    const recentMessages = await queryMessages({
+      userId,
+      limit: 100,
+      startTime: lastPredictionAt,
+    });
+
+    if (!recentMessages || recentMessages.length === 0) {
+      return null;
+    }
+
+    const messagesContext = recentMessages
+      .map((m) => sanitize(m.message_content))
+      .join('\n')
+      .slice(0, 3000);
+
+    const predictionsText = predictions
+      .map((p, i) => `${i + 1}. "${sanitize(p.behavior)}" (confidence: ${p.confidence}, timeframe: ${p.timeframe})`)
+      .join('\n');
+
+    const prompt = `You are evaluating behavioral predictions that were made about a user. Analyze the user's recent messages to determine whether each predicted behavior actually occurred.
+
+## Predictions Made (${daysSincePrediction.toFixed(0)} days ago):
+${predictionsText}
+
+## User's Recent Messages:
+${messagesContext}
+
+## Task:
+For each prediction, determine:
+- Whether the behavior occurred (true/false)
+- Brief evidence from their messages (max 200 chars)
+- Your confidence in the evaluation (0-1)
+
+Be honest — if there's no evidence, mark it as not occurred.`;
+
+    const result = await generateText({
+      model: openai.chat(PREDICTION_MODEL),
+      output: Output.object({ schema: PredictionEvaluationSchema }),
+      prompt,
+    });
+
+    if (!result.output || !result.output.evaluations) {
+      return null;
+    }
+
+    const evaluations = result.output.evaluations;
+    const evaluated = evaluations.length;
+    const accurate = evaluations.filter(e => e.occurred).length;
+
+    // Compute Brier score: BS = (1/N) * Σ(confidence - outcome)²
+    let brierSum = 0;
+    for (let i = 0; i < evaluations.length; i++) {
+      const prediction = predictions[i];
+      const outcome = evaluations[i].occurred ? 1 : 0;
+      const confidence = prediction?.confidence ?? 0.5;
+      brierSum += (confidence - outcome) ** 2;
+    }
+    const brierScore = evaluated > 0 ? brierSum / evaluated : 0;
+
+    // Store accuracy score in profile
+    await updateUserProfile(userId, {
+      prediction_accuracy_score: brierScore,
+    });
+
+    console.log(`   Prediction evaluation for ${userId}: ${evaluated} evaluated, ${accurate} accurate, Brier score: ${brierScore.toFixed(3)}`);
+
+    return { evaluated, accurate, brierScore };
+  } catch (error) {
+    console.error(`   Failed to evaluate predictions for ${userId}:`, error);
+    return null;
+  }
+}
+
+// =============================================================================
 // PUBLIC API
 // =============================================================================
 
@@ -248,11 +373,14 @@ export async function updateUserPredictions(userId: string): Promise<void> {
     return;
   }
 
+  // Evaluate prior predictions for feedback loop
+  const evaluationResult = await evaluatePredictions(userId);
+
   // Infer communication orientation
   const orientation = inferCommunicationOrientation(profile);
 
-  // Generate predictions
-  const predictions = await generatePredictions(profile);
+  // Generate predictions with calibration context
+  const predictions = await generatePredictions(profile, evaluationResult);
 
   const avgConfidence = predictions.reduce((sum, p) => sum + p.confidence, 0) / Math.max(predictions.length, 1);
 

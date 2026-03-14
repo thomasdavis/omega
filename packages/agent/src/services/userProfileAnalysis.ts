@@ -18,6 +18,7 @@ import {
   type MessageRecord,
 } from '@repo/database';
 import { updateUserPredictions } from './behavioralPredictionService.js';
+import { runExpertPanel, type ExpertPanelResult } from './expertPanelService.js';
 import {
   batchSummarizeMessages,
   synthesizeTemporalNarrative,
@@ -397,6 +398,24 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
   console.log('   Generating personality facets...');
   const personality = await generatePersonalityFacets(data);
 
+  // Pass 3.5: Expert Panel Analysis (11 agents in parallel)
+  let expertPanel: ExpertPanelResult | null = null;
+  try {
+    console.log('   Pass 3.5: Running Expert Panel analysis (11 agents)...');
+    expertPanel = await runExpertPanel(
+      username,
+      userId,
+      data,
+      temporalSynthesis,
+      comprehensive,
+      { bigFive, emotionalIntelligence, cognitiveStyle, socialDynamics, attachmentStyle },
+      (existingProfile as any)?.expert_panel_json ?? null,
+    );
+    console.log('   Expert Panel complete — consensus score:', expertPanel.metaSynthesis.expertConsensusScore);
+  } catch (error) {
+    console.error('   Expert Panel failed (non-fatal):', error);
+  }
+
   // Build feelings object for backward compatibility
   const feelings: UserFeelings = {
     sentiment: comprehensive.sentiment,
@@ -532,6 +551,112 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
     interaction_style_with_others: comprehensive.interactionStyleWithOthers,
     analysis_version: newVersion,
     previous_analysis_summary: previousAnalysisSummary,
+
+    // Expert Panel fields (null-safe — only set if panel ran successfully)
+    ...(expertPanel ? {
+      expert_panel_json: expertPanel,
+      expert_panel_version: (existingProfile as any)?.expert_panel_version ? ((existingProfile as any).expert_panel_version + 1) : 1,
+      expert_panel_timestamp: Math.floor(Date.now() / 1000),
+      // IO Psychologist
+      leadership_potential: expertPanel.io.leadershipPotential,
+      leadership_potential_ci_low: expertPanel.io.leadershipPotentialCI.low,
+      leadership_potential_ci_high: expertPanel.io.leadershipPotentialCI.high,
+      team_role: expertPanel.io.teamRole,
+      motivational_hierarchy: expertPanel.io.motivationalHierarchy,
+      organizational_citizenship: expertPanel.io.organizationalCitizenship,
+      productivity_pattern: expertPanel.io.productivityPattern,
+      initiative_taking_score: expertPanel.io.initiativeTaking,
+      feedback_orientation: expertPanel.io.feedbackOrientation,
+      // Peterson
+      order_chaos_balance: expertPanel.peterson.orderChaosBalance,
+      responsibility_index: expertPanel.peterson.responsibilityIndex,
+      meaning_orientation: expertPanel.peterson.meaningOrientation,
+      competence_trajectory: expertPanel.peterson.competenceTrajectory,
+      narrative_coherence_score: expertPanel.peterson.narrativeCoherence,
+      big_five_deep_interpretation: expertPanel.peterson.bigFiveDeepInterpretation,
+      big_five_interaction_effects: expertPanel.peterson.bigFiveInteractionEffects,
+      // Jung
+      individuation_stage: expertPanel.jung.individuationStage,
+      shadow_integration_score: expertPanel.jung.shadowIntegration,
+      persona_authenticity_gap: expertPanel.jung.personaAuthenticityGap,
+      anima_animus_balance: expertPanel.jung.animaAnimusBalance,
+      collective_unconscious_themes: expertPanel.jung.collectiveUnconsciousThemes,
+      projection_patterns: expertPanel.jung.projectionPatterns,
+      archetype_constellation_essay: expertPanel.jung.essay,
+      shadow_profile_essay: expertPanel.jung.shadowProfileEssay,
+      // Sapolsky
+      stress_response_pattern: expertPanel.sapolsky.stressResponsePattern,
+      dopamine_seeking_score: expertPanel.sapolsky.dopamineSeekingScore,
+      serotonin_stability_score: expertPanel.sapolsky.serotoninStabilityScore,
+      social_hierarchy_position: expertPanel.sapolsky.socialHierarchyPosition,
+      behavioral_ecology_strategy: expertPanel.sapolsky.behavioralEcologyStrategy,
+      stress_chronotype: expertPanel.sapolsky.stressChronotype,
+      recovery_speed: expertPanel.sapolsky.recoverySpeed,
+      neurobiological_profile: expertPanel.sapolsky.neurobiologicalProfileEssay,
+      // Bernays
+      persuadability_index: expertPanel.bernays.persuadabilityIndex,
+      influence_susceptibility: expertPanel.bernays.influenceSusceptibility,
+      memetic_role: expertPanel.bernays.memeticRole,
+      group_psychology_type: expertPanel.bernays.groupPsychologyType,
+      propaganda_vulnerability: expertPanel.bernays.propagandaVulnerability,
+      influence_network_role: expertPanel.bernays.influenceNetworkRole,
+      // Freud
+      defense_mechanism_primary: expertPanel.freud.defenseMechanismPrimary,
+      defense_mechanism_secondary: expertPanel.freud.defenseMechanismSecondary,
+      id_ego_superego_balance: expertPanel.freud.idEgoSuperego,
+      repression_index: expertPanel.freud.repressionIndex,
+      transference_pattern: expertPanel.freud.transferencePattern,
+      sublimation_score: expertPanel.freud.sublimationScore,
+      avoided_topics: expertPanel.freud.avoidedTopics,
+      unconscious_drives_essay: expertPanel.freud.unconsciousDrivesEssay,
+      // Kahneman
+      system1_dominance: expertPanel.kahneman.system1Dominance,
+      cognitive_bias_profile: expertPanel.kahneman.cognitiveBiasProfile,
+      loss_aversion_score: expertPanel.kahneman.lossAversionScore,
+      anchoring_susceptibility: expertPanel.kahneman.anchoringSusceptibility,
+      overconfidence_index: expertPanel.kahneman.overconfidenceIndex,
+      decision_quality_score: expertPanel.kahneman.decisionQualityScore,
+      cognitive_reflection_score: expertPanel.kahneman.cognitiveReflectionScore,
+      decision_making_essay: expertPanel.kahneman.decisionMakingEssay,
+      // Nietzsche
+      will_to_power_score: expertPanel.nietzsche.willToPowerScore,
+      master_slave_morality: expertPanel.nietzsche.masterSlaveMorality,
+      eternal_recurrence_embrace: expertPanel.nietzsche.eternalRecurrenceEmbrace,
+      ubermensch_alignment: expertPanel.nietzsche.ubermenschAlignment,
+      ressentiment_score: expertPanel.nietzsche.ressentimentScore,
+      value_creation_orientation: expertPanel.nietzsche.valueCreation,
+      amor_fati_score: expertPanel.nietzsche.amorFatiScore,
+      existential_philosophy_essay: expertPanel.nietzsche.existentialPhilosophyEssay,
+      // Caesar
+      strategic_value_score: expertPanel.caesar.strategicValueScore,
+      loyalty_reliability_index: expertPanel.caesar.loyaltyReliabilityIndex,
+      caesar_classification: expertPanel.caesar.caesarClassification,
+      courage_score: expertPanel.caesar.courageScore,
+      decisiveness_score: expertPanel.caesar.decisivenessScore,
+      caesar_verdict_essay: expertPanel.caesar.essay,
+      // Khan
+      meritocratic_worth_score: expertPanel.khan.meritocraticWorthScore,
+      adaptability_score: expertPanel.khan.adaptabilityScore,
+      resilience_score: expertPanel.khan.resilienceScore,
+      correction_acceptance_rate: expertPanel.khan.correctionAcceptanceRate,
+      practical_intelligence_score: expertPanel.khan.practicalIntelligence,
+      khan_verdict_essay: expertPanel.khan.essay,
+      // Machiavelli
+      political_intelligence_score: expertPanel.machiavelli.politicalIntelligenceScore,
+      virtu_score: expertPanel.machiavelli.virtuScore,
+      fox_lion_profile: expertPanel.machiavelli.foxLionProfile,
+      performed_virtue_index: expertPanel.machiavelli.performedVirtueIndex,
+      behavioral_flexibility_score: expertPanel.machiavelli.behavioralFlexibility,
+      machiavelli_verdict_essay: expertPanel.machiavelli.essay,
+      // Meta-Synthesis
+      expert_consensus_score: expertPanel.metaSynthesis.expertConsensusScore,
+      expert_dissent_summary: expertPanel.metaSynthesis.dissentSummary,
+      inter_rater_reliability: expertPanel.metaSynthesis.interRaterReliability,
+      confidence_intervals_json: expertPanel.metaSynthesis.confidenceIntervals,
+      bayesian_big_five: expertPanel.metaSynthesis.bayesianBigFive,
+      growth_trajectory: expertPanel.metaSynthesis.growthTrajectory,
+      expert_integrated_verdict: expertPanel.metaSynthesis.integratedVerdict,
+    } : {}),
   });
 
   // Save FULL snapshot to user_analysis_history (nothing lost)
@@ -559,6 +684,7 @@ export async function analyzeUser(userId: string, username: string): Promise<voi
       overall_sentiment: overallSentiment,
       analysis_version: newVersion,
       integrated_profile_summary: previousAnalysisSummary,
+      expert_panel_snapshot: expertPanel ?? undefined,
     }
   );
 

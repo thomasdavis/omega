@@ -203,6 +203,7 @@ export async function saveAnalysisHistory(
     overall_sentiment?: string | null;
     analysis_version?: number | null;
     integrated_profile_summary?: string | null;
+    expert_panel_snapshot?: any | null;
   }
 ): Promise<string> {
   const id = randomUUID();
@@ -251,6 +252,7 @@ export async function saveAnalysisHistory(
       overall_sentiment: fullSnapshot?.overall_sentiment ?? null,
       analysis_version: fullSnapshot?.analysis_version ?? null,
       integrated_profile_summary: fullSnapshot?.integrated_profile_summary ?? null,
+      expert_panel_snapshot: fullSnapshot?.expert_panel_snapshot ?? null,
     },
   });
 
