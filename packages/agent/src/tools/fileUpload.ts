@@ -533,60 +533,32 @@ async function downloadFile(url: string): Promise<Buffer> {
 
 export const fileUploadTool = tool({
   description: `Upload files to GitHub repository storage and get shareable links.
-  Files are stored in the ${GITHUB_REPO} repository under the ${GITHUB_STORAGE_PATH}/ directory.
-  Each file is tracked in a searchable index with metadata for easy retrieval.
-
-  Supports various file types including images, documents, code files, and archives.
   Maximum file size: ${MAX_FILE_SIZE / 1024 / 1024}MB.
 
-  CORRECTED UPLOAD WORKFLOW:
-  - Files are ALWAYS saved to Railway storage (/data/uploads) FIRST
-  - Then immediately uploaded to GitHub for permanent storage
-  - After successful GitHub upload, files are automatically cleaned up from Railway
-  - This ensures integrity and avoids duplication
-  - If GitHub upload fails, files remain in Railway storage for retry
-  - Automatic background transfer from Railway → GitHub is triggered on failure
-  - Retry logic: 3 attempts with exponential backoff (5s, 15s, 1m)
-  - Metadata is preserved throughout the transfer process
-  - No manual intervention required - transfers and cleanup happen automatically
+  HOW TO USE WITH DISCORD ATTACHMENTS:
+  When a user shares a file, the message includes attachment info in this format:
+    **[ATTACHMENTS]**
+    - filename.ext (mime/type, XX.XX KB): https://cdn.discordapp.com/...
 
-  IMPORTANT: This tool is designed to work with Discord attachments. When a user shares a file in Discord:
-  1. The message will include attachment information in the format:
-     **[ATTACHMENTS]**
-     - filename.ext (mime/type, XX.XX KB): https://cdn.discordapp.com/...
-  2. Extract the attachment URL and filename from the message
-  3. Use this tool with the fileUrl parameter to download and save the file
-  4. Return the shareable GitHub URL to the user
+  You MUST extract these values from the [ATTACHMENTS] section:
+  - fileUrl: The URL after the colon (e.g., https://cdn.discordapp.com/attachments/...)
+  - originalName: The filename before the parentheses (e.g., "photo.png")
+  - mimeType: The type inside parentheses (e.g., "image/png")
 
-  You can use this tool in two ways:
-  - With fileUrl: Provide a Discord attachment URL to download and save
-  - With fileData: Provide base64-encoded file data directly
+  DO NOT pass attachmentId, userId, or other Discord-internal fields — use fileUrl and originalName.
+  If originalName is not provided, it will be automatically derived from the fileUrl.
 
-  Metadata features:
-  - Add a description to help identify the file's purpose
-  - Add tags (keywords) for categorization and search
-  - All files are indexed in ${GITHUB_STORAGE_PATH}/index.json
-
-  Security features:
-  - File type validation (whitelist of allowed extensions)
-  - File size limits (${MAX_FILE_SIZE / 1024 / 1024}MB max)
-  - Filename sanitization to prevent directory traversal
-  - Unique filenames to prevent collisions
-  - Version control via GitHub (all uploads are tracked)
-
-  Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}
-
-  Falls back to local storage if GitHub is not configured.`,
+  Allowed file types: ${ALLOWED_EXTENSIONS.join(', ')}`,
   inputSchema: z.object({
-    fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL)'),
+    fileUrl: z.string().optional().describe('URL to download the file from. Extract this from the [ATTACHMENTS] section of the message (the URL after the colon). Example: https://cdn.discordapp.com/attachments/...'),
     fileData: z.string().optional().describe('Base64-encoded file data (alternative to fileUrl)'),
-    originalName: z.string().describe('Original filename with extension'),
-    mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
+    originalName: z.string().optional().describe('Original filename with extension. Extract this from the [ATTACHMENTS] section (the filename before the parentheses). Example: "photo.png". If not provided, it will be derived from the fileUrl.'),
+    mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf). Extract from the [ATTACHMENTS] section (inside the parentheses).'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
     description: z.string().optional().describe('Description of the file (what it contains, its purpose, etc.)'),
     tags: z.array(z.string()).optional().describe('Tags/keywords for categorizing the file (e.g., ["game-assets", "flappy-bird", "audio"])'),
   }),
-  execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy, description, tags }) => {
+  execute: async ({ fileUrl, fileData, originalName: providedName, mimeType, uploadedBy, description, tags }) => {
     try {
       // Validate that either fileUrl or fileData is provided
       if (!fileUrl && !fileData) {
@@ -594,6 +566,30 @@ export const fileUploadTool = tool({
           success: false,
           error: 'Either fileUrl or fileData must be provided',
         };
+      }
+
+      // Derive originalName from fileUrl if not provided
+      let originalName = providedName;
+      if (!originalName && fileUrl) {
+        try {
+          const urlPath = new URL(fileUrl).pathname;
+          const urlFilename = urlPath.split('/').pop();
+          if (urlFilename) {
+            originalName = decodeURIComponent(urlFilename);
+          }
+        } catch {
+          // URL parsing failed, try simple extraction
+          const lastSegment = fileUrl.split('/').pop()?.split('?')[0];
+          if (lastSegment) {
+            originalName = decodeURIComponent(lastSegment);
+          }
+        }
+      }
+
+      // Final fallback: generate a name from mimeType or use generic name
+      if (!originalName) {
+        const ext = mimeType ? `.${mimeType.split('/').pop()?.replace('jpeg', 'jpg') || 'bin'}` : '.bin';
+        originalName = `upload_${Date.now()}${ext}`;
       }
 
       // Validate file extension first
