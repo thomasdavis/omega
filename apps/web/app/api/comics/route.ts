@@ -35,45 +35,60 @@ function getComicsDir(): string {
 export async function GET() {
   try {
     // First, try to fetch comics from database
-    // Include all comic tool types and avoid fetching binary image data for listing
-    const dbComics = await prisma.generatedImage.findMany({
-      where: {
-        toolName: {
-          in: ['generateComic', 'generateDilbertComic', 'generateXkcdComic'],
+    let comics: Array<{
+      id: number;
+      number: number;
+      filename: string;
+      description?: string;
+      toolName?: string;
+      url: string;
+      createdAt: string;
+      size: number;
+      mimeType?: string;
+    }> = [];
+
+    try {
+      const dbComics = await prisma.generatedImage.findMany({
+        where: {
+          toolName: {
+            in: ['generateComic', 'generateDilbertComic', 'generateXkcdComic'],
+          },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      select: {
-        id: true,
-        toolName: true,
-        metadata: true,
-        createdAt: true,
-        bytes: true,
-        mimeType: true,
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          toolName: true,
+          metadata: true,
+          createdAt: true,
+          bytes: true,
+          mimeType: true,
+        },
+      });
 
-    // Transform DB comics to the expected format
-    const comics = dbComics.map((comic) => {
-      const metadata = comic.metadata as any;
-      const issueNumber = metadata?.githubIssueNumber || metadata?.githubPrNumber;
-      const filename = metadata?.filename || `comic_${comic.id}.png`;
-      const description = metadata?.description;
+      comics = dbComics.map((comic) => {
+        const metadata = comic.metadata as any;
+        const issueNumber = metadata?.githubIssueNumber || metadata?.githubPrNumber;
+        const filename = metadata?.filename || `comic_${comic.id}.png`;
+        const description = metadata?.description;
 
-      return {
-        id: Number(comic.id),
-        number: issueNumber || Number(comic.id),
-        filename,
-        description,
-        toolName: comic.toolName,
-        url: `/api/comics/${comic.id}`,
-        createdAt: comic.createdAt.toISOString(),
-        size: comic.bytes || 0,
-        mimeType: comic.mimeType || 'image/png',
-      };
-    });
+        return {
+          id: Number(comic.id),
+          number: issueNumber || Number(comic.id),
+          filename,
+          description,
+          toolName: comic.toolName,
+          url: `/api/comics/${comic.id}`,
+          createdAt: comic.createdAt.toISOString(),
+          size: comic.bytes || 0,
+          mimeType: comic.mimeType || 'image/png',
+        };
+      });
+    } catch (dbError) {
+      // generated_images table may not exist yet — fall through to filesystem
+      console.warn('Could not query generated_images table:', dbError instanceof Error ? dbError.message : dbError);
+    }
 
     // If no comics in DB, fall back to filesystem
     if (comics.length === 0) {
@@ -82,11 +97,11 @@ export async function GET() {
 
       if (!existsSync(comicsDir)) {
         return NextResponse.json({
-          success: false,
-          error: 'No comics found in database or filesystem',
-          path: comicsDir,
-          env: process.env.NODE_ENV,
-        }, { status: 404 });
+          success: true,
+          comics: [],
+          count: 0,
+          source: 'none',
+        });
       }
 
       const files = readdirSync(comicsDir);
