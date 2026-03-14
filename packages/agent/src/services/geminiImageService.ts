@@ -14,6 +14,44 @@ import { formatMultipleCharacters, type UserCharacter } from '../lib/userAppeara
 const writeFile = promisify(fs.writeFile);
 const mkdir = promisify(fs.mkdir);
 
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 5000;
+
+/**
+ * Extract retry delay from a Gemini 429 error message, if available.
+ * Returns delay in milliseconds, or null if not found.
+ */
+function extractRetryDelay(errorMessage: string): number | null {
+  // Match "Please retry in Xs" or "retryDelay":"Xs"
+  const match = errorMessage.match(/retry\s+in\s+([\d.]+)s/i)
+    || errorMessage.match(/"retryDelay"\s*:\s*"([\d.]+)s"/i);
+  if (match) {
+    const seconds = parseFloat(match[1]);
+    if (!isNaN(seconds) && seconds > 0 && seconds <= 120) {
+      return seconds * 1000;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if an error is a rate limit (429) error
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.message.includes('429') || error.message.includes('Too Many Requests')
+      || error.message.includes('quota');
+  }
+  return false;
+}
+
+/**
+ * Sleep for a given number of milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export interface GeminiImageOptions {
   prompt: string;
   outputPath?: string;
@@ -58,26 +96,50 @@ export async function generateImageWithGemini(
       model: 'gemini-3-pro-image-preview',
     });
 
-    // Generate content
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
+    // Generate content with retry logic for rate limit errors
+    let result;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        result = await model.generateContent({
+          contents: [
             {
-              text: fullPrompt,
+              role: 'user',
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-      generationConfig: {
-        // Note: Image generation with Gemini is still experimental
-        // This configuration may need adjustment based on the actual API
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-      },
-    });
+          generationConfig: {
+            // Note: Image generation with Gemini is still experimental
+            // This configuration may need adjustment based on the actual API
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
+        break; // Success, exit retry loop
+      } catch (error) {
+        if (isRateLimitError(error) && attempt < MAX_RETRIES) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          const retryDelay = extractRetryDelay(errorMsg) || (BASE_DELAY_MS * Math.pow(2, attempt));
+          console.warn(
+            `⚠️ [generateImageWithGemini] Rate limited (attempt ${attempt + 1}/${MAX_RETRIES + 1}), retrying in ${Math.round(retryDelay / 1000)}s...`
+          );
+          await sleep(retryDelay);
+          continue;
+        }
+        throw error; // Non-retryable error or max retries exceeded
+      }
+    }
+
+    if (!result) {
+      return {
+        success: false,
+        error: 'Failed to generate image after retries - rate limit exceeded. Please try again later.',
+      };
+    }
 
     // Extract image data from response
     // The response may contain multiple parts, find the image part
