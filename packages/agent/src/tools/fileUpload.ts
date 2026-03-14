@@ -580,13 +580,13 @@ export const fileUploadTool = tool({
   inputSchema: z.object({
     fileUrl: z.string().optional().describe('URL to download the file from (e.g., Discord attachment URL)'),
     fileData: z.string().optional().describe('Base64-encoded file data (alternative to fileUrl)'),
-    originalName: z.string().describe('Original filename with extension'),
+    originalName: z.string().optional().describe('Original filename with extension. If not provided, will be derived from the fileUrl.'),
     mimeType: z.string().optional().describe('MIME type of the file (e.g., image/png, application/pdf)'),
     uploadedBy: z.string().optional().describe('Username of the person uploading the file'),
     description: z.string().optional().describe('Description of the file (what it contains, its purpose, etc.)'),
     tags: z.array(z.string()).optional().describe('Tags/keywords for categorizing the file (e.g., ["game-assets", "flappy-bird", "audio"])'),
   }),
-  execute: async ({ fileUrl, fileData, originalName, mimeType, uploadedBy, description, tags }) => {
+  execute: async ({ fileUrl, fileData, originalName: providedName, mimeType, uploadedBy, description, tags }) => {
     try {
       // Validate that either fileUrl or fileData is provided
       if (!fileUrl && !fileData) {
@@ -594,6 +594,31 @@ export const fileUploadTool = tool({
           success: false,
           error: 'Either fileUrl or fileData must be provided',
         };
+      }
+
+      // Derive originalName from fileUrl if not provided
+      let originalName = providedName;
+      if (!originalName && fileUrl) {
+        try {
+          const urlPath = new URL(fileUrl).pathname;
+          const urlFilename = urlPath.split('/').pop();
+          if (urlFilename && urlFilename.includes('.')) {
+            originalName = decodeURIComponent(urlFilename);
+          }
+        } catch {
+          // URL parsing failed, fall through to default
+        }
+      }
+      if (!originalName) {
+        // Derive extension from mimeType if available
+        const extMap: Record<string, string> = {
+          'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif',
+          'image/webp': '.webp', 'image/svg+xml': '.svg', 'application/pdf': '.pdf',
+          'text/plain': '.txt', 'text/markdown': '.md', 'application/json': '.json',
+          'audio/mpeg': '.mp3', 'audio/wav': '.wav', 'video/mp4': '.mp4',
+        };
+        const ext = (mimeType && extMap[mimeType]) || '.bin';
+        originalName = `upload_${Date.now()}${ext}`;
       }
 
       // Validate file extension first
