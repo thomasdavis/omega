@@ -51,6 +51,7 @@ export async function GET() {
         metadata: true,
         createdAt: true,
         bytes: true,
+        mimeType: true,
       },
     });
 
@@ -70,6 +71,7 @@ export async function GET() {
         url: `/api/comics/${comic.id}`,
         createdAt: comic.createdAt.toISOString(),
         size: comic.bytes || 0,
+        mimeType: comic.mimeType || 'image/png',
       };
     });
 

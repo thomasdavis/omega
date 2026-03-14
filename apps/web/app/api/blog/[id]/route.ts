@@ -27,41 +27,39 @@ export async function GET(
     // Parse frontmatter
     const frontmatterMatch = content.match(/^---\n([\s\S]+?)\n---\n([\s\S]*)$/);
 
-    if (!frontmatterMatch) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid blog post format',
-        },
-        { status: 500 }
-      );
-    }
-
-    const [, frontmatterText, body] = frontmatterMatch;
+    let body: string;
     const frontmatter: Record<string, any> = {};
 
-    // Parse YAML-like frontmatter
-    frontmatterText.split('\n').forEach((line) => {
-      const colonIndex = line.indexOf(':');
-      if (colonIndex > -1) {
-        const key = line.substring(0, colonIndex).trim();
-        let value: string | boolean = line.substring(colonIndex + 1).trim();
+    if (frontmatterMatch) {
+      const [, frontmatterText, frontmatterBody] = frontmatterMatch;
+      body = frontmatterBody;
 
-        // Remove quotes
-        if (
-          (value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))
-        ) {
-          value = value.slice(1, -1);
+      // Parse YAML-like frontmatter
+      frontmatterText.split('\n').forEach((line) => {
+        const colonIndex = line.indexOf(':');
+        if (colonIndex > -1) {
+          const key = line.substring(0, colonIndex).trim();
+          let value: string | boolean = line.substring(colonIndex + 1).trim();
+
+          // Remove quotes
+          if (
+            (value.startsWith('"') && value.endsWith('"')) ||
+            (value.startsWith("'") && value.endsWith("'"))
+          ) {
+            value = value.slice(1, -1);
+          }
+
+          // Parse booleans
+          if (value === 'true') value = true;
+          if (value === 'false') value = false;
+
+          frontmatter[key] = value;
         }
-
-        // Parse booleans
-        if (value === 'true') value = true;
-        if (value === 'false') value = false;
-
-        frontmatter[key] = value;
-      }
-    });
+      });
+    } else {
+      // No frontmatter — treat entire content as body
+      body = content;
+    }
 
     return NextResponse.json({
       success: true,
