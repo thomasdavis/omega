@@ -319,8 +319,16 @@ Analyze this message through the 4-level framework:
       return { shouldRespond: false, confidence, reason: `AI: ${reason}` };
     }
   } catch (error) {
-    console.error('❌ Error in AI decision making:', error);
-    throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Error in AI decision making:', errorMessage);
+
+    // Gracefully degrade: if the AI decision fails (e.g. quota exceeded, API error),
+    // default to not responding rather than crashing the bot
+    return {
+      shouldRespond: false,
+      confidence: 0,
+      reason: `AI decision failed (${errorMessage}) - defaulting to not respond`,
+    };
   }
 }
 
