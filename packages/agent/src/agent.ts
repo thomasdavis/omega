@@ -307,9 +307,18 @@ DO NOT ask the user to re-upload. DO NOT explain attachment issues. Just call th
     let finalText;
     try {
       finalText = await streamResult.text;
-    } catch (textError) {
-      console.error('❌ Error getting text from stream:', textError);
-      throw textError;
+    } catch (textError: any) {
+      // AI SDK throws AI_NoOutputGeneratedError when the stream completes
+      // with no text and no tool calls (e.g. empty model response, content
+      // filtering, or transient API issues). Recover gracefully instead of
+      // crashing — the user just sees a friendly fallback message.
+      if (textError?.name === 'AI_NoOutputGeneratedError') {
+        console.warn('⚠️  Stream produced no output — returning fallback response');
+        finalText = "Sorry, I wasn't able to generate a response for that. Could you try rephrasing or asking again?";
+      } else {
+        console.error('❌ Error getting text from stream:', textError);
+        throw textError;
+      }
     }
 
     console.log(`✅ Agent completed (${toolCalls.length} tool calls)`);
