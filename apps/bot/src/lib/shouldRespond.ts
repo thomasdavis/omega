@@ -320,7 +320,13 @@ Analyze this message through the 4-level framework:
     }
   } catch (error) {
     console.error('❌ Error in AI decision making:', error);
-    throw new Error(`Failed to make response decision: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    // Gracefully degrade: if we can't decide, default to not responding
+    // This prevents quota errors, network issues, etc. from crashing the message handler
+    return {
+      shouldRespond: false,
+      confidence: 0,
+      reason: `AI decision failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    };
   }
 }
 
