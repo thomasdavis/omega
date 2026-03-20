@@ -58,71 +58,119 @@ export async function generateImageWithGemini(
       model: 'gemini-3-pro-image-preview',
     });
 
-    // Generate content
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
+    // Retry logic for transient 429 rate limit errors
+    const MAX_RETRIES = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 [Gemini] Retry attempt ${attempt}/${MAX_RETRIES}...`);
+        }
+
+        // Generate content
+        const result = await model.generateContent({
+          contents: [
             {
-              text: fullPrompt,
+              role: 'user',
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-      generationConfig: {
-        // Note: Image generation with Gemini is still experimental
-        // This configuration may need adjustment based on the actual API
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-      },
-    });
+          generationConfig: {
+            // Note: Image generation with Gemini is still experimental
+            // This configuration may need adjustment based on the actual API
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
 
-    // Extract image data from response
-    // The response may contain multiple parts, find the image part
-    const imageParts = result.response.candidates?.[0]?.content?.parts?.filter(
-      (part: any) => part.inlineData?.mimeType?.startsWith('image/')
-    );
+        // Extract image data from response
+        const imageParts = result.response.candidates?.[0]?.content?.parts?.filter(
+          (part: any) => part.inlineData?.mimeType?.startsWith('image/')
+        );
 
-    if (!imageParts || imageParts.length === 0) {
-      return {
-        success: false,
-        error: 'No image generated in response. Note: Gemini image generation may require specific API access.',
-      };
+        if (!imageParts || imageParts.length === 0) {
+          return {
+            success: false,
+            error: 'No image generated in response. Note: Gemini image generation may require specific API access.',
+          };
+        }
+
+        const imagePart = imageParts[0];
+        const imageData = (imagePart as any).inlineData?.data;
+
+        if (!imageData) {
+          return {
+            success: false,
+            error: 'Image data not found in response',
+          };
+        }
+
+        const imageBuffer = Buffer.from(imageData, 'base64');
+
+        if (outputPath) {
+          const outputDir = path.dirname(outputPath);
+          await mkdir(outputDir, { recursive: true });
+          await writeFile(outputPath, imageBuffer);
+
+          return {
+            success: true,
+            imagePath: outputPath,
+            imageBuffer,
+          };
+        }
+
+        return {
+          success: true,
+          imageBuffer,
+        };
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        const errorMsg = lastError.message;
+
+        // Check if this is a 429 rate limit error
+        const is429 = errorMsg.includes('429') && errorMsg.includes('Too Many Requests');
+
+        if (!is429) {
+          // Non-rate-limit error — don't retry
+          break;
+        }
+
+        // Check for permanent quota exhaustion (free tier with limit: 0)
+        const isFreeTierZeroQuota = errorMsg.includes('free_tier') && errorMsg.includes('limit: 0');
+        if (isFreeTierZeroQuota) {
+          console.error('🚫 [Gemini] Free tier quota is 0 — API key needs billing enabled for this model');
+          return {
+            success: false,
+            error: 'Gemini API key is on the free tier with zero quota for gemini-3-pro-image. Please enable billing on the Google Cloud project associated with GEMINI_API_KEY.',
+          };
+        }
+
+        if (attempt >= MAX_RETRIES) {
+          console.error(`❌ [Gemini] All ${MAX_RETRIES} retries exhausted for rate limit error`);
+          break;
+        }
+
+        // Parse retry delay from error message if available
+        const retryMatch = errorMsg.match(/retry in ([\d.]+)s/i);
+        const retryDelaySec = retryMatch ? Math.min(parseFloat(retryMatch[1]), 60) : null;
+        const backoffDelay = retryDelaySec ? retryDelaySec * 1000 : (5000 * Math.pow(2, attempt));
+
+        console.log(`⏳ [Gemini] Rate limited. Waiting ${(backoffDelay / 1000).toFixed(1)}s before retry...`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      }
     }
 
-    // Get the first image part
-    const imagePart = imageParts[0];
-    const imageData = (imagePart as any).inlineData?.data;
-
-    if (!imageData) {
-      return {
-        success: false,
-        error: 'Image data not found in response',
-      };
-    }
-
-    // Convert base64 to buffer
-    const imageBuffer = Buffer.from(imageData, 'base64');
-
-    // If outputPath is provided, save to file
-    if (outputPath) {
-      const outputDir = path.dirname(outputPath);
-      await mkdir(outputDir, { recursive: true });
-      await writeFile(outputPath, imageBuffer);
-
-      return {
-        success: true,
-        imagePath: outputPath,
-        imageBuffer,
-      };
-    }
-
-    // Otherwise, just return the buffer
+    // All retries exhausted or non-retryable error
+    console.error('Error generating image with Gemini:', lastError);
     return {
-      success: true,
-      imageBuffer,
+      success: false,
+      error: lastError?.message || 'Unknown error generating image',
     };
   } catch (error) {
     console.error('Error generating image with Gemini:', error);
