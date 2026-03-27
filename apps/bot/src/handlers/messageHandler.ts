@@ -421,7 +421,13 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   // Check if we should respond to this message (WITH conversation context)
-  const decision = await shouldRespond(message, messageHistory);
+  let decision: { shouldRespond: boolean; confidence: number; reason: string };
+  try {
+    decision = await shouldRespond(message, messageHistory);
+  } catch (error) {
+    console.error('❌ shouldRespond threw unexpectedly:', error);
+    decision = { shouldRespond: false, confidence: 0, reason: 'shouldRespond error — defaulting to silent' };
+  }
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
