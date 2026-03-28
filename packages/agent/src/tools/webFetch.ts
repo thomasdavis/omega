@@ -8,6 +8,66 @@ import { z } from 'zod';
 import { robotsChecker } from '../utils/robotsChecker.js';
 import { extractHtmlMetadata, truncateMetadata } from '../utils/htmlMetadata.js';
 
+// Browser-like user agent used as fallback when bot UA is blocked
+const BROWSER_USER_AGENT = 'Mozilla/5.0 (compatible; OmegaBot/1.0; +https://github.com/thomasdavis/omega)';
+
+// HTTP status codes that are transient and worth retrying
+const RETRYABLE_STATUS_CODES = new Set([429, 502, 503, 504]);
+
+// HTTP status codes that suggest the user agent is being blocked
+const UA_BLOCKED_STATUS_CODES = new Set([403, 406]);
+
+async function fetchWithRetry(
+  url: string,
+  userAgent: string,
+  maxRetries: number = 2,
+): Promise<Response> {
+  let lastResponse: Response | undefined;
+  const agents = [userAgent];
+
+  // If the user agent is a bot-style UA, add browser-like fallback
+  if (!userAgent.startsWith('Mozilla/')) {
+    agents.push(BROWSER_USER_AGENT);
+  }
+
+  for (const ua of agents) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+        },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(15000), // 15 second timeout
+      });
+
+      // Success or non-retryable error — return immediately
+      if (response.ok || response.status < 400 || (!RETRYABLE_STATUS_CODES.has(response.status) && !UA_BLOCKED_STATUS_CODES.has(response.status))) {
+        return response;
+      }
+
+      lastResponse = response;
+
+      // If blocked by UA, skip retries and try next user agent
+      if (UA_BLOCKED_STATUS_CODES.has(response.status)) {
+        console.log(`⚠️ Got ${response.status} with UA "${ua.substring(0, 30)}..." — trying next UA`);
+        break;
+      }
+
+      // Transient error — retry with backoff
+      if (RETRYABLE_STATUS_CODES.has(response.status) && attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 4000);
+        console.log(`⚠️ Got ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // All attempts failed — return the last response
+  return lastResponse!;
+}
+
 export const webFetchTool = tool({
   description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching and follows HTTP redirects (up to 10 hops). Use this to retrieve information from specific URLs. Supports raw HTML mode for debugging and validation.',
   inputSchema: z.object({
@@ -58,14 +118,7 @@ export const webFetchTool = tool({
       while (redirectCount <= maxRedirects) {
         console.log(`📥 Fetching content from: ${currentUrl} (redirect ${redirectCount}/${maxRedirects})`);
 
-        response = await fetch(currentUrl, {
-          headers: {
-            'User-Agent': userAgent,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          },
-          redirect: 'manual', // Handle redirects manually
-          signal: AbortSignal.timeout(10000), // 10 second timeout
-        });
+        response = await fetchWithRetry(currentUrl, userAgent);
 
         // Check if this is a redirect response (3xx)
         if (response.status >= 300 && response.status < 400) {
@@ -170,14 +223,23 @@ export const webFetchTool = tool({
 
       // Step 4: Check if the final response is successful
       if (!response.ok) {
+        // Use specific error codes so the error reporter can distinguish
+        // expected HTTP errors from actual tool bugs
+        const httpStatus = response.status;
+        const errorCode = UA_BLOCKED_STATUS_CODES.has(httpStatus)
+          ? `http_${httpStatus}_blocked`
+          : RETRYABLE_STATUS_CODES.has(httpStatus)
+            ? `http_${httpStatus}_unavailable`
+            : `http_${httpStatus}`;
+
         return {
           success: false,
-          error: 'fetch_failed',
-          message: `Failed to fetch URL: ${response.status} ${response.statusText}`,
+          error: errorCode,
+          message: `Failed to fetch URL (HTTP ${httpStatus} ${response.statusText}). The website may be blocking bot requests or temporarily unavailable.`,
           metadata: {
             requestedUrl: url,
             finalUrl: currentUrl,
-            httpStatus: response.status,
+            httpStatus,
             contentType: response.headers.get('content-type') || undefined,
             contentLength: parseInt(response.headers.get('content-length') || '0') || undefined,
             redirectChain: redirectChain.length > 0 ? redirectChain : undefined,
@@ -190,7 +252,7 @@ export const webFetchTool = tool({
           },
           // Backward compatibility fields
           url,
-          statusCode: response.status,
+          statusCode: httpStatus,
         };
       }
 
@@ -284,10 +346,25 @@ export const webFetchTool = tool({
       };
     } catch (error) {
       console.error(`❌ Error fetching URL ${url}:`, error);
+
+      // Classify the error for better diagnostics
+      let errorCode = 'exception';
+      let message = `Error fetching URL: ${error instanceof Error ? error.message : 'Unknown error'}`;
+
+      if (error instanceof Error) {
+        if (error.name === 'TimeoutError' || error.message.includes('timed out') || error.message.includes('timeout')) {
+          errorCode = 'timeout';
+          message = `Request timed out after 15 seconds. The website may be slow or unresponsive.`;
+        } else if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+          errorCode = 'network_error';
+          message = `Network error: ${error.message}. The website may be down or unreachable.`;
+        }
+      }
+
       return {
         success: false,
-        error: 'exception',
-        message: `Error fetching URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error: errorCode,
+        message,
         metadata: {
           requestedUrl: url,
         },

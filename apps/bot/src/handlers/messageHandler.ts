@@ -1012,10 +1012,18 @@ export async function handleMessage(message: Message): Promise<void> {
     }
 
     // Report tool errors to GitHub for automated fixing
-    // Skip external tool failures (TPMJS) — those are external service issues, not omega bugs
+    // Skip external tool failures (TPMJS) and expected HTTP errors from webFetch
     if (result.toolErrors && result.toolErrors.length > 0) {
       const EXTERNAL_TOOLS = ['tpmjsRegistryExecute', 'tpmjsRegistrySearch'];
-      const internalErrors = result.toolErrors.filter(e => !EXTERNAL_TOOLS.includes(e.toolName));
+
+      // webFetch HTTP errors (blocked by site, timeouts, network issues) are expected
+      // and not bugs in the tool — don't create GitHub issues for them
+      const isExpectedWebFetchError = (e: { toolName: string; error?: string }) =>
+        e.toolName === 'webFetch' && e.error && /^(http_\d+|timeout|network_error)/.test(e.error);
+
+      const internalErrors = result.toolErrors.filter(
+        e => !EXTERNAL_TOOLS.includes(e.toolName) && !isExpectedWebFetchError(e)
+      );
 
       if (internalErrors.length > 0) {
         // Only report the first internal tool error to avoid spam
@@ -1047,6 +1055,12 @@ export async function handleMessage(message: Message): Promise<void> {
       const externalErrors = result.toolErrors.filter(e => EXTERNAL_TOOLS.includes(e.toolName));
       for (const ext of externalErrors) {
         console.warn(`⚠️ External tool failure (not reported): ${ext.toolName} — ${ext.error}`);
+      }
+
+      // Log expected webFetch errors for visibility but don't create issues
+      const webFetchErrors = result.toolErrors.filter(e => isExpectedWebFetchError(e));
+      for (const wf of webFetchErrors) {
+        console.warn(`⚠️ Expected webFetch failure (not reported): ${wf.error} — ${JSON.stringify(wf.args).substring(0, 200)}`);
       }
     }
 
