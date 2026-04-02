@@ -12,7 +12,7 @@ import {
   setSlidevMessageContext,
   clearSlidevMessageContext
 } from '@repo/agent';
-import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
+import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment, type ShouldRespondResult } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
 import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
 import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan, logAntigravityRoast } from '@repo/database';
@@ -421,7 +421,13 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   // Check if we should respond to this message (WITH conversation context)
-  const decision = await shouldRespond(message, messageHistory);
+  let decision: ShouldRespondResult;
+  try {
+    decision = await shouldRespond(message, messageHistory);
+  } catch (error) {
+    console.error('❌ shouldRespond threw unexpectedly:', error);
+    decision = { shouldRespond: false, confidence: 0, reason: 'shouldRespond error — defaulting to silent' };
+  }
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
