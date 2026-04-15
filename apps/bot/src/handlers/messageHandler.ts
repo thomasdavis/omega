@@ -421,7 +421,20 @@ export async function handleMessage(message: Message): Promise<void> {
   }
 
   // Check if we should respond to this message (WITH conversation context)
-  const decision = await shouldRespond(message, messageHistory);
+  // Defense-in-depth: shouldRespond() now degrades gracefully on error, but
+  // wrap it here as well so any future throw cannot crash the handler.
+  // See issue #1050.
+  let decision: { shouldRespond: boolean; confidence: number; reason: string };
+  try {
+    decision = await shouldRespond(message, messageHistory);
+  } catch (shouldRespondError) {
+    console.error('❌ shouldRespond threw unexpectedly:', shouldRespondError);
+    decision = {
+      shouldRespond: false,
+      confidence: 0,
+      reason: `shouldRespond error — defaulting to silent: ${shouldRespondError instanceof Error ? shouldRespondError.message : 'Unknown error'}`,
+    };
+  }
 
   // Post decision info ONLY in #omega channel for debugging
   const channelName = message.channel.isDMBased() ? 'DM' : (message.channel as any).name;
