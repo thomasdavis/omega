@@ -4,7 +4,7 @@
  * Used by both the main agent and the decision AI (shouldRespond)
  */
 
-import { OMEGA_APPEARANCE } from './omegaAppearance.js';
+import { OMEGA_APPEARANCE } from '@repo/agent';
 
 /**
  * Build system prompt with integrated personality

@@ -8,7 +8,7 @@
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { getDataDir } from '../utils/storage.js';
+import { getDataDir } from '@repo/shared';
 
 export interface TTSRequest {
   text: string;

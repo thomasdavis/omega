@@ -5,7 +5,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { getDataDir } from './storage.js';
+import { getDataDir } from '@repo/shared';
 
 export type VibeMode = 'normal' | 'terse';
 

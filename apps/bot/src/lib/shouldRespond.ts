@@ -7,7 +7,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
 import { buildSystemPrompt } from './systemPrompt.js';
-import { OMEGA_MODEL } from '../config/models.js';
+import { OMEGA_MODEL } from '@repo/shared';
 
 export interface ShouldRespondResult {
   shouldRespond: boolean;

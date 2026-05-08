@@ -18,29 +18,28 @@
     "mime-types": "^3.0.2",
     "next": "^15.5.9",
     "openai": "^4.104.0",
-    "p5": "^2.1.1",
+    "p5": "^2.2.3",
     "paper": "^0.12.18",
-    "pusher": "^5.2.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "recharts": "^3.8.0",
+    "pusher": "^5.3.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "recharts": "^3.8.1",
     "three": "^0.181.2",
-    "yjs": "^13.6.20"
+    "yjs": "^13.6.30"
   },
   "devDependencies": {
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.40",
     "@types/p5": "^1.7.7",
-    "@types/paper": "^0.12.3",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/three": "^0.181.0",
-    "autoprefixer": "^10.4.0",
+    "autoprefixer": "^10.5.0",
     "eslint": "^8.57.0",
     "eslint-config-next": "^15.1.0",
     "node-loader": "^2.1.0",
-    "postcss": "^8.4.0",
+    "postcss": "^8.5.14",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.6.3"
+    "typescript": "^5.9.3"
   }
 }

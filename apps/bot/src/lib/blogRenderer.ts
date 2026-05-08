@@ -5,7 +5,7 @@
 
 import { readFileSync, existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { getBlogDir } from '../utils/storage.js';
+import { getBlogDir } from '@repo/shared';
 import { generateBuildFooterHtml } from '../utils/buildTimestamp.js';
 
 export interface BlogPost {

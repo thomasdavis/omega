@@ -11,7 +11,7 @@ import { Message } from 'discord.js';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { openai } from '@ai-sdk/openai';
-import { OMEGA_MODEL } from '../config/models.js';
+import { OMEGA_MODEL } from '@repo/shared';
 import type { MessageHistoryItem } from './shouldRespond.js';
 
 export interface IntentGateResult {

@@ -92,7 +92,7 @@ Done!`;
 
     expect(result.codeBlocks).toHaveLength(1);
     expect(result.codeBlocks[0].language).toBe('text');
-    expect(result.codeBlocks[0].filename).toBe('text_1.txt');
+    expect(result.codeBlocks[0].filename).toBe('code_1.txt');
   });
 
   it('should preserve small code blocks in the message', () => {

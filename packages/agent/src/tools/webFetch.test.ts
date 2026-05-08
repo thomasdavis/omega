@@ -6,14 +6,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { webFetchTool } from './webFetch.js';
 
 // Mock the robotsChecker
-vi.mock('../../utils/robotsChecker.js', () => ({
+vi.mock('../utils/robotsChecker.js', () => ({
   robotsChecker: {
     isAllowed: vi.fn(),
   },
 }));
 
 // Mock global fetch
-global.fetch = vi.fn();
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe('Web Fetch Tool with Metadata', () => {
   beforeEach(() => {
@@ -22,7 +23,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Metadata Extraction', () => {
     it('should extract and return metadata for HTML pages', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       // Mock robots.txt check to allow
       (robotsChecker.isAllowed as any).mockResolvedValue({
@@ -54,7 +55,7 @@ describe('Web Fetch Tool with Metadata', () => {
         </html>
       `;
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/page',
@@ -75,6 +76,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/page',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -106,7 +109,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should include robots.txt summary at top of response', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -115,7 +118,7 @@ describe('Web Fetch Tool with Metadata', () => {
         crawlDelay: 5,
       });
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/api',
@@ -128,6 +131,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/api',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.robotsTxt).toBeDefined();
@@ -138,7 +143,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should handle redirects correctly', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       // Mock robots.txt to allow both original and final URLs
       (robotsChecker.isAllowed as any).mockResolvedValue({
@@ -149,7 +154,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
       // Mock fetch to return a redirect first, then the final page
       let callCount = 0;
-      (global.fetch as any).mockImplementation(() => {
+      mockFetch.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           // First call: return redirect
@@ -182,6 +187,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/original',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -198,7 +205,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should enforce max redirects limit', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -208,7 +215,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
       // Mock fetch to always return redirects (infinite loop)
       let callCount = 0;
-      (global.fetch as any).mockImplementation(() => {
+      mockFetch.mockImplementation(() => {
         callCount++;
         return Promise.resolve({
           ok: false,
@@ -225,6 +232,7 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/start',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
         maxRedirects: 3,
       });
 
@@ -235,7 +243,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should check robots.txt on final URL after redirects', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       // First call (initial URL): allowed
       // Second call (final URL): blocked
@@ -261,7 +269,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
       // Mock fetch to return a redirect
       let fetchCallCount = 0;
-      (global.fetch as any).mockImplementation(() => {
+      mockFetch.mockImplementation(() => {
         fetchCallCount++;
         if (fetchCallCount === 1) {
           return Promise.resolve({
@@ -286,6 +294,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/public',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(false);
@@ -296,7 +306,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should handle relative redirect URLs', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -305,7 +315,7 @@ describe('Web Fetch Tool with Metadata', () => {
       });
 
       let callCount = 0;
-      (global.fetch as any).mockImplementation(() => {
+      mockFetch.mockImplementation(() => {
         callCount++;
         if (callCount === 1) {
           return Promise.resolve({
@@ -335,6 +345,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/original',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -345,7 +357,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Robots.txt Compliance', () => {
     it('should return robots.txt summary when URL is blocked', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: false,
@@ -358,6 +370,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/private/page',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(false);
@@ -371,7 +385,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Error Handling', () => {
     it('should include metadata in error responses', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -379,13 +393,15 @@ describe('Web Fetch Tool with Metadata', () => {
         matchedRules: [],
       });
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: false,
         status: 404,
+        statusText: 'Not Found',
         url: 'https://example.com/notfound',
         headers: {
           get: (name: string) => {
             if (name === 'content-type') return 'text/html';
+            if (name === 'content-length') return null;
             return null;
           },
         },
@@ -394,6 +410,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/notfound',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(false);
@@ -403,7 +421,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should handle fetch exceptions', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -411,11 +429,13 @@ describe('Web Fetch Tool with Metadata', () => {
         matchedRules: [],
       });
 
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      mockFetch.mockRejectedValue(new Error('Network error'));
 
       const result = await webFetchTool.execute({
         url: 'https://example.com/error',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(false);
@@ -428,7 +448,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Backward Compatibility', () => {
     it('should maintain backward compatibility fields', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -436,7 +456,7 @@ describe('Web Fetch Tool with Metadata', () => {
         matchedRules: [],
       });
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/page',
@@ -449,6 +469,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://example.com/page',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       // Check that backward compatibility fields exist
@@ -462,7 +484,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Non-HTML Content', () => {
     it('should handle JSON content without metadata extraction', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -472,7 +494,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
       const jsonContent = '{"key": "value"}';
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://api.example.com/data',
@@ -488,6 +510,8 @@ describe('Web Fetch Tool with Metadata', () => {
       const result = await webFetchTool.execute({
         url: 'https://api.example.com/data',
         userAgent: 'TestBot/1.0',
+        mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -500,7 +524,7 @@ describe('Web Fetch Tool with Metadata', () => {
 
   describe('Raw HTML Mode', () => {
     it('should return unmodified HTML in raw mode', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -521,7 +545,7 @@ describe('Web Fetch Tool with Metadata', () => {
   </body>
 </html>`;
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/page',
@@ -538,6 +562,7 @@ describe('Web Fetch Tool with Metadata', () => {
         url: 'https://example.com/page',
         userAgent: 'TestBot/1.0',
         mode: 'raw',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -552,7 +577,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should strip HTML in parsed mode (default)', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -573,7 +598,7 @@ describe('Web Fetch Tool with Metadata', () => {
   </body>
 </html>`;
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/page',
@@ -590,6 +615,7 @@ describe('Web Fetch Tool with Metadata', () => {
         url: 'https://example.com/page',
         userAgent: 'TestBot/1.0',
         mode: 'parsed',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);
@@ -604,7 +630,7 @@ describe('Web Fetch Tool with Metadata', () => {
     });
 
     it('should not truncate content in raw mode', async () => {
-      const { robotsChecker } = await import('../../utils/robotsChecker.js');
+      const { robotsChecker } = await import('../utils/robotsChecker.js');
 
       (robotsChecker.isAllowed as any).mockResolvedValue({
         allowed: true,
@@ -615,7 +641,7 @@ describe('Web Fetch Tool with Metadata', () => {
       // Create HTML content longer than 5000 chars
       const longHtml = `<!DOCTYPE html><html><body>${'x'.repeat(10000)}</body></html>`;
 
-      (global.fetch as any).mockResolvedValue({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         url: 'https://example.com/long-page',
@@ -632,6 +658,7 @@ describe('Web Fetch Tool with Metadata', () => {
         url: 'https://example.com/long-page',
         userAgent: 'TestBot/1.0',
         mode: 'raw',
+        maxRedirects: 10,
       });
 
       expect(result.success).toBe(true);

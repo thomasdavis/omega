@@ -115,11 +115,11 @@ describe('UnsandboxClient', () => {
       // Verify correct endpoint was called
       expect(mockFetch).toHaveBeenNthCalledWith(
         1,
-        'https://api.unsandbox.com/v1/execute',
+        'https://api.unsandbox.com/execute/async',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            'Authorization': 'Bearer open-says-me',
+            'Authorization': 'Bearer ',
             'Content-Type': 'application/json',
           }),
         })
@@ -128,7 +128,7 @@ describe('UnsandboxClient', () => {
       // Verify job status endpoint
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
-        `https://api.unsandbox.com/v1/jobs/${jobId}`,
+        `https://api.unsandbox.com/jobs/${jobId}`,
         expect.objectContaining({
           method: 'GET',
         })
@@ -182,7 +182,7 @@ describe('UnsandboxClient', () => {
 
       expect(result.status).toBe('completed');
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.unsandbox.com/v1/execute',
+        'https://api.unsandbox.com/execute/async',
         expect.objectContaining({
           body: expect.stringContaining('test input'),
         })
@@ -367,12 +367,17 @@ describe('UnsandboxClient', () => {
         ttl: 5,
       };
 
-      await expect(client.executeCode(request)).rejects.toThrow(UnsandboxApiError);
-      await expect(client.executeCode(request)).rejects.toMatchObject({
-        status: 404,
-        code: 'NOT_FOUND',
-        message: 'Endpoint not found',
-      });
+      try {
+        await client.executeCode(request);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnsandboxApiError);
+        expect(error).toMatchObject({
+          status: 404,
+          code: 'NOT_FOUND',
+          message: 'Endpoint not found',
+        });
+      }
     });
 
     it('should handle network errors', async () => {
@@ -384,11 +389,16 @@ describe('UnsandboxClient', () => {
         ttl: 5,
       };
 
-      await expect(client.executeCode(request)).rejects.toThrow(UnsandboxApiError);
-      await expect(client.executeCode(request)).rejects.toMatchObject({
-        status: 0,
-        code: 'NETWORK_ERROR',
-      });
+      try {
+        await client.executeCode(request);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnsandboxApiError);
+        expect(error).toMatchObject({
+          status: 0,
+          code: 'NETWORK_ERROR',
+        });
+      }
     });
 
     it('should handle timeout errors', async () => {
@@ -411,11 +421,16 @@ describe('UnsandboxClient', () => {
       const promise = client.executeCode(request);
       await vi.runAllTimersAsync();
 
-      await expect(promise).rejects.toThrow(UnsandboxApiError);
-      await expect(promise).rejects.toMatchObject({
-        status: 408,
-        code: 'TIMEOUT',
-      });
+      try {
+        await promise;
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnsandboxApiError);
+        expect(error).toMatchObject({
+          status: 408,
+          code: 'TIMEOUT',
+        });
+      }
     });
 
     it('should handle invalid JSON response', async () => {
@@ -433,11 +448,16 @@ describe('UnsandboxClient', () => {
         ttl: 5,
       };
 
-      await expect(client.executeCode(request)).rejects.toThrow(UnsandboxApiError);
-      await expect(client.executeCode(request)).rejects.toMatchObject({
-        code: 'PARSE_ERROR',
-        message: 'Failed to parse API response as JSON',
-      });
+      try {
+        await client.executeCode(request);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnsandboxApiError);
+        expect(error).toMatchObject({
+          code: 'PARSE_ERROR',
+          message: 'Failed to parse API response as JSON',
+        });
+      }
     });
 
     it('should handle 401 unauthorized error', async () => {
@@ -458,11 +478,16 @@ describe('UnsandboxClient', () => {
         ttl: 5,
       };
 
-      await expect(client.executeCode(request)).rejects.toThrow(UnsandboxApiError);
-      await expect(client.executeCode(request)).rejects.toMatchObject({
-        status: 401,
-        code: 'UNAUTHORIZED',
-      });
+      try {
+        await client.executeCode(request);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(UnsandboxApiError);
+        expect(error).toMatchObject({
+          status: 401,
+          code: 'UNAUTHORIZED',
+        });
+      }
     });
   });
 
@@ -486,7 +511,7 @@ describe('UnsandboxClient', () => {
       expect(result.status).toBe('running');
       expect(result.job_id).toBe(jobId);
       expect(mockFetch).toHaveBeenCalledWith(
-        `https://api.unsandbox.com/v1/jobs/${jobId}`,
+        `https://api.unsandbox.com/jobs/${jobId}`,
         expect.objectContaining({
           method: 'GET',
         })
@@ -616,7 +641,7 @@ describe('UnsandboxClient', () => {
 
       expect(result.status).toBe('cancelled');
       expect(mockFetch).toHaveBeenCalledWith(
-        `https://api.unsandbox.com/v1/jobs/${jobId}/cancel`,
+        `https://api.unsandbox.com/jobs/${jobId}/cancel`,
         expect.objectContaining({
           method: 'POST',
         })
@@ -744,7 +769,7 @@ describe('UnsandboxClient', () => {
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
-              'Authorization': 'Bearer open-says-me',
+              'Authorization': 'Bearer ',
             }),
           })
         );
@@ -792,7 +817,7 @@ describe('UnsandboxClient', () => {
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
-              'Authorization': 'Bearer open-says-me',
+              'Authorization': 'Bearer ',
             }),
           })
         );
@@ -829,7 +854,7 @@ describe('UnsandboxClient', () => {
           expect.objectContaining({
             method: 'POST',
             headers: expect.objectContaining({
-              'Authorization': 'Bearer open-says-me',
+              'Authorization': 'Bearer ',
             }),
           })
         );

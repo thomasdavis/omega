@@ -22,6 +22,13 @@ export * from './services/expertPanelService.js';
 export * from './services/geminiImageService.js';
 export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';
+export { generateDailyBlog } from './services/dailyBlogService.js';
+
+// Appearance
+export { OMEGA_APPEARANCE } from './lib/omegaAppearance.js';
+
+// Feelings subsystem
+export * from './lib/feelings/index.js';
 
 // Status tracking
 export * from './lib/status/index.js';
@@ -34,5 +41,9 @@ export { analyzeDocumentAndCreateIssueTool } from './tools/analyzeDocumentAndCre
 export { hackerNewsPhilosophyTool } from './tools/hackerNewsPhilosophy.js';
 export { marketPredictionTool } from './tools/marketPrediction.js';
 export { extractAndSaveLinks } from './tools/addSharedLink.js';
+
+// Utils (shared with bot)
+export { logError, generateUserErrorMessage } from './utils/errorLogger.js';
+export { sendChunkedMessage } from './utils/messageChunker.js';
 
 export const AGENT_PACKAGE_VERSION = '1.0.0';

@@ -160,17 +160,17 @@ describe('TPMJS API Client', () => {
           get: () => 'text/plain',
         },
         text: async () => 'Bad Request: Invalid tool ID',
-        json: async () => ({}),
+        json: async () => ({ success: false, error: 'Bad Request' }),
       } as unknown as Response);
 
       const result = await apiClient.executeTpmjsTool(
-        'invalid::tool',
+        'invalid-tool-no-separator',
         {}
       );
 
       expect(result.success).toBe(false);
       expect(result.error).toBeTruthy();
-      expect(result.toolId).toBe('invalid::tool');
+      expect(result.toolId).toBe('invalid-tool-no-separator');
     });
 
     it('should include env variables in request body', async () => {

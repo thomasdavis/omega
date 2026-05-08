@@ -3,7 +3,7 @@
  * These are placeholder tests that should be expanded with actual test implementation
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, test, expect } from 'vitest';
 
 describe('Schema Auto-Create Worker', () => {
   describe('Low-risk validation', () => {

@@ -6,7 +6,7 @@
  */
 
 import cron from 'node-cron';
-import { generateDailyBlog } from './dailyBlogService.js';
+import { generateDailyBlog } from '@repo/agent';
 
 /**
  * Initialize scheduled tasks

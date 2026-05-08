@@ -6,7 +6,7 @@
 import { Client, GatewayIntentBits, Events, Message } from 'discord.js';
 import dotenv from 'dotenv';
 import { handleMessage } from './handlers/messageHandler.js';
-import { initializeStorage } from './utils/storage.js';
+import { initializeStorage } from '@repo/shared';
 import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@repo/database';
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';

@@ -2,13 +2,26 @@
  * TTS Library Tests
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeAll } from 'vitest';
 import {
   sanitizeText,
   generateTTSHash,
   validateTTSRequest,
   type TTSRequest,
 } from './tts.js';
+
+vi.mock('@repo/shared', () => ({
+  getDataDir: vi.fn(() => '/tmp/test-tts'),
+}));
+
+const MOCK_VOICES = ['bm_fable', 'alloy', 'echo', 'shimmer', 'onyx', 'nova'];
+
+beforeAll(() => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve({ data: [{ voices: MOCK_VOICES }] }),
+  }));
+});
 
 describe('TTS Library', () => {
   describe('sanitizeText', () => {

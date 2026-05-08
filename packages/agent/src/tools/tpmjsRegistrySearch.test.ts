@@ -11,6 +11,10 @@ vi.mock('./tpmjsApiClient.js', () => ({
   listTpmjsCategories: vi.fn(),
 }));
 
+vi.mock('@tpmjs/registry-search', () => {
+  throw new Error('Module not available in tests');
+});
+
 import { tpmjsRegistrySearchTool } from './tpmjsRegistrySearch.js';
 import {
   searchTpmjsRegistry,

@@ -8,10 +8,12 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^3.0.29",
+    "@ai-sdk/openai": "^3.0.63",
     "@ax-llm/ax": "^15.0.8",
     "@google/generative-ai": "^0.21.0",
     "@octokit/rest": "^21.0.0",
@@ -20,25 +22,26 @@
     "@slidev/cli": "^0.50.0",
     "@tpmjs/registry-execute": "^0.1.0",
     "@tpmjs/registry-search": "^0.1.0",
-    "abcjs": "^6.5.2",
-    "ai": "^6.0.86",
-    "discord.js": "^14.24.2",
+    "abcjs": "^6.6.3",
+    "ai": "^6.0.176",
+    "discord.js": "^14.26.4",
     "fish-joke-generator": "^1.1.0",
     "lamejs": "^1.2.1",
-    "minimatch": "^10.1.1",
+    "minimatch": "^10.2.5",
     "minisearch": "^7.2.0",
     "node-cron": "^3.0.3",
     "openai": "^4.104.0",
-    "playwright-chromium": "^1.48.0",
+    "playwright-chromium": "^1.59.1",
     "ssh2": "^1.17.0",
-    "twitter-api-v2": "^1.17.2",
-    "undici": "^7.2.0",
-    "zod": "^3.23.8"
+    "twitter-api-v2": "^1.29.0",
+    "undici": "^7.25.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.40",
     "@types/node-cron": "^3.0.11",
     "@types/ssh2": "^1.15.5",
-    "typescript": "^5.6.3"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.8"
   }
 }

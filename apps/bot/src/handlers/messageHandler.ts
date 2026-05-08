@@ -14,14 +14,14 @@ import {
 } from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
-import { logError, generateUserErrorMessage } from '../utils/errorLogger.js';
+import { logError, generateUserErrorMessage } from '@repo/agent';
 import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan, logAntigravityRoast } from '@repo/database';
-import { feelingsService } from '../lib/feelings/index.js';
+import { feelingsService } from '@repo/agent';
 import { getOrCreateUserProfile, incrementMessageCount, getUserProfile } from '@repo/database';
 import { generateAntigravityRoast } from '../lib/antigravityRoasts.js';
 import { fetchMessageWithDurableAttachments, downloadDurableAttachment } from '../utils/fetchDurableAttachments.js';
 import { setCachedAttachment, type CachedAttachment } from '@repo/shared';
-import { sendChunkedMessage } from '../utils/messageChunker.js';
+import { sendChunkedMessage } from '@repo/agent';
 import { extractLargeCodeBlocks } from '../utils/codeBlockExtractor.js';
 import { handleBuildFailureMessage } from '../services/buildFailureIssueService.js';
 import { captureError } from '../services/errorMonitoringService.js';

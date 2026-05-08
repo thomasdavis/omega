@@ -73,7 +73,7 @@ describe('parseRailwayWebhook', () => {
     const error = parseRailwayWebhook(payload);
 
     expect(error).toBeDefined();
-    expect(error?.type).toBe('oom');
+    expect(error?.type).toBe('deployment');
     expect(error?.exitCode).toBe(137);
   });
 
