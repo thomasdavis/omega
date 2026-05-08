@@ -24,12 +24,15 @@ export function clearOpenCodeContext() {
 async function createThread(message: Message, task: string): Promise<ThreadChannel | null> {
   try {
     const threadName = `🔧 OpenCode: ${task.slice(0, 90)}`;
+    console.log(`[OpenCode] Creating thread: "${threadName}"`);
     const thread = await message.startThread({
       name: threadName,
       autoArchiveDuration: 60,
     });
+    console.log(`[OpenCode] Thread created: ${thread.id}`);
     return thread;
-  } catch {
+  } catch (err) {
+    console.error('[OpenCode] Failed to create thread:', err instanceof Error ? err.message : err);
     return null;
   }
 }
