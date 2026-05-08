@@ -75,7 +75,18 @@ export async function commitAndPush(message: string): Promise<{ commitSha: strin
   }
 
   git(`commit -m "${message.replace(/"/g, '\\"')}"`);
-  git('push origin main');
+
+  const MAX_RETRIES = 3;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      git('pull --rebase origin main');
+      git('push origin main');
+      break;
+    } catch (err) {
+      if (attempt === MAX_RETRIES) throw err;
+      console.warn(`[OpenCode] Push attempt ${attempt} failed, retrying...`);
+    }
+  }
 
   const commitSha = git('rev-parse HEAD');
   const commitUrl = `https://github.com/${GITHUB_REPO}/commit/${commitSha}`;
