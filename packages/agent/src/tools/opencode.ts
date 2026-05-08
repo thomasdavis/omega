@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import type { Message, ThreadChannel } from 'discord.js';
 import {
   isOpenCodeReady,
@@ -9,6 +9,11 @@ import {
   getDiffSummary,
 } from '../services/opencodeService.js';
 import { buildOpenCodePrompt } from './opencodeSystemPrompt.js';
+
+const MAX_TASK_LENGTH = 2000;
+const WALL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes total
+const IDLE_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes without output
+const SIGKILL_DELAY_MS = 5_000;
 
 let currentMessage: Message | null = null;
 
@@ -61,13 +66,24 @@ function buildOpencodeConfig(): string {
   });
 }
 
+function killProcessTree(proc: ChildProcess): void {
+  proc.kill('SIGTERM');
+  setTimeout(() => {
+    try {
+      proc.kill('SIGKILL');
+    } catch {
+      // Already dead
+    }
+  }, SIGKILL_DELAY_MS);
+}
+
 interface OpenCodeResult {
   output: string;
   filesEdited: string[];
   exitCode: number;
 }
 
-function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise<OpenCodeResult> {
+function runOpenCodeCli(prompt: string, cwd: string): Promise<OpenCodeResult> {
   return new Promise((resolve, reject) => {
     const config = buildOpencodeConfig();
 
@@ -87,12 +103,41 @@ function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise
 
     let stdout = '';
     let stderr = '';
+    let settled = false;
     const filesEdited = new Set<string>();
     const textParts: string[] = [];
+
+    function settle(result: OpenCodeResult | Error): void {
+      if (settled) return;
+      settled = true;
+      clearTimeout(wallTimer);
+      clearTimeout(idleTimer);
+      if (result instanceof Error) reject(result);
+      else resolve(result);
+    }
+
+    let idleTimer = setTimeout(() => {
+      killProcessTree(proc);
+      settle(new Error(`OpenCode stalled — no output for ${IDLE_TIMEOUT_MS / 1000}s. The task may be too complex; try a simpler request.`));
+    }, IDLE_TIMEOUT_MS);
+
+    function resetIdleTimer(): void {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        killProcessTree(proc);
+        settle(new Error(`OpenCode stalled — no output for ${IDLE_TIMEOUT_MS / 1000}s. The task may be too complex; try a simpler request.`));
+      }, IDLE_TIMEOUT_MS);
+    }
+
+    const wallTimer = setTimeout(() => {
+      killProcessTree(proc);
+      settle(new Error(`OpenCode timed out after ${WALL_TIMEOUT_MS / 1000}s. Try breaking the task into smaller steps.`));
+    }, WALL_TIMEOUT_MS);
 
     proc.stdout.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
       stdout += text;
+      resetIdleTimer();
 
       for (const line of text.split('\n').filter(Boolean)) {
         try {
@@ -118,16 +163,11 @@ function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise
 
     proc.stderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString();
+      resetIdleTimer();
     });
 
-    const timeout = setTimeout(() => {
-      proc.kill();
-      reject(new Error(`OpenCode timed out after ${timeoutMs / 1000}s`));
-    }, timeoutMs);
-
     proc.on('close', (code) => {
-      clearTimeout(timeout);
-      resolve({
+      settle({
         output: textParts.join('\n') || stdout.slice(0, 2000),
         filesEdited: Array.from(filesEdited),
         exitCode: code || 0,
@@ -135,16 +175,17 @@ function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise
     });
 
     proc.on('error', (err) => {
-      clearTimeout(timeout);
-      reject(err);
+      settle(err);
     });
   });
 }
 
 export const opencodeTool = tool({
-  description: 'Invoke the OpenCode AI coding agent. It has full shell access and can: edit Omega\'s codebase and push changes for auto-deploy, query databases and generate reports, install software, run scripts, analyze data, or perform any complex multi-step task that requires file system and terminal access. Streams real-time progress to a Discord thread.',
+  description: 'Invoke the OpenCode AI coding agent to make a focused change to Omega\'s codebase, run a shell command, or query a database. Keep tasks small and specific — one tool, one bug fix, or one query at a time. Streams progress to a Discord thread.',
   inputSchema: z.object({
-    task: z.string().describe('Detailed description of the task. Can be coding work on the Omega codebase, database analysis, system administration, report generation, or any task requiring shell/file access.'),
+    task: z.string()
+      .max(MAX_TASK_LENGTH, `Task must be under ${MAX_TASK_LENGTH} characters. Break large requests into smaller steps.`)
+      .describe('A focused, specific task. Good: "add a dad jokes tool". Bad: "add a complete multilingual system with detection, fallback, and tests". Keep it to one change at a time.'),
   }),
   execute: async ({ task }) => {
     if (!isOpenCodeReady()) {
@@ -156,7 +197,6 @@ export const opencodeTool = tool({
 
     let thread: ThreadChannel | null = null;
     const REPO_PATH = '/data/omega-repo';
-    const TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
     try {
       console.log('[OpenCode] Pulling latest...');
@@ -172,7 +212,7 @@ export const opencodeTool = tool({
       await sendToThread(thread, '🤖 Running OpenCode agent (GLM-4.7)...');
 
       const prompt = buildOpenCodePrompt(task);
-      const result = await runOpenCodeCli(prompt, REPO_PATH, TIMEOUT);
+      const result = await runOpenCodeCli(prompt, REPO_PATH);
 
       console.log(`[OpenCode] CLI exited with code ${result.exitCode}`);
       console.log(`[OpenCode] Output length: ${result.output.length}`);

@@ -3010,5 +3010,4 @@ export const CORE_TOOLS: string[] = [
   'webFetch',
   'fileUpload',
   'whoami',
-  'opencode',
 ];
