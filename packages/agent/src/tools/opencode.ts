@@ -23,7 +23,8 @@ export function clearOpenCodeContext() {
 
 async function createThread(message: Message, task: string): Promise<ThreadChannel | null> {
   try {
-    const threadName = `🔧 OpenCode: ${task.slice(0, 90)}`;
+    const safeName = task.replace(/[^\w\s-]/g, '').trim().slice(0, 80);
+    const threadName = `OpenCode: ${safeName || 'task'}`;
     console.log(`[OpenCode] Creating thread: "${threadName}"`);
     const thread = await message.startThread({
       name: threadName,
