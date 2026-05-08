@@ -17,7 +17,6 @@
     "@ax-llm/ax": "^15.0.8",
     "@google/generative-ai": "^0.21.0",
     "@octokit/rest": "^21.0.0",
-    "@opencode-ai/sdk": "^1.14.41",
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
     "@slidev/cli": "^0.50.0",

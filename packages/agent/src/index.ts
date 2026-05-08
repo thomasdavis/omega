@@ -25,7 +25,7 @@ export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';
 export { generateDailyBlog } from './services/dailyBlogService.js';
 
-// OpenCode service
+// OpenCode service (CLI-based, no SDK server)
 export { initializeOpenCode, shutdownOpenCode, isOpenCodeReady } from './services/opencodeService.js';
 
 // Appearance

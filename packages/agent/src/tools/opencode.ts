@@ -1,8 +1,8 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { spawn } from 'child_process';
 import type { Message, ThreadChannel } from 'discord.js';
 import {
-  getOpenCodeClient,
   isOpenCodeReady,
   pullLatest,
   commitAndPush,
@@ -43,13 +43,102 @@ async function sendToThread(thread: ThreadChannel | null, content: string): Prom
   }
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
-    ),
-  ]);
+function buildOpencodeConfig(): string {
+  return JSON.stringify({
+    provider: {
+      'z-ai': {
+        api: 'openai',
+        options: {
+          apiKey: process.env.GLM_API_KEY || '',
+          baseURL: 'https://api.z.ai/api/coding/paas/v4',
+        },
+        models: {
+          'glm-4.7': { id: 'glm-4.7', name: 'GLM-4.7' },
+        },
+      },
+    },
+    model: 'z-ai/glm-4.7',
+  });
+}
+
+interface OpenCodeResult {
+  output: string;
+  filesEdited: string[];
+  exitCode: number;
+}
+
+function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise<OpenCodeResult> {
+  return new Promise((resolve, reject) => {
+    const config = buildOpencodeConfig();
+
+    const proc = spawn('opencode', [
+      'run',
+      '--dangerously-skip-permissions',
+      '--format', 'json',
+      prompt,
+    ], {
+      cwd,
+      env: {
+        ...process.env,
+        OPENCODE_CONFIG_CONTENT: config,
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+    const filesEdited = new Set<string>();
+    const textParts: string[] = [];
+
+    proc.stdout.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      stdout += text;
+
+      for (const line of text.split('\n').filter(Boolean)) {
+        try {
+          const event = JSON.parse(line);
+          if (event.type === 'text' && event.part?.text) {
+            textParts.push(event.part.text);
+          } else if (event.type === 'tool-invocation' || event.type === 'tool_invocation') {
+            const toolName = event.part?.toolInvocation?.toolName || event.part?.name || '';
+            const filePath = event.part?.toolInvocation?.args?.filePath ||
+                            event.part?.toolInvocation?.args?.file_path ||
+                            event.part?.toolInvocation?.args?.path || '';
+            if (filePath) filesEdited.add(filePath);
+            if (toolName === 'bash' || toolName === 'shell') {
+              const cmd = event.part?.toolInvocation?.args?.command || '';
+              if (cmd) console.log(`[OpenCode] 🔨 ${cmd.slice(0, 100)}`);
+            }
+          }
+        } catch {
+          // not JSON, skip
+        }
+      }
+    });
+
+    proc.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    const timeout = setTimeout(() => {
+      proc.kill();
+      reject(new Error(`OpenCode timed out after ${timeoutMs / 1000}s`));
+    }, timeoutMs);
+
+    proc.on('close', (code) => {
+      clearTimeout(timeout);
+      resolve({
+        output: textParts.join('\n') || stdout.slice(0, 2000),
+        filesEdited: Array.from(filesEdited),
+        exitCode: code || 0,
+      });
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+  });
 }
 
 export const opencodeTool = tool({
@@ -61,16 +150,17 @@ export const opencodeTool = tool({
     if (!isOpenCodeReady()) {
       return {
         success: false,
-        error: 'OpenCode is not initialized. The repo may not be cloned or the server may not be running.',
+        error: 'OpenCode is not initialized. The repo may not be cloned yet.',
       };
     }
 
-    const client = getOpenCodeClient();
     let thread: ThreadChannel | null = null;
+    const REPO_PATH = '/data/omega-repo';
+    const TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
     try {
       console.log('[OpenCode] Pulling latest...');
-      await withTimeout(pullLatest(), 30_000, 'git pull');
+      await pullLatest();
       console.log('[OpenCode] Pull complete');
 
       if (currentMessage) {
@@ -78,74 +168,22 @@ export const opencodeTool = tool({
         await sendToThread(thread, `🚀 **Starting OpenCode session**\n\`\`\`\n${task}\n\`\`\``);
       }
 
-      console.log('[OpenCode] Creating session...');
-      const sessionResult = await withTimeout(
-        client.session.create({ body: { title: `Discord: ${task.slice(0, 100)}` } }),
-        15_000,
-        'session.create',
-      );
+      console.log('[OpenCode] Running opencode CLI...');
+      await sendToThread(thread, '🤖 Running OpenCode agent (GLM-4.7)...');
 
-      if (!sessionResult.data) {
-        console.error('[OpenCode] session.create returned no data:', sessionResult);
-        return { success: false, error: `Failed to create OpenCode session: ${JSON.stringify(sessionResult.error || 'no data')}` };
-      }
+      const prompt = buildOpenCodePrompt(task);
+      const result = await runOpenCodeCli(prompt, REPO_PATH, TIMEOUT);
 
-      const sessionId = sessionResult.data.id;
-      console.log(`[OpenCode] Session created: ${sessionId}`);
-      await sendToThread(thread, `📋 Session created: \`${sessionId}\``);
+      console.log(`[OpenCode] CLI exited with code ${result.exitCode}`);
+      console.log(`[OpenCode] Output length: ${result.output.length}`);
+      console.log(`[OpenCode] Files edited: ${result.filesEdited.length}`);
 
-      const filesEdited = new Set<string>();
-      const commandsRun: string[] = [];
-      let isComplete = false;
-
-      // Send the prompt — this blocks until the LLM finishes all steps
-      console.log('[OpenCode] Sending prompt...');
-      await sendToThread(thread, '🤖 Sending task to OpenCode agent...');
-
-      const promptResult = await withTimeout(
-        client.session.prompt({
-          path: { id: sessionId },
-          body: {
-            parts: [{ type: 'text' as const, text: buildOpenCodePrompt(task) }],
-          },
-        }),
-        5 * 60 * 1000, // 5 min timeout
-        'session.prompt',
-      );
-
-      console.log('[OpenCode] Prompt completed');
-      isComplete = true;
-
-      // Extract results from the prompt response
-      const response = promptResult.data;
-      let responseText = '';
-      if (response && 'parts' in (response as any)) {
-        const parts = (response as any).parts || [];
-        for (const part of parts) {
-          if (part.type === 'text') {
-            responseText += part.text + '\n';
-          } else if (part.type === 'tool-invocation') {
-            const toolName = part.toolInvocation?.toolName || part.name || 'unknown';
-            if (toolName === 'write' || toolName === 'edit') {
-              const filePath = part.toolInvocation?.args?.filePath || part.args?.file_path || '';
-              filesEdited.add(filePath);
-            }
-            commandsRun.push(toolName);
-          }
-        }
-      }
-
-      // Post response summary to thread
-      if (responseText) {
-        const preview = responseText.length > 1800 ? responseText.slice(0, 1800) + '...' : responseText;
+      if (result.output) {
+        const preview = result.output.length > 1800 ? result.output.slice(0, 1800) + '...' : result.output;
         await sendToThread(thread, `📝 **OpenCode response:**\n${preview}`);
       }
 
-      // Check for file changes via git
       const diffSummary = getDiffSummary();
-      console.log(`[OpenCode] Diff summary: ${diffSummary}`);
-
-      // Commit and push if there are changes
       const commitMessage = `feat: ${task.slice(0, 72)}\n\nAutomated by OpenCode via Discord`;
       const { commitSha, commitUrl } = await commitAndPush(commitMessage);
 
@@ -162,25 +200,21 @@ export const opencodeTool = tool({
 
       return {
         success: true,
-        responsePreview: responseText.slice(0, 500),
-        filesEdited: Array.from(filesEdited),
-        filesEditedCount: filesEdited.size,
-        commandsRun,
+        output: result.output.slice(0, 1000),
+        filesEdited: result.filesEdited,
+        filesEditedCount: result.filesEdited.length,
         commitSha: commitSha || null,
         commitUrl: commitUrl || null,
         diffSummary,
         message: commitSha
-          ? `Successfully edited ${filesEdited.size} file(s) and pushed to main. Railway will auto-deploy.`
-          : 'OpenCode session completed. ' + (responseText ? responseText.slice(0, 300) : 'No output.'),
+          ? `Edited ${result.filesEdited.length} file(s) and pushed to main. Railway will auto-deploy.`
+          : 'Task completed. ' + (result.output ? result.output.slice(0, 300) : 'No output.'),
       };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       console.error(`[OpenCode] Error: ${errorMsg}`);
       await sendToThread(thread, `❌ **OpenCode failed:** ${errorMsg}`);
-      return {
-        success: false,
-        error: errorMsg,
-      };
+      return { success: false, error: errorMsg };
     }
   },
 });
