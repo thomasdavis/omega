@@ -65,8 +65,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'webFetch',
     name: 'Web Fetch',
-    description: 'Fetch and parse web content from URLs',
-    keywords: ['fetch', 'scrape', 'web', 'url', 'download', 'get', 'retrieve'],
+    description: 'Fetch and parse public web page content from URLs. Only for external websites — NOT for database queries, table schemas, or internal API access. Use database tools (pgDescribeTable, pgDescribeSchema, pgQuery, etc.) for any database operations.',
+    keywords: ['fetch', 'scrape', 'web', 'url', 'download', 'get', 'retrieve', 'webpage', 'website', 'html'],
     tags: ['web', 'scraping', 'core', 'http'],
     examples: [
       'fetch this URL',
@@ -477,14 +477,18 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'pgDescribeTable',
     name: 'PostgreSQL Describe Table',
-    description: 'Show table schema (columns, indexes, constraints) in PostgreSQL',
-    keywords: ['postgres', 'postgresql', 'describe', 'schema', 'columns', 'structure', 'pg'],
+    description: 'Show table schema (columns, indexes, constraints) in PostgreSQL. Use this to inspect or check any database table structure.',
+    keywords: ['postgres', 'postgresql', 'describe', 'schema', 'columns', 'structure', 'pg', 'table', 'check', 'look', 'inspect', 'view', 'user_profiles', 'profile', 'profiles'],
     tags: ['database', 'postgresql', 'schema', 'query'],
     examples: [
       'describe PostgreSQL table',
       'show table structure',
       'get table schema',
-      'view columns'
+      'view columns',
+      'check out the user profiles table',
+      'look at the table schema',
+      'inspect table columns',
+      'what does the table look like'
     ],
     category: 'database'
   },
@@ -492,8 +496,8 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'pgDescribeSchema',
     name: 'PostgreSQL Describe Schema',
-    description: 'Show the entire database schema including all tables, columns, types, indexes, and constraints',
-    keywords: ['postgres', 'postgresql', 'describe', 'schema', 'database', 'all tables', 'structure', 'pg', 'show schema', 'database structure'],
+    description: 'Show the entire database schema including all tables, columns, types, indexes, and constraints. Use this to understand the database structure before querying.',
+    keywords: ['postgres', 'postgresql', 'describe', 'schema', 'database', 'all tables', 'structure', 'pg', 'show schema', 'database structure', 'check', 'look', 'inspect', 'view', 'understand', 'explore'],
     tags: ['database', 'postgresql', 'schema', 'query'],
     examples: [
       'describe database schema',
@@ -501,7 +505,11 @@ export const TOOL_METADATA: ToolMetadata[] = [
       'get database structure',
       'view entire schema',
       'what tables exist',
-      'show PostgreSQL schema'
+      'show PostgreSQL schema',
+      'check out the database',
+      'look at the schema',
+      'understand the database',
+      'explore table structures'
     ],
     category: 'database'
   },
@@ -2180,14 +2188,16 @@ export const TOOL_METADATA: ToolMetadata[] = [
   {
     id: 'queryDatabase',
     name: 'Query Database',
-    description: 'Generic database query tool',
-    keywords: ['query', 'database', 'sql', 'search', 'data'],
+    description: 'Execute SELECT queries against the database to retrieve data. Use this for general database lookups and data retrieval.',
+    keywords: ['query', 'database', 'sql', 'search', 'data', 'select', 'check', 'look', 'table', 'find', 'fetch'],
     tags: ['database', 'query', 'generic'],
     examples: [
       'query database',
       'search database',
       'database query',
-      'get data'
+      'get data',
+      'check the database',
+      'look up data in the table'
     ],
     category: 'database'
   },

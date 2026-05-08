@@ -9,7 +9,7 @@ import { robotsChecker } from '../utils/robotsChecker.js';
 import { extractHtmlMetadata, truncateMetadata } from '../utils/htmlMetadata.js';
 
 export const webFetchTool = tool({
-  description: 'Fetch the content of a web page. Automatically checks robots.txt compliance before fetching and follows HTTP redirects (up to 10 hops). Use this to retrieve information from specific URLs. Supports raw HTML mode for debugging and validation.',
+  description: 'Fetch the content of a public web page. Automatically checks robots.txt compliance before fetching and follows HTTP redirects (up to 10 hops). Use this to retrieve information from specific website URLs. Supports raw HTML mode for debugging and validation. Do NOT use this for database queries, table schemas, or internal API access — use database tools (pgDescribeTable, pgQuery, etc.) instead.',
   inputSchema: z.object({
     url: z.string().url().describe('The URL to fetch content from'),
     userAgent: z.string().default('OmegaBot/1.0').describe('User agent string to use (default: OmegaBot/1.0)'),
