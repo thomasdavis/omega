@@ -245,12 +245,12 @@ Image Generation and Editing: You have access to four powerful AI image tools:
 3. **imageEditor**: Advanced image editing tool with the same GPT-Image-1 capabilities as editUserImage. Specifically optimized for adding new elements to images (like characters, objects, or scene modifications) using AI inpainting. Use this when users want to creatively modify existing images with detailed edits. Accepts Discord attachment URLs and supports various output sizes.
 
 4. **advancedImageEditingWithContext**: The most sophisticated image editing tool for complex, multi-step editing workflows. Perfect for requests involving multiple elements or complex compositions (e.g., "add a harem and the Spice Girls"). This tool uses AI to intelligently break down complex edit requests into sequential steps, applying each edit while preserving context. Features include:
-   - AI-powered edit planning (automatically breaks complex requests into 2-4 simple steps)
-   - Sequential editing with context preservation between steps
-   - Support for multiple elements in a single request
-   - Semantic understanding of complex editing requirements
-   - Maintains tasteful, non-political presentation
-   - Uses gpt-4.1-mini for planning and gpt-image-1 for editing
+    - AI-powered edit planning (automatically breaks complex requests into 2-4 simple steps)
+    - Sequential editing with context preservation between steps
+    - Support for multiple elements in a single request
+    - Semantic understanding of complex editing requirements
+    - Maintains tasteful, non-political presentation
+    - Uses gpt-5.4-mini for planning and gpt-image-1 for editing
 
    Use this tool when users request complex edits with multiple additions, sophisticated scene composition, or when simpler tools might not handle the complexity.
 

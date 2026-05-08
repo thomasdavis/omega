@@ -23,7 +23,7 @@ vi.mock('./systemPrompt.js', () => ({
 }));
 
 vi.mock('../config/models.js', () => ({
-  OMEGA_MODEL: 'gpt-4.1-mini',
+  OMEGA_MODEL: 'gpt-5.4-mini',
 }));
 
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from './shouldRespond.js';

@@ -111,7 +111,7 @@ Otherwise, return isDuplicate: false with issueNumber: null.`;
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-4.1-mini'),
+      model: openai('gpt-5.4-mini'),
       prompt,
       temperature: 0.1,
     });
@@ -160,7 +160,7 @@ If no environment issues are detected, respond with "No environment variable iss
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-4.1-mini'),
+      model: openai('gpt-5.4-mini'),
       prompt,
       temperature: 0.3,
     });
@@ -195,7 +195,7 @@ Keep it under 300 words, technical but clear.`;
 
   try {
     const { text } = await generateText({
-      model: openai('gpt-4.1-mini'),
+      model: openai('gpt-5.4-mini'),
       prompt,
       temperature: 0.3,
     });

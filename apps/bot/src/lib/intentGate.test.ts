@@ -19,7 +19,7 @@ vi.mock('@ai-sdk/openai', () => ({
 }));
 
 vi.mock('../config/models.js', () => ({
-  OMEGA_MODEL: 'gpt-4.1-mini',
+  OMEGA_MODEL: 'gpt-5.4-mini',
 }));
 
 import { checkIntentGate } from './intentGate.js';

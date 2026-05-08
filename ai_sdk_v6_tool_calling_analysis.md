@@ -61,7 +61,7 @@ The model is stopping after tool calls with `finishReason: "tool-calls"` instead
 ### Model Configuration (agent.ts:52)
 
 ```typescript
-const model = openai.chat('gpt-4.1-mini');
+const model = openai.chat('gpt-5.4-mini');
 ```
 
 ### Agent Call (agent.ts)
@@ -112,9 +112,9 @@ From AI SDK v6 documentation:
 3. **How can we force a follow-up text response** after tool execution in AI SDK v6?
 
 4. **Should we:**
-   - Strengthen the system prompt language?
-   - Use a different model (gpt-4.1-mini vs gpt-4o)?
-   - Configure agent protocol differently?
+    - Strengthen the system prompt language?
+    - Use a different model (gpt-5.4-mini vs gpt-4o)?
+    - Configure agent protocol differently?
    - Add explicit instruction to always return text after tools?
 
 5. **Is there a configuration option** in AI SDK v6's `generateText()` to require text output even when tools are called?
