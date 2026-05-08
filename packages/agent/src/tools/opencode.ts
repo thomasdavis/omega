@@ -72,7 +72,14 @@ interface OpenCodeResult {
   exitCode: number;
 }
 
-function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise<OpenCodeResult> {
+type EventCallback = (type: string, summary: string) => void;
+
+function runOpenCodeCli(
+  prompt: string,
+  cwd: string,
+  timeoutMs: number,
+  onEvent?: EventCallback,
+): Promise<OpenCodeResult> {
   return new Promise((resolve, reject) => {
     const config = buildOpencodeConfig();
 
@@ -91,7 +98,6 @@ function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise
     });
 
     let stdout = '';
-    let stderr = '';
     const filesEdited = new Set<string>();
     const textParts: string[] = [];
 
@@ -102,27 +108,54 @@ function runOpenCodeCli(prompt: string, cwd: string, timeoutMs: number): Promise
       for (const line of text.split('\n').filter(Boolean)) {
         try {
           const event = JSON.parse(line);
+
           if (event.type === 'text' && event.part?.text) {
             textParts.push(event.part.text);
-          } else if (event.type === 'tool-invocation' || event.type === 'tool_invocation') {
-            const toolName = event.part?.toolInvocation?.toolName || event.part?.name || '';
-            const filePath = event.part?.toolInvocation?.args?.filePath ||
-                            event.part?.toolInvocation?.args?.file_path ||
-                            event.part?.toolInvocation?.args?.path || '';
-            if (filePath) filesEdited.add(filePath);
-            if (toolName === 'bash' || toolName === 'shell') {
-              const cmd = event.part?.toolInvocation?.args?.command || '';
-              if (cmd) console.log(`[OpenCode] 🔨 ${cmd.slice(0, 100)}`);
+            onEvent?.('text', event.part.text);
+          } else if (event.type === 'tool_invocation' || event.type === 'tool-invocation') {
+            const inv = event.part?.toolInvocation || event.part || {};
+            const toolName = inv.toolName || inv.name || 'unknown';
+            const args = inv.args || {};
+
+            if (toolName === 'read' || toolName === 'readFile') {
+              const file = args.filePath || args.file_path || args.path || '';
+              onEvent?.('read', `📂 Reading: \`${file}\``);
+            } else if (toolName === 'write' || toolName === 'writeFile') {
+              const file = args.filePath || args.file_path || args.path || '';
+              filesEdited.add(file);
+              onEvent?.('write', `✏️ Writing: \`${file}\``);
+            } else if (toolName === 'edit') {
+              const file = args.filePath || args.file_path || args.path || '';
+              filesEdited.add(file);
+              onEvent?.('edit', `✏️ Editing: \`${file}\``);
+            } else if (toolName === 'bash' || toolName === 'shell') {
+              const cmd = (args.command || '').slice(0, 150);
+              console.log(`[OpenCode] 🔨 ${cmd}`);
+              onEvent?.('bash', `🔨 Running: \`${cmd}\``);
+            } else if (toolName === 'glob' || toolName === 'find') {
+              onEvent?.('find', `🔍 Searching: \`${args.pattern || args.query || toolName}\``);
+            } else if (toolName === 'grep') {
+              onEvent?.('grep', `🔍 Grep: \`${args.pattern || args.query || ''}\``);
+            } else {
+              onEvent?.('tool', `🔧 ${toolName}`);
             }
+          } else if (event.type === 'tool_result' || event.type === 'tool-result') {
+            // tool finished - no need to stream this
+          } else if (event.type === 'step_start') {
+            onEvent?.('step', '⏳ Thinking...');
+          } else if (event.type === 'error') {
+            const msg = event.error?.data?.message || event.error?.name || 'Unknown error';
+            onEvent?.('error', `❌ ${msg}`);
           }
         } catch {
-          // not JSON, skip
+          // not JSON
         }
       }
     });
 
     proc.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
+      const text = chunk.toString().trim();
+      if (text) console.error(`[OpenCode] stderr: ${text.slice(0, 200)}`);
     });
 
     const timeout = setTimeout(() => {
@@ -161,7 +194,7 @@ export const opencodeTool = tool({
 
     let thread: ThreadChannel | null = null;
     const repoPath = getRepoPath();
-    const TIMEOUT = 10 * 60 * 1000; // 10 minutes
+    const TIMEOUT = 10 * 60 * 1000;
 
     try {
       console.log('[OpenCode] Pulling latest...');
@@ -177,12 +210,43 @@ export const opencodeTool = tool({
       await sendToThread(thread, '🤖 Running OpenCode agent (GLM-4.7)...');
 
       const prompt = buildOpenCodePrompt(task);
-      const result = await runOpenCodeCli(prompt, repoPath, TIMEOUT);
+
+      // Buffer events and flush to Discord periodically to avoid rate limits
+      const eventBuffer: string[] = [];
+      let flushTimer: ReturnType<typeof setInterval> | null = null;
+
+      const flushToThread = async () => {
+        if (eventBuffer.length === 0) return;
+        const batch = eventBuffer.splice(0, eventBuffer.length);
+        await sendToThread(thread, batch.join('\n'));
+      };
+
+      flushTimer = setInterval(flushToThread, 3000);
+
+      const onEvent: EventCallback = (type, summary) => {
+        if (type === 'text') {
+          // Text output - post immediately if substantial
+          if (summary.length > 50) {
+            eventBuffer.push(`💬 ${summary.slice(0, 300)}`);
+          }
+        } else if (type === 'step') {
+          // Skip noisy step events
+        } else {
+          eventBuffer.push(summary);
+        }
+      };
+
+      const result = await runOpenCodeCli(prompt, repoPath, TIMEOUT, onEvent);
+
+      // Final flush
+      if (flushTimer) clearInterval(flushTimer);
+      await flushToThread();
 
       console.log(`[OpenCode] CLI exited with code ${result.exitCode}`);
       console.log(`[OpenCode] Output length: ${result.output.length}`);
       console.log(`[OpenCode] Files edited: ${result.filesEdited.length}`);
 
+      // Post final response
       if (result.output) {
         const preview = result.output.length > 1800 ? result.output.slice(0, 1800) + '...' : result.output;
         await sendToThread(thread, `📝 **OpenCode response:**\n${preview}`);
