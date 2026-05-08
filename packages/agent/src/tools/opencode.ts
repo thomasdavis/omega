@@ -43,6 +43,15 @@ async function sendToThread(thread: ThreadChannel | null, content: string): Prom
   }
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+    ),
+  ]);
+}
+
 export const opencodeTool = tool({
   description: 'Invoke the OpenCode AI coding agent. It has full shell access and can: edit Omega\'s codebase and push changes for auto-deploy, query databases and generate reports, install software, run scripts, analyze data, or perform any complex multi-step task that requires file system and terminal access. Streams real-time progress to a Discord thread.',
   inputSchema: z.object({
@@ -60,110 +69,83 @@ export const opencodeTool = tool({
     let thread: ThreadChannel | null = null;
 
     try {
-      // Pull latest before starting
-      await pullLatest();
+      console.log('[OpenCode] Pulling latest...');
+      await withTimeout(pullLatest(), 30_000, 'git pull');
+      console.log('[OpenCode] Pull complete');
 
-      // Create Discord thread for streaming
       if (currentMessage) {
         thread = await createThread(currentMessage, task);
         await sendToThread(thread, `🚀 **Starting OpenCode session**\n\`\`\`\n${task}\n\`\`\``);
       }
 
-      // Create a new OpenCode session
-      const sessionResult = await client.session.create({
-        body: { title: `Discord: ${task.slice(0, 100)}` },
-      });
+      console.log('[OpenCode] Creating session...');
+      const sessionResult = await withTimeout(
+        client.session.create({ body: { title: `Discord: ${task.slice(0, 100)}` } }),
+        15_000,
+        'session.create',
+      );
 
       if (!sessionResult.data) {
-        return { success: false, error: 'Failed to create OpenCode session' };
+        console.error('[OpenCode] session.create returned no data:', sessionResult);
+        return { success: false, error: `Failed to create OpenCode session: ${JSON.stringify(sessionResult.error || 'no data')}` };
       }
 
       const sessionId = sessionResult.data.id;
+      console.log(`[OpenCode] Session created: ${sessionId}`);
       await sendToThread(thread, `📋 Session created: \`${sessionId}\``);
 
-      // Process events while waiting for completion
       const filesEdited = new Set<string>();
       const commandsRun: string[] = [];
       let isComplete = false;
-      let lastEventTime = Date.now();
-      const EVENT_TIMEOUT = 5 * 60 * 1000;
 
-      // Subscribe to SSE events before sending prompt
-      const eventResult = await client.global.event();
+      // Send the prompt — this blocks until the LLM finishes all steps
+      console.log('[OpenCode] Sending prompt...');
+      await sendToThread(thread, '🤖 Sending task to OpenCode agent...');
 
-      const processEvents = async () => {
-        try {
-          for await (const event of eventResult.stream) {
-            lastEventTime = Date.now();
-            const payload = event as any;
+      const promptResult = await withTimeout(
+        client.session.prompt({
+          path: { id: sessionId },
+          body: {
+            parts: [{ type: 'text' as const, text: buildOpenCodePrompt(task) }],
+          },
+        }),
+        5 * 60 * 1000, // 5 min timeout
+        'session.prompt',
+      );
 
-            switch (payload.type) {
-              case 'file.edited':
-                filesEdited.add(payload.properties?.file || 'unknown');
-                await sendToThread(thread, `✏️ Edited: \`${payload.properties?.file}\``);
-                break;
+      console.log('[OpenCode] Prompt completed');
+      isComplete = true;
 
-              case 'command.executed':
-                if (payload.properties?.sessionID === sessionId) {
-                  const cmd = payload.properties?.name || '';
-                  commandsRun.push(cmd);
-                  await sendToThread(thread, `🔨 Running: \`${cmd}\``);
-                }
-                break;
-
-              case 'session.idle':
-                if (payload.properties?.sessionID === sessionId) {
-                  isComplete = true;
-                  return;
-                }
-                break;
-
-              case 'session.error':
-                if (payload.properties?.sessionID === sessionId) {
-                  await sendToThread(thread, `❌ Error: ${JSON.stringify(payload.properties)}`);
-                  isComplete = true;
-                  return;
-                }
-                break;
-
-              case 'message.part.updated':
-                if (payload.properties?.delta && payload.properties.delta.length > 100) {
-                  const preview = payload.properties.delta.slice(0, 200);
-                  await sendToThread(thread, `💬 ${preview}...`);
-                }
-                break;
+      // Extract results from the prompt response
+      const response = promptResult.data;
+      let responseText = '';
+      if (response && 'parts' in (response as any)) {
+        const parts = (response as any).parts || [];
+        for (const part of parts) {
+          if (part.type === 'text') {
+            responseText += part.text + '\n';
+          } else if (part.type === 'tool-invocation') {
+            const toolName = part.toolInvocation?.toolName || part.name || 'unknown';
+            if (toolName === 'write' || toolName === 'edit') {
+              const filePath = part.toolInvocation?.args?.filePath || part.args?.file_path || '';
+              filesEdited.add(filePath);
             }
+            commandsRun.push(toolName);
           }
-        } catch {
-          // Stream ended
         }
-      };
+      }
 
-      // Send the prompt (blocks until complete)
-      const promptPromise = client.session.prompt({
-        path: { id: sessionId },
-        body: {
-          parts: [{ type: 'text' as const, text: buildOpenCodePrompt(task) }],
-        },
-      });
+      // Post response summary to thread
+      if (responseText) {
+        const preview = responseText.length > 1800 ? responseText.slice(0, 1800) + '...' : responseText;
+        await sendToThread(thread, `📝 **OpenCode response:**\n${preview}`);
+      }
 
-      // Race: event processing + prompt completion + timeout
-      const timeoutPromise = new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (isComplete || Date.now() - lastEventTime > EVENT_TIMEOUT) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 5000);
-      });
-
-      await Promise.race([
-        Promise.all([processEvents(), promptPromise]),
-        timeoutPromise,
-      ]);
-
-      // Commit and push changes
+      // Check for file changes via git
       const diffSummary = getDiffSummary();
+      console.log(`[OpenCode] Diff summary: ${diffSummary}`);
+
+      // Commit and push if there are changes
       const commitMessage = `feat: ${task.slice(0, 72)}\n\nAutomated by OpenCode via Discord`;
       const { commitSha, commitUrl } = await commitAndPush(commitMessage);
 
@@ -175,11 +157,12 @@ export const opencodeTool = tool({
           `🚀 Railway will auto-deploy from main`,
         ].join('\n'));
       } else {
-        await sendToThread(thread, '⚠️ No changes were made to the codebase.');
+        await sendToThread(thread, '✅ Task completed. No file changes were made.');
       }
 
       return {
         success: true,
+        responsePreview: responseText.slice(0, 500),
         filesEdited: Array.from(filesEdited),
         filesEditedCount: filesEdited.size,
         commandsRun,
@@ -188,10 +171,11 @@ export const opencodeTool = tool({
         diffSummary,
         message: commitSha
           ? `Successfully edited ${filesEdited.size} file(s) and pushed to main. Railway will auto-deploy.`
-          : 'OpenCode session completed but no files were changed.',
+          : 'OpenCode session completed. ' + (responseText ? responseText.slice(0, 300) : 'No output.'),
       };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[OpenCode] Error: ${errorMsg}`);
       await sendToThread(thread, `❌ **OpenCode failed:** ${errorMsg}`);
       return {
         success: false,
