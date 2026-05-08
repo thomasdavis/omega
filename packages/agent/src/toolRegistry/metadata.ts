@@ -3010,9 +3010,5 @@ export const CORE_TOOLS: string[] = [
   'webFetch',
   'fileUpload',
   'whoami',
-  // TPMJS Registry - Always available for discovering, describing, and executing external tools
-  'tpmjsRegistrySearch',
-  'tpmjsRegistryDescribe',
-  'tpmjsRegistryExecute',
   'opencode',
 ];
