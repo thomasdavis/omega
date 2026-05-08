@@ -11,7 +11,7 @@ import { getPostgresPool, initializePostgresSchema, closePostgresPool } from '@r
 import { initializeScheduler } from './services/scheduler.js';
 import { initializePusher } from './lib/pusher.js';
 import { initializeErrorMonitoring } from './services/errorMonitoringService.js';
-import { preloadCoreTools } from '@repo/agent';
+import { preloadCoreTools, initializeOpenCode, shutdownOpenCode } from '@repo/agent';
 
 dotenv.config();
 
@@ -30,6 +30,14 @@ try {
   process.exit(1);
 }
 
+// Initialize OpenCode (live self-editing agent)
+try {
+  console.log('🔧 Initializing OpenCode...');
+  await initializeOpenCode();
+} catch (error) {
+  console.error('⚠️  Failed to initialize OpenCode (continuing anyway):', error);
+}
+
 // Preload core tools for faster first response
 try {
   console.log('🔧 Preloading core tools...');
@@ -37,7 +45,6 @@ try {
   console.log('✅ Core tools preloaded and ready');
 } catch (error) {
   console.error('⚠️  Failed to preload core tools (continuing anyway):', error);
-  // Don't exit - bot can still work, just slower on first call
 }
 
 // Validate environment variables
@@ -119,6 +126,7 @@ process.on('SIGINT', async () => {
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down...');
   client.destroy();
+  shutdownOpenCode();
   await closePostgresPool();
   process.exit(0);
 });

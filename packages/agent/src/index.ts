@@ -15,6 +15,7 @@ export { TOOL_METADATA, CORE_TOOLS } from './toolRegistry/metadata.js';
 export { setExportMessageContext, clearExportMessageContext } from './tools/exportConversation.js';
 export { setConversationDiagramContext, clearConversationDiagramContext } from './tools/conversationDiagram.js';
 export { setSlidevMessageContext, clearSlidevMessageContext } from './tools/conversationToSlidev.js';
+export { setOpenCodeContext, clearOpenCodeContext } from './tools/opencode.js';
 
 // Services (re-export for bot to use)
 export * from './services/userProfileAnalysis.js';
@@ -23,6 +24,9 @@ export * from './services/geminiImageService.js';
 export * from './services/geminiComicService.js';
 export * from './services/discordWebhookService.js';
 export { generateDailyBlog } from './services/dailyBlogService.js';
+
+// OpenCode service
+export { initializeOpenCode, shutdownOpenCode, isOpenCodeReady } from './services/opencodeService.js';
 
 // Appearance
 export { OMEGA_APPEARANCE } from './lib/omegaAppearance.js';

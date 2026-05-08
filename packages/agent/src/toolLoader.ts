@@ -24,6 +24,7 @@ const TOOL_IMPORT_MAP: Record<string, { path: string; exportName: string }> = {
   fileUpload: { path: './tools/fileUpload.js', exportName: 'fileUploadTool' },
   whoami: { path: './tools/whoami.js', exportName: 'whoamiTool' },
   listTools: { path: './tools/listTools.js', exportName: 'listToolsTool' },
+  opencode: { path: './tools/opencode.js', exportName: 'opencodeTool' },
 
   // MongoDB tools (14) - imported from @repo/database
   mongoInsert: { path: '@repo/database', exportName: 'mongoInsertTool' },

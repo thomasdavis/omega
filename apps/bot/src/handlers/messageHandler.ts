@@ -10,7 +10,9 @@ import {
   setConversationDiagramContext,
   clearConversationDiagramContext,
   setSlidevMessageContext,
-  clearSlidevMessageContext
+  clearSlidevMessageContext,
+  setOpenCodeContext,
+  clearOpenCodeContext,
 } from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
@@ -770,6 +772,7 @@ export async function handleMessage(message: Message): Promise<void> {
     setExportMessageContext(message);
     setConversationDiagramContext(message);
     setSlidevMessageContext(message);
+    setOpenCodeContext(message);
 
     console.log('🔍 DEBUG: About to call runAgent from messageHandler...');
 
@@ -839,6 +842,7 @@ export async function handleMessage(message: Message): Promise<void> {
     clearExportMessageContext();
     clearConversationDiagramContext();
     clearSlidevMessageContext();
+    clearOpenCodeContext();
 
     // Send tool reports FIRST (in order of occurrence), then the final response
     // Using plain text messages instead of embeds

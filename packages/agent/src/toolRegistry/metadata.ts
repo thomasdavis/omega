@@ -2982,6 +2982,21 @@ export const TOOL_METADATA: ToolMetadata[] = [
     ],
     category: 'specialized'
   },
+  {
+    id: 'opencode',
+    name: 'opencode',
+    description: 'Full-power AI coding agent with shell access. Can edit Omega\'s codebase and auto-deploy, query databases, generate reports, install software, run scripts, analyze data — any task requiring terminal and file system access. Streams progress to a Discord thread.',
+    keywords: ['code', 'edit', 'modify', 'fix', 'refactor', 'improve', 'self', 'add', 'tool', 'feature', 'bug', 'development', 'opencode', 'self-edit', 'evolve', 'upgrade', 'shell', 'bash', 'database', 'query', 'report', 'analyze', 'install', 'script', 'terminal'],
+    tags: ['self-edit', 'code', 'development', 'agent', 'opencode', 'shell', 'database'],
+    examples: [
+      'add a new tool that tells dad jokes',
+      'fix the bug in the calculator tool',
+      'query the postgres database and generate a user report',
+      'install and run a script to analyze message patterns',
+      'look through the codebase and find performance issues',
+    ],
+    category: 'development'
+  },
 
 ];
 
@@ -2999,4 +3014,5 @@ export const CORE_TOOLS: string[] = [
   'tpmjsRegistrySearch',
   'tpmjsRegistryDescribe',
   'tpmjsRegistryExecute',
+  'opencode',
 ];
