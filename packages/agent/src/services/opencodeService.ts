@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { join } from 'path';
 
-const REPO_PATH = '/data/omega-repo';
+const REPO_PATH = process.env.OMEGA_REPO_PATH || '/data/omega-repo';
 const GITHUB_REPO = process.env.GITHUB_REPO || 'thomasdavis/omega';
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
@@ -55,6 +55,10 @@ export async function initializeOpenCode(): Promise<void> {
 
 export function isOpenCodeReady(): boolean {
   return existsSync(join(REPO_PATH, '.git'));
+}
+
+export function getRepoPath(): string {
+  return REPO_PATH;
 }
 
 export async function pullLatest(): Promise<void> {

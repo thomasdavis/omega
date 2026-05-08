@@ -4,6 +4,7 @@ import { spawn } from 'child_process';
 import type { Message, ThreadChannel } from 'discord.js';
 import {
   isOpenCodeReady,
+  getRepoPath,
   pullLatest,
   commitAndPush,
   getDiffSummary,
@@ -155,7 +156,7 @@ export const opencodeTool = tool({
     }
 
     let thread: ThreadChannel | null = null;
-    const REPO_PATH = '/data/omega-repo';
+    const repoPath = getRepoPath();
     const TIMEOUT = 10 * 60 * 1000; // 10 minutes
 
     try {
@@ -172,7 +173,7 @@ export const opencodeTool = tool({
       await sendToThread(thread, '🤖 Running OpenCode agent (GLM-4.7)...');
 
       const prompt = buildOpenCodePrompt(task);
-      const result = await runOpenCodeCli(prompt, REPO_PATH, TIMEOUT);
+      const result = await runOpenCodeCli(prompt, repoPath, TIMEOUT);
 
       console.log(`[OpenCode] CLI exited with code ${result.exitCode}`);
       console.log(`[OpenCode] Output length: ${result.output.length}`);
