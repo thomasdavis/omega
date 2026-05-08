@@ -58,26 +58,61 @@ export async function generateImageWithGemini(
       model: 'gemini-3-pro-image-preview',
     });
 
-    // Generate content
-    const result = await model.generateContent({
-      contents: [
-        {
-          role: 'user',
-          parts: [
+    // Generate content with retry logic for rate limits
+    const MAX_RETRIES = 3;
+    let result: any;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        result = await model.generateContent({
+          contents: [
             {
-              text: fullPrompt,
+              role: 'user',
+              parts: [
+                {
+                  text: fullPrompt,
+                },
+              ],
             },
           ],
-        },
-      ],
-      generationConfig: {
-        // Note: Image generation with Gemini is still experimental
-        // This configuration may need adjustment based on the actual API
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-      },
-    });
+          generationConfig: {
+            temperature: 0.9,
+            topK: 40,
+            topP: 0.95,
+          },
+        });
+        break;
+      } catch (apiError: any) {
+        const errorMessage = apiError?.message || String(apiError);
+
+        if (errorMessage.includes('free_tier') && errorMessage.includes('limit: 0')) {
+          return {
+            success: false,
+            error: 'Gemini API key is on the free tier with zero quota for image generation. Please enable billing on the Google Cloud project associated with GEMINI_API_KEY.',
+          };
+        }
+
+        if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
+          if (attempt < MAX_RETRIES) {
+            let delayMs = Math.pow(2, attempt + 1) * 5000;
+            const retryMatch = errorMessage.match(/retryDelay.*?(\d+)s/);
+            if (retryMatch) {
+              delayMs = Math.max(delayMs, parseInt(retryMatch[1], 10) * 1000);
+            }
+            console.warn(`⚠️ Gemini rate limit hit (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delayMs / 1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            continue;
+          }
+
+          return {
+            success: false,
+            error: `Gemini API rate limit exceeded after ${MAX_RETRIES} retries. Please try again later or check your quota at https://ai.dev/rate-limit`,
+          };
+        }
+
+        throw apiError;
+      }
+    }
 
     // Extract image data from response
     // The response may contain multiple parts, find the image part

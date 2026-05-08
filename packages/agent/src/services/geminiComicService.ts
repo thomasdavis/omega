@@ -156,12 +156,49 @@ export async function generateComic(options: ComicGenerationOptions): Promise<Co
     console.log('\n');
 
     // Generate the comic image using gemini-3-pro-image-preview
-    // Note: As of the latest SDK, image generation may use Imagen model instead
     const model = genai.getGenerativeModel({
       model: 'gemini-3-pro-image-preview',
     });
 
-    const result = await model.generateContent(prompt);
+    // Retry logic for rate limits
+    const MAX_RETRIES = 3;
+    let result: any;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        result = await model.generateContent(prompt);
+        break;
+      } catch (apiError: any) {
+        const errorMessage = apiError?.message || String(apiError);
+
+        if (errorMessage.includes('free_tier') && errorMessage.includes('limit: 0')) {
+          return {
+            success: false,
+            error: 'Gemini API key is on the free tier with zero quota for image generation. Please enable billing on the Google Cloud project associated with GEMINI_API_KEY.',
+          };
+        }
+
+        if (errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('quota')) {
+          if (attempt < MAX_RETRIES) {
+            let delayMs = Math.pow(2, attempt + 1) * 5000;
+            const retryMatch = errorMessage.match(/retryDelay.*?(\d+)s/);
+            if (retryMatch) {
+              delayMs = Math.max(delayMs, parseInt(retryMatch[1], 10) * 1000);
+            }
+            console.warn(`⚠️ Gemini rate limit hit (attempt ${attempt + 1}/${MAX_RETRIES}), retrying in ${delayMs / 1000}s...`);
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+            continue;
+          }
+
+          return {
+            success: false,
+            error: `Gemini API rate limit exceeded after ${MAX_RETRIES} retries. Please try again later or check your quota at https://ai.dev/rate-limit`,
+          };
+        }
+
+        throw apiError;
+      }
+    }
 
     // Extract image data from response
     const response = await result.response;
