@@ -32,14 +32,10 @@ FROM node:22-alpine
 
 # Install OpenSSL compatibility for Prisma + FluidSynth for audio rendering + curl for downloads
 # git + openssh-client for local repo operations (OpenCode self-editing)
-RUN apk add --no-cache openssl libc6-compat fluidsynth curl git openssh-client
+# bash for OpenCode shell commands
+RUN apk add --no-cache openssl libc6-compat fluidsynth curl git openssh-client bash
 
-# Install bun (OpenCode runtime) and OpenCode CLI
-RUN curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
-RUN bun install -g opencode-ai@latest
-
-RUN npm install -g pnpm@9.0.0
+RUN npm install -g pnpm@9.0.0 opencode-ai@latest
 
 # Download SoundFont during build (148MB, too large for Git)
 RUN mkdir -p /app/assets/soundfonts && \
