@@ -16,6 +16,7 @@ import {
 } from '@repo/agent';
 import { shouldRespond, shouldMinimallyAcknowledge, getMinimalAcknowledgment } from '../lib/shouldRespond.js';
 import { checkIntentGate } from '../lib/intentGate.js';
+import { memorizeDiscordMessage } from '../lib/dontoMemory.js';
 import { logError, generateUserErrorMessage } from '@repo/agent';
 import { saveHumanMessage, saveAIMessage, saveToolExecution, getOrCreateConversation, addMessageToConversation, logDecision, logBan, logAntigravityRoast } from '@repo/database';
 import { feelingsService } from '@repo/agent';
@@ -478,6 +479,16 @@ export async function handleMessage(message: Message): Promise<void> {
       logContext: ['Operation: persist message to database', `User: ${message.author.username}`],
     }).catch(() => {});
   }
+
+  // Fire-and-forget save to donto memory (https://memories.apexpots.com)
+  memorizeDiscordMessage({
+    username: message.author.username,
+    channelName,
+    channelId: message.channel.id,
+    guildId: message.guild?.id,
+    messageContent: message.content,
+    messageId: message.id,
+  });
 
   // Extract and send links to Val Town for bookmark tracking
   // This runs async and doesn't block message processing
