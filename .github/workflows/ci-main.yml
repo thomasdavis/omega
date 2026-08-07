@@ -108,6 +108,15 @@ jobs:
           echo "✅ Build completed successfully"
           echo "::endgroup::"
 
+      - name: Upload public inference corpus
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: historical-conversations-aihorde-50
+          path: public-inference-output/aihorde-50/
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Get commit info
         id: commit
         run: |
