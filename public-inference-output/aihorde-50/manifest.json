@@ -1,9 +1,9 @@
 {
   "dataset": "historical_conversations_aihorde_50",
   "version": "1.0.0",
-  "run_id": "cb3c8c1d-f9d6-4cd4-93b2-15d079037c74",
+  "run_id": "76a9dff5-f979-44be-8b28-a4d06ca035c7",
   "started_at": "2026-08-07T16:19:20.766529+00:00",
-  "completed_at": "2026-08-07T17:22:04.934057+00:00",
+  "completed_at": "2026-08-07T17:32:16.611524+00:00",
   "provider": {
     "name": "AI Horde",
     "api_base": "https://aihorde.net/api/v2",
@@ -61,25 +61,25 @@
   },
   "generation": {
     "conversation_count_requested": 50,
-    "conversation_count_completed": 48,
-    "inference_attempts": 115,
+    "conversation_count_completed": 49,
+    "inference_attempts": 140,
     "max_workers": 2,
     "max_output_tokens": 480,
     "template_or_local_model_fallback": false
   },
   "validation": {
     "valid": false,
-    "conversation_count": 48,
-    "failure_count": 2,
-    "message_count": 288,
+    "conversation_count": 49,
+    "failure_count": 1,
+    "message_count": 294,
     "messages_per_conversation": [
       6
     ],
-    "unique_contexts": 48,
-    "unique_aliases": 94,
-    "unique_message_texts": 288,
-    "external_jobs_accepted": 114,
-    "inference_attempts": 115,
+    "unique_contexts": 49,
+    "unique_aliases": 96,
+    "unique_message_texts": 294,
+    "external_jobs_accepted": 139,
+    "inference_attempts": 140,
     "all_exact_alternation": true,
     "all_synthetic_marked": true,
     "models_returned": [
