@@ -1,16 +1,16 @@
 {
-  "valid": false,
-  "conversation_count": 47,
-  "failure_count": 3,
-  "message_count": 282,
+  "valid": true,
+  "conversation_count": 50,
+  "failure_count": 0,
+  "message_count": 300,
   "messages_per_conversation": [
     6
   ],
-  "unique_contexts": 47,
-  "unique_aliases": 92,
-  "unique_message_texts": 282,
-  "external_jobs_accepted": 80,
-  "inference_attempts": 80,
+  "unique_contexts": 50,
+  "unique_aliases": 98,
+  "unique_message_texts": 300,
+  "external_jobs_accepted": 99,
+  "inference_attempts": 99,
   "all_exact_alternation": true,
   "all_synthetic_marked": true,
   "models_returned": [
