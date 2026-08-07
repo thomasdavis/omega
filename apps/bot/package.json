@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
-    "prebuild": "pnpm --filter @repo/shared --filter @repo/database --filter @repo/agent build && node scripts/generate-deployment-info.js && python3 scripts/generate-public-aihorde-50.py",
+    "prebuild": "pnpm --filter @repo/shared --filter @repo/database --filter @repo/agent build && node scripts/generate-deployment-info.js && python3 scripts/repair-public-aihorde-three.py",
     "build": "tsc && npm run copy-assets",
     "copy-assets": "mkdir -p dist/public && cp -r public/* dist/public/ && cp omega-manifest.json dist/",
     "pretype-check": "pnpm --filter @repo/shared --filter @repo/database --filter @repo/agent build",
