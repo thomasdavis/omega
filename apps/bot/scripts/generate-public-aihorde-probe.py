@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""One-request proof that external historical dialogue comes from public AI Horde.
+"""Generate one dialogue through AI Horde's public anonymous text API.
 
-Inference authentication is AI Horde's documented shared anonymous credential
-0000000000. The script never reads an API key, provider token, repository secret,
-or paid-account credential from the environment.
+Inference uses only AI Horde's documented shared anonymous credential
+``0000000000``. No user-owned provider key, repository inference secret,
+paid subscription, or private endpoint is read or used.
 """
 
 from __future__ import annotations
@@ -14,10 +14,9 @@ import os
 import pathlib
 import re
 import subprocess
+import tempfile
 import time
 import traceback
-import urllib.error
-import urllib.request
 from typing import Any
 
 BASE_URL = "https://aihorde.net/api/v2"
@@ -29,14 +28,27 @@ PREFERRED_MODELS = [
     "aphrodite/TheDrummer/Cydonia-24B-v4.3",
     "koboldcpp/gemma-4-12b-it-UD-Q5_K_XL",
 ]
-EXPECTED_TAGS = [
-    "|entity.socrates.virtue_and_learning|",
-    "|entity.confucius.virtue_and_learning|",
-] * 3
 
 
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).isoformat()
+
+
+def parse_headers(raw: str) -> dict[str, str]:
+    """Return the final HTTP response header block from curl -D output."""
+    blocks = re.split(r"\r?\n\r?\n", raw.strip())
+    for block in reversed(blocks):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if not lines or not lines[0].startswith("HTTP/"):
+            continue
+        parsed: dict[str, str] = {":status-line": lines[0]}
+        for line in lines[1:]:
+            if ":" not in line:
+                continue
+            key, value = line.split(":", 1)
+            parsed[key.strip().lower()] = value.strip()
+        return parsed
+    return {}
 
 
 def json_request(
@@ -46,27 +58,82 @@ def json_request(
     body: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
     timeout: int = 90,
-) -> tuple[int, dict[str, Any], dict[str, str]]:
+) -> tuple[int, Any, dict[str, str]]:
+    """Call AI Horde with curl rather than Python urllib.
+
+    AI Horde's Cloudflare policy rejects urllib's default TLS/client signature,
+    while ordinary curl is supported. This changes only the HTTP transport; it
+    does not alter authentication or bypass any access control.
+    """
     request_headers = {"Accept": "application/json"}
+    if body is not None:
+        request_headers["Content-Type"] = "application/json"
     if headers:
         request_headers.update(headers)
-    data = None
-    if body is not None:
-        data = json.dumps(body, ensure_ascii=False).encode("utf-8")
-        request_headers["Content-Type"] = "application/json"
-    request = urllib.request.Request(
-        url,
-        data=data,
-        headers=request_headers,
-        method=method,
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-            return response.status, payload, dict(response.headers.items())
-    except urllib.error.HTTPError as exc:
-        response_body = exc.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {exc.code} from {url}: {response_body[:2000]}") from exc
+
+    with tempfile.TemporaryDirectory(prefix="aihorde-http-") as temp_dir:
+        temp = pathlib.Path(temp_dir)
+        body_path = temp / "response.json"
+        headers_path = temp / "headers.txt"
+        request_path = temp / "request.json"
+
+        command = [
+            "curl",
+            "--silent",
+            "--show-error",
+            "--location",
+            "--http1.1",
+            "--max-time",
+            str(timeout),
+            "--request",
+            method,
+            "--dump-header",
+            str(headers_path),
+            "--output",
+            str(body_path),
+            "--write-out",
+            "%{http_code}",
+        ]
+        for key, value in request_headers.items():
+            command.extend(["--header", f"{key}: {value}"])
+        if body is not None:
+            request_path.write_text(
+                json.dumps(body, ensure_ascii=False, separators=(",", ":")),
+                encoding="utf-8",
+            )
+            command.extend(["--data-binary", f"@{request_path}"])
+        command.append(url)
+
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout + 15,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"curl failed for {url} with exit {completed.returncode}: "
+                f"{completed.stderr.strip()[:2000]}"
+            )
+        try:
+            status = int(completed.stdout.strip()[-3:])
+        except ValueError as exc:
+            raise RuntimeError(f"curl returned an unreadable status: {completed.stdout!r}") from exc
+
+        response_text = body_path.read_text(encoding="utf-8", errors="replace")
+        response_headers = parse_headers(
+            headers_path.read_text(encoding="utf-8", errors="replace")
+        )
+        if status < 200 or status >= 300:
+            raise RuntimeError(f"HTTP {status} from {url}: {response_text[:2000]}")
+        try:
+            payload = json.loads(response_text)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"Non-JSON response from {url}: {response_text[:2000]}"
+            ) from exc
+        return status, payload, response_headers
 
 
 def choose_models(status_rows: Any) -> tuple[list[str], list[dict[str, Any]]]:
@@ -78,7 +145,7 @@ def choose_models(status_rows: Any) -> tuple[list[str], list[dict[str, Any]]]:
     }
     selected = [name for name in PREFERRED_MODELS if name in by_name]
     if not selected:
-        candidates = []
+        candidates: list[tuple[int, int, str]] = []
         for row in rows:
             if not isinstance(row, dict):
                 continue
@@ -88,11 +155,10 @@ def choose_models(status_rows: Any) -> tuple[list[str], list[dict[str, Any]]]:
             lowered = name.lower()
             if workers > 0 and any(token in lowered for token in ("gemma", "31b", "24b", "qwen")):
                 candidates.append((queued, -workers, name))
-        selected = [item[2] for item in sorted(candidates)[:4]]
+        selected = [candidate[2] for candidate in sorted(candidates)[:4]]
     if not selected:
         selected = list(PREFERRED_MODELS)
-    selected_rows = [by_name[name] for name in selected if name in by_name]
-    return selected, selected_rows
+    return selected, [by_name[name] for name in selected if name in by_name]
 
 
 def extract_messages(text: str) -> tuple[list[dict[str, str]], dict[str, Any]]:
@@ -105,8 +171,7 @@ def extract_messages(text: str) -> tuple[list[dict[str, str]], dict[str, Any]]:
     messages: list[dict[str, str]] = []
     for index, match in enumerate(matches):
         end = matches[index + 1].start() if index + 1 < len(matches) else len(normalized)
-        content = normalized[match.end() : end]
-        content = content.split("<END>", 1)[0]
+        content = normalized[match.end() : end].split("<END>", 1)[0]
         content = re.sub(r"\s+", " ", content).strip(" \n\t-*#")
         messages.append({"alias": match.group(1).lower(), "content": content})
     expected_aliases = ["socrates", "confucius"] * 3
@@ -141,18 +206,13 @@ def persist_result(result: dict[str, Any], text: str) -> None:
     if not branch:
         branch = "tmp/aihorde-public-probe-20260808"
 
-    subprocess.run(["git", "-C", str(root), "add", "public-inference-output/probe.json", "public-inference-output/probe.txt"], check=True)
-    diff = subprocess.run(["git", "-C", str(root), "diff", "--cached", "--quiet"])
-    if diff.returncode != 0:
+    subprocess.run(
+        ["git", "-C", str(root), "add", "public-inference-output/probe.json", "public-inference-output/probe.txt"],
+        check=True,
+    )
+    if subprocess.run(["git", "-C", str(root), "diff", "--cached", "--quiet"]).returncode != 0:
         subprocess.run(
-            [
-                "git",
-                "-C",
-                str(root),
-                "commit",
-                "-m",
-                "chore: record public AI Horde probe result [skip ci]",
-            ],
+            ["git", "-C", str(root), "commit", "-m", "chore: record public AI Horde probe result [skip ci]"],
             check=True,
         )
         subprocess.run(
@@ -162,7 +222,6 @@ def persist_result(result: dict[str, Any], text: str) -> None:
 
 
 def main() -> int:
-    started_at = utc_now()
     result: dict[str, Any] = {
         "run_type": "public_external_inference_probe",
         "provider": "AI Horde",
@@ -173,7 +232,8 @@ def main() -> int:
             "user_owned": False,
         },
         "user_keys_or_provider_secrets_read": False,
-        "started_at": started_at,
+        "http_transport": "curl",
+        "started_at": utc_now(),
     }
     generated_text = ""
     try:
@@ -234,10 +294,7 @@ Each message must be one or two historically grounded sentences. Develop a real 
             BASE_URL + "/generate/text/async",
             method="POST",
             body=request_payload,
-            headers={
-                "apikey": ANONYMOUS_KEY,
-                "Client-Agent": CLIENT_AGENT,
-            },
+            headers={"apikey": ANONYMOUS_KEY, "Client-Agent": CLIENT_AGENT},
         )
         result["submission"] = {
             "http_status": submit_code,
@@ -286,14 +343,7 @@ Each message must be one or two historically grounded sentences. Develop a real 
         messages, validation = extract_messages(generated_text)
         result["generation_metadata"] = {
             key: generation.get(key)
-            for key in (
-                "model",
-                "worker_id",
-                "worker_name",
-                "seed",
-                "state",
-                "gen_metadata",
-            )
+            for key in ("model", "worker_id", "worker_name", "seed", "state", "gen_metadata")
             if key in generation
         }
         result["messages"] = messages
@@ -304,7 +354,17 @@ Each message must be one or two historically grounded sentences. Develop a real 
         result.setdefault("validation", {"valid": False})
     result["completed_at"] = utc_now()
     persist_result(result, generated_text)
-    print(json.dumps({"job_id": result.get("job_id"), "validation": result.get("validation"), "error": result.get("error")}, ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            {
+                "job_id": result.get("job_id"),
+                "validation": result.get("validation"),
+                "error": result.get("error"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
     return 0
 
 
