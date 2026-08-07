@@ -26,6 +26,14 @@ SPEC.loader.exec_module(repair)
 # model-facing language. This keeps each six-turn exchange internally coherent.
 repair.REPAIR_NUMBERS = (12, 43)
 
+# The public worker occasionally returned an empty generation at the earlier
+# 120-token cap. Keep each requested answer short, but give the remote model
+# enough output room to honour the instruction reliably. These are still
+# provider-side generation tokens; no local text is supplied as a fallback.
+repair.TURN_MAX_TOKENS = 360
+repair.TURN_MAX_ATTEMPTS = 10
+repair.TURN_TIMEOUT_SECONDS = 600
+
 repair.PROFILE_NOTES[12] = {
     "al_khwarizmi": (
         "an Abbasid-era Baghdad scholar who systematized algebra and wrote on "
