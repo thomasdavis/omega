@@ -1,0 +1,22 @@
+{
+  "valid": false,
+  "conversation_count": 49,
+  "failure_count": 1,
+  "message_count": 294,
+  "messages_per_conversation": [
+    6
+  ],
+  "unique_contexts": 49,
+  "unique_aliases": 96,
+  "unique_message_texts": 294,
+  "external_jobs_accepted": 139,
+  "inference_attempts": 140,
+  "all_exact_alternation": true,
+  "all_synthetic_marked": true,
+  "models_returned": [
+    "aphrodite/TheDrummer/Skyfall-31B-v4.2"
+  ],
+  "workers_returned": [
+    "Amalgamate-Scribe-3"
+  ]
+}
