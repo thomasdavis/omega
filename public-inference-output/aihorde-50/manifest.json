@@ -1,0 +1,92 @@
+{
+  "dataset": "historical_conversations_aihorde_50",
+  "version": "1.0.0",
+  "run_id": "06752712-bb50-49f0-8dbf-92215ea9ba18",
+  "started_at": "2026-08-07T16:19:20.766529+00:00",
+  "completed_at": "2026-08-07T16:48:25.700528+00:00",
+  "provider": {
+    "name": "AI Horde",
+    "api_base": "https://aihorde.net/api/v2",
+    "requested_model": "aphrodite/TheDrummer/Skyfall-31B-v4.2",
+    "service_type": "public volunteer-distributed external text inference",
+    "credential": {
+      "value": "0000000000",
+      "ownership": "AI Horde documented shared anonymous credential",
+      "user_owned": false,
+      "registration_required": false
+    },
+    "live_model_status_at_start": {
+      "http_status": 200,
+      "response_headers": {
+        ":status-line": "HTTP/1.1 200 OK",
+        "date": "Fri, 07 Aug 2026 16:19:21 GMT",
+        "content-type": "application/json; charset=utf-8",
+        "content-length": "3479",
+        "connection": "keep-alive",
+        "access-control-allow-headers": "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, apikey, Client-Agent, X-Fields, X-Forwarded-For, Proxied-For, Proxy-Authorization",
+        "access-control-allow-methods": "POST, GET, OPTIONS, PUT, DELETE, PATCH",
+        "access-control-allow-origin": "*",
+        "horde-node": "medusa:7006:5.1.3",
+        "retry-after": "60",
+        "server": "cloudflare",
+        "x-ratelimit-limit": "90",
+        "x-ratelimit-remaining": "89",
+        "x-ratelimit-reset": "1786119621",
+        "x-cache-status": "MISS",
+        "cf-cache-status": "DYNAMIC",
+        "nel": "{\"report_to\":\"cf-nel\",\"success_fraction\":0.0,\"max_age\":604800}",
+        "report-to": "{\"group\":\"cf-nel\",\"max_age\":604800,\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v4?s=KVgQECVAP7lwdoSdbRi4NXVBx9a3SH0e1QC032UlCYF4aJUcpraLe3OWcOuQ0zlzEjiOVDdoQrfnMt33NFPluP%2Flb1EFlVjT60BGol%2FGGHwCisHVFAFEE8fH2xdX4w%3D%3D\"}]}",
+        "cf-ray": "a2779a376fe4e776-DFW",
+        "alt-svc": "h3=\":443\"; ma=86400"
+      },
+      "requested_model_rows": [
+        {
+          "performance": 14.4,
+          "queued": 1466.0,
+          "jobs": 5.0,
+          "eta": 12,
+          "type": "text",
+          "name": "aphrodite/TheDrummer/Skyfall-31B-v4.2",
+          "count": 8
+        }
+      ]
+    }
+  },
+  "credential_boundary": {
+    "user_owned_model_keys_used": false,
+    "repository_provider_secrets_used": false,
+    "paid_model_subscription_used": false,
+    "private_inference_endpoint_used": false,
+    "github_ephemeral_token_role": "repository checkout and returning generated files only; never sent to AI Horde"
+  },
+  "generation": {
+    "conversation_count_requested": 50,
+    "conversation_count_completed": 47,
+    "inference_attempts": 80,
+    "max_workers": 2,
+    "max_output_tokens": 480,
+    "template_or_local_model_fallback": false
+  },
+  "validation": {
+    "valid": false,
+    "conversation_count": 47,
+    "failure_count": 3,
+    "message_count": 282,
+    "messages_per_conversation": [
+      6
+    ],
+    "unique_contexts": 47,
+    "unique_aliases": 92,
+    "unique_message_texts": 282,
+    "external_jobs_accepted": 80,
+    "inference_attempts": 80,
+    "all_exact_alternation": true,
+    "all_synthetic_marked": true,
+    "models_returned": [
+      "aphrodite/TheDrummer/Skyfall-31B-v4.2"
+    ],
+    "workers_returned": [
+      "Amalgamate-Scribe-3"
+    ]
+  }
+}

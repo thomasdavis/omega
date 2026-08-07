@@ -1,0 +1,29 @@
+[
+  {
+    "conversation_number": 12,
+    "participants": [
+      "Al-Khwarizmi",
+      "Fibonacci"
+    ],
+    "context": "numbers_in_motion",
+    "error": "format validation failed: {'valid': False, 'message_count': 5, 'expected_aliases': ['al_khwarizmi', 'fibonacci', 'al_khwarizmi', 'fibonacci', 'al_khwarizmi', 'fibonacci'], 'actual_aliases': ['al_khwarizmi', 'fibonacci', 'al_khwarizmi', 'fibonacci', 'al_khwarizmi'], 'word_counts': [25, 31, 35, 28, 63]}"
+  },
+  {
+    "conversation_number": 28,
+    "participants": [
+      "Adam Smith",
+      "Karl Marx"
+    ],
+    "context": "labour_and_markets",
+    "error": "format validation failed: {'valid': False, 'message_count': 0, 'expected_aliases': ['adam_smith', 'karl_marx', 'adam_smith', 'karl_marx', 'adam_smith', 'karl_marx'], 'actual_aliases': [], 'word_counts': []}"
+  },
+  {
+    "conversation_number": 43,
+    "participants": [
+      "James Watt",
+      "George Stephenson"
+    ],
+    "context": "engines_and_industry",
+    "error": "format validation failed: {'valid': False, 'message_count': 0, 'expected_aliases': ['james_watt', 'george_stephenson', 'james_watt', 'george_stephenson', 'james_watt', 'george_stephenson'], 'actual_aliases': [], 'word_counts': []}"
+  }
+]
